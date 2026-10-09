@@ -1,0 +1,356 @@
+{
+  "id": "n5",
+  "units": [
+    {
+      "id": "n5-01",
+      "title": {
+        "de": "Grüßen und danken",
+        "en": "Greetings and thanks"
+      },
+      "can_do": {
+        "de": "Ich kann Nachbarn grüßen, mich bedanken und verabschieden.",
+        "en": "I can greet neighbours, thank them and say goodbye."
+      },
+      "grammar": [
+        "〜ね",
+        "〜ました (Dank)"
+      ],
+      "words": [
+        "おはようございます",
+        "こんにちは",
+        "ありがとうございます",
+        "すみません",
+        "いってきます",
+        "天気"
+      ],
+      "scenarios": [
+        "n5-01-aisatsu"
+      ],
+      "requires": []
+    },
+    {
+      "id": "n5-02",
+      "title": {
+        "de": "Sich vorstellen",
+        "en": "Introducing yourself"
+      },
+      "can_do": {
+        "de": "Ich kann sagen, wie ich heiße, woher ich komme, was ich mache und was ich mag.",
+        "en": "I can say my name, where I am from, what I do and what I like."
+      },
+      "grammar": [
+        "〜です",
+        "〜から来ました",
+        "〜が好きです"
+      ],
+      "words": [
+        "名前",
+        "仕事",
+        "ドイツ",
+        "好き",
+        "よろしくおねがいします"
+      ],
+      "scenarios": [
+        "n5-02-jikoshoukai"
+      ],
+      "requires": [
+        "n5-01"
+      ]
+    },
+    {
+      "id": "n5-03",
+      "title": {
+        "de": "An der Konbini",
+        "en": "At the konbini"
+      },
+      "can_do": {
+        "de": "Ich kann an der Kasse antworten und nach dem Preis fragen.",
+        "en": "I can answer at the checkout and ask for the price."
+      },
+      "grammar": [
+        "〜はいりません",
+        "いくらですか",
+        "数字"
+      ],
+      "words": [
+        "袋",
+        "温める",
+        "いくら",
+        "円",
+        "おねがいします"
+      ],
+      "scenarios": [
+        "n5-03-konbini"
+      ],
+      "requires": [
+        "n5-02"
+      ]
+    },
+    {
+      "id": "n5-04",
+      "title": {
+        "de": "Im Café",
+        "en": "At a café"
+      },
+      "can_do": {
+        "de": "Ich kann Getränke und Essen bestellen und sagen, ob ich hier esse.",
+        "en": "I can order drinks and food and say whether I eat here."
+      },
+      "grammar": [
+        "〜をください",
+        "〜をおねがいします",
+        "〜つ (Zählwort)"
+      ],
+      "words": [
+        "コーヒー",
+        "紅茶",
+        "ケーキ",
+        "大きい",
+        "小さい",
+        "ここで"
+      ],
+      "scenarios": [
+        "n5-04-kafe"
+      ],
+      "requires": [
+        "n5-02"
+      ]
+    },
+    {
+      "id": "n5-05",
+      "title": {
+        "de": "Am Bahnhof",
+        "en": "At the station"
+      },
+      "can_do": {
+        "de": "Ich kann Fahrkarten kaufen und nach Zug, Uhrzeit und Gleis fragen.",
+        "en": "I can buy tickets and ask for the train, the time and the platform."
+      },
+      "grammar": [
+        "〜まで",
+        "何時",
+        "〜枚 (Zählwort)"
+      ],
+      "words": [
+        "電車",
+        "切符",
+        "大人",
+        "番線",
+        "つぎ"
+      ],
+      "scenarios": [
+        "n5-05-eki"
+      ],
+      "requires": [
+        "n5-03"
+      ]
+    },
+    {
+      "id": "n5-06",
+      "title": {
+        "de": "Nach dem Weg fragen",
+        "en": "Asking the way"
+      },
+      "can_do": {
+        "de": "Ich kann nach einem Ort fragen und eine einfache Wegbeschreibung verstehen.",
+        "en": "I can ask for a place and understand simple directions."
+      },
+      "grammar": [
+        "〜はどこですか",
+        "〜て、〜 (Reihenfolge)",
+        "遠い・近い"
+      ],
+      "words": [
+        "郵便局",
+        "右",
+        "左",
+        "まっすぐ",
+        "角",
+        "遠い"
+      ],
+      "scenarios": [
+        "n5-06-michi"
+      ],
+      "requires": [
+        "n5-05"
+      ]
+    },
+    {
+      "id": "n5-07",
+      "title": {
+        "de": "Mit Freunden reden",
+        "en": "Talking with friends"
+      },
+      "can_do": {
+        "de": "Ich kann locker über Hobbys reden und etwas vorschlagen.",
+        "en": "I can talk casually about hobbies and suggest something."
+      },
+      "grammar": [
+        "einfache Form (だ, 〜る)",
+        "〜よ・〜ね",
+        "〜ない？ (Vorschlag)"
+      ],
+      "words": [
+        "しゅみ",
+        "最近",
+        "こんど",
+        "いっしょに",
+        "アニメ"
+      ],
+      "scenarios": [
+        "n5-07-tomodachi"
+      ],
+      "requires": [
+        "n5-02"
+      ]
+    },
+    {
+      "id": "n5-08",
+      "title": {
+        "de": "Verabredungen",
+        "en": "Making plans"
+      },
+      "can_do": {
+        "de": "Ich kann über Pläne sprechen, Einladungen annehmen und Zeit und Ort ausmachen.",
+        "en": "I can talk about plans, accept invitations and agree on time and place."
+      },
+      "grammar": [
+        "〜ませんか",
+        "〜たいです",
+        "〜に会います"
+      ],
+      "words": [
+        "週末",
+        "土曜日",
+        "美術館",
+        "何時",
+        "前"
+      ],
+      "scenarios": [
+        "n5-08-yotei"
+      ],
+      "requires": [
+        "n5-07"
+      ]
+    },
+    {
+      "id": "n5-09",
+      "title": {
+        "de": "Im Restaurant",
+        "en": "At a restaurant"
+      },
+      "can_do": {
+        "de": "Ich kann sagen, wie viele wir sind, bestellen und nach der Toilette fragen.",
+        "en": "I can say how many we are, order and ask for the toilet."
+      },
+      "grammar": [
+        "〜人 (Zählwort)",
+        "〜を二つください"
+      ],
+      "words": [
+        "何名様",
+        "ラーメン",
+        "お水",
+        "トイレ",
+        "飲み物"
+      ],
+      "scenarios": [
+        "n5-09-resutoran"
+      ],
+      "requires": [
+        "n5-04"
+      ]
+    },
+    {
+      "id": "n5-10",
+      "title": {
+        "de": "Einkaufen",
+        "en": "Shopping"
+      },
+      "can_do": {
+        "de": "Ich kann nach Farben und Größen fragen und sagen, was ich nehme.",
+        "en": "I can ask for colours and sizes and say what I take."
+      },
+      "grammar": [
+        "い-Adjektive",
+        "〜のはありますか",
+        "〜にします"
+      ],
+      "words": [
+        "Tシャツ",
+        "青い",
+        "赤い",
+        "小さい",
+        "さがす"
+      ],
+      "scenarios": [
+        "n5-10-kaimono"
+      ],
+      "requires": [
+        "n5-03",
+        "n5-07"
+      ]
+    },
+    {
+      "id": "n5-11",
+      "title": {
+        "de": "Familie",
+        "en": "Family"
+      },
+      "can_do": {
+        "de": "Ich kann von meiner Familie erzählen und nach anderen Familien fragen.",
+        "en": "I can talk about my family and ask about other families."
+      },
+      "grammar": [
+        "〜人家族",
+        "〜がいます",
+        "家族の言葉 (母・お母さん)"
+      ],
+      "words": [
+        "家族",
+        "兄",
+        "姉",
+        "母",
+        "父",
+        "先生"
+      ],
+      "scenarios": [
+        "n5-11-kazoku"
+      ],
+      "requires": [
+        "n5-02"
+      ]
+    },
+    {
+      "id": "n5-12",
+      "title": {
+        "de": "Was gestern war",
+        "en": "What happened yesterday"
+      },
+      "can_do": {
+        "de": "Ich kann erzählen, was ich gestern gemacht habe, wo, mit wem und wie es war.",
+        "en": "I can tell what I did yesterday, where, with whom and how it was."
+      },
+      "grammar": [
+        "〜ました",
+        "〜かったです",
+        "〜で (Ort)",
+        "〜と (mit)"
+      ],
+      "words": [
+        "きのう",
+        "映画",
+        "おもしろい",
+        "ともだち",
+        "とても"
+      ],
+      "scenarios": [
+        "n5-12-kinou"
+      ],
+      "requires": [
+        "n5-06",
+        "n5-08"
+      ]
+    }
+  ]
+}

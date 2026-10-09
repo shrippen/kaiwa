@@ -1,8 +1,10 @@
 //! kaiwa-sim: plays the QA personas in `qa/personas` against Kaiwa (qa/README.md).
 //!
 //! `validate` checks the personas; `run` plays their journeys in text mode against the engine
-//! with recorded tutor answers. Audio and GUI modes follow with the app.
+//! with recorded tutor answers, and the long journeys over simulated days against the learning
+//! model (`days`). Audio and GUI modes follow with the app.
 
+mod days;
 mod run;
 mod validate;
 
@@ -37,6 +39,13 @@ enum Command {
         #[arg(long)]
         live: bool,
     },
+    /// Play one long journey over simulated days and print it session by session.
+    Days {
+        #[arg(long)]
+        persona: String,
+        #[arg(long)]
+        journey: String,
+    },
 }
 
 fn main() -> ExitCode {
@@ -63,6 +72,13 @@ fn main() -> ExitCode {
                     ExitCode::FAILURE
                 }
             }
+            Err(error) => {
+                eprintln!("error: {error:#}");
+                ExitCode::FAILURE
+            }
+        },
+        Command::Days { persona, journey } => match print_days(&cli.root, &persona, &journey) {
+            Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
                 eprintln!("error: {error:#}");
                 ExitCode::FAILURE
@@ -121,4 +137,50 @@ fn run_all(
         std::fs::write(path, serde_json::to_string_pretty(&all)?)?;
     }
     Ok(fail == 0)
+}
+
+fn print_days(root: &std::path::Path, persona: &str, journey: &str) -> anyhow::Result<()> {
+    let p: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(
+        root.join(format!("qa/personas/{persona}.json")),
+    )?)?;
+    let script = days::script_for(root, journey)?
+        .ok_or_else(|| anyhow::anyhow!("{journey} has no day script"))?;
+    let run = days::simulate(root, &p, &script)?;
+    println!("day  date        start  min  scenario             success  level  reviews  xp");
+    for s in &run.sessions {
+        let secs = s.start.second_of_day();
+        println!(
+            "{:>3}  {}  {:02}:{:02}  {:>4.1}  {:<20} {:>6.2}  {:>5}  {:>3}{}  {:>4}",
+            s.sim_day,
+            s.start.day().iso(),
+            secs / 3600,
+            secs % 3600 / 60,
+            s.minutes,
+            s.scenario,
+            s.success,
+            s.level,
+            s.reviews,
+            if s.refresher { "R" } else { " " },
+            s.xp
+        );
+    }
+    let st = kaiwa_core::progress::streak(&run.records, run.goal, &[], run.last_day);
+    println!(
+        "streak {} (longest {}), freezes {}, ended {}; items {}; units done {}",
+        st.days,
+        st.longest,
+        st.freezes_used.len(),
+        st.ended_on.len(),
+        run.items.len(),
+        run.curriculum
+            .path(&run.course, "de")
+            .iter()
+            .filter(|u| u.state == kaiwa_core::curriculum::NodeState::Done)
+            .count()
+    );
+    for (skill, words) in run.learner.describe("de") {
+        println!("  {skill:?}: {words}");
+    }
+    println!("errors (corrected, reviewed while open): {:?}", run.errors);
+    Ok(())
 }

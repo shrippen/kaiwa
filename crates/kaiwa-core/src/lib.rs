@@ -1,16 +1,28 @@
-//! Kaiwa's conversation engine, without a GUI (Lastenheft /LL505/): scenarios with goals and
-//! help, a session that sends each turn to a [`kaiwa_ai::ChatProvider`], the rules for which
-//! corrections a learner sees, the diff for KanteDiffText and the summary at the end.
+//! Kaiwa's conversation engine and learning model, without a GUI (Lastenheft /LL505/):
+//! scenarios with goals and help, a session that sends each turn to a [`kaiwa_ai::ChatProvider`],
+//! the rules for which corrections a learner sees, the summary at the end, and around it the
+//! learner model, the difficulty regulator, the curriculum, spaced repetition and the daily goal
+//! with streak and XP.
 
+pub mod clock;
+pub mod curriculum;
 pub mod diff;
+pub mod difficulty;
 pub mod feedback;
+pub mod learner;
+pub mod progress;
 pub mod prompts;
 pub mod scenario;
 pub mod session;
+pub mod srs;
 
+pub use clock::{Clock, Day, Moment};
+pub use curriculum::{CourseProgress, Curriculum};
+pub use difficulty::{Difficulty, Regulator};
 pub use feedback::Amount;
+pub use learner::LearnerModel;
 pub use scenario::Scenario;
-pub use session::{Input, Session, Summary, TurnOutcome};
+pub use session::{Input, Session, SessionState, Stats, Summary, TurnOutcome};
 
 /// Text without furigana markup (`{漢字|かんじ}` → `漢字`, as in KanteRubyText).
 pub fn plain(markup: &str) -> String {

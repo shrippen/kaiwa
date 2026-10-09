@@ -1,0 +1,65 @@
+{
+  "id": "n5-05-eki",
+  "unit": "N5-05",
+  "title": {
+    "de": "Am Bahnhof",
+    "en": "At the station"
+  },
+  "character": {
+    "de": "Angestellte am Fahrkartenschalter in Osaka. Höflich und sachlich, nennt Gleise (番線) und Uhrzeiten.",
+    "en": "Clerk at the ticket counter in Osaka. Polite and matter-of-fact, gives platforms (番線) and times."
+  },
+  "register": "polite",
+  "voice": "jf_tebukuro",
+  "opening": "どちらまでですか。",
+  "goals": [
+    {
+      "id": "destination",
+      "text": {
+        "de": "Sag, wohin du fahren möchtest.",
+        "en": "Say where you want to go."
+      },
+      "help": {
+        "keyword": "京都（きょうと）まで",
+        "start": "京都…",
+        "example": "京都までおねがいします。"
+      }
+    },
+    {
+      "id": "tickets",
+      "text": {
+        "de": "Sag, wie viele Fahrkarten du brauchst.",
+        "en": "Say how many tickets you need."
+      },
+      "help": {
+        "keyword": "二枚（にまい）",
+        "start": "おとな…",
+        "example": "おとな二枚です。"
+      }
+    },
+    {
+      "id": "time",
+      "text": {
+        "de": "Frag, wann der nächste Zug fährt.",
+        "en": "Ask when the next train leaves."
+      },
+      "help": {
+        "keyword": "つぎの電車（でんしゃ）",
+        "start": "つぎの電車は…",
+        "example": "つぎの電車は何時ですか。"
+      }
+    },
+    {
+      "id": "platform",
+      "text": {
+        "de": "Frag, von welchem Gleis er fährt.",
+        "en": "Ask which platform it leaves from."
+      },
+      "help": {
+        "keyword": "何番線（なんばんせん）",
+        "start": "何番線…",
+        "example": "何番線ですか。"
+      }
+    }
+  ]
+}

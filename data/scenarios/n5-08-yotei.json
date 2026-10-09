@@ -1,0 +1,65 @@
+{
+  "id": "n5-08-yotei",
+  "unit": "N5-08",
+  "title": {
+    "de": "Pläne fürs Wochenende",
+    "en": "Weekend plans"
+  },
+  "character": {
+    "de": "Herr Kimura, ein Kollege im Büro in Tokio. Höflich in です/ます-Form, lädt gern zu Ausflügen ein.",
+    "en": "Mr Kimura, a colleague at the office in Tokyo. Polite in the です/ます form, likes to invite people on outings."
+  },
+  "register": "polite",
+  "voice": "jm_kumo",
+  "opening": "{週末|しゅうまつ}は{何|なに}をしますか。",
+  "goals": [
+    {
+      "id": "plan",
+      "text": {
+        "de": "Sag, was du am Wochenende vorhast.",
+        "en": "Say what you plan for the weekend."
+      },
+      "help": {
+        "keyword": "買い物（かいもの）",
+        "start": "土曜日は…",
+        "example": "土曜日は買い物をします。"
+      }
+    },
+    {
+      "id": "accept",
+      "text": {
+        "de": "Nimm seine Einladung ins Museum an.",
+        "en": "Accept his invitation to the museum."
+      },
+      "help": {
+        "keyword": "いいですね",
+        "start": "いいですね。…",
+        "example": "いいですね。行きたいです。"
+      }
+    },
+    {
+      "id": "time",
+      "text": {
+        "de": "Frag, um wie viel Uhr ihr euch trefft.",
+        "en": "Ask what time you meet."
+      },
+      "help": {
+        "keyword": "何時（なんじ）",
+        "start": "何時に…",
+        "example": "何時に会いますか。"
+      }
+    },
+    {
+      "id": "place",
+      "text": {
+        "de": "Schlag einen Treffpunkt vor.",
+        "en": "Suggest a meeting place."
+      },
+      "help": {
+        "keyword": "駅（えき）の前",
+        "start": "駅の前で…",
+        "example": "駅の前で会いませんか。"
+      }
+    }
+  ]
+}

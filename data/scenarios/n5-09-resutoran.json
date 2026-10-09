@@ -1,0 +1,65 @@
+{
+  "id": "n5-09-resutoran",
+  "unit": "N5-09",
+  "title": {
+    "de": "Im Restaurant",
+    "en": "At a restaurant"
+  },
+  "character": {
+    "de": "Kellnerin in einem Familienrestaurant in Yokohama. Höflich, fragt nach der Zahl der Gäste und nach Getränken.",
+    "en": "Waitress in a family restaurant in Yokohama. Polite, asks for the number of guests and for drinks."
+  },
+  "register": "polite",
+  "voice": "jf_tebukuro",
+  "opening": "いらっしゃいませ。{何名様|なんめいさま}ですか。",
+  "goals": [
+    {
+      "id": "people",
+      "text": {
+        "de": "Sag, wie viele ihr seid.",
+        "en": "Say how many you are."
+      },
+      "help": {
+        "keyword": "二人（ふたり）",
+        "start": "…です",
+        "example": "二人です。"
+      }
+    },
+    {
+      "id": "order",
+      "text": {
+        "de": "Bestell zwei Gerichte.",
+        "en": "Order two dishes."
+      },
+      "help": {
+        "keyword": "ラーメン／カレー",
+        "start": "ラーメンを…",
+        "example": "ラーメンを二つください。"
+      }
+    },
+    {
+      "id": "drinks",
+      "text": {
+        "de": "Bestell Getränke.",
+        "en": "Order drinks."
+      },
+      "help": {
+        "keyword": "お水（おみず）",
+        "start": "飲み物は…",
+        "example": "お水を二つおねがいします。"
+      }
+    },
+    {
+      "id": "toilet",
+      "text": {
+        "de": "Frag nach der Toilette.",
+        "en": "Ask for the toilet."
+      },
+      "help": {
+        "keyword": "トイレ",
+        "start": "すみません、トイレは…",
+        "example": "すみません、トイレはどこですか。"
+      }
+    }
+  ]
+}

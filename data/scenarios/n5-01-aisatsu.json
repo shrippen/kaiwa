@@ -1,0 +1,65 @@
+{
+  "id": "n5-01-aisatsu",
+  "unit": "N5-01",
+  "title": {
+    "de": "Grüßen und danken",
+    "en": "Greetings and thanks"
+  },
+  "character": {
+    "de": "Herr Yamada, ein älterer Nachbar im Wohnhaus in Tokio. Freundlich, grüßt morgens im Treppenhaus, spricht höflich in です/ます-Form und langsam.",
+    "en": "Mr Yamada, an elderly neighbour in an apartment house in Tokyo. Friendly, greets in the stairwell in the morning, speaks politely in the です/ます form and slowly."
+  },
+  "register": "polite",
+  "voice": "jm_kumo",
+  "opening": "おはようございます。いい{天気|てんき}ですね。",
+  "goals": [
+    {
+      "id": "greet",
+      "text": {
+        "de": "Grüß zurück.",
+        "en": "Greet back."
+      },
+      "help": {
+        "keyword": "おはようございます",
+        "start": "おはよう…",
+        "example": "おはようございます。"
+      }
+    },
+    {
+      "id": "weather",
+      "text": {
+        "de": "Sag etwas zum Wetter.",
+        "en": "Say something about the weather."
+      },
+      "help": {
+        "keyword": "そうですね",
+        "start": "そうですね、…",
+        "example": "そうですね。いい天気ですね。"
+      }
+    },
+    {
+      "id": "thanks",
+      "text": {
+        "de": "Bedank dich für das Paket, das er für dich angenommen hat.",
+        "en": "Thank him for taking in your parcel."
+      },
+      "help": {
+        "keyword": "ありがとうございます",
+        "start": "にもつ、…",
+        "example": "にもつ、ありがとうございました。"
+      }
+    },
+    {
+      "id": "bye",
+      "text": {
+        "de": "Verabschiede dich.",
+        "en": "Say goodbye."
+      },
+      "help": {
+        "keyword": "いってきます",
+        "start": "じゃあ、…",
+        "example": "じゃあ、いってきます。"
+      }
+    }
+  ]
+}

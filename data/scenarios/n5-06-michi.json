@@ -1,0 +1,65 @@
+{
+  "id": "n5-06-michi",
+  "unit": "N5-06",
+  "title": {
+    "de": "Nach dem Weg fragen",
+    "en": "Asking the way"
+  },
+  "character": {
+    "de": "Eine Passantin in Shinjuku, um die vierzig, hilfsbereit, erklärt mit まっすぐ, 右, 左 und 角.",
+    "en": "A passer-by in Shinjuku, in her forties, helpful, explains with まっすぐ, 右, 左 and 角."
+  },
+  "register": "polite",
+  "voice": "jf_nezumi",
+  "opening": "はい、どうしましたか。",
+  "goals": [
+    {
+      "id": "ask",
+      "text": {
+        "de": "Frag nach dem Weg zur Post.",
+        "en": "Ask the way to the post office."
+      },
+      "help": {
+        "keyword": "郵便局（ゆうびんきょく）",
+        "start": "すみません、郵便局は…",
+        "example": "すみません、郵便局はどこですか。"
+      }
+    },
+    {
+      "id": "check",
+      "text": {
+        "de": "Wiederhole die Richtung, um sicherzugehen.",
+        "en": "Repeat the direction to make sure."
+      },
+      "help": {
+        "keyword": "右（みぎ）／左（ひだり）",
+        "start": "まっすぐ行って、…",
+        "example": "まっすぐ行って、右ですね。"
+      }
+    },
+    {
+      "id": "far",
+      "text": {
+        "de": "Frag, ob es weit ist.",
+        "en": "Ask whether it is far."
+      },
+      "help": {
+        "keyword": "遠い（とおい）",
+        "start": "ここから…",
+        "example": "ここから遠いですか。"
+      }
+    },
+    {
+      "id": "thanks",
+      "text": {
+        "de": "Bedank dich.",
+        "en": "Say thank you."
+      },
+      "help": {
+        "keyword": "ありがとうございます",
+        "start": "どうも…",
+        "example": "どうもありがとうございました。"
+      }
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "id": "n5-04-kafe",
+  "unit": "N5-04",
+  "title": {
+    "de": "Im Café bestellen",
+    "en": "Ordering at a café"
+  },
+  "character": {
+    "de": "Kellner in einem kleinen Café in Kyoto. Höflich, kurze Fragen, verwendet ご注文は und かしこまりました.",
+    "en": "Waiter in a small café in Kyoto. Polite, short questions, uses ご注文は and かしこまりました."
+  },
+  "register": "polite",
+  "voice": "jf_alpha",
+  "opening": "いらっしゃいませ。ご{注文|ちゅうもん}は？",
+  "goals": [
+    {
+      "id": "drink",
+      "text": {
+        "de": "Bestell ein Getränk.",
+        "en": "Order a drink."
+      },
+      "help": {
+        "keyword": "コーヒー／こうちゃ",
+        "start": "コーヒーを…",
+        "example": "コーヒーをください。"
+      }
+    },
+    {
+      "id": "size",
+      "text": {
+        "de": "Sag, welche Größe du möchtest.",
+        "en": "Say which size you want."
+      },
+      "help": {
+        "keyword": "大きい（おおきい）／小さい（ちいさい）",
+        "start": "大きいの…",
+        "example": "大きいのをおねがいします。"
+      }
+    },
+    {
+      "id": "food",
+      "text": {
+        "de": "Bestell etwas zu essen dazu.",
+        "en": "Order something to eat with it."
+      },
+      "help": {
+        "keyword": "ケーキ",
+        "start": "それと、…",
+        "example": "それと、チーズケーキをひとつください。"
+      }
+    },
+    {
+      "id": "here",
+      "text": {
+        "de": "Sag, dass du hier isst.",
+        "en": "Say that you will eat here."
+      },
+      "help": {
+        "keyword": "ここで",
+        "start": "ここで…",
+        "example": "ここで食べます。"
+      }
+    }
+  ]
+}

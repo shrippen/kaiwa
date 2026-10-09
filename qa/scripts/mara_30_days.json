@@ -1,0 +1,10 @@
+{
+  "journey": "mara_30_days",
+  "days": 30,
+  "seed": 30,
+  "start": "2026-10-05",
+  "offset_hours": 2,
+  "daily_goal_minutes": 5,
+  "typed_share": 0.1,
+  "note": "Mara's session plan and break (after day 17, nine days) come from her persona. 10 % of the turns are typed."
+}

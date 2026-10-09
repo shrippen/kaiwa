@@ -1,0 +1,65 @@
+{
+  "id": "n5-10-kaimono",
+  "unit": "N5-10",
+  "title": {
+    "de": "Kleidung kaufen",
+    "en": "Buying clothes"
+  },
+  "character": {
+    "de": "Verkäufer in einem Kleidergeschäft in Harajuku. Höflich, zeigt Farben und Größen, sagt こちらはいかがですか.",
+    "en": "Shop assistant in a clothes shop in Harajuku. Polite, shows colours and sizes, says こちらはいかがですか."
+  },
+  "register": "polite",
+  "voice": "jm_kumo",
+  "opening": "いらっしゃいませ。{何|なに}かお{探|さが}しですか。",
+  "goals": [
+    {
+      "id": "look",
+      "text": {
+        "de": "Sag, dass du ein T-Shirt suchst.",
+        "en": "Say that you are looking for a T-shirt."
+      },
+      "help": {
+        "keyword": "Tシャツ",
+        "start": "Tシャツを…",
+        "example": "Tシャツをさがしています。"
+      }
+    },
+    {
+      "id": "colour",
+      "text": {
+        "de": "Frag nach einer anderen Farbe.",
+        "en": "Ask for another colour."
+      },
+      "help": {
+        "keyword": "青い（あおい）",
+        "start": "青いのは…",
+        "example": "青いのはありますか。"
+      }
+    },
+    {
+      "id": "size",
+      "text": {
+        "de": "Sag, dass es zu klein ist.",
+        "en": "Say that it is too small."
+      },
+      "help": {
+        "keyword": "小さい（ちいさい）",
+        "start": "ちょっと…",
+        "example": "ちょっと小さいです。"
+      }
+    },
+    {
+      "id": "buy",
+      "text": {
+        "de": "Sag, dass du es nimmst.",
+        "en": "Say that you will take it."
+      },
+      "help": {
+        "keyword": "これにします",
+        "start": "じゃあ、…",
+        "example": "じゃあ、これにします。"
+      }
+    }
+  ]
+}

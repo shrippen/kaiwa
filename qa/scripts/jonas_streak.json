@@ -1,0 +1,18 @@
+{
+  "journey": "jonas_streak",
+  "days": 30,
+  "seed": 32,
+  "start": "2026-10-05",
+  "offset_hours": 1,
+  "daily_goal_minutes": 5,
+  "every_day": true,
+  "midnight_days": [
+    5,
+    9
+  ],
+  "tz_change": {
+    "day": 20,
+    "offset_hours": 0
+  },
+  "note": "Every day outside his break (persona: after day 12, three days). Days 5 and 9: a session from 23:58 to 00:03. Day 20: Lisbon, UTC+0 instead of UTC+1."
+}

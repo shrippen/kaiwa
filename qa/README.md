@@ -47,6 +47,14 @@ persona.json ──▶ Lernenden-Agent ──▶ Äußerung (Text) ──┬─[
 4. **Prüfregeln:** `checks[].assert` ist die lesbare Regel, ihre Maschinenform steht in `crates/kaiwa-sim/checks/<id>.rs`. `never` gilt während des ganzen Laufs.
 5. **Determinismus:** fester Seed pro Lauf. In der CI werden die Antworten der Anbieter aus Fixtures abgespielt, nächtlich laufen sie live gegen lokale Modelle und einen Cloud-Anbieter.
 
+## Lange Reisen über simulierte Tage
+
+Reisen mit `sim_days` haben ein Tages-Skript (`qa/scripts/<journey>.json` mit `"days"`): Startdatum, Seed, Tagesziel und Sonderfälle (Sitzung über Mitternacht, Zeitzonenwechsel). `kaiwa-sim` spielt die Persona dann auf der Ebene der Züge: Sie hat pro Fähigkeit ein wahres Niveau (`start_level`), ein Zug gelingt mit 80 % Wahrscheinlichkeit, wenn das Material auf diesem Niveau liegt, öfter darunter, seltener darüber. Eingebaute Fehler kommen mit ihrer `rate` und lassen nach `fades_after` Korrekturen nach. Alles andere ist der echte Lernkern: Lernermodell, Schwierigkeitsregler, Curriculum, FSRS, Tagesziel, Serie und XP.
+
+```sh
+cargo run -p kaiwa-sim -- days --persona mara --journey mara_30_days   # Sitzung für Sitzung ansehen
+```
+
 ## Befehle (Zielbild)
 
 ```sh
