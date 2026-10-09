@@ -23,6 +23,10 @@ pub mod qobject {
         #[qproperty(bool, finished)]
         #[qproperty(QString, summary)]
         #[qproperty(QString, error)]
+        /// KanteTalkButton.State: 0 ready, 1 listening, 2 thinking, 3 speaking, 4 error.
+        #[qproperty(i32, talk_state, cxx_name = "talkState")]
+        #[qproperty(f64, level)]
+        #[qproperty(QString, speech_error, cxx_name = "speechError")]
         type Conversation = super::ConversationRust;
 
         /// Start the scenario (the character's opening line).
@@ -36,6 +40,26 @@ pub mod qobject {
         /// The next step of help for the current goal.
         #[qinvokable]
         fn help(self: Pin<&mut Conversation>);
+
+        /// Start recording (talk button pressed).
+        #[qinvokable]
+        #[cxx_name = "startTalk"]
+        fn start_talk(self: Pin<&mut Conversation>);
+
+        /// Stop recording, recognise and send the turn (talk button released).
+        #[qinvokable]
+        #[cxx_name = "stopTalk"]
+        fn stop_talk(self: Pin<&mut Conversation>);
+
+        /// Refresh `level` while listening (QML polls it).
+        #[qinvokable]
+        #[cxx_name = "pollLevel"]
+        fn poll_level(self: Pin<&mut Conversation>);
+
+        /// Recognise a WAV file as a spoken turn (screenshot mode and tests).
+        #[qinvokable]
+        #[cxx_name = "sayWav"]
+        fn say_wav(self: Pin<&mut Conversation>, path: &QString);
     }
 
     impl cxx_qt::Threading for Conversation {}
@@ -50,6 +74,10 @@ use kaiwa_ai::ChatProvider;
 use kaiwa_ai::mock::MockProvider;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::{Amount, Input, Scenario, Session, Summary, TurnOutcome};
+use kaiwa_speech::SpeechError;
+use kaiwa_speech::capture::{Capture, Recording};
+use kaiwa_speech::models::{REAZONSPEECH_URL, reazonspeech_dir};
+use kaiwa_speech::stt::Recognizer;
 use serde_json::{Value, json};
 
 const SCENARIO: &str = include_str!("../../data/scenarios/n5-02-jikoshoukai.json");
@@ -68,9 +96,19 @@ pub struct ConversationRust {
     finished: bool,
     summary: QString,
     error: QString,
+    talk_state: i32,
+    level: f64,
+    speech_error: QString,
     session: Option<Arc<Mutex<Session>>>,
     log: Vec<Value>,
+    recognizer: Option<Arc<Recognizer>>,
+    capture: Option<Capture>,
 }
+
+const READY: i32 = 0;
+const LISTENING: i32 = 1;
+const THINKING: i32 = 2;
+const ERROR: i32 = 4;
 
 /// The tutor from the environment (`kaiwa_ai::provider_from_env`, for the owner's local
 /// test); recorded answers otherwise (demo mode).
@@ -155,7 +193,122 @@ impl qobject::Conversation {
         self.as_mut().set_finished(false);
         self.as_mut().set_error(QString::default());
         self.as_mut().publish_turns();
-        self.publish_goals();
+        self.as_mut().publish_goals();
+        self.load_recognizer();
+    }
+
+    /// Loads ReazonSpeech on a worker thread; without the model the talk button shows why.
+    fn load_recognizer(mut self: Pin<&mut Self>) {
+        self.as_mut().set_talk_state(THINKING);
+        let thread = self.qt_thread();
+        std::thread::spawn(move || {
+            let dir = reazonspeech_dir();
+            let loaded = Recognizer::from_dir(&dir, 2);
+            let _ = thread.queue(move |mut q| match loaded {
+                Ok(rec) => {
+                    q.as_mut().rust_mut().recognizer = Some(Arc::new(rec));
+                    q.as_mut().set_speech_error(QString::default());
+                    q.as_mut().set_talk_state(READY);
+                }
+                Err(e) => {
+                    let text = match e {
+                        SpeechError::ModelMissing(_) => format!(
+                            "Das Modell für die Spracherkennung fehlt. ReazonSpeech (Apache-2.0, etwa 150 MB) von {REAZONSPEECH_URL} laden und nach {} entpacken. Bis dahin geht Tippen.",
+                            dir.display()
+                        ),
+                        e => german(&e),
+                    };
+                    q.as_mut().set_speech_error(QString::from(&text));
+                    q.as_mut().set_talk_state(ERROR);
+                }
+            });
+        });
+    }
+
+    fn start_talk(mut self: Pin<&mut Self>) {
+        if *self.talk_state() != READY || *self.busy() || *self.finished() {
+            return;
+        }
+        match Capture::start() {
+            Ok(c) => {
+                self.as_mut().rust_mut().capture = Some(c);
+                self.as_mut().set_level(0.0);
+                self.as_mut().set_talk_state(LISTENING);
+            }
+            Err(e) => {
+                self.as_mut().set_speech_error(QString::from(&german(&e)));
+                self.as_mut().set_talk_state(ERROR);
+            }
+        }
+    }
+
+    fn poll_level(mut self: Pin<&mut Self>) {
+        let level = self
+            .capture
+            .as_ref()
+            .map(|c| f64::from(c.level()))
+            .unwrap_or(0.0);
+        self.as_mut().set_level(level);
+    }
+
+    fn stop_talk(mut self: Pin<&mut Self>) {
+        let Some(capture) = self.as_mut().rust_mut().capture.take() else {
+            return;
+        };
+        self.as_mut().set_level(0.0);
+        match capture.stop() {
+            Ok(rec) => self.recognize(rec),
+            Err(e) => {
+                self.as_mut().set_speech_error(QString::from(&german(&e)));
+                self.as_mut().set_talk_state(ERROR);
+            }
+        }
+    }
+
+    fn say_wav(self: Pin<&mut Self>, path: &QString) {
+        let path = path.to_string();
+        let rec = hound::WavReader::open(&path).ok().map(|mut r| {
+            let spec = r.spec();
+            let samples: Vec<f32> = match spec.sample_format {
+                hound::SampleFormat::Float => r.samples::<f32>().filter_map(Result::ok).collect(),
+                hound::SampleFormat::Int => r
+                    .samples::<i32>()
+                    .filter_map(Result::ok)
+                    .map(|s| s as f32 / (1u64 << (spec.bits_per_sample - 1)) as f32)
+                    .collect(),
+            };
+            let channels = usize::from(spec.channels);
+            Recording {
+                samples: kaiwa_speech::capture::to_mono(&samples, channels).collect(),
+                sample_rate: spec.sample_rate,
+            }
+        });
+        if let Some(rec) = rec {
+            self.recognize(rec);
+        }
+    }
+
+    /// Recognises a recording on a worker thread and sends it as a spoken turn.
+    fn recognize(mut self: Pin<&mut Self>, rec: Recording) {
+        let Some(recognizer) = self.recognizer.clone() else {
+            self.as_mut().set_talk_state(ERROR);
+            return;
+        };
+        self.as_mut().set_talk_state(THINKING);
+        let thread = self.qt_thread();
+        std::thread::spawn(move || {
+            let text = recognizer.transcribe(&rec.samples, rec.sample_rate);
+            let _ = thread.queue(move |mut q| {
+                q.as_mut().set_talk_state(READY);
+                if text.is_empty() {
+                    q.as_mut().set_error(QString::from(
+                        "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon.",
+                    ));
+                } else {
+                    q.as_mut().say(&QString::from(&text), false);
+                }
+            });
+        });
     }
 
     fn say(mut self: Pin<&mut Self>, text: &QString, typed: bool) {
@@ -220,5 +373,21 @@ impl qobject::Conversation {
             self.as_mut().set_help_text(QString::from(&step.text));
             self.as_mut().set_help_level(i32::from(step.level));
         }
+    }
+}
+
+/// What the learner reads when speaking does not work (the GUI is German for now).
+fn german(e: &SpeechError) -> String {
+    match e {
+        SpeechError::NoMicrophone => "Kein Mikrofon gefunden. Bis dahin geht Tippen.".into(),
+        SpeechError::Microphone(why) => {
+            format!("Das Mikrofon lässt sich nicht öffnen ({why}). Bis dahin geht Tippen.")
+        }
+        SpeechError::ModelMissing(dir) => {
+            format!("Das Modell für die Spracherkennung fehlt in {dir}.")
+        }
+        SpeechError::ModelLoad(dir) => format!(
+            "Das Modell für die Spracherkennung in {dir} lässt sich nicht laden. Neu entpacken; bis dahin geht Tippen."
+        ),
     }
 }

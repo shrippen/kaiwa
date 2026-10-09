@@ -41,7 +41,7 @@ jobs:
       - name: Runs in the Arch container
         run: grep -q '^ID=arch' /etc/os-release
       - name: Tools
-        run: pacman -Syu --noconfirm --needed git nodejs base-devel rust qt6-base qt6-declarative qt6-shadertools qt6-svg kirigami
+        run: pacman -Syu --noconfirm --needed git nodejs base-devel rust qt6-base qt6-declarative qt6-shadertools qt6-svg kirigami alsa-lib pkgconf
       - uses: actions/checkout@v4
       - name: Kante (public mirror)
         run: git clone --depth 1 https://github.com/shrippen/Kante.git ../Kante
@@ -59,6 +59,8 @@ jobs:
         run: |
           tools/sync-kante.sh ../Kante
           git diff --exit-code -- app/qml
+      - name: Speech crate (microphone, ReazonSpeech; the model test skips without a model)
+        run: cargo test --locked -p kaiwa-speech
       - name: Build the app
         run: cargo build --locked -p kaiwa-app
       - name: One scripted conversation offscreen
