@@ -120,7 +120,7 @@ Ein Szenario funktioniert durchgehend: **Selbstvorstellung (自己紹介)**.
 - Inhalte **N5 und N4** vollständig, mit Abnahme durch ein Muttersprachler-Review pro Einheit (/LF221/)
 - Barrierefreiheit: Tastatur, Screenreader (Accessible-Namen auf allen Kante-Bausteinen), Schriftgröße, Kontrast in Kante und Kante Light (/LL200/–/LL203/)
 - **Alle Personas** sind über 30 simulierte Tage grün und alle Abnahmekriterien erfüllt (Lastenheft Kap. 10).
-- Landing Page nach Kante-Vorlage, Release-Log mit Screenshots pro Sprache (Release-Regel), Eintrag in `overview/projects.json`
+- Landing Page nach Kante-Vorlage, Release-Log mit Screenshots pro Sprache (Release-Regel), Eintrag in `overview/projects.json`. Vorher erscheint Kaiwa nicht auf der Übersicht (G-09).
 
 ### Nach 1.0
 

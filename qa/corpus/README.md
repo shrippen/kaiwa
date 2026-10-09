@@ -13,6 +13,6 @@ Entscheidung F-04: Der Korpus ist gemischt, aus synthetischen Stimmen (mit den F
 2. **Sätze:** Jeden Satz zweimal sprechen, einmal `richtig`, einmal `fehlerform`. Bei Akzent- und Aussprachezeilen (gleicher Text) den Fehler aus `hinweis` absichtlich machen. Bei `—` nur die richtige Form.
 3. **Minimalpaare:** a und b je dreimal, in normalem Tempo.
 4. Format: WAV, mono, 48 kHz, 16 bit. Dateiname `<id>_<richtig|fehler>_<mic>.wav`, z. B. `s04_fehler_laptop.wav`, bei Paaren `m14_a_1_headset.wav`.
-5. Ablage: siehe Fragenpaket 2 (Vorschlag: Git LFS im privaten Kaiwa-Repo unter `qa/corpus/audio/`).
+5. Ablage: `qa/corpus/audio/` in Git LFS (G-03).
 
 Die eigenen Aufnahmen sind Stimmdaten. Sie bleiben im privaten Repository und werden nie an einen Cloud-Dienst geschickt (Cloud-STT wird ohnehin nicht gemessen, F-03).

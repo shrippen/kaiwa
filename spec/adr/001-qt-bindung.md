@@ -30,4 +30,9 @@ Siehe [`spikes/s02-qt/`](../../spikes/s02-qt/):
 - **Festlegungen:**
   - Properties tragen `cxx_name` in camelCase.
   - Kante wird unverändert nach `app/qml/Kante` kopiert, mit Sync-Skript und CI-Gleichstandsprüfung.
-  - Die App-CI braucht Qt ≥ 6.6 und KF6. Ubuntu 24.04 hat nur Qt 6.4. Das Image ist eine offene Frage im Fragenpaket 2.
+  - Die App-CI braucht Qt ≥ 6.6 und KF6. Ubuntu 24.04 hat nur Qt 6.4.
+
+## Entschieden (Fragenpaket 2)
+
+- **G-01:** Die Qt-Jobs der CI laufen in einem Arch-Linux-Container (`archlinux:latest`). Qt 6 und KF6 kommen dort aus den Paketen. Der Job `qt` in `.gitea/workflows/ci.yml` baut und startet den Spike 0.2 offscreen.
+- **G-02:** Ob der Runner Container kann, zeigt derselbe Job: Sein erster Schritt scheitert, wenn er nicht in Arch läuft.
