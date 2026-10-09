@@ -1,0 +1,131 @@
+{
+  "id": "selin",
+  "name": "Selin Aydın",
+  "demo_world_id": "selin",
+  "summary": "Cutterin bei Studio Weber, schaut seit Jahren Anime im Original. Versteht viel, spricht wenig, liest kaum und redet zu salopp. Ein ungleichmäßiges Profil: Prüft getrennte Fähigkeiten in der Einstufung, Register-Korrekturen und Windows.",
+  "profile": {
+    "age": 31,
+    "ui_language": "de",
+    "native_languages": ["de", "tr"],
+    "other_languages": ["en"],
+    "occupation": "Cutterin",
+    "tech_affinity": 4,
+    "devices": [
+      { "surface": "app_windows", "hardware": "Desktop-PC zu Hause, Windows 11, USB-Headset", "providers": "mixed" },
+      { "surface": "app_plasma", "hardware": "Schnittplatz im Studio, Plasma 6", "providers": "mixed" }
+    ]
+  },
+  "motivation": {
+    "why": "Will im Sommer drei Wochen durch Japan reisen und nicht nur 'Anime-Japanisch' sprechen. Hat gemerkt, dass sie in Geschäften unhöflich klingen würde.",
+    "goal": "Höflich einkaufen, nach dem Weg fragen, im Ryokan einchecken; Hiragana flüssig lesen",
+    "goal_measure": "Register desu_masu sicher in Szenarien mit Fremden (Fehlerrate Register < 0,15), reading_kana ≥ n5",
+    "deadline_days": 240
+  },
+  "start_level": {
+    "listening": "n4",
+    "speaking": "n5_low",
+    "reading_kana": "n5_low",
+    "reading_kanji": "none",
+    "register": "casual_only",
+    "vocab_size": 900,
+    "known_grammar": ["～たい", "～て", "～じゃない", "～よね", "～てる"],
+    "notes": "Versteht schnelles Sprechen und Umgangssprache, kennt viele Wörter nur passiv. Katakana kann sie gut (Abspann), Hiragana langsam, Kanji gar nicht."
+  },
+  "learning": {
+    "sessions": [
+      { "surface": "app_windows", "when": "abends 21:30", "minutes": [15, 30], "days_per_week": 4, "interrupt_rate": 0.05 },
+      { "surface": "app_plasma", "when": "Mittagspause", "minutes": [10, 15], "days_per_week": 2, "interrupt_rate": 0.15 }
+    ],
+    "vocab_per_week": 60,
+    "forgetting": "low",
+    "hint_usage": 0.1,
+    "feedback_preference": "normal",
+    "gamification": "indifferent",
+    "quit_triggers": [
+      "das Hörtempo bleibt nach der Einstufung auf Anfängerniveau (0,7×)",
+      "eine Einheit erklärt ihr Wörter, die sie längst kennt, länger als eine Sitzung",
+      "die Lesehilfe wird abgeschaltet, nur weil das Hören gut ist"
+    ]
+  },
+  "speech": {
+    "voice_hint": "weiblich, eher hoch, schnell",
+    "l1_accent": "de-DE mit leichtem türkischem Einfluss, Anime-Intonation",
+    "rate_mora_per_s": [6.5, 8.0],
+    "pause_before_answer_ms": [500, 1500],
+    "pause_within_turn_ms": [200, 700],
+    "fillers": ["なんか", "えっと", "あー"],
+    "code_switch_rate": 0.05,
+    "typed_turn_rate": 0.1,
+    "environment": { "noise": "ruhig, Lüfter des PCs", "snr_db": [25, 35], "mic": "USB-Headset" },
+    "phonology_errors": [
+      { "id": "selin_exaggerated", "pattern": "übertriebene Anime-Intonation am Satzende", "example": "そうなんだ～↑ mit langem, steigendem Ende", "rate": 0.4, "fades_after": 8 },
+      { "id": "selin_long_vowel", "pattern": "Langvokal bei Höflichkeitsformen verkürzt", "example": "どぞ statt どうぞ", "rate": 0.3, "fades_after": 5 }
+    ]
+  },
+  "language_errors": [
+    { "id": "selin_casual_shop", "type": "register", "wrong": "これ、いくら？", "right": "これはいくらですか。", "note": "gegenüber Personal und Fremden", "rate": 0.7, "expected_severity": "unnatural", "fades_after": 5 },
+    { "id": "selin_omae", "type": "word_choice", "wrong": "おまえは日本人？", "right": "（お名前）さんは日本の方ですか。", "note": "おまえ ist gegenüber Fremden grob", "rate": 0.15, "expected_severity": "wrong", "fades_after": 2 },
+    { "id": "selin_umai", "type": "word_choice", "wrong": "うまい！（im Restaurant zur Bedienung）", "right": "おいしいです！", "rate": 0.4, "expected_severity": "unnatural", "fades_after": 4 },
+    { "id": "selin_shiranai", "type": "register", "wrong": "知らない。", "right": "わかりません。／知りません。", "rate": 0.5, "expected_severity": "unnatural", "fades_after": 4 },
+    { "id": "selin_yabai", "type": "register", "wrong": "やばい、すごい部屋！（beim Check-in）", "right": "すてきなお部屋ですね。", "rate": 0.3, "expected_severity": "style", "fades_after": 6 }
+  ],
+  "accessibility": { "font_scale": 1.0 },
+  "journeys": [
+    {
+      "id": "selin_placement",
+      "title": "Einstufung erkennt das ungleichmäßige Profil",
+      "milestone": "M2",
+      "modes": ["text", "audio"],
+      "surface": "app_windows",
+      "steps": [
+        "Erster Start unter Windows, Einstufung mit Gespräch wählen",
+        "Fragen der KI schnell und richtig verstehen, aber in Umgangssprache antworten",
+        "Bei Leseaufgaben (Kana ohne Lesehilfe) langsam und fehlerhaft"
+      ],
+      "checks": [
+        { "id": "selin_profile_split", "requirements": ["/LF200/", "/LF201/"], "assert": "Ergebnis: listening ≥ n4_low, speaking ≤ n5, reading_kanji = none, register = casual_only (±1 Stufe zur Wahrheit)." },
+        { "id": "selin_settings_split", "requirements": ["/LF211/"], "assert": "Danach TTS-Tempo ≥ 1,0×, Furigana-Dichte hoch und Kana-Lesehilfe an, alles gleichzeitig." },
+        { "id": "selin_profile_visible", "requirements": ["/LF202/"], "assert": "Die Profil-Ansicht beschreibt die Stärken und Schwächen in Worten; 'Zu leicht' beim Hören hebt das Tempo eine Stufe an." }
+      ]
+    },
+    {
+      "id": "selin_register",
+      "title": "Konbini und Ryokan: vom Anime-Ton zur höflichen Form",
+      "milestone": "M1",
+      "modes": ["text", "audio", "gui"],
+      "surface": "app_plasma",
+      "steps": [
+        "Szenario 'In der Konbini bezahlen' mit Figur Kassiererin (です/ます)",
+        "Szenario 'Im Ryokan einchecken' mit Figur Wirtin (einfaches 敬語)",
+        "Eingebaute Register-Fehler sprechen; einmal おまえ"
+      ],
+      "checks": [
+        { "id": "selin_register_flag", "requirements": ["/LF300/", "/LF302/", "/LF117/"], "assert": "Register-Fehler erscheinen als 'unnatürlich', おまえ als 'falsch'; die Erklärung nennt, warum es gegenüber der Figur unpassend ist." },
+        { "id": "selin_recast", "requirements": ["/LF305/"], "assert": "Die Figur antwortet mit der höflichen Form (z. B. 'はい、こちらは三百円です'), ohne das Gespräch zu stoppen." },
+        { "id": "selin_casual_ok", "requirements": ["/LF303/"], "assert": "Im Szenario 'Mit einer Freundin quatschen' werden dieselben Formen NICHT bemängelt." }
+      ]
+    },
+    {
+      "id": "selin_windows",
+      "title": "Windows: Installation, Audio, Schlüsselbund",
+      "milestone": "M6",
+      "modes": ["gui"],
+      "surface": "app_windows",
+      "steps": [
+        "Installer ausführen, App starten, Mikrofon wählen",
+        "Cloud-Schlüssel für das LLM eintragen, STT lokal lassen",
+        "Ein Gespräch führen, App schließen, neu öffnen"
+      ],
+      "checks": [
+        { "id": "selin_win_keys", "requirements": ["/LF713/"], "assert": "Der Schlüssel liegt im Windows Credential Manager, nicht in einer Konfigurationsdatei." },
+        { "id": "selin_win_style", "requirements": ["/LL501/", "/LL301/"], "assert": "Kante und Kante Light sehen wie unter Plasma aus (Screenshot-Vergleich der Gesprächsansicht, Toleranz für Schriftglättung)." },
+        { "id": "selin_win_mixed", "requirements": ["/LF711/"], "assert": "'Was verlässt das Gerät?' zeigt: STT lokal (nichts), LLM Cloud (Text), TTS gemäß Auswahl." }
+      ]
+    }
+  ],
+  "never": [
+    "Umgangssprache wird in einem lockeren Szenario unter Freunden als Fehler markiert",
+    "Das Hörtempo wird wegen schwacher Lesewerte gesenkt",
+    "Selin muss mehr als eine Sitzung N5-Grundwortschatz durchlaufen, den sie nachweislich versteht"
+  ]
+}

@@ -1,0 +1,297 @@
+{
+  "id": "hinnerk",
+  "name": "Hinnerk Aalders",
+  "demo_world_id": "graufeld.contact",
+  "summary": "Leuchtturmwärter a. D. aus Graufeld, 72. Wenig Technikerfahrung, hört hohe Töne schlechter, braucht große Schrift, spricht langsam mit langen Pausen. Prüft Barrierefreiheit, Geduld der Sprechenderkennung, verständliche Texte und die abgeschaltete Gamification.",
+  "profile": {
+    "age": 72,
+    "ui_language": "de",
+    "native_languages": [
+      "de",
+      "nds"
+    ],
+    "other_languages": [],
+    "occupation": "Rentner, ehemals Leuchtturmwärter",
+    "tech_affinity": 1,
+    "devices": [
+      {
+        "surface": "app_plasma",
+        "hardware": "älterer Desktop-PC (Kubuntu, vom Enkel eingerichtet), 24-Zoll-Bildschirm, günstiges USB-Headset",
+        "providers": "cloud"
+      }
+    ]
+  },
+  "motivation": {
+    "why": "Seine Enkelin studiert in Sendai. Er will sie im Frühjahr besuchen und ihrer Gastfamilie wenigstens danken, sich vorstellen und vom Meer erzählen können.",
+    "goal": "Begrüßen, sich vorstellen, danken, über Herkunft und Beruf sprechen, beim Essen höflich sein",
+    "goal_measure": "Szenarien Begrüßung, Vorstellung, Beim Essen (いただきます/ごちそうさま) ohne Hilfe Stufe 3",
+    "deadline_days": 150
+  },
+  "start_level": {
+    "listening": "a0",
+    "speaking": "a0",
+    "reading_kana": "none",
+    "reading_kanji": "none",
+    "register": "none",
+    "vocab_size": 3,
+    "known_grammar": [],
+    "notes": "Kennt 'Sushi', 'Sayonara', 'Tsunami'. Liest nur mit Lesebrille. Will keine Schrift lernen, nur sprechen."
+  },
+  "learning": {
+    "sessions": [
+      {
+        "surface": "app_plasma",
+        "when": "vormittags nach dem Frühstück",
+        "minutes": [
+          20,
+          35
+        ],
+        "days_per_week": 6,
+        "interrupt_rate": 0.05
+      }
+    ],
+    "vocab_per_week": 12,
+    "forgetting": "high",
+    "hint_usage": 0.5,
+    "feedback_preference": "little",
+    "gamification": "off",
+    "quit_triggers": [
+      "die Aufnahme bricht ab, während er noch überlegt",
+      "ein Fachwort in der Oberfläche (VAD, Token, Latenz, Modell) ohne Erklärung",
+      "eine Fehlermeldung ohne Hinweis, was er tun soll",
+      "die KI spricht zu schnell oder zu leise, und er findet nicht, wo man das ändert"
+    ]
+  },
+  "speech": {
+    "voice_hint": "männlich, tief, etwas rau, langsam",
+    "l1_accent": "de-DE norddeutsch, plattdeutsch geprägt",
+    "rate_mora_per_s": [
+      2.5,
+      3.8
+    ],
+    "pause_before_answer_ms": [
+      3000,
+      7000
+    ],
+    "pause_within_turn_ms": [
+      1500,
+      3200
+    ],
+    "fillers": [
+      "öh",
+      "na",
+      "jo"
+    ],
+    "code_switch_rate": 0.3,
+    "typed_turn_rate": 0.0,
+    "environment": {
+      "noise": "Wohnzimmer, Uhr tickt, Radio manchmal leise",
+      "snr_db": [
+        18,
+        28
+      ],
+      "mic": "günstiges USB-Headset, Mikrofon zu nah am Mund (Plopp-Laute)"
+    },
+    "phonology_errors": [
+      {
+        "id": "hinnerk_long_vowel",
+        "pattern": "Langvokale verkürzt und ou als deutsches 'au'",
+        "example": "ありがとございます; そう als 'sau'",
+        "rate": 0.7,
+        "fades_after": 12
+      },
+      {
+        "id": "hinnerk_mora_rhythm",
+        "pattern": "deutscher Silbenrhythmus statt Moren-Takt",
+        "example": "にほん in zwei Silben 'nihon' statt drei Moren に・ほ・ん",
+        "rate": 0.8,
+        "fades_after": 15
+      },
+      {
+        "id": "hinnerk_ts",
+        "pattern": "つ als 'zu'",
+        "example": "つなみ als 'zunami'",
+        "rate": 0.3,
+        "fades_after": 6
+      }
+    ]
+  },
+  "language_errors": [
+    {
+      "id": "hinnerk_word_order",
+      "type": "word_order",
+      "wrong": "わたし です ヒンネルク",
+      "right": "ヒンネルクです。",
+      "note": "deutsche Satzstellung",
+      "rate": 0.5,
+      "expected_severity": "wrong",
+      "fades_after": 6
+    },
+    {
+      "id": "hinnerk_itadakimasu",
+      "type": "word_choice",
+      "wrong": "ごちそうさまでした (vor dem Essen)",
+      "right": "いただきます (vor dem Essen) / ごちそうさまでした (danach)",
+      "rate": 0.4,
+      "expected_severity": "wrong",
+      "fades_after": 3
+    },
+    {
+      "id": "hinnerk_german_word",
+      "type": "omission",
+      "wrong": "わたしは… Leuchtturm… です",
+      "right": "わたしはとうだいもりでした。",
+      "note": "deutsches Wort eingesetzt; die KI soll das japanische Wort anbieten (/LF122/)",
+      "rate": 0.4,
+      "expected_severity": "blocks_understanding",
+      "fades_after": 4
+    }
+  ],
+  "accessibility": {
+    "font_scale": 1.6,
+    "hearing": "altersbedingte Hochtonschwerhörigkeit, Hörgeräte; Zischlaute schwer zu unterscheiden",
+    "vision": "Alterssichtigkeit, liest mit Brille; Kontraste müssen stark sein",
+    "motor": "leichtes Zittern, kleine Ziele schwer zu treffen",
+    "screen_reader": false,
+    "keyboard_only": false
+  },
+  "journeys": [
+    {
+      "id": "hinnerk_onboarding",
+      "title": "Erster Start ohne fremde Hilfe",
+      "milestone": "M1",
+      "modes": [
+        "gui"
+      ],
+      "surface": "app_plasma",
+      "steps": [
+        "App über das Startmenü öffnen; der Enkel hat nur den Cloud-Schlüssel hinterlegt",
+        "Schriftgröße 160 % (Systemeinstellung) ist aktiv",
+        "Mikrofon-Test im Einrichtungsassistenten, dabei 3 s zögern",
+        "Einstufung überspringen, Gamification ausschalten",
+        "Erstes Gespräch 'Begrüßung'"
+      ],
+      "checks": [
+        {
+          "id": "hinnerk_font",
+          "requirements": [
+            "/LL202/"
+          ],
+          "assert": "Bei 160 % ist kein Text abgeschnitten, Furigana und Kana sind mitskaliert, keine Bedienelemente überlappen (Screenshot-Prüfung)."
+        },
+        {
+          "id": "hinnerk_targets",
+          "requirements": [
+            "/LL202/",
+            "/LL203/"
+          ],
+          "assert": "Push-to-Talk-Taste ist ≥ 48 px hoch (--h-l), alle Zustände tragen Text und Form, Kontrast AA in System, Kante und Kante Light."
+        },
+        {
+          "id": "hinnerk_plain_words",
+          "requirements": [
+            "/LL112/"
+          ],
+          "assert": "Kein Text der Reise enthält Fachbegriffe aus der Sperrliste (VAD, Token, Latenz, Modell, API, Prompt) ohne Erklärung."
+        },
+        {
+          "id": "hinnerk_gamification_off",
+          "requirements": [
+            "/LF605/"
+          ],
+          "assert": "Nach dem Ausschalten erscheinen keine XP, Serie, Ring oder Belohnungs-Animationen mehr, auch nicht in der Bilanz."
+        },
+        {
+          "id": "hinnerk_no_hearts",
+          "requirements": [
+            "/LF606/"
+          ],
+          "assert": "Nach zehn Fehlern in Folge ist nichts gesperrt; es gibt keine Herzen oder Leben."
+        },
+        {
+          "id": "hinnerk_a11y_names",
+          "requirements": [
+            "/LL201/"
+          ],
+          "assert": "Jedes Bedienelement der Reise hat einen Accessible-Namen und eine Rolle im AT-SPI-Baum (sonst kann der gui-Modus es nicht finden: Lauf scheitert)."
+        }
+      ]
+    },
+    {
+      "id": "hinnerk_slow_talk",
+      "title": "Langsames Sprechen, lange Pausen, Wechsel ins Deutsche",
+      "milestone": "M1",
+      "modes": [
+        "audio"
+      ],
+      "surface": "app_plasma",
+      "steps": [
+        "Freisprechen (VAD) im Szenario 'Sich vorstellen'",
+        "Jeder Zug mit Pausen im Zug von 1,5–3,2 s und 3–7 s Bedenkzeit",
+        "Zweimal ein deutsches Wort einsetzen (Leuchtturm, Enkelin)"
+      ],
+      "checks": [
+        {
+          "id": "hinnerk_no_cutoff",
+          "requirements": [
+            "/LF101/",
+            "/LF102/"
+          ],
+          "assert": "Kein Zug wird vor seinem Ende abgeschlossen; nach zwei knappen Fällen schlägt die App vor, die Sprechpause länger einzustellen."
+        },
+        {
+          "id": "hinnerk_german_word_help",
+          "requirements": [
+            "/LF122/"
+          ],
+          "assert": "Für 'Leuchtturm' bietet die Figur とうだい an, langsam gesprochen, und bittet um Nachsprechen."
+        },
+        {
+          "id": "hinnerk_tts_slow",
+          "requirements": [
+            "/LF211/",
+            "/LL204/"
+          ],
+          "assert": "TTS startet für ihn bei ≤ 0,8×; 'Lauter' und 'Klar' sind von der Gesprächsansicht aus in einem Schritt erreichbar."
+        }
+      ]
+    },
+    {
+      "id": "hinnerk_30_days",
+      "title": "30 Tage ohne Gamification",
+      "milestone": "M5",
+      "modes": [
+        "text"
+      ],
+      "surface": "app_plasma",
+      "sim_days": 30,
+      "steps": [
+        "Sitzungsplan abspielen, Fehlerraten fallen langsam (forgetting high)"
+      ],
+      "checks": [
+        {
+          "id": "hinnerk_no_pressure",
+          "requirements": [
+            "/LF620/",
+            "/LL300/"
+          ],
+          "assert": "Keine Benachrichtigung über verpasste Tage, keine Formulierung mit Verlust oder Schuld."
+        },
+        {
+          "id": "hinnerk_pace",
+          "requirements": [
+            "/LF210/",
+            "/LF214/"
+          ],
+          "assert": "Die Erfolgsquote bleibt ≥ 65 %; neue Einheiten erst, wenn die Wiederholungen der alten überwiegend gelingen."
+        }
+      ]
+    }
+  ],
+  "never": [
+    "Ein Zug wird abgeschnitten, während Hinnerk noch spricht",
+    "Eine Fehlermeldung ohne Handlungsanweisung in einfachen Worten",
+    "XP, Serie oder Ranglisten erscheinen, obwohl Gamification aus ist",
+    "Ein Zeitlimit für eine Antwort"
+  ]
+}

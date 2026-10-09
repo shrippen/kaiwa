@@ -1,0 +1,442 @@
+{
+  "id": "mara",
+  "name": "Mara Weber",
+  "demo_world_id": "mara",
+  "summary": "Inhaberin und Produzentin von Studio Weber, absolute Anfängerin mit sehr wenig Zeit. Übt fast nur im Plasmoid zwischen Terminen und wird oft unterbrochen. Prüft Kurzsitzungen, Fortsetzen, sanften Einstieg und Feedback in kleiner Dosis.",
+  "profile": {
+    "age": 44,
+    "ui_language": "de",
+    "native_languages": [
+      "de"
+    ],
+    "other_languages": [
+      "en"
+    ],
+    "occupation": "Produzentin",
+    "tech_affinity": 3,
+    "devices": [
+      {
+        "surface": "plasmoid",
+        "hardware": "Framework Laptop 13 (Ryzen 7 7840U, 32 GB), Panel unten",
+        "providers": "cloud"
+      },
+      {
+        "surface": "app_plasma",
+        "hardware": "derselbe Laptop",
+        "providers": "cloud"
+      }
+    ]
+  },
+  "motivation": {
+    "why": "Northlight Pictures plant eine Koproduktion mit einem Studio in Tokio. Mara pitcht in sechs Monaten auf einem Koproduktionsmarkt und will sich vorstellen, Smalltalk führen und höflich danken können.",
+    "goal": "Selbstvorstellung, Visitenkartentausch, Smalltalk über Arbeit und Essen, Danken und Entschuldigen in です/ます-Form",
+    "goal_measure": "Einheiten N5-01 bis N5-08 abgeschlossen, Szenario 名刺交換 ohne Hilfe, Sprechen ≥ n5_low",
+    "deadline_days": 180
+  },
+  "start_level": {
+    "listening": "a0",
+    "speaking": "a0",
+    "reading_kana": "none",
+    "reading_kanji": "none",
+    "register": "none",
+    "vocab_size": 15,
+    "known_grammar": [],
+    "notes": "Kennt こんにちは, ありがとう, すみません, sushi-Wörter. Kann keine Kana lesen und will das vorerst auch nicht: Text in Rōmaji wäre ihr lieber, Kana mit Furigana-artiger Rōmaji-Hilfe akzeptiert sie."
+  },
+  "learning": {
+    "sessions": [
+      {
+        "surface": "plasmoid",
+        "when": "werktags 08:40 und 13:10",
+        "minutes": [
+          3,
+          6
+        ],
+        "days_per_week": 4.5,
+        "interrupt_rate": 0.25
+      },
+      {
+        "surface": "app_plasma",
+        "when": "Sonntagabend",
+        "minutes": [
+          15,
+          25
+        ],
+        "days_per_week": 0.6,
+        "interrupt_rate": 0.05
+      }
+    ],
+    "vocab_per_week": 25,
+    "forgetting": "high",
+    "hint_usage": 0.35,
+    "feedback_preference": "little",
+    "gamification": "likes",
+    "breaks": [
+      {
+        "after_day": 17,
+        "days": 9
+      }
+    ],
+    "quit_triggers": [
+      "mehr als zwei Verbesserungsvorschläge zu einem einzigen kurzen Satz",
+      "das Kurzgespräch dauert länger als 7 Minuten",
+      "eine Erklärung mit Fachbegriffen wie 'Partikel' ohne Beispiel",
+      "nach einer Unterbrechung beginnt das Szenario von vorn"
+    ]
+  },
+  "speech": {
+    "voice_hint": "weiblich, mittlere Stimmlage, norddeutscher Akzent",
+    "l1_accent": "de-DE (Hamburg)",
+    "rate_mora_per_s": [
+      4.0,
+      5.5
+    ],
+    "pause_before_answer_ms": [
+      1500,
+      4000
+    ],
+    "pause_within_turn_ms": [
+      400,
+      1400
+    ],
+    "fillers": [
+      "äh",
+      "えーと"
+    ],
+    "code_switch_rate": 0.2,
+    "typed_turn_rate": 0.05,
+    "environment": {
+      "noise": "Büro, Kolleginnen im Hintergrund, Tastatur",
+      "snr_db": [
+        15,
+        25
+      ],
+      "mic": "eingebautes Laptop-Mikrofon"
+    },
+    "phonology_errors": [
+      {
+        "id": "mara_long_vowel",
+        "pattern": "Langvokale verkürzt",
+        "example": "ありがとございます statt ありがとうございます; ときょ statt とうきょう",
+        "rate": 0.6,
+        "fades_after": 6
+      },
+      {
+        "id": "mara_geminate",
+        "pattern": "っ ausgelassen",
+        "example": "ちょと statt ちょっと",
+        "rate": 0.5,
+        "fades_after": 5
+      },
+      {
+        "id": "mara_r",
+        "pattern": "ら行 als Reibe-R",
+        "example": "[ʁ]amen statt らーめん",
+        "rate": 0.7,
+        "fades_after": 10
+      },
+      {
+        "id": "mara_devoicing",
+        "pattern": "keine Vokalentstimmung",
+        "example": "de-su mit vollem u statt です [des]",
+        "rate": 0.8,
+        "fades_after": 12
+      }
+    ]
+  },
+  "language_errors": [
+    {
+      "id": "mara_suki_o",
+      "type": "particle",
+      "wrong": "コーヒーを好きです",
+      "right": "コーヒーが好きです",
+      "note": "好き verlangt が",
+      "rate": 0.5,
+      "expected_severity": "wrong",
+      "fades_after": 4
+    },
+    {
+      "id": "mara_counter",
+      "type": "counter",
+      "wrong": "ビール二ください",
+      "right": "ビールを二つください",
+      "rate": 0.6,
+      "expected_severity": "wrong",
+      "fades_after": 4
+    },
+    {
+      "id": "mara_word_order",
+      "type": "word_order",
+      "wrong": "ください、ビール",
+      "right": "ビールをください",
+      "rate": 0.3,
+      "expected_severity": "unnatural",
+      "fades_after": 3
+    },
+    {
+      "id": "mara_tense",
+      "type": "tense",
+      "wrong": "きのう東京に行きます",
+      "right": "きのう東京に行きました",
+      "rate": 0.4,
+      "expected_severity": "wrong",
+      "fades_after": 5
+    },
+    {
+      "id": "mara_watashi",
+      "type": "omission",
+      "wrong": "わたしはマラです。わたしはプロデューサーです。",
+      "right": "マラです。プロデューサーをしています。",
+      "note": "kein Fehler im engeren Sinn, nur unnatürlich; darf höchstens als Stil erscheinen",
+      "rate": 0.7,
+      "expected_severity": "style",
+      "fades_after": null
+    }
+  ],
+  "accessibility": {
+    "font_scale": 1.0,
+    "keyboard_only": false,
+    "screen_reader": false
+  },
+  "journeys": [
+    {
+      "id": "mara_first_talk",
+      "title": "Erster Start: Einstufung überspringen, erstes Gespräch 自己紹介",
+      "milestone": "M1",
+      "modes": [
+        "text",
+        "audio",
+        "gui"
+      ],
+      "surface": "app_plasma",
+      "steps": [
+        "App erstmals öffnen, UI-Sprache Deutsch, Cloud-Anbieter mit eigenem Schlüssel einrichten",
+        "Einstufung mit 'Ich fange bei Null an' überspringen",
+        "Szenario 'Sich vorstellen' starten, Kana mit Lesehilfe wählen",
+        "Auf die erste Frage 4 s schweigen, dann Hilfe Stufe 1 und 2 nutzen",
+        "Fünf Züge mit den eingebauten Fehlern sprechen, einmal ins Deutsche wechseln ('Wie sagt man Produzentin?')",
+        "Bilanz lesen und schließen"
+      ],
+      "checks": [
+        {
+          "id": "mara_hint_offered",
+          "requirements": [
+            "/LF114/"
+          ],
+          "assert": "Nach ≥ 4 s Stille oder einem unverstandenen Zug wird Hilfe angeboten; Stufe 3 liefert einen vollständigen Satz mit Audio."
+        },
+        {
+          "id": "mara_little_feedback",
+          "requirements": [
+            "/LF304/",
+            "/LF306/"
+          ],
+          "assert": "Standard-Feedbackmenge ist 'wenig'; kein Vorschlag mit Schweregrad 'Stil' sichtbar; das Gespräch wird nur bei 'verhindert Verständnis' unterbrochen."
+        },
+        {
+          "id": "mara_codeswitch",
+          "requirements": [
+            "/LF122/"
+          ],
+          "assert": "Auf 'Wie sagt man Produzentin?' antwortet die Figur mit プロデューサー (Audio) und bittet ums Nachsprechen."
+        },
+        {
+          "id": "mara_explain_de",
+          "requirements": [
+            "/LL112/"
+          ],
+          "assert": "Alle Erklärungen sind Deutsch, enthalten ein Beispiel und keine Fachbegriffe ohne Erklärung."
+        },
+        {
+          "id": "mara_recall",
+          "requirements": [
+            "/LL111/"
+          ],
+          "assert": "mara_suki_o, mara_counter und mara_tense werden erkannt, sobald sie vorkommen."
+        },
+        {
+          "id": "mara_summary",
+          "requirements": [
+            "/LF310/"
+          ],
+          "assert": "Bilanz zeigt höchstens drei Verbesserungen und übernimmt sie in die Wiederholung."
+        },
+        {
+          "id": "mara_ptt",
+          "requirements": [
+            "/LF100/"
+          ],
+          "assert": "Push-to-Talk per Klick und Leertaste startet und beendet die Aufnahme; der Zustand (bereit, hört zu, denkt nach, spricht) ist als Text und Form sichtbar."
+        },
+        {
+          "id": "mara_listen_tools",
+          "requirements": [
+            "/LF110/",
+            "/LF111/"
+          ],
+          "assert": "Jede KI-Äußerung ist gesprochen und als Kana mit Lesehilfe sichtbar; Wiederholen, 0,7× und Übersetzen sind je ein Klick."
+        },
+        {
+          "id": "mara_word_lookup",
+          "requirements": [
+            "/LF112/"
+          ],
+          "assert": "Klick auf プロデューサー zeigt Lesung, Bedeutung und Wortart, spielt das Wort ab und übernimmt es auf Wunsch in die Wiederholung."
+        },
+        {
+          "id": "mara_diff_audio",
+          "requirements": [
+            "/LF301/"
+          ],
+          "assert": "Jeder Vorschlag zeigt eigene und bessere Form als Diff, eine Erklärung auf Deutsch und die bessere Form als Audio."
+        }
+      ]
+    },
+    {
+      "id": "mara_plasmoid_interrupt",
+      "title": "Kurzgespräch im Plasmoid, Anruf nach zwei Minuten, später in der App fortsetzen",
+      "milestone": "M4",
+      "modes": [
+        "text",
+        "gui"
+      ],
+      "surface": "plasmoid",
+      "steps": [
+        "Plasmoid im Panel öffnen (App ist geschlossen), 'Kurzgespräch' starten",
+        "Push-to-Talk per globalem Tastenkürzel, drei Züge",
+        "Unterbrechung: Plasmoid schließt sich (Klick daneben) mitten in der Antwort der KI",
+        "Vier Stunden später die App öffnen und 'Fortsetzen' wählen",
+        "Am Folgetag im Plasmoid 'Fünf Wiederholungen' wählen"
+      ],
+      "checks": [
+        {
+          "id": "mara_plasmoid_fast",
+          "requirements": [
+            "/LL011/",
+            "/LF506/"
+          ],
+          "assert": "Plasmoid öffnet ≤ 300 ms und ist ≤ 2 s bereit, ohne dass die App läuft."
+        },
+        {
+          "id": "mara_plasmoid_short",
+          "requirements": [
+            "/LF501/"
+          ],
+          "assert": "Das Kurzgespräch ist auf 3–5 min ausgelegt (≤ 6 Ziele) und endet von selbst mit einer Mini-Bilanz."
+        },
+        {
+          "id": "mara_resume",
+          "requirements": [
+            "/LF121/",
+            "/LF507/"
+          ],
+          "assert": "Die App bietet die unterbrochene Sitzung an; Fortsetzen beginnt beim letzten unbeantworteten Zug, nicht von vorn."
+        },
+        {
+          "id": "mara_ptt_shortcut",
+          "requirements": [
+            "/LF505/",
+            "/LF521/"
+          ],
+          "assert": "Das globale Tastenkürzel startet und beendet die Aufnahme, auch wenn ein anderes Fenster den Fokus hat."
+        },
+        {
+          "id": "mara_plasmoid_compact",
+          "requirements": [
+            "/LF500/",
+            "/LF504/"
+          ],
+          "assert": "Kompakt im Panel: Symbol mit Tagesziel-Ring und Seriezahl; Standardstil folgt dem Plasma-Theme, 'Stil: Kante' und 'Kante Light' sind wählbar und sehen aus wie in der Kante-Galerie."
+        },
+        {
+          "id": "mara_plasmoid_feedback",
+          "requirements": [
+            "/LF503/"
+          ],
+          "assert": "Feedback im Plasmoid: eine Zeile pro Vorschlag und 'In der App ansehen' öffnet denselben Vorschlag in der App."
+        },
+        {
+          "id": "mara_plasmoid_reviews",
+          "requirements": [
+            "/LF502/"
+          ],
+          "assert": "'Fünf Wiederholungen' bietet genau fünf fällige Elemente als Hören → Antworten oder Nachsprechen an."
+        }
+      ]
+    },
+    {
+      "id": "mara_30_days",
+      "title": "30 Tage mit Pause: Anstieg der Schwierigkeit und Wiedereinstieg",
+      "milestone": "M2",
+      "modes": [
+        "text"
+      ],
+      "surface": "plasmoid",
+      "sim_days": 30,
+      "steps": [
+        "Sitzungsplan aus 'learning.sessions' abspielen, Fehlerraten fallen nach 'fades_after'",
+        "Nach Tag 17 neun Tage Pause (breaks)",
+        "Wiedereinstieg an Tag 27"
+      ],
+      "checks": [
+        {
+          "id": "mara_success_band",
+          "requirements": [
+            "/LF210/"
+          ],
+          "assert": "Gleitende Erfolgsquote über 5 Sitzungen bleibt zwischen 65 % und 92 %."
+        },
+        {
+          "id": "mara_gradual",
+          "requirements": [
+            "/LF214/"
+          ],
+          "assert": "Pro Sitzung ändert sich höchstens eine Stellgröße um eine Stufe; über die ersten 17 Tage steigt die Schwierigkeit in Summe."
+        },
+        {
+          "id": "mara_srs_errors",
+          "requirements": [
+            "/LF230/"
+          ],
+          "assert": "が好き und Zählwörter tauchen in der Wiederholung auf, bis die Fehlerrate unter 0,1 liegt."
+        },
+        {
+          "id": "mara_comeback",
+          "requirements": [
+            "/LF231/",
+            "/LF602/"
+          ],
+          "assert": "Nach der Pause startet eine Auffrischung (≤ 10 fällige Elemente); die Serie ist nicht mit einer Schuldformulierung verbunden."
+        },
+        {
+          "id": "mara_hints_silent",
+          "requirements": [
+            "/LF212/"
+          ],
+          "assert": "Genutzte Hilfen senken die Bewertung im Lernermodell, erscheinen aber nirgends als Abzug, Strafe oder rote Markierung."
+        },
+        {
+          "id": "mara_daily_goal",
+          "requirements": [
+            "/LF601/"
+          ],
+          "assert": "Das Tagesziel (Standard 5 min Sprechzeit) ist änderbar; getippte Züge zählen nicht zur Sprechzeit."
+        },
+        {
+          "id": "mara_path",
+          "requirements": [
+            "/LF600/",
+            "/LF220/"
+          ],
+          "assert": "Der Lernpfad schaltet Einheiten gemäß Curriculum-Graph frei; erledigt, aktuell und gesperrt sind an Symbol und Text erkennbar, nicht nur an der Farbe."
+        }
+      ]
+    }
+  ],
+  "never": [
+    "Ein Kurzgespräch im Plasmoid dauert länger als 7 Minuten, ohne dass Mara verlängert",
+    "Eine Sitzung beginnt nach einer Unterbrechung von vorn",
+    "Mehr als eine Benachrichtigung pro Tag",
+    "Ein Fehler wird als Pop-up mitten im eigenen Satz angezeigt"
+  ]
+}
