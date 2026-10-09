@@ -1,0 +1,51 @@
+id	art	richtig	fehlerform	fehler_id	hinweis
+s01	grammatik	コーヒーが好きです。	コーヒーを好きです。	mara_suki_o	好き verlangt が
+s02	grammatik	ビールを二つください。	ビール二ください。	mara_counter	Zählwort fehlt
+s03	grammatik	きのう東京に行きました。	きのう東京に行きます。	mara_tense	Vergangenheit
+s04	aussprache	ありがとうございます。	ありがとございます。	mara_long_vowel	とう kurz gesprochen
+s05	aussprache	ちょっと待ってください。	ちょと待てください。	mara_geminate	beide っ weglassen
+s06	register	これはいくらですか。	これ、いくら？	selin_casual_shop	zur Kassiererin
+s07	register	おいしいです。	うまい！	selin_umai	zur Bedienung
+s08	register	わかりません。	知らない。	selin_shiranai	zu Fremden
+s09	grammatik	ドアが開きました。	ドアが開けました。	theo_transitive	transitiv/intransitiv
+s10	register	田中さんは音楽がお好きですか。	あなたは音楽が好きですか。	theo_anata	あなた zu Bekannten
+s11	wortwahl	いただきます。	ごちそうさまでした。	hinnerk_itadakimasu	vor dem Essen gesagt
+s12	register	明日、御社に伺います。	明日、御社に行きます。	emi_iku	Bewerbungsgespräch
+s13	register	その件は存じております。	その件は知ってます。	emi_shitteru	Bewerbungsgespräch
+s14	register	部長がおっしゃいました。	部長がおっしゃられました。	emi_double_keigo	doppeltes 敬語
+s15	wortwahl	お疲れ様です。	ご苦労様です。	emi_gokurou	zu Vorgesetzten
+s16	register	恐れ入りますが、もう一度おっしゃっていただけますか。	すみません、もう一回言ってください。	emi_mou_ikkai	Bewerbungsgespräch
+s17	grammatik	きのう駅に行きました。	きのう駅行きました。	jonas_particle_drop	に fehlt
+s18	grammatik	図書館で勉強します。	図書館に勉強します。	lena_ni_de	Ort der Handlung
+s19	grammatik	手紙を書いてください。	手紙を書きてください。	lena_te_form	て-Form
+s20	grammatik	部屋はきれいでした。	部屋はきれいかったです。	lena_na_adj_past	な-Adjektiv
+s21	register	ご趣味は何ですか。	あなたの趣味は何ですか。	lena_stiff	steif
+s22	grammatik	ヒンネルクです。	わたしです、ヒンネルク。	hinnerk_word_order	deutsche Satzstellung
+s23	aussprache	東京から来ました。	ときょから来ました。	mara_long_vowel	beide Langvokale kurz
+s24	aussprache	学校に行きます。	がこうに行きます。	mara_geminate	っ fehlt
+s25	aussprache	切手を三枚ください。	きてを三枚ください。	mara_geminate	切手 → 来て
+s26	aussprache	おばあさんは元気です。	おばさんは元気です。	hinnerk_long_vowel	Bedeutung ändert sich
+s27	aussprache	ここに来てください。	ここにきってください。	—	来て → 切って, Bedeutung ändert sich
+s28	aussprache	原因はわかりません。	げにんはわかりません。	lena_n	ん vor Vokal
+s29	akzent	雨が降っています。	雨が降っています。	theo_ame	あめ flach wie 飴 sprechen
+s30	akzent	箸を取ってください。	箸を取ってください。	theo_hashi	はし steigend wie 橋 sprechen
+s31	akzent	魚が好きです。	魚が好きです。	theo_heiban_drop	Abfall vor が
+s32	akzent	友達と映画を見ました。	友達と映画を見ました。	theo_swedish_tone	zweiter Gipfel auf ともだち
+s33	korrekt	すみません、駅はどこですか。	—	—	nur richtig (Fehlalarm-Messung)
+s34	korrekt	日曜日に友達と買い物に行きました。	—	—	nur richtig
+s35	korrekt	週末は何をしますか。	—	—	nur richtig
+s36	korrekt	この電車は新宿に止まりますか。	—	—	nur richtig
+s37	korrekt	写真を撮ってもいいですか。	—	—	nur richtig
+s38	korrekt	日本語を勉強して二年になります。	—	—	nur richtig
+s39	korrekt	雨が降ったら、家で映画を見ます。	—	—	nur richtig
+s40	korrekt	窓を開けてもいいですか。	—	—	nur richtig
+s41	korrekt	もう少しゆっくり話してください。	—	—	nur richtig
+s42	korrekt	お茶とお水、どちらがいいですか。	—	—	nur richtig
+s43	korrekt	えーと、あの、駅の近くに住んでいます。	—	—	Füllwörter sind kein Fehler (/LF102/)
+s44	aussprache	郵便局はどこですか。	ゆびんきょくはどこですか。	mara_long_vowel	ゆう kurz
+s45	aussprache	そうです。	そうです。	mara_devoicing	す mit vollem u sprechen
+s46	aussprache	来週、ラーメンを食べに行きましょう。	来週、ラーメンを食べに行きましょう。	mara_r	ら行 als deutsches Reibe-R
+s47	aussprache	日本に行きたいです。	日本に行きたいです。	hinnerk_mora_rhythm	にほん in zwei Silben statt drei Moren
+s48	aussprache	津波の話をしました。	津波の話をしました。	hinnerk_ts	つ als „tu“
+s49	grammatik	猫が二匹います。	猫が二ついます。	—	Zählwort für Tiere
+s50	grammatik	先生に本を借りました。	先生を本を借りました。	—	Partikel

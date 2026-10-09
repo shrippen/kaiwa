@@ -109,8 +109,8 @@
       },
       {
         "id": "hinnerk_ts",
-        "pattern": "つ als 'zu'",
-        "example": "つなみ als 'zunami'",
+        "pattern": "つ als „tu“ (t statt ts)",
+        "example": "つなみ als „tunami“",
         "rate": 0.3,
         "fades_after": 6
       }

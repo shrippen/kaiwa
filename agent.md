@@ -16,6 +16,7 @@ Kaiwa (会話), a Japanese conversation trainer: Rust core, Qt 6 / Kirigami app,
 - A feature is done when its requirement is linked, tests cover it and a persona journey checks it (`qa/README.md`).
 - Personas change only together with their checks; never adjust `start_level` or planted errors to make a run pass.
 - Persona names and ids from the demo world (`shrippen.github.io/demo/world`) stay stable.
+- Merging (decision P-01): Claude may merge its own PRs on Gitea once CI is green. Open questions go to the owner in bundles, as an artifact with proposals; answers are recorded where they apply (ADRs, spec).
 
 ## GUI rule
 

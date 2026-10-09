@@ -19,6 +19,6 @@ Bewertet werden sollen Moren-Struktur (Langvokale, っ, ん, Entstimmung, Rhythm
 - **Material:** 20 Minimalpaare, gesprochen richtig und falsch (synthetisch mit gezielt verändertem Akzent und echt).
 - **Ziel:** Erkennung ≥ 80 %, Fehlalarme ≤ 5 % bei richtig gesprochenen Wörtern.
 
-## Offen
+## Entschieden (Fragenpaket 1)
 
-- **F-09:** Soll die Aussprache in 1.0 Muss sein (heute Soll) oder bleibt sie verschiebbar?
+- **F-09:** Aussprache-Feedback bleibt **Soll** für 1.0. Scheitert der Spike, erscheint 1.0 ohne Pitch-Bewertung; Moren-Prüfung und Nachsprechen kommen dann so weit, wie sie die Fehlalarm-Grenze halten.

@@ -1,0 +1,21 @@
+id	art	a	b	unterschied
+m01	laenge	おばさん	おばあさん	Langvokal ば/ばあ
+m02	laenge	おじさん	おじいさん	Langvokal じ/じい
+m03	laenge	ここ	こうこう	Langvokale
+m04	laenge	とり (鳥)	とおり (通り)	Langvokal
+m05	laenge	しゅじん (主人)	しゅうじん (囚人)	Langvokal
+m06	laenge	びよういん (美容院)	びょういん (病院)	よ/ょう
+m07	sokuon	きて (来て)	きって (切手)	っ
+m08	sokuon	かこ (過去)	かっこ (括弧)	っ
+m09	sokuon	さか (坂)	さっか (作家)	っ
+m10	sokuon	おと (音)	おっと (夫)	っ
+m11	hatsuon	げんいん (原因)	げにん	ん vor Vokal
+m12	hatsuon	きんえん (禁煙)	きねん (記念)	ん vor Vokal
+m13	hatsuon	たんい (単位)	たに (谷)	ん vor Vokal
+m14	akzent	はし (箸, 1)	はし (橋, 2)	Akzentkern
+m15	akzent	あめ (雨, 1)	あめ (飴, 0)	Akzentkern
+m16	akzent	かみ (神, 1)	かみ (紙, 2)	Akzentkern
+m17	akzent	かき (牡蠣, 1)	かき (柿, 0)	Akzentkern
+m18	akzent	さけ (鮭, 1)	さけ (酒, 0)	Akzentkern
+m19	akzent	にほん (日本, 2)	にほん (二本, 1)	Akzentkern
+m20	akzent	はしが (端が, 0)	はしが (橋が, 2)	Abfall erst vor der Partikel

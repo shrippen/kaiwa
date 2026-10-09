@@ -143,3 +143,4 @@ N3–N1, Kanji-Schreiben (Strichfolge, Stift oder Touch), Rollenspiele mit mehre
 | Lizenzen von Stimmen und Daten | Release blockiert | ADR-003, ADR-007 vor M1 |
 | cxx-qt-Reife (Plasmoid-Plugin) | Integrationsaufwand | Spike 0.2, Fallback D-Bus plus reines QML-Plasmoid |
 | Kante fehlen Bausteine | Wartezeit | Proposal in M0, parallel zu M1 umsetzen |
+| Noch niemand für das Muttersprachler-Review (F-05: später) | Abnahme 1.0 (/LF221/) verzögert sich | spätestens zu Beginn von M6 klären, sonst bezahltes Lektorat pro Einheit einplanen |

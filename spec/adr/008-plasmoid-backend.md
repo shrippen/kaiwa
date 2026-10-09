@@ -1,6 +1,6 @@
 # ADR-008: Backend für App und Plasmoid
 
-**Status:** Vorgeschlagen · **Bezug:** /LF500/–/LF510/, /LL011/, /LL012/, /LL501/
+**Status:** Angenommen · **Bezug:** /LF500/–/LF510/, /LL011/, /LL012/, /LL501/
 
 ## Kontext
 
@@ -23,6 +23,6 @@ Ein Plasmoid läuft im Prozess von `plasmashell`. Modelle mit mehreren hundert M
 - **Andere Plattformen:** Unter Windows, macOS und Android nutzt die App dieselbe Schnittstelle als in-process-Implementierung (Trait `Backend`). Es gibt dort keinen Dienst.
 - **Paketierung:** Das Plasmoid kommt mit dem Distro-Paket und dem AUR-Paket, nicht über den KDE Store (der kann keine Binärmodule).
 
-## Offen
+## Entschieden (Fragenpaket 1)
 
-- **F-11:** Ist es in Ordnung, dass das Plasmoid nicht im KDE Store erscheint (nur über Pakete)?
+- **F-11:** Das Plasmoid erscheint nur über Pakete (Distro, AUR) und nicht im KDE Store.

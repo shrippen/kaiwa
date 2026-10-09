@@ -6,7 +6,8 @@
 //! - every requirement a check names is defined in `spec/LASTENHEFT.md`;
 //! - every must requirement (priority M) of chapters 4 and 6.1–6.5 is named by at least one
 //!   check. Data (/LD/), platform and architecture (/LL5xx/), the QA itself (/LL6xx/) and
-//!   the native-speaker review /LF221/ are covered elsewhere.
+//!   the native-speaker review /LF221/ are covered elsewhere;
+//! - every `fehler_id` in `qa/corpus/saetze.tsv` names an error planted in a persona.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -69,6 +70,7 @@ pub fn validate(root: &Path) -> Result<Report> {
     let mut report = Report::default();
     let mut ids = BTreeSet::new();
     let mut covered = BTreeSet::new();
+    let mut planted = BTreeSet::new();
 
     for file in persona_files(&dir)? {
         let name = file
@@ -93,6 +95,14 @@ pub fn validate(root: &Path) -> Result<Report> {
             report
                 .problems
                 .push(format!("{name}: duplicate id '{pid}'"));
+        }
+        let errors = persona["language_errors"].as_array().into_iter().flatten();
+        let phonology = persona["speech"]["phonology_errors"]
+            .as_array()
+            .into_iter()
+            .flatten();
+        for error in errors.chain(phonology) {
+            planted.insert(error["id"].as_str().unwrap_or_default().to_string());
         }
         for journey in persona["journeys"].as_array().into_iter().flatten() {
             report.journeys += 1;
@@ -124,12 +134,41 @@ pub fn validate(root: &Path) -> Result<Report> {
         }
     }
 
+    let corpus = root.join("qa/corpus/saetze.tsv");
+    if corpus.exists() {
+        let text = fs::read_to_string(&corpus).context("reading qa/corpus/saetze.tsv")?;
+        report.problems.extend(corpus_problems(&text, &planted));
+    }
+
     report.uncovered = requirements
         .iter()
         .filter(|(id, prio)| **prio == 'M' && !exempt(id) && !covered.contains(*id))
         .map(|(id, _)| id.clone())
         .collect();
     Ok(report)
+}
+
+/// Rows of the corpus whose `fehler_id` (5th column) names no planted persona error.
+pub fn corpus_problems(tsv: &str, planted: &BTreeSet<String>) -> Vec<String> {
+    tsv.lines()
+        .skip(1)
+        .filter(|line| !line.trim().is_empty())
+        .filter_map(|line| {
+            let cols: Vec<&str> = line.split('\t').collect();
+            match cols.get(4) {
+                None => Some(format!(
+                    "saetze.tsv: row '{}' has fewer than 5 columns",
+                    cols[0]
+                )),
+                Some(&"—") => None,
+                Some(id) if planted.contains(*id) => None,
+                Some(id) => Some(format!(
+                    "saetze.tsv: row '{}' names '{id}', which no persona plants",
+                    cols[0]
+                )),
+            }
+        })
+        .collect()
 }
 
 fn read_json(path: &Path) -> Result<Value> {
@@ -163,6 +202,20 @@ mod tests {
         assert!(exempt("/LL601/"));
         assert!(!exempt("/LF100/"));
         assert!(!exempt("/LL401/"));
+    }
+
+    #[test]
+    fn corpus_rows_must_name_planted_errors() {
+        let planted = BTreeSet::from(["mara_tense".to_string()]);
+        let tsv = "id\tart\tok\tbad\tfehler_id\n\
+                   s1\tg\ta\tb\tmara_tense\n\
+                   s2\tk\ta\t—\t—\n\
+                   s3\tg\ta\tb\tnobody\n\
+                   s4\tg\n";
+        let problems = corpus_problems(tsv, &planted);
+        assert_eq!(problems.len(), 2, "{problems:?}");
+        assert!(problems[0].contains("'s3'"));
+        assert!(problems[1].contains("'s4'"));
     }
 
     #[test]

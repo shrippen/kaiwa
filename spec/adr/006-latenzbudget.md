@@ -24,6 +24,6 @@ Gemessen wird **ab erkanntem Sprechende** (nach Ablauf der eingestellten Pause) 
 
 Durchstich mit Mock-Daten und echten Modellen auf dem Framework 13, gemessen über 100 Züge.
 
-## Offen
+## Entschieden (Fragenpaket 1)
 
-- **F-10:** Ist das Framework Laptop 13 (Ryzen 7 7840U, 32 GB) die richtige Referenzhardware?
+- **F-10:** Die Referenzhardware ist das Framework Laptop 13 (Ryzen 7 7840U, 32 GB, ohne dGPU).
