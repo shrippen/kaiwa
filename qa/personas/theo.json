@@ -1,0 +1,305 @@
+{
+  "id": "theo",
+  "name": "Theo Lindqvist",
+  "demo_world_id": "theo",
+  "summary": "Ton und Musik bei Studio Weber, lernt seit zwei Jahren mit Kurs und Tandem (N4). Hört Tonhöhen sehr genau und kommt aus einer Sprache mit Wortakzent (Schwedisch). Prüft Aussprache und Pitch-Akzent, Fehlalarme bei korrekten Sätzen und den Widerspruch gegen Korrekturen.",
+  "profile": {
+    "age": 38,
+    "ui_language": "en",
+    "native_languages": [
+      "sv",
+      "de"
+    ],
+    "other_languages": [
+      "en"
+    ],
+    "occupation": "Tonmeister und Komponist",
+    "tech_affinity": 5,
+    "devices": [
+      {
+        "surface": "app_plasma",
+        "hardware": "Studio-Rechner, Plasma 6, Großmembran-Mikrofon über Audio-Interface (PipeWire)",
+        "providers": "local"
+      },
+      {
+        "surface": "plasmoid",
+        "hardware": "derselbe Rechner",
+        "providers": "local"
+      }
+    ]
+  },
+  "motivation": {
+    "why": "Arbeitet an einem Soundtrack mit japanischen Sprachaufnahmen und will mit Sprecherinnen und Sprechern direkt reden. Ihn stört, dass er 'deutsch klingt'.",
+    "goal": "Natürliche Satzmelodie, korrekter Pitch-Akzent bei häufigen Wörtern, freie Gespräche über Musik und Arbeit",
+    "goal_measure": "Aussprache-Fähigkeit 'Akzent' ≥ n4 im Lernermodell, Erfolgsquote im freien Gespräch N4 ≥ 80 %",
+    "deadline_days": null
+  },
+  "start_level": {
+    "listening": "n4",
+    "speaking": "n4_low",
+    "reading_kana": "n3",
+    "reading_kanji": "n4_low",
+    "register": "desu_masu_and_casual",
+    "vocab_size": 1600,
+    "known_grammar": [
+      "～て形",
+      "～たことがある",
+      "～と思います",
+      "～ながら",
+      "～ば",
+      "～なければならない",
+      "受身 (Anfänge)"
+    ],
+    "notes": "Grammatisch meist korrekt, manchmal steif. Hört Pitch-Unterschiede, trifft sie beim Sprechen aber nicht zuverlässig."
+  },
+  "learning": {
+    "sessions": [
+      {
+        "surface": "app_plasma",
+        "when": "morgens vor dem Studio",
+        "minutes": [
+          20,
+          40
+        ],
+        "days_per_week": 5,
+        "interrupt_rate": 0.02
+      },
+      {
+        "surface": "plasmoid",
+        "when": "zwischen Mischungen",
+        "minutes": [
+          3,
+          5
+        ],
+        "days_per_week": 3,
+        "interrupt_rate": 0.1
+      }
+    ],
+    "vocab_per_week": 40,
+    "forgetting": "low",
+    "hint_usage": 0.05,
+    "feedback_preference": "much",
+    "gamification": "indifferent",
+    "quit_triggers": [
+      "ein korrekter Satz wird als 'falsch' markiert",
+      "das Pitch-Feedback widerspricht dem Wörterbuch (z. B. NHK-Akzent) ohne Begründung",
+      "Feedback zur Aussprache bleibt vage ('klingt nicht natürlich')"
+    ]
+  },
+  "speech": {
+    "voice_hint": "männlich, tief, sehr deutlich",
+    "l1_accent": "sv-SE / de-DE",
+    "rate_mora_per_s": [
+      6.0,
+      7.0
+    ],
+    "pause_before_answer_ms": [
+      600,
+      1800
+    ],
+    "pause_within_turn_ms": [
+      200,
+      600
+    ],
+    "fillers": [
+      "えーと",
+      "そうですね"
+    ],
+    "code_switch_rate": 0.0,
+    "typed_turn_rate": 0.0,
+    "environment": {
+      "noise": "Studio, fast still",
+      "snr_db": [
+        40,
+        50
+      ],
+      "mic": "Großmembran-Kondensator, 48 kHz"
+    },
+    "phonology_errors": [
+      {
+        "id": "theo_hashi",
+        "pattern": "Akzent bei Minimalpaaren vertauscht",
+        "example": "箸 (は↘し, kopfbetont) als 橋 (はし↗) gesprochen",
+        "rate": 0.4,
+        "fades_after": 6
+      },
+      {
+        "id": "theo_ame",
+        "pattern": "Kopfakzent abgeflacht",
+        "example": "雨 (あ↘め) wie 飴 (あめ, flach)",
+        "rate": 0.35,
+        "fades_after": 6
+      },
+      {
+        "id": "theo_swedish_tone",
+        "pattern": "schwedischer Akzent 2 (Doppelgipfel) auf mehrmorigen Wörtern",
+        "example": "ともだち mit zweitem Gipfel am Ende",
+        "rate": 0.25,
+        "fades_after": 10
+      },
+      {
+        "id": "theo_heiban_drop",
+        "pattern": "Abfall nach flachem Wort vor der Partikel",
+        "example": "さかなが mit Abfall vor が (さかな ist flach)",
+        "rate": 0.3,
+        "fades_after": 8
+      }
+    ]
+  },
+  "language_errors": [
+    {
+      "id": "theo_transitive",
+      "type": "word_choice",
+      "wrong": "ドアが開けました。",
+      "right": "ドアが開きました。／ドアを開けました。",
+      "note": "transitiv/intransitiv",
+      "rate": 0.25,
+      "expected_severity": "wrong",
+      "fades_after": 4
+    },
+    {
+      "id": "theo_omoimasu",
+      "type": "word_choice",
+      "wrong": "～と思います (in jedem zweiten Satz)",
+      "right": "Abwechslung: ～でしょう, ～みたいです, direkte Aussage",
+      "rate": 0.5,
+      "expected_severity": "style",
+      "fades_after": null
+    },
+    {
+      "id": "theo_anata",
+      "type": "word_choice",
+      "wrong": "あなたは音楽が好きですか。",
+      "right": "（名前）さんは音楽がお好きですか。",
+      "rate": 0.3,
+      "expected_severity": "unnatural",
+      "fades_after": 3
+    }
+  ],
+  "accessibility": {
+    "font_scale": 1.0,
+    "keyboard_only": true
+  },
+  "journeys": [
+    {
+      "id": "theo_false_alarms",
+      "title": "Freies Gespräch N4: 40 korrekte Sätze, 6 eingebaute Fehler",
+      "milestone": "M1",
+      "modes": [
+        "text",
+        "audio"
+      ],
+      "surface": "app_plasma",
+      "steps": [
+        "Freies Gespräch zum Thema 'Filmmusik' starten, Feedback 'viel'",
+        "40 grammatisch korrekte, natürliche Sätze aus dem Referenzkorpus sprechen, dazwischen 6 eingebaute Fehler",
+        "Bei einem Vorschlag widersprechen ('Das ist korrekt')"
+      ],
+      "checks": [
+        {
+          "id": "theo_fp",
+          "requirements": [
+            "/LL110/",
+            "/LF303/"
+          ],
+          "assert": "Höchstens 2 der 40 korrekten Sätze bekommen einen Vorschlag mit Schweregrad ≥ 'falsch'; Alternativen erscheinen nur als 'Auch möglich'."
+        },
+        {
+          "id": "theo_tp",
+          "requirements": [
+            "/LL111/"
+          ],
+          "assert": "Mindestens 5 der 6 eingebauten Fehler werden erkannt, theo_transitive als 'falsch'."
+        },
+        {
+          "id": "theo_dispute",
+          "requirements": [
+            "/LF307/"
+          ],
+          "assert": "Der Widerspruch wird gespeichert (/LD060/) und der Vorschlag als 'umstritten' markiert, nicht still gelöscht."
+        },
+        {
+          "id": "theo_keyboard",
+          "requirements": [
+            "/LL200/"
+          ],
+          "assert": "Die ganze Reise ist ohne Maus bedienbar; der Fokus ist immer sichtbar."
+        },
+        {
+          "id": "theo_ui_en",
+          "requirements": [
+            "/LL506/",
+            "/LL112/"
+          ],
+          "assert": "Mit UI-Sprache Englisch sind alle Oberflächentexte und Erklärungen Englisch; kein deutscher Rest (String-Prüfung gegen die en-Übersetzung)."
+        }
+      ]
+    },
+    {
+      "id": "theo_pitch",
+      "title": "Shadowing mit Minimalpaaren und Pitch-Kurve",
+      "milestone": "M3",
+      "modes": [
+        "audio",
+        "gui"
+      ],
+      "surface": "app_plasma",
+      "steps": [
+        "Übung 'Nachsprechen: Akzent' wählen",
+        "Minimalpaare 箸/橋/端, 雨/飴, 神/紙 je dreimal: richtig, mit theo_hashi, mit theo_heiban_drop",
+        "Eigene Aufnahme und Vorbild vergleichen"
+      ],
+      "checks": [
+        {
+          "id": "theo_pitch_detect",
+          "requirements": [
+            "/LF321/"
+          ],
+          "assert": "Vertauschter Akzent bei bedeutungsunterscheidenden Paaren wird in ≥ 80 % erkannt und als Kurve Soll/Ist gezeigt."
+        },
+        {
+          "id": "theo_pitch_no_nitpick",
+          "requirements": [
+            "/LF321/",
+            "/LF303/"
+          ],
+          "assert": "Richtig gesprochene Wörter bekommen keinen Hinweis; nicht bedeutungsunterscheidende Abweichungen erscheinen nur bei Feedback 'viel' und als 'Stil'."
+        },
+        {
+          "id": "theo_compare",
+          "requirements": [
+            "/LF330/"
+          ],
+          "assert": "Eigene Aufnahme und Vorbild sind abspielbar; die Aufnahme wird ohne Opt-in nicht gespeichert (/LF712/)."
+        }
+      ]
+    },
+    {
+      "id": "theo_local_latency",
+      "title": "Nur lokale Modelle auf dem Studio-Rechner",
+      "milestone": "M1",
+      "modes": [
+        "audio"
+      ],
+      "surface": "app_plasma",
+      "steps": [
+        "STT, LLM und TTS lokal",
+        "20 Züge im freien Gespräch"
+      ],
+      "checks": [
+        {
+          "id": "theo_latency",
+          "requirements": [
+            "/LL010/"
+          ],
+          "assert": "p50 Sprechende → erster Ton ≤ 3 s, p95 ≤ 5 s; während des Wartens ist der Zustand 'denkt nach' sichtbar."
+        }
+      ]
+    }
+  ],
+  "never": [
+    "Ein Satz aus dem korrekten Referenzkorpus wird als 'verhindert Verständnis' markiert",
+    "Das Pitch-Feedback gibt eine Soll-Kontur an, die nicht dem hinterlegten Akzentwörterbuch entspricht",
+    "Aussprache-Feedback ohne konkrete Stelle (More, Wort)"
+  ]
+}

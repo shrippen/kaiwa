@@ -1,0 +1,123 @@
+{
+  "id": "emi",
+  "name": "Emi Hartmann",
+  "demo_world_id": null,
+  "summary": "Herkunftssprecherin, 27: japanische Mutter, in Hamburg aufgewachsen. Spricht flüssig Familien-Japanisch, kann aber kein 敬語 und kaum Kanji. Prüft Einstufung nach oben, das Überspringen von Einheiten, Höflichkeitssprache und die Obergrenze der Schwierigkeit.",
+  "profile": {
+    "age": 27,
+    "ui_language": "de",
+    "native_languages": ["de", "ja"],
+    "other_languages": ["en"],
+    "occupation": "Logistikplanerin",
+    "tech_affinity": 4,
+    "devices": [
+      { "surface": "app_plasma", "hardware": "privater Laptop mit Fedora KDE", "providers": "cloud" },
+      { "surface": "android", "hardware": "Mittelklasse-Smartphone", "providers": "cloud" }
+    ]
+  },
+  "motivation": {
+    "why": "Hat in drei Monaten ein Vorstellungsgespräch bei der Europa-Niederlassung eines japanischen Unternehmens in Düsseldorf, teilweise auf Japanisch.",
+    "goal": "Vorstellungsgespräch, Telefonat und E-Mail-Floskeln in 敬語 (尊敬語, 謙譲語, 丁寧語)",
+    "goal_measure": "Register keigo_basic im Lernermodell, Szenario 面接 Stufe 'schwer' mit Erfolg ≥ 80 %",
+    "deadline_days": 90
+  },
+  "start_level": {
+    "listening": "native_casual",
+    "speaking": "native_casual",
+    "reading_kana": "n3",
+    "reading_kanji": "n5",
+    "register": "desu_masu_and_casual",
+    "vocab_size": 5000,
+    "known_grammar": ["alles Alltägliche bis N3, ohne es benennen zu können"],
+    "notes": "Spricht schnell und natürlich, mischt Deutsch ein. Kennt です/ます aus dem Kontakt mit Fremden, aber keine Höflichkeitssprache für Vorgesetzte. Grammatik-Fachbegriffe sagen ihr nichts."
+  },
+  "learning": {
+    "sessions": [
+      { "surface": "app_plasma", "when": "abends", "minutes": [20, 45], "days_per_week": 5, "interrupt_rate": 0.05 },
+      { "surface": "android", "when": "in der S-Bahn", "minutes": [5, 10], "days_per_week": 3, "interrupt_rate": 0.2 }
+    ],
+    "vocab_per_week": 50,
+    "forgetting": "low",
+    "hint_usage": 0.05,
+    "feedback_preference": "much",
+    "gamification": "indifferent",
+    "quit_triggers": [
+      "länger als eine Sitzung Anfängerstoff (自己紹介 auf N5-Niveau)",
+      "Erklärungen nur mit Grammatik-Fachbegriffen (謙譲語 II, Kausativ-Passiv) ohne Beispiele",
+      "ihr natürliches Familien-Japanisch wird in einem lockeren Szenario als Fehler markiert"
+    ]
+  },
+  "speech": {
+    "voice_hint": "weiblich, mittlere Stimmlage, muttersprachlich mit Kanto-Akzent",
+    "l1_accent": "ja-JP (Tokio, Familie) / de-DE",
+    "rate_mora_per_s": [7.5, 9.0],
+    "pause_before_answer_ms": [300, 900],
+    "pause_within_turn_ms": [150, 500],
+    "fillers": ["なんか", "あの", "まあ"],
+    "code_switch_rate": 0.1,
+    "typed_turn_rate": 0.0,
+    "environment": { "noise": "zu Hause ruhig; S-Bahn laut", "snr_db": [8, 30], "mic": "Laptop-Mikrofon, auf Android Bluetooth-Ohrhörer" },
+    "phonology_errors": []
+  },
+  "language_errors": [
+    { "id": "emi_iku", "type": "register", "wrong": "明日、御社に行きます。", "right": "明日、御社に伺います。", "rate": 0.7, "expected_severity": "wrong", "fades_after": 4 },
+    { "id": "emi_shitteru", "type": "register", "wrong": "その件は知ってます。", "right": "その件は存じております。", "rate": 0.6, "expected_severity": "wrong", "fades_after": 4 },
+    { "id": "emi_double_keigo", "type": "register", "wrong": "部長がおっしゃられました。", "right": "部長がおっしゃいました。", "note": "二重敬語", "rate": 0.4, "expected_severity": "unnatural", "fades_after": 3 },
+    { "id": "emi_gokurou", "type": "word_choice", "wrong": "（上司に）ご苦労様です。", "right": "お疲れ様です。", "rate": 0.5, "expected_severity": "wrong", "fades_after": 2 },
+    { "id": "emi_mou_ikkai", "type": "register", "wrong": "すみません、もう一回言ってください。", "right": "恐れ入りますが、もう一度おっしゃっていただけますか。", "rate": 0.6, "expected_severity": "unnatural", "fades_after": 4 },
+    { "id": "emi_code_switch", "type": "loanword", "wrong": "前の仕事ではLogistikのPlanungをしてました。", "right": "前職では物流の計画を担当しておりました。", "rate": 0.3, "expected_severity": "unnatural", "fades_after": 5 }
+  ],
+  "accessibility": { "font_scale": 1.0 },
+  "journeys": [
+    {
+      "id": "emi_placement_skip",
+      "title": "Einstufung nach oben und Einheiten überspringen",
+      "milestone": "M2",
+      "modes": ["text", "audio"],
+      "surface": "app_plasma",
+      "steps": [
+        "Einstufung per Gespräch, schnelle und natürliche Antworten",
+        "Die KI hebt die Schwierigkeit bis zur Obergrenze (N4/N3) an",
+        "Angebot zum Überspringen annehmen, Prüfgespräch führen"
+      ],
+      "checks": [
+        { "id": "emi_ceiling", "requirements": ["/LF200/", "/LF201/"], "assert": "Einstufung: listening und speaking am oberen Ende der Skala, register desu_masu_and_casual, reading_kanji n5; Dauer ≤ 8 min trotz Obergrenze." },
+        { "id": "emi_skip", "requirements": ["/LF215/"], "assert": "Nach der Einstufung oder spätestens nach der ersten Sitzung wird das Überspringen bis zum Register-Pfad (敬語) angeboten." },
+        { "id": "emi_no_baby_talk", "requirements": ["/LF210/"], "assert": "Keine Sitzung mit Erfolgsquote ≥ 98 % zweimal hintereinander (Unterforderung)." }
+      ]
+    },
+    {
+      "id": "emi_interview",
+      "title": "Vorstellungsgespräch 面接 in 敬語",
+      "milestone": "M2",
+      "modes": ["text", "audio", "gui"],
+      "surface": "app_plasma",
+      "steps": [
+        "Szenario 'Vorstellungsgespräch', Figur Personalleiter (尊敬語), Schwierigkeit 'schwer'",
+        "Alle eingebauten Register-Fehler je einmal",
+        "Bilanz und Wiederholung der Höflichkeitsformen am nächsten Tag"
+      ],
+      "checks": [
+        { "id": "emi_keigo_detect", "requirements": ["/LF300/", "/LF302/", "/LL111/"], "assert": "Jeder eingebaute Register-Fehler wird erkannt; 二重敬語 als 'unnatürlich', ご苦労様 als 'falsch' mit Begründung (gegenüber Vorgesetzten)." },
+        { "id": "emi_explain_examples", "requirements": ["/LL112/"], "assert": "Erklärungen nennen die Fachbegriffe höchstens in Klammern und erklären über Beispielpaare (行きます → 伺います)." },
+        { "id": "emi_srs_keigo", "requirements": ["/LF230/"], "assert": "Am Folgetag enthält die Wiederholung die Höflichkeitsformen als Mini-Gespräch, nicht als Karteikarte." }
+      ]
+    },
+    {
+      "id": "emi_android_noise",
+      "title": "Kurz üben in der S-Bahn auf Android",
+      "milestone": "M6",
+      "modes": ["audio", "gui"],
+      "surface": "android",
+      "steps": ["Kurzsitzung 'Telefonat annehmen' mit Bluetooth-Ohrhörern, SNR 8–12 dB", "Ein falsch erkannter Zug wird als 'falsch erkannt' markiert"],
+      "checks": [
+        { "id": "emi_misrecognition", "requirements": ["/LF113/", "/LL100/"], "assert": "Markierte Erkennungsfehler fließen nicht ins Lernermodell; bei niedriger Konfidenz fragt die App nach, statt zu korrigieren." }
+      ]
+    }
+  ],
+  "never": [
+    "Familien-Japanisch wird im Szenario 'Mit der Familie telefonieren' korrigiert",
+    "Emi muss mehr als eine Sitzung N5-Anfängerstoff durchlaufen",
+    "Eine Korrektur verschlechtert einen korrekten Satz (falsches 敬語 als Verbesserung)"
+  ]
+}

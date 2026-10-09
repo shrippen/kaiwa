@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://git.arianw.de/shrippen/kaiwa/qa/personas/schema.json",
+  "title": "Kaiwa QA persona",
+  "description": "Executable persona for kaiwa-sim. Free texts are German; keys, enums and ids are English.",
+  "type": "object",
+  "required": ["id", "name", "summary", "profile", "motivation", "start_level", "learning", "speech", "language_errors", "journeys", "never"],
+  "additionalProperties": false,
+  "$defs": {
+    "level": { "enum": ["none", "a0", "n5_low", "n5", "n4_low", "n4", "n3", "n2", "native_casual"] },
+    "surface": { "enum": ["app_plasma", "plasmoid", "app_linux_other", "app_windows", "app_macos", "android", "cli"] },
+    "mode": { "enum": ["text", "audio", "gui"] },
+    "severity": { "enum": ["blocks_understanding", "wrong", "unnatural", "style"] },
+    "requirement": { "type": "string", "pattern": "^/L[FDL][0-9]{3}/$" },
+    "rate": { "type": "number", "minimum": 0, "maximum": 1 }
+  },
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "name": { "type": "string" },
+    "demo_world_id": { "type": ["string", "null"], "description": "Id in shrippen.github.io demo/world (people or story), null for personas outside the world." },
+    "summary": { "type": "string" },
+    "profile": {
+      "type": "object",
+      "required": ["age", "ui_language", "native_languages", "occupation", "tech_affinity", "devices"],
+      "additionalProperties": false,
+      "properties": {
+        "age": { "type": "integer", "minimum": 14 },
+        "ui_language": { "enum": ["de", "en"] },
+        "native_languages": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "other_languages": { "type": "array", "items": { "type": "string" } },
+        "occupation": { "type": "string" },
+        "tech_affinity": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "devices": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "required": ["surface", "hardware"], "additionalProperties": false,
+            "properties": {
+              "surface": { "$ref": "#/$defs/surface" },
+              "hardware": { "type": "string" },
+              "providers": { "enum": ["local", "cloud", "mixed"] }
+            }
+          }
+        }
+      }
+    },
+    "motivation": {
+      "type": "object", "required": ["why", "goal", "goal_measure"], "additionalProperties": false,
+      "properties": {
+        "why": { "type": "string" },
+        "goal": { "type": "string" },
+        "goal_measure": { "type": "string", "description": "Observable in the learner model, so the simulator can tell whether the goal is in reach." },
+        "deadline_days": { "type": ["integer", "null"] }
+      }
+    },
+    "start_level": {
+      "type": "object",
+      "required": ["listening", "speaking", "reading_kana", "reading_kanji", "register", "vocab_size"],
+      "additionalProperties": false,
+      "description": "Ground truth for the simulated learner. The placement (/LF200/) must land near it.",
+      "properties": {
+        "listening": { "$ref": "#/$defs/level" },
+        "speaking": { "$ref": "#/$defs/level" },
+        "reading_kana": { "$ref": "#/$defs/level" },
+        "reading_kanji": { "$ref": "#/$defs/level" },
+        "register": { "enum": ["none", "casual_only", "desu_masu", "desu_masu_and_casual", "keigo_basic"] },
+        "vocab_size": { "type": "integer", "minimum": 0 },
+        "known_grammar": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" }
+      }
+    },
+    "learning": {
+      "type": "object",
+      "required": ["sessions", "vocab_per_week", "forgetting", "hint_usage", "feedback_preference", "gamification", "quit_triggers"],
+      "additionalProperties": false,
+      "properties": {
+        "sessions": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "required": ["surface", "when", "minutes", "days_per_week"], "additionalProperties": false,
+            "properties": {
+              "surface": { "$ref": "#/$defs/surface" },
+              "when": { "type": "string" },
+              "minutes": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2 },
+              "days_per_week": { "type": "number" },
+              "interrupt_rate": { "$ref": "#/$defs/rate" }
+            }
+          }
+        },
+        "vocab_per_week": { "type": "integer" },
+        "forgetting": { "enum": ["low", "medium", "high"] },
+        "hint_usage": { "$ref": "#/$defs/rate" },
+        "feedback_preference": { "enum": ["little", "normal", "much"] },
+        "gamification": { "enum": ["off", "indifferent", "likes", "driven"] },
+        "breaks": { "type": "array", "items": { "type": "object", "required": ["after_day", "days"], "properties": { "after_day": { "type": "integer" }, "days": { "type": "integer" } } } },
+        "quit_triggers": { "type": "array", "items": { "type": "string" }, "description": "Situations after which the simulated learner ends the session early; each one counts as a finding." }
+      }
+    },
+    "speech": {
+      "type": "object",
+      "required": ["l1_accent", "rate_mora_per_s", "pause_before_answer_ms", "environment", "phonology_errors"],
+      "additionalProperties": false,
+      "properties": {
+        "voice_hint": { "type": "string", "description": "For the synthetic learner voice (audio mode)." },
+        "l1_accent": { "type": "string" },
+        "rate_mora_per_s": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+        "pause_before_answer_ms": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2 },
+        "pause_within_turn_ms": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2 },
+        "fillers": { "type": "array", "items": { "type": "string" } },
+        "code_switch_rate": { "$ref": "#/$defs/rate" },
+        "typed_turn_rate": { "$ref": "#/$defs/rate" },
+        "environment": {
+          "type": "object", "required": ["noise", "snr_db", "mic"], "additionalProperties": false,
+          "properties": {
+            "noise": { "type": "string" },
+            "snr_db": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+            "mic": { "type": "string" }
+          }
+        },
+        "phonology_errors": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["id", "pattern", "example", "rate"], "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "pattern": { "type": "string" },
+              "example": { "type": "string" },
+              "rate": { "$ref": "#/$defs/rate" },
+              "fades_after": { "type": ["integer", "null"], "description": "Number of feedback events after which the rate halves (learning curve)." }
+            }
+          }
+        }
+      }
+    },
+    "language_errors": {
+      "type": "array",
+      "description": "Planted errors. The simulator marks every planted error, so recall (/LL111/) and false alarms (/LL110/) can be counted.",
+      "items": {
+        "type": "object", "required": ["id", "type", "wrong", "right", "rate", "expected_severity"], "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "enum": ["particle", "conjugation", "word_choice", "register", "word_order", "counter", "omission", "loanword", "tense"] },
+          "wrong": { "type": "string" },
+          "right": { "type": "string" },
+          "note": { "type": "string" },
+          "rate": { "$ref": "#/$defs/rate" },
+          "expected_severity": { "$ref": "#/$defs/severity" },
+          "fades_after": { "type": ["integer", "null"] }
+        }
+      }
+    },
+    "accessibility": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "font_scale": { "type": "number" },
+        "hearing": { "type": "string" },
+        "vision": { "type": "string" },
+        "motor": { "type": "string" },
+        "screen_reader": { "type": "boolean" },
+        "keyboard_only": { "type": "boolean" }
+      }
+    },
+    "journeys": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object", "required": ["id", "title", "milestone", "modes", "surface", "steps", "checks"], "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "milestone": { "enum": ["M1", "M2", "M3", "M4", "M5", "M6", "M7"] },
+          "modes": { "type": "array", "items": { "$ref": "#/$defs/mode" }, "minItems": 1 },
+          "surface": { "$ref": "#/$defs/surface" },
+          "sim_days": { "type": "integer", "minimum": 1 },
+          "steps": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "checks": {
+            "type": "array", "minItems": 1,
+            "items": {
+              "type": "object", "required": ["id", "requirements", "assert"], "additionalProperties": false,
+              "properties": {
+                "id": { "type": "string" },
+                "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" }, "minItems": 1 },
+                "assert": { "type": "string", "description": "Readable rule; the machine form lives in kaiwa-sim/checks/<id>.rs." }
+              }
+            }
+          }
+        }
+      }
+    },
+    "never": {
+      "type": "array", "items": { "type": "string" }, "minItems": 1,
+      "description": "Things that must never happen to this persona; any occurrence fails the run."
+    }
+  }
+}

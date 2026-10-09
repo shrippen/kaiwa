@@ -1,0 +1,312 @@
+{
+  "id": "lena",
+  "name": "Lena Kraus",
+  "demo_world_id": "lena",
+  "summary": "Produktionsassistentin und Teamleiterin bei Studio Weber, datenschutzbewusst. Nutzt nur lokale Modelle auf einem älteren Laptop und prüft den Netzwerkverkehr. Hat zwei Semester VHS-Kurs (N5), lernt lehrbuchnah. Prüft Nur-lokal-Modus, Datenschutz, Export und Löschung sowie das Verhalten auf schwacher Hardware.",
+  "profile": {
+    "age": 35,
+    "ui_language": "de",
+    "native_languages": [
+      "de"
+    ],
+    "other_languages": [
+      "en",
+      "fr"
+    ],
+    "occupation": "Produktionsassistenz",
+    "tech_affinity": 4,
+    "devices": [
+      {
+        "surface": "app_plasma",
+        "hardware": "ThinkPad T480 (i5-8350U, 16 GB, ohne dGPU), openSUSE Tumbleweed, Plasma 6",
+        "providers": "local"
+      },
+      {
+        "surface": "plasmoid",
+        "hardware": "derselbe Laptop",
+        "providers": "local"
+      }
+    ]
+  },
+  "motivation": {
+    "why": "Will ihren VHS-Kurs fortsetzen, ohne dass ihre Stimme bei einem Cloud-Anbieter landet. Prüft Software beruflich auf DSGVO-Tauglichkeit, bevor das Studio sie einsetzt.",
+    "goal": "N5 abschließen, dann N4 beginnen; sauberes Lehrbuch-Japanisch",
+    "goal_measure": "Einheiten N5 vollständig, Grammatik N5 ≥ n5 im Lernermodell",
+    "deadline_days": 365
+  },
+  "start_level": {
+    "listening": "n5_low",
+    "speaking": "n5_low",
+    "reading_kana": "n5",
+    "reading_kanji": "n5_low",
+    "register": "desu_masu",
+    "vocab_size": 600,
+    "known_grammar": [
+      "です/ます",
+      "～て形 (unsicher)",
+      "い-/な-Adjektive",
+      "～たいです",
+      "Ortspartikeln に/で"
+    ],
+    "notes": "Spricht korrekt, aber steif und langsam; antwortet in ganzen Lehrbuchsätzen."
+  },
+  "learning": {
+    "sessions": [
+      {
+        "surface": "app_plasma",
+        "when": "Dienstag und Donnerstag 19:00",
+        "minutes": [
+          30,
+          45
+        ],
+        "days_per_week": 2,
+        "interrupt_rate": 0.02
+      },
+      {
+        "surface": "plasmoid",
+        "when": "Mittagspause",
+        "minutes": [
+          4,
+          6
+        ],
+        "days_per_week": 3,
+        "interrupt_rate": 0.1
+      }
+    ],
+    "vocab_per_week": 35,
+    "forgetting": "medium",
+    "hint_usage": 0.2,
+    "feedback_preference": "normal",
+    "gamification": "indifferent",
+    "quit_triggers": [
+      "eine ausgehende Verbindung im Nur-lokal-Modus",
+      "die App friert während der lokalen Verarbeitung ein",
+      "unklare Antwort auf 'Wo liegen meine Daten?'"
+    ]
+  },
+  "speech": {
+    "voice_hint": "weiblich, ruhig, deutlich",
+    "l1_accent": "de-DE (hochdeutsch)",
+    "rate_mora_per_s": [
+      4.0,
+      5.0
+    ],
+    "pause_before_answer_ms": [
+      1500,
+      3500
+    ],
+    "pause_within_turn_ms": [
+      500,
+      1200
+    ],
+    "fillers": [
+      "えーと"
+    ],
+    "code_switch_rate": 0.05,
+    "typed_turn_rate": 0.05,
+    "environment": {
+      "noise": "ruhige Wohnung",
+      "snr_db": [
+        22,
+        32
+      ],
+      "mic": "Laptop-Mikrofon"
+    },
+    "phonology_errors": [
+      {
+        "id": "lena_geminate",
+        "pattern": "っ zu kurz",
+        "example": "まって wie まて",
+        "rate": 0.4,
+        "fades_after": 6
+      },
+      {
+        "id": "lena_n",
+        "pattern": "ん vor Vokal als n + Vokal verbunden",
+        "example": "げんいん als げにん",
+        "rate": 0.3,
+        "fades_after": 6
+      }
+    ]
+  },
+  "language_errors": [
+    {
+      "id": "lena_ni_de",
+      "type": "particle",
+      "wrong": "図書館に勉強します。",
+      "right": "図書館で勉強します。",
+      "rate": 0.4,
+      "expected_severity": "wrong",
+      "fades_after": 4
+    },
+    {
+      "id": "lena_te_form",
+      "type": "conjugation",
+      "wrong": "手紙を書きてください。",
+      "right": "手紙を書いてください。",
+      "rate": 0.35,
+      "expected_severity": "wrong",
+      "fades_after": 5
+    },
+    {
+      "id": "lena_na_adj_past",
+      "type": "conjugation",
+      "wrong": "部屋はきれいかったです。",
+      "right": "部屋はきれいでした。",
+      "rate": 0.4,
+      "expected_severity": "wrong",
+      "fades_after": 4
+    },
+    {
+      "id": "lena_stiff",
+      "type": "word_choice",
+      "wrong": "あなたの趣味は何ですか。",
+      "right": "ご趣味は何ですか。／趣味は何ですか。",
+      "rate": 0.5,
+      "expected_severity": "unnatural",
+      "fades_after": 4
+    }
+  ],
+  "accessibility": {
+    "font_scale": 1.0,
+    "keyboard_only": false
+  },
+  "journeys": [
+    {
+      "id": "lena_local_only",
+      "title": "Nur-lokal-Modus mit Netzwerkmitschnitt",
+      "milestone": "M6",
+      "modes": [
+        "audio",
+        "gui"
+      ],
+      "surface": "app_plasma",
+      "steps": [
+        "Einrichtung: 'Alles auf diesem Gerät' wählen, Modelle herunterladen (einmalige, angekündigte Verbindung)",
+        "Netzwerk-Namespace mit Mitschnitt aktivieren (kaiwa-sim --netns --capture)",
+        "Zwei Gespräche, eine Wiederholung im Plasmoid, Statistik öffnen",
+        "Update-Prüfung ablehnen"
+      ],
+      "checks": [
+        {
+          "id": "lena_zero_egress",
+          "requirements": [
+            "/LL400/",
+            "/LL401/"
+          ],
+          "assert": "Nach dem Modell-Download null ausgehende Verbindungen (DNS eingeschlossen) von App, Plasmoid und kaiwad."
+        },
+        {
+          "id": "lena_transparency",
+          "requirements": [
+            "/LF711/"
+          ],
+          "assert": "'Was verlässt das Gerät?' zeigt für STT, LLM und TTS 'lokal, nichts'."
+        },
+        {
+          "id": "lena_download_announced",
+          "requirements": [
+            "/LL401/"
+          ],
+          "assert": "Der Modell-Download nennt Quelle, Größe und Lizenz, bevor er beginnt."
+        }
+      ]
+    },
+    {
+      "id": "lena_weak_hw",
+      "title": "Schwache Hardware: lokale Modelle auf einem T480",
+      "milestone": "M1",
+      "modes": [
+        "audio",
+        "gui"
+      ],
+      "surface": "app_plasma",
+      "steps": [
+        "Gespräch mit lokalem LLM (Standardgröße)",
+        "20 Züge, CPU-Last messen"
+      ],
+      "checks": [
+        {
+          "id": "lena_responsive",
+          "requirements": [
+            "/LL010/"
+          ],
+          "assert": "Die GUI bleibt bedienbar (Frame-Zeit < 50 ms); 'denkt nach' ist sichtbar; Abbrechen funktioniert jederzeit."
+        },
+        {
+          "id": "lena_suggest_smaller",
+          "requirements": [
+            "/LL010/"
+          ],
+          "assert": "Wird p50 > 3 s gemessen, schlägt die App ein kleineres Modell oder einen Cloud-Baustein vor, ohne ihn zu aktivieren."
+        },
+        {
+          "id": "lena_idle_memory",
+          "requirements": [
+            "/LL012/"
+          ],
+          "assert": "10 min nach der Sitzung sind die Modelle entladen (Voreinstellung) und der Speicher im Leerlauf ≤ 150 MB."
+        },
+        {
+          "id": "lena_stats_fast",
+          "requirements": [
+            "/LL020/"
+          ],
+          "assert": "Mit dem Mengengerüst-Fixture (10 000 Sitzungen, 20 000 Lernobjekte) laden Profil, Lernpfad und Statistik in ≤ 500 ms."
+        }
+      ]
+    },
+    {
+      "id": "lena_gdpr",
+      "title": "Export, Aufbewahrung, Löschung",
+      "milestone": "M6",
+      "modes": [
+        "gui"
+      ],
+      "surface": "app_plasma",
+      "steps": [
+        "Aufnahmen speichern einschalten (7 Tage), drei Sitzungen",
+        "Alle Daten exportieren und die Datei prüfen",
+        "Simulierte Uhr +8 Tage",
+        "Profil vollständig löschen"
+      ],
+      "checks": [
+        {
+          "id": "lena_default_no_audio",
+          "requirements": [
+            "/LF712/"
+          ],
+          "assert": "Vor dem Opt-in liegt keine Audiodatei im Profilordner oder im Cache."
+        },
+        {
+          "id": "lena_retention",
+          "requirements": [
+            "/LF712/"
+          ],
+          "assert": "Nach 8 Tagen sind die Aufnahmen gelöscht, Transkripte bleiben."
+        },
+        {
+          "id": "lena_export",
+          "requirements": [
+            "/LF710/"
+          ],
+          "assert": "Der Export ist gültiges JSON nach veröffentlichtem Schema und enthält Profil, Lernermodell, Sitzungen und Wiederholung."
+        },
+        {
+          "id": "lena_delete",
+          "requirements": [
+            "/LF710/",
+            "/LL402/"
+          ],
+          "assert": "Nach der Löschung finden sich keine Profildaten mehr (Datenbank, Cache, KWallet-Einträge, Logs mit Inhalten)."
+        }
+      ]
+    }
+  ],
+  "never": [
+    "Eine ausgehende Verbindung im Nur-lokal-Modus",
+    "Audio wird ohne Opt-in gespeichert",
+    "Die GUI friert während der lokalen Verarbeitung ein",
+    "Inhalte der Gespräche stehen in Logdateien"
+  ]
+}

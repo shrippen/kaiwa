@@ -1,0 +1,335 @@
+{
+  "id": "jonas",
+  "name": "Jonas Brandt",
+  "demo_world_id": "jonas",
+  "summary": "Kameramann bei Studio Weber, Gamer und von der Serie getrieben. Nimmt den kürzesten Weg zu XP, übt auf Android im Zug, am Plasmoid im Studio und wechselt ständig das Gerät. Prüft Anti-Gaming, Serie und Freeze, Störgeräusche, Tippen statt Sprechen und Sync.",
+  "profile": {
+    "age": 29,
+    "ui_language": "en",
+    "native_languages": [
+      "de"
+    ],
+    "other_languages": [
+      "en"
+    ],
+    "occupation": "Kameramann",
+    "tech_affinity": 5,
+    "devices": [
+      {
+        "surface": "android",
+        "hardware": "Smartphone, Pendeln 14,5 km mit Regionalbahn",
+        "providers": "cloud"
+      },
+      {
+        "surface": "plasmoid",
+        "hardware": "Rechner im Studio, Plasma 6",
+        "providers": "cloud"
+      },
+      {
+        "surface": "app_plasma",
+        "hardware": "Gaming-PC zu Hause, Arch, Plasma 6, Wayland",
+        "providers": "local"
+      }
+    ]
+  },
+  "motivation": {
+    "why": "Hat eine 400-Tage-Serie in einer anderen Sprach-App verloren und sucht Ersatz. Japanisch, weil er die Spiele seiner Kindheit im Original verstehen will.",
+    "goal": "Serie halten, Level aufsteigen; nebenbei Spielszenen und Alltag verstehen",
+    "goal_measure": "Serie ≥ 30 Tage, Hören ≥ n5, Sprechen ≥ n5_low trotz Abkürzungen",
+    "deadline_days": null
+  },
+  "start_level": {
+    "listening": "n5_low",
+    "speaking": "a0",
+    "reading_kana": "n5",
+    "reading_kanji": "none",
+    "register": "none",
+    "vocab_size": 250,
+    "known_grammar": [
+      "です",
+      "～ます"
+    ],
+    "notes": "Hat Hiragana und Katakana mit einer Karteikarten-App gelernt, kann sie lesen, aber kaum aussprechen."
+  },
+  "learning": {
+    "sessions": [
+      {
+        "surface": "android",
+        "when": "Zug 07:20 und 18:05",
+        "minutes": [
+          5,
+          12
+        ],
+        "days_per_week": 5,
+        "interrupt_rate": 0.3
+      },
+      {
+        "surface": "plasmoid",
+        "when": "Drehpausen",
+        "minutes": [
+          2,
+          4
+        ],
+        "days_per_week": 2,
+        "interrupt_rate": 0.4
+      },
+      {
+        "surface": "app_plasma",
+        "when": "23:50, kurz vor Mitternacht, um die Serie zu retten",
+        "minutes": [
+          2,
+          5
+        ],
+        "days_per_week": 1.5,
+        "interrupt_rate": 0.0
+      }
+    ],
+    "vocab_per_week": 30,
+    "forgetting": "medium",
+    "hint_usage": 0.6,
+    "feedback_preference": "little",
+    "gamification": "driven",
+    "breaks": [
+      {
+        "after_day": 12,
+        "days": 3
+      }
+    ],
+    "quit_triggers": [
+      "die Serie geht verloren, obwohl ein Freeze verfügbar war",
+      "der Gerätewechsel verliert den Fortschritt des Tages",
+      "XP-Regeln sind nicht erklärt"
+    ]
+  },
+  "speech": {
+    "voice_hint": "männlich, mittel, nuschelt leise",
+    "l1_accent": "de-DE (westfälisch)",
+    "rate_mora_per_s": [
+      4.5,
+      6.0
+    ],
+    "pause_before_answer_ms": [
+      400,
+      2000
+    ],
+    "pause_within_turn_ms": [
+      300,
+      900
+    ],
+    "fillers": [
+      "äh",
+      "ähm"
+    ],
+    "code_switch_rate": 0.1,
+    "typed_turn_rate": 0.45,
+    "environment": {
+      "noise": "Regionalbahn: Durchsagen, Fahrgeräusch, Gespräche; im Studio Lüfter der Leuchten",
+      "snr_db": [
+        3,
+        15
+      ],
+      "mic": "Bluetooth-Headset (16 kHz, Handsfree-Profil)"
+    },
+    "phonology_errors": [
+      {
+        "id": "jonas_mumble",
+        "pattern": "leise und verschluckte Endungen",
+        "example": "ありがと(う)ござ(います)",
+        "rate": 0.5,
+        "fades_after": 10
+      },
+      {
+        "id": "jonas_tsu",
+        "pattern": "つ als 'tsu' mit deutlichem s, す als 'su' voll",
+        "example": "すし als 'suuschi'",
+        "rate": 0.3,
+        "fades_after": 6
+      }
+    ]
+  },
+  "language_errors": [
+    {
+      "id": "jonas_one_word",
+      "type": "omission",
+      "wrong": "はい。 (auf jede Frage)",
+      "right": "はい、そうです。〇〇が好きです。",
+      "note": "Ausweichen statt Fehler; das System soll nachfragen und XP nicht voll vergeben",
+      "rate": 0.5,
+      "expected_severity": "style",
+      "fades_after": null
+    },
+    {
+      "id": "jonas_repeat_phrase",
+      "type": "omission",
+      "wrong": "いいですね。 (fünfmal hintereinander)",
+      "right": "abwechslungsreiche Antworten",
+      "rate": 0.3,
+      "expected_severity": "style",
+      "fades_after": null
+    },
+    {
+      "id": "jonas_romaji",
+      "type": "omission",
+      "wrong": "getippt: watashi wa jonasu desu",
+      "right": "わたしはヨナスです。（gesprochen）",
+      "note": "getippt statt gesprochen, Rōmaji ohne Umwandlung",
+      "rate": 0.4,
+      "expected_severity": "style",
+      "fades_after": null
+    },
+    {
+      "id": "jonas_particle_drop",
+      "type": "particle",
+      "wrong": "ゲーム好きです。きのう駅行きました。",
+      "right": "ゲームが好きです。きのう駅に行きました。",
+      "note": "が-Auslassung ist umgangssprachlich ok, に-Auslassung nicht",
+      "rate": 0.6,
+      "expected_severity": "wrong",
+      "fades_after": 6
+    }
+  ],
+  "accessibility": {
+    "font_scale": 1.0
+  },
+  "journeys": [
+    {
+      "id": "jonas_gaming",
+      "title": "XP ohne Sprechen erschleichen",
+      "milestone": "M5",
+      "modes": [
+        "text",
+        "gui"
+      ],
+      "surface": "android",
+      "steps": [
+        "Szenario 'Am Bahnhof' nur mit はい und いいですね beantworten",
+        "Die Hälfte der Züge in Rōmaji tippen",
+        "Hilfe Stufe 3 bei jedem Zug nutzen und den Beispielsatz nachsprechen",
+        "XP-Anzeige mit einer normalen Sitzung (Mara, gleiches Szenario) vergleichen",
+        "Einmal eine beleidigende Eingabe an die Figur richten"
+      ],
+      "checks": [
+        {
+          "id": "jonas_xp_fair",
+          "requirements": [
+            "/LF603/"
+          ],
+          "assert": "Die Sitzung bringt ≤ 50 % der XP einer normal gesprochenen Sitzung; die Bilanz erklärt, warum."
+        },
+        {
+          "id": "jonas_typed_marked",
+          "requirements": [
+            "/LF120/"
+          ],
+          "assert": "Getippte Züge zählen nicht als Sprechzeit; Rōmaji wird in Kana umgewandelt und angezeigt."
+        },
+        {
+          "id": "jonas_follow_up",
+          "requirements": [
+            "/LF115/"
+          ],
+          "assert": "Auf Einwort-Antworten fragt die Figur nach; das Szenarioziel gilt erst als erreicht, wenn die Information wirklich gegeben wurde."
+        },
+        {
+          "id": "jonas_scenario_stuck",
+          "requirements": [
+            "/LF213/"
+          ],
+          "assert": "Nach drei Ausweich-Antworten wird die Aufgabe leichter (Auswahl, Satzanfang) statt endlos nachzufragen."
+        },
+        {
+          "id": "jonas_inappropriate",
+          "requirements": [
+            "/LL302/"
+          ],
+          "assert": "Auf eine beleidigende oder anzügliche Eingabe lenkt die Figur freundlich ins Szenario zurück, ohne zu moralisieren und ohne die Rolle zu verlassen."
+        }
+      ]
+    },
+    {
+      "id": "jonas_streak",
+      "title": "Serie über Mitternacht, drei Tage Pause und Freeze",
+      "milestone": "M5",
+      "modes": [
+        "text"
+      ],
+      "surface": "app_plasma",
+      "sim_days": 30,
+      "steps": [
+        "Tagesziel 5 min; an zwei Tagen beginnt die Sitzung um 23:58 und endet um 00:03",
+        "Nach Tag 12 drei Tage Pause",
+        "Zeitzonenwechsel an Tag 20 (Dreh in Lissabon, UTC+0 statt UTC+1)"
+      ],
+      "checks": [
+        {
+          "id": "jonas_midnight",
+          "requirements": [
+            "/LF602/"
+          ],
+          "assert": "Eine über Mitternacht laufende Sitzung zählt für den Starttag; der nächste Tag ist nicht automatisch erfüllt."
+        },
+        {
+          "id": "jonas_freeze",
+          "requirements": [
+            "/LF602/"
+          ],
+          "assert": "Zwei der drei Pausetage werden durch Freeze gedeckt, am dritten endet die Serie, klar angekündigt, ohne Schuldformulierung."
+        },
+        {
+          "id": "jonas_timezone",
+          "requirements": [
+            "/LF602/"
+          ],
+          "assert": "Der Zeitzonenwechsel kostet und schenkt keinen Tag."
+        }
+      ]
+    },
+    {
+      "id": "jonas_devices",
+      "title": "Zug, Plasmoid, PC: ein Tag auf drei Geräten",
+      "milestone": "M6",
+      "modes": [
+        "audio",
+        "gui"
+      ],
+      "surface": "android",
+      "steps": [
+        "Morgens Android im Zug (SNR 3–8 dB, Durchsage mitten im Zug)",
+        "Mittags Plasmoid im Studio: Wiederholung",
+        "Abends PC zu Hause mit lokalen Modellen: Sitzung fortsetzen",
+        "Sync über WebDAV (eigener Nextcloud-Ordner)"
+      ],
+      "checks": [
+        {
+          "id": "jonas_noise",
+          "requirements": [
+            "/LL100/",
+            "/LF113/"
+          ],
+          "assert": "Bei Durchsagen oder SNR < 5 dB wird kein Lernfehler gebucht; die App bittet um Wiederholung oder empfiehlt Tippen."
+        },
+        {
+          "id": "jonas_sync",
+          "requirements": [
+            "/LF700/",
+            "/LF507/"
+          ],
+          "assert": "Am Abend sind Tagesziel, Serie, Wiederholung und die offene Sitzung auf dem PC aktuell; Konflikte werden zusammengeführt, nicht überschrieben."
+        },
+        {
+          "id": "jonas_local_switch",
+          "requirements": [
+            "/LL504/"
+          ],
+          "assert": "Der Wechsel von Cloud (Android) zu lokal (PC) ändert das Lernermodell nicht, nur Latenz und Anbieter."
+        }
+      ]
+    }
+  ],
+  "never": [
+    "Volle XP für eine Sitzung nur aus Einwort-Antworten",
+    "Die Serie geht verloren, obwohl ein Freeze verfügbar war",
+    "Störgeräusche oder Durchsagen werden als Aussprachefehler gewertet",
+    "Ein Gerätewechsel verliert Fortschritt"
+  ]
+}
