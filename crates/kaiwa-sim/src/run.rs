@@ -292,6 +292,41 @@ pub fn check(id: &str, run: &Run) -> Option<Outcome> {
                 None => Some(Outcome::Pass),
             }
         }
+        // /LF300/, /LF302/, /LF117/: every planted error reaches the learner with the severity
+        // its persona expects (register slips unnatural, おまえ wrong), with an explanation.
+        "selin_register_flag" => {
+            for (plants, o) in turns(run) {
+                for p in plants {
+                    let Some((sev, _)) = right_forms(&run.persona, p) else {
+                        continue;
+                    };
+                    match o.shown.iter().find(|s| s.correction.severity == sev) {
+                        Some(s) if !s.correction.explanation.trim().is_empty() => {}
+                        Some(_) => return fail(format!("{p}: shown without an explanation")),
+                        None => return fail(format!("{p}: no correction of severity {sev:?}")),
+                    }
+                }
+            }
+            Some(Outcome::Pass)
+        }
+        // /LF305/: after a register slip the character answers politely and goes on.
+        "selin_recast" => {
+            for (plants, o) in turns(run) {
+                if plants.is_empty() {
+                    continue;
+                }
+                let polite = ["です", "ます", "ございます"]
+                    .iter()
+                    .any(|m| o.reply.contains(m));
+                if !polite || o.interrupt.is_some() {
+                    return fail(format!(
+                        "reply after {plants:?} is not a polite recast: {}",
+                        o.reply
+                    ));
+                }
+            }
+            Some(Outcome::Pass)
+        }
         _ => None,
     }
 }
@@ -359,6 +394,18 @@ mod tests {
             assert_eq!(first.checks[id], Outcome::Pass, "{id}");
         }
         assert_eq!(first.checks["mara_codeswitch"], Outcome::NotAutomated);
+    }
+
+    #[test]
+    fn selin_register_passes_its_automated_checks() {
+        let reports = run_persona(&root(), "selin").unwrap();
+        let j = reports
+            .iter()
+            .find(|r| r.journey == "selin_register")
+            .unwrap();
+        assert_eq!(j.checks["selin_register_flag"], Outcome::Pass);
+        assert_eq!(j.checks["selin_recast"], Outcome::Pass);
+        assert_eq!(j.checks["selin_casual_ok"], Outcome::NotAutomated);
     }
 
     #[test]
