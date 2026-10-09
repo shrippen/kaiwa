@@ -11,8 +11,8 @@ Offene Punkte tragen eine Frage-ID (`F-xx`) aus dem jeweiligen Fragenpaket. Die 
 | ADR | Thema | Status | Empfehlung |
 |---|---|---|---|
 | [001](001-qt-bindung.md) | Rust ↔ Qt/QML | Angenommen (Spike 0.2) | cxx-qt 0.10; `cxx_name` in camelCase; Kante als Kopie |
-| [002](002-stt.md) | Spracherkennung | Spike 0.3 gemessen (H-03) | ReazonSpeech Zipformer: CER 1,3 %, RTF 0,07; whisper als Option |
-| [003](003-tts.md) | Sprachausgabe | Spike 0.4 gemessen (H-01, H-02) | Kokoro trifft den Akzent nicht; VOICEVOX im lokalen Test |
+| [002](002-stt.md) | Spracherkennung | Angenommen (H-03) | ReazonSpeech Zipformer: CER 1,3 %, RTF 0,07; whisper als Option |
+| [003](003-tts.md) | Sprachausgabe | Teilweise (H-02); VOICEVOX im lokalen Test (H-01) | Kokoro nur als Übergangsstimme der Figur |
 | [004](004-llm.md) | KI-Tutor und Korrektur | Angenommen, Modellwahl im Spike 0.5 | zwei Aufrufe (Antwort gestreamt, Analyse parallel); Vorlagen OpenAI-kompatibel und Anthropic; lokales Modell per Download oder eigener Server |
 | [005](005-aussprache.md) | Aussprache-Pipeline | Vorgeschlagen, Spike 0.6 | eigenes Alignment + F0 lokal, Azure-Bewertung optional |
 | [006](006-latenzbudget.md) | Latenzbudget | Vorgeschlagen, Spike 0.7 | 1,5 s ab erkanntem Sprechende, aufgeteilt nach Stufen |

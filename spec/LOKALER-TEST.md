@@ -1,6 +1,6 @@
 # Lokaler Test
 
-Was nur auf deinem Rechner geht: die KI-Anbindung (ADR-004), VOICEVOX mit seinen Stimmlizenzen (ADR-003) und Messwerte auf der Referenzhardware, dem Framework 13 (ADR-006). Jeder Schritt sagt, was du ausführst und was als Ergebnis zurückkommt. Die Ergebnisdateien legst du in `qa/local/<datum>/` ab, oder du schickst sie in die Session.
+Was nur auf deinem Rechner geht: die KI-Anbindung (ADR-004), VOICEVOX mit seinen Stimmlizenzen (ADR-003) und Messwerte auf der Referenzhardware, dem Framework 13 (ADR-006). Jeder Schritt sagt, was du ausführst und was als Ergebnis zurückkommt. Die Ergebnisdateien kommen als PR nach `qa/local/<datum>/` (H-05). Claude wertet sie aus und trägt sie in die ADRs ein.
 
 ## 0. Vorbereitung
 
