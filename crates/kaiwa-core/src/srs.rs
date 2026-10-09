@@ -194,12 +194,7 @@ fn next_difficulty(d: f64, g: f64) -> f64 {
 /// Which items to review now (/LF230/, /LF231/). After a break of `BREAK_DAYS` or more since
 /// `last_practice`, only a refresher: the `REFRESHER_SIZE` items closest to being forgotten.
 /// Otherwise every due item, the most at risk first, up to `limit`.
-pub fn due(
-    items: &[Item],
-    now: Moment,
-    last_practice: Option<Moment>,
-    limit: usize,
-) -> Vec<&Item> {
+pub fn due(items: &[Item], now: Moment, last_practice: Option<Moment>, limit: usize) -> Vec<&Item> {
     let today = now.day();
     let refresher = last_practice.is_some_and(|l| today.0 - l.day().0 >= BREAK_DAYS);
     let mut list: Vec<&Item> = items.iter().filter(|i| i.is_due(today)).collect();
