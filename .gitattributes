@@ -1,0 +1,2 @@
+# Voice recordings for the speech corpus live in Git LFS (decision G-03).
+qa/corpus/audio/** filter=lfs diff=lfs merge=lfs -text

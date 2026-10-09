@@ -28,3 +28,30 @@ jobs:
         run: cargo run -q -p kaiwa-sim -- validate
       - name: Journeys (text mode, recorded tutor answers)
         run: cargo run -q -p kaiwa-sim -- run
+
+  # The Qt side (G-01: Arch Linux container, current Qt 6 and KF6 from the packages).
+  # Also the probe for G-02: the first step fails unless the job really runs in the container.
+  qt:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    env:
+      QMAKE: /usr/bin/qmake6
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Runs in the Arch container
+        run: grep -q '^ID=arch' /etc/os-release
+      - name: Tools
+        run: pacman -Syu --noconfirm --needed git nodejs base-devel rust qt6-base qt6-declarative qt6-shadertools qt6-svg kirigami
+      - uses: actions/checkout@v4
+      - name: Kante (public mirror)
+        run: git clone --depth 1 https://github.com/shrippen/Kante.git ../Kante
+      - name: Build spike 0.2
+        working-directory: spikes/s02-qt
+        run: cargo build --locked
+      - name: Run spike 0.2 offscreen
+        working-directory: spikes/s02-qt
+        run: |
+          export KANTE_QML="$GITHUB_WORKSPACE/../Kante/qml"
+          timeout 60 ./target/debug/s02-qt --shot /tmp/spike.png --kind 1 2>&1 | tee /tmp/spike.log
+          test -s /tmp/spike.png
+          ! grep -E 'qrc:.*(Error|Unable|is not)' /tmp/spike.log
