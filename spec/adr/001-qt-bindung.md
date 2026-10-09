@@ -36,3 +36,10 @@ Siehe [`spikes/s02-qt/`](../../spikes/s02-qt/):
 
 - **G-01:** Die Qt-Jobs der CI laufen in einem Arch-Linux-Container (`archlinux:latest`). Qt 6 und KF6 kommen dort aus den Paketen. Der Job `qt` in `.gitea/workflows/ci.yml` baut und startet den Spike 0.2 offscreen.
 - **G-02:** Ob der Runner Container kann, zeigt derselbe Job: Sein erster Schritt scheitert, wenn er nicht in Arch läuft.
+
+## Hinweise aus M1 (App)
+
+- **Versionsgleichheit:** `cxx-gen` (über cxx-qt-build) und `cxx` müssen dieselbe Patch-Version haben. Sonst passen die Symbolnamen (`cxxbridge1$198$…` gegen `$203$`) nicht zusammen, und der Linker meldet fehlende Symbole. `Cargo.lock` hält beide gleich, und die CI baut mit `--locked`.
+- **Kante wird einkompiliert:** `tools/sync-kante.sh` kopiert Kante unverändert nach `app/qml/Kante` und schreibt `app/qml/kante.qrc` unter dem Präfix `/qt/qml`. Damit wirkt `import Kante` ohne Importpfad. Der CI-Job `qt` prüft, dass die Kopie Kantes `main` entspricht.
+- **Die App gehört zum Workspace, aber nicht zu `default-members`:** Ein normales `cargo test` baut sie nicht, das macht nur der Arch-Job.
+

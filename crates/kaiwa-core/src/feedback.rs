@@ -95,6 +95,113 @@ pub fn cross_check(first: &[Correction], second: &[Correction]) -> Vec<Correctio
         .collect()
 }
 
+/// The word for a severity in the UI language (the tier is never colour alone).
+pub fn severity_word(s: Severity, lang: &str) -> &'static str {
+    let de = lang == "de";
+    match s {
+        Severity::BlocksUnderstanding => {
+            if de {
+                "Verhindert Verständnis"
+            } else {
+                "Blocks understanding"
+            }
+        }
+        Severity::Wrong => {
+            if de {
+                "Falsch"
+            } else {
+                "Wrong"
+            }
+        }
+        Severity::Unnatural => {
+            if de {
+                "Unnatürlich"
+            } else {
+                "Unnatural"
+            }
+        }
+        Severity::Style => {
+            if de {
+                "Stil"
+            } else {
+                "Style"
+            }
+        }
+    }
+}
+
+/// The word for a kind of mistake in the UI language.
+pub fn kind_word(k: kaiwa_ai::CorrectionKind, lang: &str) -> &'static str {
+    use kaiwa_ai::CorrectionKind as K;
+    let de = lang == "de";
+    match k {
+        K::Particle => {
+            if de {
+                "Partikel"
+            } else {
+                "Particle"
+            }
+        }
+        K::Conjugation => {
+            if de {
+                "Konjugation"
+            } else {
+                "Conjugation"
+            }
+        }
+        K::WordChoice => {
+            if de {
+                "Wortwahl"
+            } else {
+                "Word choice"
+            }
+        }
+        K::Register => "Register",
+        K::WordOrder => {
+            if de {
+                "Satzstellung"
+            } else {
+                "Word order"
+            }
+        }
+        K::Counter => {
+            if de {
+                "Zählwort"
+            } else {
+                "Counter"
+            }
+        }
+        K::Omission => {
+            if de {
+                "Auslassung"
+            } else {
+                "Omission"
+            }
+        }
+        K::Loanword => {
+            if de {
+                "Lehnwort"
+            } else {
+                "Loanword"
+            }
+        }
+        K::Tense => {
+            if de {
+                "Zeitform"
+            } else {
+                "Tense"
+            }
+        }
+        K::Pronunciation => {
+            if de {
+                "Aussprache"
+            } else {
+                "Pronunciation"
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
