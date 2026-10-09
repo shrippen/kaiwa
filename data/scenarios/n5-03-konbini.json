@@ -7,6 +7,7 @@
     "en": "Cashier in a konbini in Tokyo. Speaks politely in the です/ます form and with the shop's set phrases (いらっしゃいませ, 温めますか, 袋はご利用ですか)."
   },
   "register": "polite",
+  "voice": "jf_alpha",
   "opening": "いらっしゃいませ。お{弁当|べんとう}、{温|あたた}めますか。",
   "goals": [
     {
