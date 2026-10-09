@@ -1,0 +1,19 @@
+[package]
+name = "kaiwa-store"
+version = "0.1.0"
+description = "Kaiwa's profile: SQLite file per profile, sessions, learner model, review, export and deletion"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+kaiwa-ai = { version = "0.1.0", path = "../kaiwa-ai" }
+kaiwa-core = { version = "0.1.0", path = "../kaiwa-core" }
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+thiserror = "2.0.21"
+
+[lints]
+workspace = true
