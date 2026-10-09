@@ -22,3 +22,13 @@ pub fn models_dir() -> PathBuf {
 pub fn reazonspeech_dir() -> PathBuf {
     models_dir().join(REAZONSPEECH)
 }
+
+/// Kokoro-82M v1.0 as ONNX (Apache-2.0), from the kokoro-onnx releases: `kokoro-v1.0.onnx`
+/// (310 MB) or `kokoro-v1.0.int8.onnx` (88 MB), and `voices-v1.0.bin` (27 MB).
+pub const KOKORO: &str = "kokoro-v1.0";
+pub const KOKORO_URL: &str =
+    "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/";
+
+pub fn kokoro_dir() -> PathBuf {
+    models_dir().join(KOKORO)
+}

@@ -50,6 +50,7 @@ impl Recognizer {
         config.model_config.transducer.joiner = Some(pick(dir, "joiner").ok_or_else(missing)?);
         config.model_config.tokens = Some(tokens.to_string_lossy().into_owned());
         config.model_config.num_threads = threads;
+        let _onnx = crate::onnx();
         let inner = OfflineRecognizer::create(&config)
             .ok_or_else(|| SpeechError::ModelLoad(dir.display().to_string()))?;
         Ok(Self { inner })
@@ -60,6 +61,7 @@ impl Recognizer {
         if samples.is_empty() {
             return String::new();
         }
+        let _onnx = crate::onnx();
         let stream = self.inner.create_stream();
         stream.accept_waveform(sample_rate as i32, &pad(samples, sample_rate));
         self.inner.decode(&stream);

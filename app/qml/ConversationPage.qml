@@ -51,6 +51,26 @@ Kirigami.ScrollablePage {
         RowLayout {
             Layout.fillWidth: true
             KanteHeading { text: conv.title; pageTitle: true; Layout.fillWidth: true }
+            // H-02: Kokoro speaks without pitch accent, so the page says it is a stand-in.
+            KantePill {
+                text: conv.voice.length > 0 ? conv.voice : "Ohne Stimme"
+                status: conv.talkState === KanteTalkButton.State.Speaking ? KantePill.State.Running : KantePill.State.Off
+                QQC2.ToolTip.visible: pillHover.hovered
+                QQC2.ToolTip.text: conv.voice.length > 0
+                    ? "Kokoro spricht die Antworten der Figur, aber ohne Tonhöhenakzent. Zum Nachsprechen kommt eine eigene Stimme."
+                    : conv.voiceNote
+                HoverHandler { id: pillHover }
+            }
+            KanteSegmented {
+                visible: conv.voice.length > 0
+                model: ["Laut", "Stumm"]
+                tooltips: ["Die Figur spricht ihre Antworten", "Nur lesen"]
+                currentIndex: conv.voiceOn ? 0 : 1
+                onActivated: function (i) {
+                    conv.voiceOn = i === 0
+                    if (i === 1) conv.interrupt()
+                }
+            }
             KanteSegmented {
                 model: ["System", "Kante", "Light"]
                 tooltips: ["Plattform-Stil", "Kante", "Kante Light"]
@@ -113,6 +133,12 @@ Kirigami.ScrollablePage {
         }
         KanteCallout {
             Layout.fillWidth: true
+            visible: page.showSpeechHelp && conv.voiceNote.length > 0
+            title: "Ohne Stimme"
+            text: conv.voiceNote
+        }
+        KanteCallout {
+            Layout.fillWidth: true
             visible: conv.error.length > 0
             kind: KanteCallout.Kind.Danger
             title: "Keine Antwort"
@@ -171,6 +197,7 @@ Kirigami.ScrollablePage {
                 enabled: !conv.finished
                 onTalkStarted: conv.startTalk()
                 onTalkEnded: conv.stopTalk()
+                onInterruptRequested: conv.interrupt()
                 onErrorActionRequested: page.showSpeechHelp = !page.showSpeechHelp
                 Timer {
                     interval: 80
@@ -214,7 +241,9 @@ Kirigami.ScrollablePage {
         interval: 300
         repeat: true
         onTriggered: {
-            if (conv.busy || conv.talkState === KanteTalkButton.State.Thinking) return
+            if (!conv.speechReady || conv.busy || conv.talkState === KanteTalkButton.State.Thinking) return
+            // "~" waits until the character speaks (for a shot of that state)
+            if (page.lines.length > 0 && page.lines[0] === "~" && conv.talkState !== KanteTalkButton.State.Speaking && conv.voice.length > 0) return
             if (page.lines.length > 0) {
                 var l = page.lines.slice()
                 var next = l.shift()
@@ -222,6 +251,7 @@ Kirigami.ScrollablePage {
                 if (next === "?") conv.help()
                 else if (next.indexOf("wav:") === 0) conv.sayWav(next.substring(4))
                 else if (next === "!") page.showSpeechHelp = true
+                else if (next === "~") {}
                 else conv.say(next, true)
             } else {
                 stop()

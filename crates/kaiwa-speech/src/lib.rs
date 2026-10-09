@@ -1,10 +1,14 @@
-//! Speech for Kaiwa: the microphone ([`capture`]) and speech recognition ([`stt`],
-//! ReazonSpeech through sherpa-onnx, ADR-002 / H-03). Models live outside the binary
+//! Speech for Kaiwa: the microphone ([`capture`]), speech recognition ([`stt`],
+//! ReazonSpeech through sherpa-onnx, ADR-002 / H-03) and the character's interim voice
+//! ([`tts`], Kokoro with [`g2p`], H-02) through the speaker ([`playback`]). Models live outside the binary
 //! ([`models`]); the app tells the learner where, when one is missing.
 
 pub mod capture;
+pub mod g2p;
 pub mod models;
+pub mod playback;
 pub mod stt;
+pub mod tts;
 
 #[derive(Debug, thiserror::Error)]
 pub enum SpeechError {
@@ -16,6 +20,28 @@ pub enum SpeechError {
     ModelMissing(String),
     #[error("the speech model could not be loaded from {0}")]
     ModelLoad(String),
+    #[error("no speaker found")]
+    NoSpeaker,
+    #[error("the speaker could not be opened: {0}")]
+    Speaker(String),
+    #[error("the voice failed: {0}")]
+    Voice(String),
+}
+
+static ONNX: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// ONNX Runtime work (loading, recognising, synthesising) holds this lock, one call at a time;
+/// a recognition waits for at most one sentence of synthesis.
+pub(crate) fn onnx() -> std::sync::MutexGuard<'static, ()> {
+    ONNX.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Call before the process exits. The runtime's static data is torn down at exit, while a
+/// worker thread may still be synthesising the character's line; that run then fails inside
+/// ONNX Runtime ("GetElementType is not implemented") or worse. This waits for the running
+/// call and keeps every later one from starting.
+pub fn shutdown() {
+    std::mem::forget(onnx());
 }
 
 /// Input level 0..1 for the talk button: RMS in dBFS, −60 dB → 0, 0 dB → 1.
