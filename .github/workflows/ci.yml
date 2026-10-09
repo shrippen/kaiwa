@@ -23,7 +23,7 @@ jobs:
       - name: Lint
         run: cargo clippy --all-targets -- -D warnings
       - name: Test
-        run: cargo test --all
+        run: cargo test
       - name: Personas
         run: cargo run -q -p kaiwa-sim -- validate
       - name: Journeys (text mode, recorded tutor answers)
@@ -55,3 +55,15 @@ jobs:
           timeout 60 ./target/debug/s02-qt --shot /tmp/spike.png --kind 1 2>&1 | tee /tmp/spike.log
           test -s /tmp/spike.png
           ! grep -E 'qrc:.*(Error|Unable|is not)' /tmp/spike.log
+      - name: Kante copy matches Kante main (GUI rule)
+        run: |
+          tools/sync-kante.sh ../Kante
+          git diff --exit-code -- app/qml
+      - name: Build the app
+        run: cargo build --locked -p kaiwa-app
+      - name: One scripted conversation offscreen
+        run: |
+          timeout 90 ./target/debug/kaiwa --shot /tmp/app.png --kind 1 --height 2300 \
+            --say '?|マラです。よろしくおねがいします。|ビール二ください。|コーヒーを好きです。' 2>&1 | tee /tmp/app.log
+          test -s /tmp/app.png
+          ! grep -E 'qrc:.*(Error|Unable|is not|TypeError|ReferenceError)' /tmp/app.log
