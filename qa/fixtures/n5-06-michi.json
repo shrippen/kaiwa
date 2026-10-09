@@ -1,0 +1,6 @@
+[
+  {"learner": "すみません、郵便局はどこですか。", "reply": "郵便局ですか。まっすぐ行って、二つ目の角を右です。", "analysis": {"understood": true, "goals_met": ["ask"], "corrections": [], "new_words": []}},
+  {"learner": "まっすぐ行って、右ですね。", "reply": "はい、そうです。", "analysis": {"understood": true, "goals_met": ["check"], "corrections": [], "new_words": []}},
+  {"learner": "ここから遠いですか。", "reply": "いいえ、歩いて五分ぐらいですよ。", "analysis": {"understood": true, "goals_met": ["far"], "corrections": [], "new_words": []}},
+  {"learner": "どうもありがとうございました。", "reply": "どういたしまして。", "analysis": {"understood": true, "goals_met": ["thanks"], "corrections": [], "new_words": []}}
+]

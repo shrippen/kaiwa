@@ -11,8 +11,11 @@ import org.shrippen.kaiwa
 Kirigami.ScrollablePage {
     id: page
 
-    property int styleKind: 0
-    signal styleKindChangeRequested(int kind)
+    /** The scenario to play ("" = the next on the path), or continue the interrupted one. */
+    property string scenarioId: ""
+    property bool resume: false
+    /** Back to the start page (finished, or to continue later). */
+    signal done()
     /** Screenshot mode: say the lines of `script` (separated by "|"), save `shot`, quit. */
     property string shot: ""
     property string script: ""
@@ -24,12 +27,13 @@ Kirigami.ScrollablePage {
 
     Conversation {
         id: conv
-        Component.onCompleted: start()
+        Component.onCompleted: page.resume ? resume() : start(page.scenarioId)
     }
 
     readonly property var turns: conv.turns.length > 0 ? JSON.parse(conv.turns) : []
     readonly property var goals: conv.goals.length > 0 ? JSON.parse(conv.goals) : []
     readonly property var summary: conv.summary.length > 0 ? JSON.parse(conv.summary) : null
+    readonly property var recorded: conv.recorded.length > 0 ? JSON.parse(conv.recorded) : null
     readonly property int currentGoal: {
         for (var i = 0; i < goals.length; i++) if (!goals[i].done) return i
         return goals.length
@@ -71,11 +75,12 @@ Kirigami.ScrollablePage {
                     if (i === 1) conv.interrupt()
                 }
             }
-            KanteSegmented {
-                model: ["System", "Kante", "Light"]
-                tooltips: ["Plattform-Stil", "Kante", "Kante Light"]
-                currentIndex: page.styleKind
-                onActivated: function (i) { page.styleKindChangeRequested(i) }
+            KanteButton {
+                visible: !conv.finished
+                text: "Später weiter"
+                emphasis: KanteButton.Emphasis.Quiet
+                Accessible.description: "Das Gespräch bleibt offen und lässt sich auf der Startseite fortsetzen."
+                onClicked: page.done()
             }
         }
 
@@ -152,7 +157,7 @@ Kirigami.ScrollablePage {
             spacing: KanteStyle.unit(10)
             KanteHeading { text: "Bilanz"; level: 2 }
             RowLayout {
-                spacing: KanteStyle.unit(12)
+                spacing: KanteStyle.unit(28)
                 KanteKpi { label: "Ziele"; value: page.summary ? page.summary.goalsMet + " / " + page.summary.goalsTotal : "" }
                 KanteKpi { label: "Gesprochen"; value: page.summary ? String(page.summary.spoken) : "" }
                 KanteKpi { label: "Getippt"; value: page.summary ? String(page.summary.typed) : "" }
@@ -179,6 +184,51 @@ Kirigami.ScrollablePage {
                 color: KanteStyle.mutedTextColor
                 font: KanteStyle.defaultFont
                 wrapMode: Text.Wrap
+            }
+            // What the session did for the learning model (/LF310/, /LF603/; XP only with
+            // gamification, /LF605/).
+            RowLayout {
+                visible: page.recorded !== null
+                spacing: KanteStyle.unit(28)
+                KanteKpi { label: "Minuten"; value: page.recorded ? String(page.recorded.minutes) : "" }
+                KanteKpi { label: "Neu zum Wiederholen"; value: page.recorded ? String(page.recorded.newItems) : "" }
+                KanteKpi {
+                    visible: page.recorded !== null && page.recorded.xp !== null
+                    label: "XP"
+                    value: page.recorded && page.recorded.xp !== null ? String(page.recorded.xp) : ""
+                }
+            }
+            Repeater {
+                model: page.recorded ? page.recorded.xpWhy : []
+                delegate: Text {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    text: modelData
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.smallFont
+                    wrapMode: Text.Wrap
+                }
+            }
+            Text {
+                Layout.fillWidth: true
+                visible: page.recorded !== null && !!page.recorded.change
+                text: page.recorded && page.recorded.change ? page.recorded.change : ""
+                color: KanteStyle.textColor
+                font: KanteStyle.defaultFont
+                wrapMode: Text.Wrap
+            }
+            Text {
+                Layout.fillWidth: true
+                visible: page.recorded !== null && page.recorded.scenarioDone
+                text: "Dieses Gespräch ist auf dem Lernpfad erledigt."
+                color: KanteStyle.textColor
+                font: KanteStyle.defaultFont
+                wrapMode: Text.Wrap
+            }
+            KanteButton {
+                text: "Fertig"
+                emphasis: KanteButton.Emphasis.Primary
+                onClicked: page.done()
             }
         }
     }

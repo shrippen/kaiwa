@@ -1,0 +1,6 @@
+[
+  {"learner": "Tシャツをさがしています。", "reply": "こちらはいかがですか。", "analysis": {"understood": true, "goals_met": ["look"], "corrections": [], "new_words": []}},
+  {"learner": "青いのはありますか。", "reply": "はい、ございます。こちらです。", "analysis": {"understood": true, "goals_met": ["colour"], "corrections": [], "new_words": []}},
+  {"learner": "ちょっと小さいです。", "reply": "では、こちらのMサイズはいかがですか。", "analysis": {"understood": true, "goals_met": ["size"], "corrections": [], "new_words": []}},
+  {"learner": "じゃあ、これにします。", "reply": "ありがとうございます。", "analysis": {"understood": true, "goals_met": ["buy"], "corrections": [], "new_words": []}}
+]

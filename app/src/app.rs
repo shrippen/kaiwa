@@ -1,0 +1,325 @@
+//! The app as a QObject for QML: start page, learning path, review, profile, statistics,
+//! settings and the privacy view, each a JSON property (built in `views`), and the actions on
+//! the profile. The conversation is its own object (`conversation`).
+
+#[cxx_qt::bridge]
+pub mod qobject {
+    unsafe extern "C++" {
+        include!("cxx-qt-lib/qstring.h");
+        type QString = cxx_qt_lib::QString;
+    }
+
+    extern "RustQt" {
+        #[qobject]
+        #[qml_element]
+        #[qproperty(QString, today)]
+        #[qproperty(QString, path)]
+        #[qproperty(QString, review)]
+        #[qproperty(QString, learner)]
+        #[qproperty(QString, stats)]
+        #[qproperty(QString, profile)]
+        #[qproperty(QString, privacy)]
+        /// UI language, "de" or "en".
+        #[qproperty(QString, lang)]
+        #[qproperty(bool, gamification)]
+        /// The last review answer: {"right", "expected", "next"}.
+        #[qproperty(QString, answer)]
+        /// A short message after an action (export, deletion).
+        #[qproperty(QString, notice)]
+        type KaiwaApp = super::KaiwaAppRust;
+
+        /// Reads everything again from the profile.
+        #[qinvokable]
+        fn refresh(self: Pin<&mut KaiwaApp>);
+
+        /// Changes one setting: goal, gamification, feedback, script, endPause, style, uiLang,
+        /// reminder, name.
+        #[qinvokable]
+        #[cxx_name = "setSetting"]
+        fn set_setting(self: Pin<&mut KaiwaApp>, key: &QString, value: &QString);
+
+        /// "I know this already" (up) or "too hard" for a skill (/LF202/).
+        #[qinvokable]
+        fn nudge(self: Pin<&mut KaiwaApp>, skill: &QString, up: bool);
+
+        /// A review answer: what the learner said or typed for `text` (/LF230/).
+        #[qinvokable]
+        #[cxx_name = "answerReview"]
+        fn answer_review(self: Pin<&mut KaiwaApp>, text: &QString, said: &QString, helped: bool);
+
+        /// Writes the export (JSON) to `file` (/LF710/).
+        #[qinvokable]
+        #[cxx_name = "exportProfile"]
+        fn export_profile(self: Pin<&mut KaiwaApp>, file: &QString);
+
+        /// Deletes the profile completely and starts a new, empty one (/LF710/).
+        #[qinvokable]
+        #[cxx_name = "deleteProfile"]
+        fn delete_profile(self: Pin<&mut KaiwaApp>);
+
+        /// Pause mode for `days` days from today (/LF602/).
+        #[qinvokable]
+        fn pause(self: Pin<&mut KaiwaApp>, days: i32);
+
+        /// Skips a unit after the offer (/LF215/).
+        #[qinvokable]
+        #[cxx_name = "skipUnit"]
+        fn skip_unit(self: Pin<&mut KaiwaApp>, unit: &QString);
+
+        /// Starts at zero without the placement (/LF200/).
+        #[qinvokable]
+        #[cxx_name = "skipPlacement"]
+        fn skip_placement(self: Pin<&mut KaiwaApp>);
+    }
+}
+
+use core::pin::Pin;
+
+use cxx_qt_lib::QString;
+use kaiwa_core::difficulty::Knob;
+use kaiwa_core::learner::Skill;
+use kaiwa_core::progress::{DailyGoal, Pause};
+use kaiwa_core::srs::Grade;
+use kaiwa_store::{Script, Store};
+use serde_json::json;
+
+use crate::state::{now, state};
+use crate::views;
+
+#[derive(Default)]
+pub struct KaiwaAppRust {
+    today: QString,
+    path: QString,
+    review: QString,
+    learner: QString,
+    stats: QString,
+    profile: QString,
+    privacy: QString,
+    lang: QString,
+    gamification: bool,
+    answer: QString,
+    notice: QString,
+}
+
+fn q(v: &serde_json::Value) -> QString {
+    QString::from(&v.to_string())
+}
+
+impl qobject::KaiwaApp {
+    fn refresh(mut self: Pin<&mut Self>) {
+        let now = now();
+        let (today, path, review, learner, stats, profile, lang, gam) = {
+            let st = state();
+            let p = st.store.profile().unwrap_or_default();
+            (
+                views::today(&st, now),
+                views::path(&st),
+                views::review(&st, now, 10),
+                views::learner(&st),
+                views::stats(&st, now),
+                views::profile(&st),
+                p.ui_lang.clone(),
+                p.gamification,
+            )
+        };
+        let ok = |r: anyhow::Result<serde_json::Value>| match r {
+            Ok(v) => q(&v),
+            Err(e) => {
+                eprintln!("kaiwa: {e:#}");
+                QString::from("null")
+            }
+        };
+        self.as_mut().set_today(ok(today));
+        self.as_mut().set_path(ok(path));
+        self.as_mut().set_review(ok(review));
+        self.as_mut().set_learner(ok(learner));
+        self.as_mut().set_stats(ok(stats));
+        self.as_mut().set_profile(ok(profile));
+        self.as_mut().set_privacy(q(&views::privacy(&lang)));
+        self.as_mut().set_lang(QString::from(&lang));
+        self.as_mut().set_gamification(gam);
+    }
+
+    fn set_setting(mut self: Pin<&mut Self>, key: &QString, value: &QString) {
+        let (key, value) = (key.to_string(), value.to_string());
+        {
+            let st = state();
+            let mut p = st.store.profile().unwrap_or_default();
+            match key.as_str() {
+                "goal" => {
+                    if let Ok(m) = value.parse::<u32>() {
+                        p.daily_goal = DailyGoal::Minutes(m.clamp(1, 120));
+                    }
+                }
+                "gamification" => p.gamification = value == "true",
+                "feedback" => {
+                    if let Ok(a) = serde_json::from_value(json!(value)) {
+                        p.feedback = a;
+                    }
+                }
+                "script" => {
+                    p.script = match value.as_str() {
+                        "1" => Script::Kana,
+                        "2" => Script::Hidden,
+                        _ => Script::Furigana,
+                    }
+                }
+                "endPause" => {
+                    if let Ok(s) = value.parse::<f32>() {
+                        p.end_pause_secs = s.clamp(1.2, 5.0);
+                    }
+                }
+                "style" => p.style = value.parse().unwrap_or(0).min(2),
+                "uiLang" => {
+                    p.ui_lang = if value == "en" {
+                        "en".into()
+                    } else {
+                        "de".into()
+                    }
+                }
+                "reminder" => p.reminder = value.parse().ok(),
+                "name" => p.name = value,
+                _ => return,
+            }
+            if let Err(e) = st.store.set_profile(&p) {
+                eprintln!("kaiwa: {e}");
+            }
+        }
+        self.as_mut().refresh();
+    }
+
+    fn nudge(mut self: Pin<&mut Self>, skill: &QString, up: bool) {
+        let Ok(skill) = serde_json::from_value::<Skill>(json!(skill.to_string())) else {
+            return;
+        };
+        {
+            let st = state();
+            if let Ok(mut l) = st.store.learning() {
+                l.model.nudge(skill, up);
+                // "Too easy" for listening lifts the speed one step at once (Selin, /LF202/).
+                let knob = match skill {
+                    Skill::Listening => Some(Knob::Speed),
+                    Skill::ReadingKanji => Some(Knob::Furigana),
+                    Skill::Speaking => Some(Knob::Length),
+                    Skill::Register => Some(Knob::Register),
+                    _ => None,
+                };
+                if let Some(k) = knob {
+                    let step = l.regulator.difficulty.get(k);
+                    let to = if up {
+                        step.saturating_add(1)
+                    } else {
+                        step.saturating_sub(1)
+                    };
+                    l.regulator.set_by_learner(k, to);
+                }
+                let _ = st.store.set_learning(&l);
+            }
+        }
+        self.as_mut().refresh();
+    }
+
+    fn answer_review(mut self: Pin<&mut Self>, text: &QString, said: &QString, helped: bool) {
+        let (text, said) = (text.to_string(), said.to_string());
+        let right = kaiwa_core::norm(&said) == kaiwa_core::norm(&text);
+        let grade = Grade::of(right, helped, false);
+        let result = {
+            let st = state();
+            st.store.review(&text, grade, now())
+        };
+        let next = match result {
+            Ok(Some(item)) => item.due.iso(),
+            _ => String::new(),
+        };
+        self.as_mut().set_answer(q(&json!({
+            "right": right,
+            "expected": text,
+            "said": said,
+            "next": next,
+        })));
+        self.as_mut().refresh();
+    }
+
+    fn export_profile(mut self: Pin<&mut Self>, file: &QString) {
+        let file = file.to_string();
+        let file = file.strip_prefix("file://").unwrap_or(&file).to_string();
+        let result = {
+            let st = state();
+            st.store
+                .export(now())
+                .map_err(anyhow::Error::from)
+                .and_then(|v| {
+                    std::fs::write(&file, serde_json::to_string_pretty(&v)?)?;
+                    Ok(())
+                })
+        };
+        let de = self.lang().to_string() == "de";
+        self.as_mut().set_notice(QString::from(&match result {
+            Ok(()) if de => format!("Exportiert nach {file}."),
+            Ok(()) => format!("Exported to {file}."),
+            Err(e) if de => format!("Der Export ist fehlgeschlagen: {e}"),
+            Err(e) => format!("The export failed: {e}"),
+        }));
+    }
+
+    fn delete_profile(mut self: Pin<&mut Self>) {
+        let result = {
+            let mut st = state();
+            let path = st.path.clone();
+            match Store::in_memory() {
+                Ok(mem) => {
+                    // Close the file before removing it.
+                    st.store = mem;
+                    kaiwa_store::delete_profile(&path)
+                        .map_err(anyhow::Error::from)
+                        .and_then(|_| {
+                            st.store = Store::open(&path)?;
+                            Ok(())
+                        })
+                }
+                Err(e) => Err(e.into()),
+            }
+        };
+        let de = self.lang().to_string() == "de";
+        self.as_mut().set_notice(QString::from(match (result, de) {
+            (Ok(()), true) => "Alle Daten dieses Profils sind gelöscht.".to_string(),
+            (Ok(()), false) => "All data of this profile is deleted.".to_string(),
+            (Err(e), true) => format!("Das Löschen ist fehlgeschlagen: {e}"),
+            (Err(e), false) => format!("Deleting failed: {e}"),
+        }));
+        self.as_mut().refresh();
+    }
+
+    fn pause(mut self: Pin<&mut Self>, days: i32) {
+        if days > 0 {
+            let today = now().day();
+            let st = state();
+            let _ = st.store.add_pause(Pause {
+                from: today,
+                to: today.plus(i64::from(days) - 1),
+            });
+        }
+        self.as_mut().refresh();
+    }
+
+    fn skip_unit(mut self: Pin<&mut Self>, unit: &QString) {
+        {
+            let st = state();
+            if let Ok(mut l) = st.store.learning() {
+                l.course.skipped_units.insert(unit.to_string());
+                let _ = st.store.set_learning(&l);
+            }
+        }
+        self.as_mut().refresh();
+    }
+
+    fn skip_placement(mut self: Pin<&mut Self>) {
+        {
+            let st = state();
+            let mut p = st.store.profile().unwrap_or_default();
+            p.placed = true;
+            let _ = st.store.set_profile(&p);
+        }
+        self.as_mut().refresh();
+    }
+}

@@ -1,10 +1,27 @@
 # Kaiwa (App)
 
-Kirigami-App mit der GUI aus Kante 1.25 über `kaiwa-core`. Stand M1: ein Szenario (Sich vorstellen, N5-02). Man antwortet gesprochen (Push-to-Talk, ReazonSpeech, H-06) oder getippt, Hilfe gibt es in drei Stufen. Korrekturen erscheinen als Hint-Cards mit Diff unter dem eigenen Satz, am Ende steht die Bilanz. Die Figur spricht ihre Antworten mit einer Übergangsstimme (Kokoro, H-02).
+Kirigami-App mit der GUI aus Kante 1.25 über `kaiwa-core` und `kaiwa-store`. Stand M2:
 
-| Kante (dunkel) | Kante (Leinen) | System |
+- **Heute:** Fortsetzen einer unterbrochenen Sitzung, Tagesziel mit Serie, das nächste Szenario auf dem Lernpfad und die fälligen Wiederholungen.
+- **Lernpfad:** zwölf N5-Einheiten mit Zuständen in Zeichen und Wort.
+- **Gespräch:** gesprochen (Push-to-Talk, ReazonSpeech) oder getippt, Hilfe in drei Stufen, Korrekturen als Hint-Cards mit Diff. Die Figur spricht mit der Übergangsstimme (Kokoro, H-02). Die Bilanz am Ende sagt, was sich für den Lernstand ändert.
+- **Wiederholen:** fällige Wörter und eigene Korrekturen zum Nachsprechen oder Tippen (FSRS).
+- **Profil:** der Lernstand in Worten, mit „Kann ich schon“ und „Zu schwer“, die aktuelle Schwierigkeit und zwölf Wochen Statistik.
+- **Einstellungen:** Tagesziel, Feedbackmenge, Schrift, Sprechpause, Punkte und Serie, Pause, Erinnerung, Stil, Sprache, „Was verlässt das Gerät?“, Export und Löschen.
+
+Das Profil ist eine Datei: `~/.local/share/kaiwa/profiles/default.kaiwa` (oder `$KAIWA_DATA`). Unterbrochene Gespräche gehen nach dem Neustart weiter.
+
+| Heute (Kante) | Heute (Leinen) | Heute (System) |
 |---|---|---|
-| ![](shots/kante.png) | ![](shots/light.png) | ![](shots/system.png) |
+| ![](shots/start-kante.png) | ![](shots/start-light.png) | ![](shots/start-system.png) |
+
+| Lernpfad | Gespräch mit Bilanz | Wiederholen |
+|---|---|---|
+| ![](shots/path-kante.png) | ![](shots/talk-kante.png) | ![](shots/review-kante.png) |
+
+| Profil | Einstellungen |
+|---|---|
+| ![](shots/profile-kante.png) | ![](shots/settings-kante.png) |
 
 ## Bauen und starten
 
@@ -66,9 +83,12 @@ tools/sync-kante.sh ../Kante   # Kopie unverändert (GUI-Regel), danach committe
 
 ## Screenshots
 
+`KAIWA_DEMO=1` startet mit einem frischen Profil im Temp-Verzeichnis, gefüllt mit zwei Wochen Verlauf. `KAIWA_NOW=<unix>:<offset in Minuten>` hält die Uhr fest.
+
 ```sh
-cargo run -p kaiwa-app -- --shot out.png --kind 1 --light 0 --height 2300 \
-  --say '?|マラです。よろしくおねがいします。|コーヒーを好きです。'   # "?" fragt nach Hilfe
-cargo run -p kaiwa-app -- --shot out.png --say 'wav:satz.wav'   # WAV als gesprochener Zug, "!" zeigt die Sprechhilfe
-cargo run -p kaiwa-app -- --shot out.png --say 'マラです。|~'      # "~" wartet, bis die Figur spricht
+export KAIWA_DEMO=1 KAIWA_NOW=1792478400:120
+cargo run -p kaiwa-app -- --shot out.png --view path --kind 1           # start, path, review, profile, settings
+cargo run -p kaiwa-app -- --shot out.png --view talk --scenario n5-03-konbini --kind 1 \
+  --say 'はい、おねがいします。|袋はいりません。'                        # "?" Hilfe, "!" Sprechhilfe, "wav:datei", "~" wartet auf die Stimme
+cargo run -p kaiwa-app -- --shot out.png --view talk --resume           # die unterbrochene Sitzung
 ```

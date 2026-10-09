@@ -1,5 +1,7 @@
 //! The conversation as a QObject for QML. State goes to QML as JSON strings (turns, goals,
 //! summary), so the page renders it with Kante components without a C++ model class.
+//! The session lives in the profile: saved after every turn (to continue later, /LF121/) and
+//! recorded at the end (learner model, difficulty, path, review, day).
 //! Provider calls run on a worker thread and come back through `qt_thread().queue`, the
 //! path spike 0.2 tried (ADR-001).
 
@@ -35,11 +37,19 @@ pub mod qobject {
         #[qproperty(QString, voice_note, cxx_name = "voiceNote")]
         /// Both speech models are loaded or known to be missing.
         #[qproperty(bool, speech_ready, cxx_name = "speechReady")]
+        /// The scenario being played.
+        #[qproperty(QString, scenario)]
+        /// What the end of the session did: XP and why, the difficulty, new review items.
+        #[qproperty(QString, recorded)]
         type Conversation = super::ConversationRust;
 
-        /// Start the scenario (the character's opening line).
+        /// Start a scenario (the character's opening line); "" plays the next one on the path.
         #[qinvokable]
-        fn start(self: Pin<&mut Conversation>);
+        fn start(self: Pin<&mut Conversation>, scenario: &QString);
+
+        /// Continue the session that was interrupted (/LF121/).
+        #[qinvokable]
+        fn resume(self: Pin<&mut Conversation>);
 
         /// The learner's turn, spoken (`typed` false) or typed.
         #[qinvokable]
@@ -87,7 +97,8 @@ use cxx_qt_lib::QString;
 use kaiwa_ai::ChatProvider;
 use kaiwa_ai::mock::MockProvider;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
-use kaiwa_core::{Amount, Input, Scenario, Session, Summary, TurnOutcome};
+use kaiwa_core::session::SessionState;
+use kaiwa_core::{Input, Scenario, Session, Summary, TurnOutcome};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
 use kaiwa_speech::models::{KOKORO_URL, REAZONSPEECH_URL, kokoro_dir, reazonspeech_dir};
@@ -96,9 +107,7 @@ use kaiwa_speech::stt::Recognizer;
 use kaiwa_speech::tts::{self, Voice};
 use serde_json::{Value, json};
 
-const SCENARIO: &str = include_str!("../../data/scenarios/n5-02-jikoshoukai.json");
-const FIXTURES: &str = include_str!("../../qa/fixtures/n5-02-jikoshoukai.json");
-const LANG: &str = "de";
+use crate::state::{now, state};
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -119,6 +128,11 @@ pub struct ConversationRust {
     voice_on: bool,
     voice_note: QString,
     speech_ready: bool,
+    scenario: QString,
+    recorded: QString,
+    lang: String,
+    session_id: Option<i64>,
+    started: Option<kaiwa_core::Moment>,
     session: Option<Arc<Mutex<Session>>>,
     log: Vec<Value>,
     recognizer: Option<Arc<Recognizer>>,
@@ -146,23 +160,24 @@ const SPEED: f32 = 0.9;
 
 /// The tutor from the environment (`kaiwa_ai::provider_from_env`, for the owner's local
 /// test); recorded answers otherwise (demo mode).
-fn provider() -> (Arc<dyn ChatProvider>, bool) {
+fn provider(scenario: &str) -> (Arc<dyn ChatProvider>, bool) {
     match kaiwa_ai::provider_from_env() {
         Ok(Some(p)) => return (p, false),
         Ok(None) => {}
         Err(e) => eprintln!("kaiwa: {e}; using recorded answers"),
     }
-    let mock = MockProvider::from_json(FIXTURES)
-        .expect("bundled fixtures are valid")
+    let mock = crate::state::fixtures(scenario)
+        .and_then(|f| MockProvider::from_json(f).ok())
+        .unwrap_or_default()
         .with_fallback("すみません、もう一度お願いします。");
     (Arc::new(mock), true)
 }
 
-fn shown_json(s: &Shown) -> Value {
+fn shown_json(s: &Shown, lang: &str) -> Value {
     json!({
         "tier": s.tier,
-        "tierText": if s.correction.also_possible { if LANG == "de" { "Auch möglich" } else { "Also possible" } } else { severity_word(s.correction.severity, LANG) },
-        "meta": kind_word(s.correction.kind, LANG),
+        "tierText": if s.correction.also_possible { if lang == "de" { "Auch möglich" } else { "Also possible" } } else { severity_word(s.correction.severity, lang) },
+        "meta": kind_word(s.correction.kind, lang),
         "parts": s.parts,
         "better": s.correction.better,
         "explanation": s.correction.explanation,
@@ -170,11 +185,11 @@ fn shown_json(s: &Shown) -> Value {
     })
 }
 
-fn summary_json(s: &Summary) -> Value {
+fn summary_json(s: &Summary, lang: &str) -> Value {
     json!({
         "goalsMet": s.goals_met.len(),
         "goalsTotal": s.goals_total,
-        "top": s.top.iter().map(shown_json).collect::<Vec<_>>(),
+        "top": s.top.iter().map(|x| shown_json(x, lang)).collect::<Vec<_>>(),
         "review": s.review,
         "spoken": s.spoken_turns,
         "typed": s.typed_turns,
@@ -192,46 +207,102 @@ impl qobject::Conversation {
         let Some(session) = self.session.clone() else {
             return;
         };
-        let session = session.lock().expect("session lock");
-        let met = session.summary().goals_met;
-        let goals: Vec<Value> = session
-            .scenario
-            .goals
+        let lang = self.lang.clone();
+        let session_id = self.session_id;
+        let started = self.started;
+        let guard = session.lock().expect("session lock");
+        let met = guard.summary().goals_met;
+        let goals: Vec<Value> = guard
+            .goals()
             .iter()
-            .map(|g| json!({ "id": g.id, "text": g.text.get(LANG), "done": met.contains(&g.id) }))
+            .map(|g| json!({ "id": g.id, "text": g.text.get(&lang), "done": met.contains(&g.id) }))
             .collect();
-        let done = session.done();
-        let summary = summary_json(&session.summary()).to_string();
-        drop(session);
+        let done = guard.done();
+        let summary = summary_json(&guard.summary(), &lang).to_string();
+        // Keep the state after every turn; record the session once it is done.
+        let recorded = {
+            let st = state();
+            match session_id {
+                Some(id) if done && !*self.finished() => {
+                    let end = now();
+                    match st.store.record(
+                        id,
+                        &guard,
+                        started.unwrap_or(end),
+                        end,
+                        Some(&st.curriculum),
+                    ) {
+                        Ok(r) => Some(recorded_json(&r, &guard, st.store.profile().ok(), &lang)),
+                        Err(e) => {
+                            eprintln!("kaiwa: {e}");
+                            None
+                        }
+                    }
+                }
+                Some(id) if !done => {
+                    if let Err(e) = st.store.save_session(id, &guard.snapshot()) {
+                        eprintln!("kaiwa: {e}");
+                    }
+                    None
+                }
+                _ => None,
+            }
+        };
+        drop(guard);
         self.as_mut()
             .set_goals(QString::from(&Value::Array(goals).to_string()));
+        if let Some(r) = recorded {
+            self.as_mut().set_recorded(QString::from(&r.to_string()));
+        }
         if done {
             self.as_mut().set_summary(QString::from(&summary));
             self.as_mut().set_finished(true);
         }
     }
 
-    fn start(mut self: Pin<&mut Self>) {
-        let scenario = Scenario::from_json(SCENARIO).expect("bundled scenario is valid");
-        let (provider, demo) = provider();
-        let title = scenario.title.get(LANG).to_string();
-        let opening = scenario.opening.clone();
-        let voice = scenario
+    /// Shows a session (new or restored) and loads speech once.
+    fn begin(
+        mut self: Pin<&mut Self>,
+        session: Session,
+        id: Option<i64>,
+        demo: bool,
+        log: Vec<Value>,
+        lang: String,
+    ) {
+        let title = session.scenario.title.get(&lang).to_string();
+        let scenario = session.scenario.id.clone();
+        let voice = session
+            .scenario
             .voice
             .clone()
             .unwrap_or_else(|| "jf_tebukuro".into());
-        let session = Session::new(scenario, provider, Amount::Little, LANG);
+        let opening = (log.len() == 1).then(|| session.opening().to_string());
         {
             let mut rust = self.as_mut().rust_mut();
             rust.session = Some(Arc::new(Mutex::new(session)));
-            rust.log = vec![json!({ "who": "character", "markup": opening })];
+            rust.log = log;
+            rust.lang = lang;
+            rust.session_id = id;
+            rust.started = Some(now());
         }
         self.as_mut().set_title(QString::from(&title));
+        self.as_mut().set_scenario(QString::from(&scenario));
+        self.as_mut().set_recorded(QString::default());
+        self.as_mut().set_summary(QString::default());
         self.as_mut().set_demo(demo);
         self.as_mut().set_finished(false);
         self.as_mut().set_error(QString::default());
+        self.as_mut().set_help_text(QString::default());
+        self.as_mut().set_help_level(0);
         self.as_mut().publish_turns();
         self.as_mut().publish_goals();
+        if *self.speech_ready() {
+            // Speech is loaded already: speak the opening of the new scenario.
+            if let Some(o) = opening {
+                self.as_mut().speak(&o);
+            }
+            return;
+        }
         self.as_mut().set_voice_on(true);
         self.as_mut().set_talk_state(THINKING);
         let thread = self.qt_thread();
@@ -240,6 +311,55 @@ impl qobject::Conversation {
             load_recognizer(&thread);
             load_voice(&thread, &voice);
         });
+    }
+
+    fn resume(self: Pin<&mut Self>) {
+        let found = {
+            let st = state();
+            let profile = st.store.profile().unwrap_or_default();
+            st.store.open_session().ok().flatten().and_then(|row| {
+                let state = st.store.session_state(row.id).ok()?;
+                let scenario = st.scenarios.get(&state.scenario)?.clone();
+                Some((row.id, state, scenario, profile.ui_lang))
+            })
+        };
+        let Some((id, state, scenario, lang)) = found else {
+            return;
+        };
+        let log = log_of(&scenario, &state, &lang);
+        let (provider, demo) = provider(&scenario.id);
+        let session = Session::restore(scenario, provider, state);
+        self.begin(session, Some(id), demo, log, lang);
+    }
+
+    fn start(self: Pin<&mut Self>, scenario: &QString) {
+        let wanted = scenario.to_string();
+        let prepared = {
+            let st = state();
+            let profile = st.store.profile().unwrap_or_default();
+            let learning = st.store.learning().unwrap_or_default();
+            let id = if wanted.is_empty() {
+                st.curriculum
+                    .next_scenario(&learning.course)
+                    .unwrap_or_else(|| "n5-02-jikoshoukai".into())
+            } else {
+                wanted
+            };
+            st.scenarios
+                .get(&id)
+                .cloned()
+                .map(|s| (s, profile, learning))
+        };
+        let Some((scenario, profile, learning)) = prepared else {
+            return;
+        };
+        let (provider, demo) = provider(&scenario.id);
+        let opening = scenario.opening.clone();
+        let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
+            .with_difficulty(learning.regulator.difficulty.clone());
+        let id = state().store.begin_session(&session.snapshot(), now()).ok();
+        let log = vec![json!({ "who": "character", "markup": opening })];
+        self.begin(session, id, demo, log, profile.ui_lang);
     }
 
     /// Says a line of the character (furigana markup) sentence by sentence; the first plays
@@ -408,9 +528,11 @@ impl qobject::Conversation {
                     Ok(outcome) => {
                         {
                             let mut rust = q.as_mut().rust_mut();
+                            let lang = rust.lang.clone();
                             if let Some(turn) = rust.log.get_mut(index) {
-                                turn["corrections"] =
-                                    Value::Array(outcome.shown.iter().map(shown_json).collect());
+                                turn["corrections"] = Value::Array(
+                                    outcome.shown.iter().map(|x| shown_json(x, &lang)).collect(),
+                                );
                                 turn["pending"] = json!(false);
                             }
                             rust.log.push(
@@ -526,4 +648,44 @@ fn german(e: &SpeechError) -> String {
         SpeechError::Speaker(why) => format!("Der Lautsprecher lässt sich nicht öffnen ({why})."),
         SpeechError::Voice(why) => format!("Die Stimme ist ausgefallen ({why})."),
     }
+}
+
+/// The page's log of a restored session: the opening, then each turn with its corrections and
+/// the character's reply.
+fn log_of(scenario: &Scenario, state: &SessionState, lang: &str) -> Vec<Value> {
+    let mut log = vec![json!({ "who": "character", "markup": scenario.opening })];
+    for t in &state.turns {
+        let shown = kaiwa_core::feedback::visible(
+            if t.misrecognized { &[] } else { &t.corrections },
+            state.amount,
+        );
+        log.push(json!({
+            "who": "learner",
+            "text": t.learner,
+            "typed": t.input == Input::Typed,
+            "corrections": shown.iter().map(|x| shown_json(x, lang)).collect::<Vec<_>>(),
+            "pending": false,
+        }));
+        log.push(json!({ "who": "character", "markup": t.reply }));
+    }
+    log
+}
+
+/// What the end of the session did, in words (/LF310/, /LF603/, /LF605/).
+fn recorded_json(
+    r: &kaiwa_store::Recorded,
+    s: &Session,
+    profile: Option<kaiwa_store::Profile>,
+    lang: &str,
+) -> Value {
+    let gamification = profile.map(|p| p.gamification).unwrap_or(true);
+    let change = r.change.as_ref().map(|c| c.words(lang));
+    json!({
+        "xp": if gamification { Some(r.xp) } else { None },
+        "xpWhy": if gamification { s.summary().xp.explain(lang) } else { Vec::new() },
+        "change": change,
+        "newItems": r.new_items,
+        "scenarioDone": r.scenario_done,
+        "minutes": r.day.speaking_secs / 60,
+    })
 }

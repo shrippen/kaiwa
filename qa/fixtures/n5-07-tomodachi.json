@@ -1,0 +1,6 @@
+[
+  {"learner": "さいきん、テニスしてるよ。", "reply": "へえ、いいね！", "analysis": {"understood": true, "goals_met": ["hobby"], "corrections": [], "new_words": []}},
+  {"learner": "アニメが好き。", "reply": "わたしもアニメ好き！", "analysis": {"understood": true, "goals_met": ["like"], "corrections": [], "new_words": []}},
+  {"learner": "アオイは？しゅみ、なに？", "reply": "わたしは写真かな。", "analysis": {"understood": true, "goals_met": ["ask_back"], "corrections": [], "new_words": []}},
+  {"learner": "こんど、いっしょに行かない？", "reply": "いいね、行こう！", "analysis": {"understood": true, "goals_met": ["plan"], "corrections": [], "new_words": []}}
+]

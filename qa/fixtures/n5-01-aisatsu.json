@@ -1,0 +1,6 @@
+[
+  {"learner": "おはようございます。", "reply": "今日は寒くないですね。", "analysis": {"understood": true, "goals_met": ["greet"], "corrections": [], "new_words": []}},
+  {"learner": "そうですね。いい天気ですね。", "reply": "ええ、本当に。あ、荷物を預かりましたよ。", "analysis": {"understood": true, "goals_met": ["weather"], "corrections": [], "new_words": []}},
+  {"learner": "にもつ、ありがとうございました。", "reply": "いえいえ。お出かけですか。", "analysis": {"understood": true, "goals_met": ["thanks"], "corrections": [], "new_words": []}},
+  {"learner": "じゃあ、いってきます。", "reply": "いってらっしゃい。", "analysis": {"understood": true, "goals_met": ["bye"], "corrections": [], "new_words": []}}
+]
