@@ -1,0 +1,28 @@
+{
+  "id": "n5-03-konbini",
+  "unit": "N5-03",
+  "title": { "de": "An der Konbini", "en": "At the konbini" },
+  "character": {
+    "de": "Kassiererin in einer Konbini in Tokio. Spricht höflich in です/ます-Form und mit den festen Wendungen des Ladens (いらっしゃいませ, 温めますか, 袋はご利用ですか).",
+    "en": "Cashier in a konbini in Tokyo. Speaks politely in the です/ます form and with the shop's set phrases (いらっしゃいませ, 温めますか, 袋はご利用ですか)."
+  },
+  "register": "polite",
+  "opening": "いらっしゃいませ。お{弁当|べんとう}、{温|あたた}めますか。",
+  "goals": [
+    {
+      "id": "warm",
+      "text": { "de": "Antworte, ob das Essen warm gemacht werden soll.", "en": "Say whether the food should be warmed up." },
+      "help": { "keyword": "おねがいします", "start": "はい、…", "example": "はい、おねがいします。" }
+    },
+    {
+      "id": "bag",
+      "text": { "de": "Sag, dass du keine Tüte brauchst.", "en": "Say that you need no bag." },
+      "help": { "keyword": "袋（ふくろ）", "start": "袋は…", "example": "袋はいりません。" }
+    },
+    {
+      "id": "price",
+      "text": { "de": "Frag, was es kostet.", "en": "Ask what it costs." },
+      "help": { "keyword": "いくら", "start": "これは…", "example": "これはいくらですか。" }
+    }
+  ]
+}

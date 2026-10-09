@@ -86,4 +86,32 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn every_scenario_and_its_fixtures_load() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        for entry in std::fs::read_dir(root.join("data/scenarios")).unwrap() {
+            let path = entry.unwrap().path();
+            let s = Scenario::from_json(&std::fs::read_to_string(&path).unwrap()).unwrap();
+            assert_eq!(
+                path.file_stem().unwrap(),
+                s.id.as_str(),
+                "file name is the id"
+            );
+            let fixtures = root.join(format!("qa/fixtures/{}.json", s.id));
+            if fixtures.exists() {
+                let m = std::fs::read_to_string(fixtures).unwrap();
+                let parsed: Vec<kaiwa_ai::mock::Fixture> = serde_json::from_str(&m).unwrap();
+                for f in parsed {
+                    for g in &f.analysis.goals_met {
+                        assert!(
+                            s.goal(g).is_some(),
+                            "{}: fixture names unknown goal {g}",
+                            s.id
+                        );
+                    }
+                }
+            }
+        }
+    }
 }
