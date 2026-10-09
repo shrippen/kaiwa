@@ -1,6 +1,8 @@
 [workspace]
 resolver = "3"
 members = ["crates/*"]
+# Spikes build on their own (Qt and other toolchains the CI does not have).
+exclude = ["spikes"]
 
 [workspace.package]
 edition = "2024"

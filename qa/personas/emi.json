@@ -1,7 +1,7 @@
 {
   "id": "emi",
   "name": "Emi Hartmann",
-  "demo_world_id": null,
+  "demo_world_id": "circle.emi",
   "summary": "Herkunftssprecherin, 27: japanische Mutter, in Hamburg aufgewachsen. Spricht flüssig Familien-Japanisch, kann aber kein 敬語 und kaum Kanji. Prüft Einstufung nach oben, das Überspringen von Einheiten, Höflichkeitssprache und die Obergrenze der Schwierigkeit.",
   "profile": {
     "age": 27,

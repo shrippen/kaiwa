@@ -1,6 +1,6 @@
 # ADR-001: Rust ↔ Qt/QML
 
-**Status:** Vorgeschlagen · **Bezug:** /LL503/, Roadmap 0.2
+**Status:** Angenommen (Spike 0.2) · **Bezug:** /LL503/, Roadmap 0.2
 
 ## Kontext
 
@@ -21,3 +21,13 @@ Der Kern ist in Rust, die Oberfläche in QML mit Kirigami und Kante (`qml/Kante`
 ## Spike 0.2 (Abnahme)
 
 Ein Kirigami-Fenster mit `KanteScope`, `KanteButton`, `KanteMessage` und Stilumschaltung System/Kante/Kante Light. Ein Rust-Signal aktualisiert die Oberfläche. Der Build läuft unter Linux und in der CI.
+
+## Ergebnis Spike 0.2
+
+Siehe [`spikes/s02-qt/`](../../spikes/s02-qt/):
+
+- Mit cxx-qt 0.10, Qt 6.8 und Kirigami 6.10 läuft ein Kirigami-Fenster mit Kante 1.25 (System, Kante, Kante Light), gesteuert von einem Rust-QObject. Ergebnisse kommen aus einem Worker-Thread über `qt_thread().queue`.
+- **Festlegungen:**
+  - Properties tragen `cxx_name` in camelCase.
+  - Kante wird unverändert nach `app/qml/Kante` kopiert, mit Sync-Skript und CI-Gleichstandsprüfung.
+  - Die App-CI braucht Qt ≥ 6.6 und KF6. Ubuntu 24.04 hat nur Qt 6.4. Das Image ist eine offene Frage im Fragenpaket 2.

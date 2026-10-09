@@ -10,7 +10,7 @@ Offene Punkte tragen eine Frage-ID (`F-xx`) aus dem jeweiligen Fragenpaket. Die 
 
 | ADR | Thema | Status | Empfehlung |
 |---|---|---|---|
-| [001](001-qt-bindung.md) | Rust ↔ Qt/QML | Vorgeschlagen | cxx-qt |
+| [001](001-qt-bindung.md) | Rust ↔ Qt/QML | Angenommen (Spike 0.2) | cxx-qt 0.10; `cxx_name` in camelCase; Kante als Kopie |
 | [002](002-stt.md) | Spracherkennung | Vorgeschlagen, Spike 0.3 | lokal whisper.cpp, Kandidat ReazonSpeech; Cloud optional |
 | [003](003-tts.md) | Sprachausgabe | Vorgeschlagen, Spike 0.4 | lokal Kokoro (Apache-2.0), VOICEVOX optional; Cloud optional |
 | [004](004-llm.md) | KI-Tutor und Korrektur | Angenommen, Modellwahl im Spike 0.5 | zwei Aufrufe (Antwort gestreamt, Analyse parallel); Vorlagen OpenAI-kompatibel und Anthropic; lokales Modell per Download oder eigener Server |
