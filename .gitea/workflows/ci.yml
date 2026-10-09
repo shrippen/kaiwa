@@ -1,0 +1,28 @@
+# CI: format, lint, tests, persona validation.
+#
+# This same file lives in .gitea/workflows and .github/workflows: Gitea reads the copy in
+# .gitea/workflows, GitHub only ever reads .github/workflows. Kept as two files, so a change
+# here is a reminder to update the other one too (as in Kante).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Lint
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --all
+      - name: Personas
+        run: cargo run -q -p kaiwa-sim -- validate
