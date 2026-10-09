@@ -4,7 +4,7 @@ members = ["crates/*"]
 
 [workspace.package]
 edition = "2024"
-license = "GPL-3.0-or-later"
+license = "MIT"
 repository = "https://git.arianw.de/shrippen/Kaiwa"
 rust-version = "1.85"
 
