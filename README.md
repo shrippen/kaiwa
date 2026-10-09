@@ -8,4 +8,4 @@
 - [Lastenheft](spec/LASTENHEFT.md)
 - [QA-Personas](qa/README.md)
 
-Lizenz: GPL-3.0-or-later (geplant).
+Lizenz: [MIT](LICENSE). Sprachdaten (JMdict, KANJIDIC2 u. a.) stehen unter eigenen Lizenzen, siehe `NOTICE`.

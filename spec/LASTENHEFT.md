@@ -312,7 +312,7 @@ Mengengerüst: bis 10 000 Sitzungen und 20 000 Lernobjekte pro Profil ohne spür
 | Plasma | Plasmoid als Plasma-6-Paket (QML), Backend über das QML-Modul `org.shrippen.kaiwa` oder den D-Bus-Dienst `kaiwad` (ADR-008) |
 | Daten | SQLite, ein Profil = eine Datei, Migrationen versioniert |
 | KI-Anbieter | Lokal: OpenAI-kompatible Schnittstelle (llama.cpp-Server, Ollama). Cloud: z. B. Anthropic Claude. Strukturierte Ausgabe per JSON-Schema. |
-| Lizenz | GPL-3.0-or-later (wie die anderen Plasma-Projekte), Datenlizenzen in `NOTICE` |
+| Lizenz | MIT (wie Kante) für den Code. Datenlizenzen in `NOTICE`, Daten als getrenntes Paket (ADR-007). Abhängigkeiten müssen mit MIT verträglich sein: keine (A)GPL-Bibliotheken im ausgelieferten Programm, LGPL nur dynamisch gelinkt (Qt, Kirigami). |
 | Repository | Gitea `git.arianw.de/shrippen/kaiwa`, GitHub nur als Spiegel, Änderungen per PR |
 
 ---
