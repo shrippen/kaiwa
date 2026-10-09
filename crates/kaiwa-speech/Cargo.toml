@@ -1,0 +1,19 @@
+[package]
+name = "kaiwa-speech"
+version = "0.1.0"
+description = "Speech for Kaiwa: microphone, speech recognition (ReazonSpeech via sherpa-onnx)"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+cpal = "0.18.2"
+sherpa-onnx = "1.13.8"
+thiserror = "2.0.21"
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+hound = "3.5.1"

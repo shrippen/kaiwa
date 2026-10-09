@@ -16,6 +16,7 @@ Kirigami.ScrollablePage {
     /** Screenshot mode: say the lines of `script` (separated by "|"), save `shot`, quit. */
     property string shot: ""
     property string script: ""
+    property bool showSpeechHelp: false
 
     title: conv.title
     background: Rectangle { color: KanteStyle.backgroundColor }
@@ -105,6 +106,13 @@ Kirigami.ScrollablePage {
         }
         KanteCallout {
             Layout.fillWidth: true
+            visible: page.showSpeechHelp && conv.speechError.length > 0
+            kind: KanteCallout.Kind.Warn
+            title: "Sprechen geht noch nicht"
+            text: conv.speechError
+        }
+        KanteCallout {
+            Layout.fillWidth: true
             visible: conv.error.length > 0
             kind: KanteCallout.Kind.Danger
             title: "Keine Antwort"
@@ -154,6 +162,23 @@ Kirigami.ScrollablePage {
         background: Rectangle { color: KanteStyle.backgroundColor; Rectangle { width: parent.width; height: 1; color: KanteStyle.ruleColor } }
         contentItem: RowLayout {
             spacing: KanteStyle.unit(8)
+            KanteTalkButton {
+                id: talk
+                talkState: conv.busy && conv.talkState === KanteTalkButton.State.Ready ? KanteTalkButton.State.Thinking : conv.talkState
+                level: conv.level
+                titles: ["Sprechen", "Hört zu", "Denkt nach", "Spricht", "Kein Sprechen"]
+                hints: ["Leertaste halten", "Loslassen zum Senden", "", "Tippen zum Unterbrechen", "Warum? Klicken"]
+                enabled: !conv.finished
+                onTalkStarted: conv.startTalk()
+                onTalkEnded: conv.stopTalk()
+                onErrorActionRequested: page.showSpeechHelp = !page.showSpeechHelp
+                Timer {
+                    interval: 80
+                    repeat: true
+                    running: conv.talkState === KanteTalkButton.State.Listening
+                    onTriggered: conv.pollLevel()
+                }
+            }
             KanteTextField {
                 id: input
                 Layout.fillWidth: true
@@ -189,12 +214,15 @@ Kirigami.ScrollablePage {
         interval: 300
         repeat: true
         onTriggered: {
-            if (conv.busy) return
+            if (conv.busy || conv.talkState === KanteTalkButton.State.Thinking) return
             if (page.lines.length > 0) {
                 var l = page.lines.slice()
                 var next = l.shift()
                 page.lines = l
-                if (next === "?") conv.help(); else conv.say(next, true)
+                if (next === "?") conv.help()
+                else if (next.indexOf("wav:") === 0) conv.sayWav(next.substring(4))
+                else if (next === "!") page.showSpeechHelp = true
+                else conv.say(next, true)
             } else {
                 stop()
                 grabber.start()
