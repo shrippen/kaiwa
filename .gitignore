@@ -1,0 +1,4 @@
+/target
+*.swp
+.qmlls.ini
+/out
