@@ -26,3 +26,5 @@ jobs:
         run: cargo test --all
       - name: Personas
         run: cargo run -q -p kaiwa-sim -- validate
+      - name: Journeys (text mode, recorded tutor answers)
+        run: cargo run -q -p kaiwa-sim -- run

@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["understood", "goals_met", "corrections", "new_words"],
+  "properties": {
+    "understood": { "type": "boolean", "description": "The character understood what the learner meant." },
+    "goals_met": { "type": "array", "items": { "type": "string" }, "description": "Ids of scenario goals this turn reached." },
+    "corrections": {
+      "type": "array",
+      "description": "Mistakes in the learner's last turn. Empty when the turn is correct. Never correct a form that is right for the register of the scene.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "kind", "original", "better", "explanation", "also_possible"],
+        "properties": {
+          "severity": { "enum": ["style", "unnatural", "wrong", "blocks_understanding"] },
+          "kind": { "enum": ["particle", "conjugation", "word_choice", "register", "word_order", "counter", "omission", "loanword", "tense", "pronunciation"] },
+          "original": { "type": "string", "description": "The learner's words, as heard." },
+          "better": { "type": "string", "description": "The better form." },
+          "explanation": { "type": "string", "description": "One or two sentences in the UI language, with the Japanese example." },
+          "also_possible": { "type": "boolean", "description": "True when the original is correct and this is only another way to say it." }
+        }
+      }
+    },
+    "new_words": { "type": "array", "items": { "type": "string" }, "description": "Words new to the learner, dictionary form." }
+  }
+}

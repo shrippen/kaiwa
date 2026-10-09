@@ -1,0 +1,33 @@
+{
+  "id": "n5-02-jikoshoukai",
+  "unit": "N5-02",
+  "title": { "de": "Sich vorstellen", "en": "Introducing yourself" },
+  "character": {
+    "de": "Tanaka Yui, Gastgeberin eines japanisch-deutschen Austauschabends in Hamburg. Freundlich, spricht langsam und in です/ます-Form, fragt nach, wenn sie etwas nicht versteht.",
+    "en": "Tanaka Yui, host of a Japanese-German exchange evening in Hamburg. Friendly, speaks slowly in the です/ます form, asks again when she does not understand."
+  },
+  "register": "polite",
+  "opening": "はじめまして。{田中|たなか}です。お{名前|なまえ}は？",
+  "goals": [
+    {
+      "id": "name",
+      "text": { "de": "Sag deinen Namen.", "en": "Say your name." },
+      "help": { "keyword": "名前（なまえ）", "start": "わたしは…", "example": "マラです。よろしくおねがいします。" }
+    },
+    {
+      "id": "origin",
+      "text": { "de": "Sag, woher du kommst.", "en": "Say where you are from." },
+      "help": { "keyword": "ドイツ・ハンブルク", "start": "ドイツの…", "example": "ドイツのハンブルクから来ました。" }
+    },
+    {
+      "id": "work",
+      "text": { "de": "Sag, was du beruflich machst.", "en": "Say what you do for work." },
+      "help": { "keyword": "仕事（しごと）", "start": "仕事は…", "example": "仕事はプロデューサーです。" }
+    },
+    {
+      "id": "likes",
+      "text": { "de": "Sag, was du gern magst.", "en": "Say what you like." },
+      "help": { "keyword": "好き（すき）", "start": "…が好きです", "example": "コーヒーが好きです。" }
+    }
+  ]
+}
