@@ -1,6 +1,6 @@
 # Kaiwa (App)
 
-Kirigami-App mit der GUI aus Kante 1.25 über `kaiwa-core`. Stand M1: ein Szenario (Sich vorstellen, N5-02). Man antwortet gesprochen (Push-to-Talk, ReazonSpeech, H-06) oder getippt, Hilfe gibt es in drei Stufen. Korrekturen erscheinen als Hint-Cards mit Diff unter dem eigenen Satz, am Ende steht die Bilanz. Die Figur antwortet noch als Text; ihre Stimme folgt (H-02).
+Kirigami-App mit der GUI aus Kante 1.25 über `kaiwa-core`. Stand M1: ein Szenario (Sich vorstellen, N5-02). Man antwortet gesprochen (Push-to-Talk, ReazonSpeech, H-06) oder getippt, Hilfe gibt es in drei Stufen. Korrekturen erscheinen als Hint-Cards mit Diff unter dem eigenen Satz, am Ende steht die Bilanz. Die Figur spricht ihre Antworten mit einer Übergangsstimme (Kokoro, H-02).
 
 | Kante (dunkel) | Kante (Leinen) | System |
 |---|---|---|
@@ -31,6 +31,24 @@ Ein anderer Ort geht über `KAIWA_MODELS=/pfad`. Fehlt das Modell, zeigt der Spr
 
 Bauen braucht ALSA (`alsa-lib`, Debian/Ubuntu `libasound2-dev`). Der Build lädt die statischen sherpa-onnx-Bibliotheken; ohne Netz `SHERPA_ONNX_ARCHIVE_DIR` auf das vorher geladene Archiv setzen.
 
+## Stimme der Figur (Übergangsstimme)
+
+Die Figur spricht ihre Antworten mit Kokoro-82M (Apache-2.0), Satz für Satz: Der erste Satz läuft, während der nächste entsteht. Kokoro kennt den Tonhöhenakzent nicht (Spike 0.4). Deshalb sagt die Seite „Übergangsstimme“, und Korrekturen, Beispiele zum Nachsprechen und Shadowing bleiben stumm, bis VOICEVOX geprüft ist (H-01).
+
+```sh
+mkdir -p ~/.local/share/kaiwa/models/kokoro-v1.0 && cd ~/.local/share/kaiwa/models/kokoro-v1.0
+curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.int8.onnx   # 88 MB
+curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin          # 27 MB
+```
+
+`kokoro-v1.0.onnx` (310 MB, volle Genauigkeit) geht auch und hat Vorrang. Die Stimme wählt das Szenario (`voice`, z. B. `jf_tebukuro`). „Laut/Stumm“ oben schaltet sie ab; Sprechen oder ein Tipp auf den Sprechknopf unterbricht die Figur. Ohne Modell steht oben „Ohne Stimme“, der Tooltip sagt, was fehlt.
+
+| Kante (dunkel) | Kante (Leinen) |
+|---|---|
+| ![](shots/voice-kante.png) | ![](shots/voice-light.png) |
+
+Die Lautumschrift ist ein Nachbau von misakis japanischer G2P auf lindera mit IPADIC (in `kaiwa-speech`). Abgleich mit misaki über die 100 Korpussätze: `cargo run -p kaiwa-speech --example g2p_compare -- golden.json` (67 von 100 gleich, der Rest sind Wortgrenzen und Lesarten des Wörterbuchs). Einen Satz hören: `cargo run -p kaiwa-speech --example say -- "コーヒーが好きです。" out.wav`.
+
 ## Echter Tutor (für den lokalen Test, ADR-004)
 
 ```sh
@@ -52,4 +70,5 @@ tools/sync-kante.sh ../Kante   # Kopie unverändert (GUI-Regel), danach committe
 cargo run -p kaiwa-app -- --shot out.png --kind 1 --light 0 --height 2300 \
   --say '?|マラです。よろしくおねがいします。|コーヒーを好きです。'   # "?" fragt nach Hilfe
 cargo run -p kaiwa-app -- --shot out.png --say 'wav:satz.wav'   # WAV als gesprochener Zug, "!" zeigt die Sprechhilfe
+cargo run -p kaiwa-app -- --shot out.png --say 'マラです。|~'      # "~" wartet, bis die Figur spricht
 ```

@@ -50,6 +50,9 @@ pub struct Scenario {
     /// The character: who they are and how they speak (goes into the tutor's instructions).
     pub character: Text,
     pub register: Register,
+    /// The character's interim voice (a Japanese Kokoro voice, H-02); the app picks one if unset.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voice: Option<String>,
     /// The character's first line (furigana markup as in KanteRubyText).
     pub opening: String,
     pub goals: Vec<Goal>,

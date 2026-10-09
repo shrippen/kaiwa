@@ -1,7 +1,7 @@
 [package]
 name = "kaiwa-speech"
 version = "0.1.0"
-description = "Speech for Kaiwa: microphone, speech recognition (ReazonSpeech via sherpa-onnx)"
+description = "Speech for Kaiwa: microphone, speech recognition (ReazonSpeech via sherpa-onnx), the interim voice (Kokoro)"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -9,8 +9,14 @@ rust-version.workspace = true
 
 [dependencies]
 cpal = "0.18.2"
+ort = { version = "2.0.0-rc.13", default-features = false, features = ["std", "api-28"] }
+# Links nothing itself: ONNX Runtime 1.28 comes with sherpa-onnx.
+ort-sys = { version = "2.0.0-rc.13", default-features = false, features = ["disable-linking"] }
+lindera = { version = "6.2.0", features = ["embed-ipadic"] }
 sherpa-onnx = "1.13.8"
 thiserror = "2.0.21"
+unicode-normalization = "0.1.25"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [lints]
 workspace = true
