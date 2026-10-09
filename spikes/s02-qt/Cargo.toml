@@ -1,0 +1,18 @@
+[package]
+name = "s02-qt"
+version = "0.1.0"
+description = "Spike 0.2: cxx-qt, Kirigami and Kante in one window (ADR-001)"
+edition = "2024"
+license = "MIT"
+publish = false
+
+# A workspace of its own: the main workspace and its CI build without Qt.
+[workspace]
+
+[dependencies]
+cxx = "1.0.203"
+cxx-qt = "0.10.0"
+cxx-qt-lib = { version = "0.10.0", features = ["qt_gui", "qt_qml"] }
+
+[build-dependencies]
+cxx-qt-build = "0.10.0"
