@@ -26,6 +26,8 @@ jobs:
         run: cargo test --all
       - name: Personas
         run: cargo run -q -p kaiwa-sim -- validate
+      - name: Journeys (text mode, recorded tutor answers)
+        run: cargo run -q -p kaiwa-sim -- run
 
   # The Qt side (G-01: Arch Linux container, current Qt 6 and KF6 from the packages).
   # Also the probe for G-02: the first step fails unless the job really runs in the container.
