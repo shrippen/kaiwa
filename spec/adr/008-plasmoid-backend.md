@@ -26,3 +26,4 @@ Ein Plasmoid läuft im Prozess von `plasmashell`. Modelle mit mehreren hundert M
 ## Entschieden (Fragenpaket 1)
 
 - **F-11:** Das Plasmoid erscheint nur über Pakete (Distro, AUR) und nicht im KDE Store.
+- **G-08:** Die App-ID ist `org.shrippen.kaiwa`. Sie gilt für die Desktop-Datei, das Flatpak und das Plasmoid (`org.shrippen.kaiwa.plasmoid`). Der D-Bus-Dienst heißt `org.shrippen.Kaiwa1`.
