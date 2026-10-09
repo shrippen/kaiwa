@@ -47,9 +47,7 @@ use std::sync::{Arc, Mutex};
 use cxx_qt::{CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_ai::ChatProvider;
-use kaiwa_ai::anthropic::AnthropicProvider;
 use kaiwa_ai::mock::MockProvider;
-use kaiwa_ai::openai::OpenAiCompatible;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::{Amount, Input, Scenario, Session, Summary, TurnOutcome};
 use serde_json::{Value, json};
@@ -74,33 +72,13 @@ pub struct ConversationRust {
     log: Vec<Value>,
 }
 
-/// The tutor from the environment (for the owner's local test, ADR-004); recorded answers
-/// otherwise (demo mode).
-///
-///   KAIWA_PROVIDER=anthropic  ANTHROPIC_API_KEY=…
-///   KAIWA_PROVIDER=openai     KAIWA_OPENAI_BASE=http://localhost:11434/v1  KAIWA_MODEL=…  [KAIWA_API_KEY=…]
+/// The tutor from the environment (`kaiwa_ai::provider_from_env`, for the owner's local
+/// test); recorded answers otherwise (demo mode).
 fn provider() -> (Arc<dyn ChatProvider>, bool) {
-    let env = |k: &str| std::env::var(k).ok().filter(|v| !v.is_empty());
-    match env("KAIWA_PROVIDER").as_deref() {
-        Some("anthropic") => {
-            if let Some(key) = env("ANTHROPIC_API_KEY") {
-                return (Arc::new(AnthropicProvider::preset(key)), false);
-            }
-            eprintln!(
-                "kaiwa: KAIWA_PROVIDER=anthropic needs ANTHROPIC_API_KEY; using recorded answers"
-            );
-        }
-        Some("openai") => {
-            if let Some(model) = env("KAIWA_MODEL") {
-                let base =
-                    env("KAIWA_OPENAI_BASE").unwrap_or_else(|| "http://localhost:11434/v1".into());
-                let mut p = OpenAiCompatible::new(base, model);
-                p.api_key = env("KAIWA_API_KEY").unwrap_or_default();
-                return (Arc::new(p), false);
-            }
-            eprintln!("kaiwa: KAIWA_PROVIDER=openai needs KAIWA_MODEL; using recorded answers");
-        }
-        _ => {}
+    match kaiwa_ai::provider_from_env() {
+        Ok(Some(p)) => return (p, false),
+        Ok(None) => {}
+        Err(e) => eprintln!("kaiwa: {e}; using recorded answers"),
     }
     let mock = MockProvider::from_json(FIXTURES)
         .expect("bundled fixtures are valid")

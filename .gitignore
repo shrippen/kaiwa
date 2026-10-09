@@ -2,3 +2,4 @@ target/
 *.swp
 .qmlls.ini
 /out
+__pycache__/

@@ -92,7 +92,9 @@ fn amount_of(persona: &Value) -> Amount {
     }
 }
 
-pub fn play(root: &Path, persona: &Value, script: &Script) -> Result<Run> {
+/// Plays a script. `live`: the tutor from the environment (`kaiwa_ai::provider_from_env`)
+/// instead of the recorded answers, for the owner's local test.
+pub fn play(root: &Path, persona: &Value, script: &Script, live: bool) -> Result<Run> {
     let scenario_path = root.join(format!("data/scenarios/{}.json", script.scenario));
     let scenario = Scenario::from_json(
         &std::fs::read_to_string(&scenario_path)
@@ -101,12 +103,19 @@ pub fn play(root: &Path, persona: &Value, script: &Script) -> Result<Run> {
     let fixtures_path = root.join(format!("qa/fixtures/{}.json", script.fixtures));
     let fixtures = std::fs::read_to_string(&fixtures_path)
         .with_context(|| fixtures_path.display().to_string())?;
-    let provider =
-        MockProvider::from_json(&fixtures)?.with_fallback("すみません、もう一度お願いします。");
+    let provider: Arc<dyn kaiwa_ai::ChatProvider> = if live {
+        kaiwa_ai::provider_from_env()
+            .map_err(anyhow::Error::msg)?
+            .context("--live needs KAIWA_PROVIDER (see app/README.md)")?
+    } else {
+        Arc::new(
+            MockProvider::from_json(&fixtures)?.with_fallback("すみません、もう一度お願いします。"),
+        )
+    };
     let amount = amount_of(persona);
     let mut session = Session::new(
         scenario.clone(),
-        Arc::new(provider),
+        provider,
         amount,
         persona["profile"]["ui_language"].as_str().unwrap_or("de"),
     );
@@ -333,7 +342,7 @@ pub fn check(id: &str, run: &Run) -> Option<Outcome> {
 
 /// Plays every journey of `persona_id` that has a script; journeys without one are reported
 /// with all their checks as not automated.
-pub fn run_persona(root: &Path, persona_id: &str) -> Result<Vec<JourneyReport>> {
+pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<JourneyReport>> {
     let path = root.join(format!("qa/personas/{persona_id}.json"));
     let persona: Value = serde_json::from_str(
         &std::fs::read_to_string(&path).with_context(|| path.display().to_string())?,
@@ -347,7 +356,7 @@ pub fn run_persona(root: &Path, persona_id: &str) -> Result<Vec<JourneyReport>> 
             if script.journey != jid {
                 bail!("{} names journey {}", script_path.display(), script.journey);
             }
-            Some(play(root, &persona, &script)?)
+            Some(play(root, &persona, &script, live)?)
         } else {
             None
         };
@@ -380,7 +389,7 @@ mod tests {
 
     #[test]
     fn mara_first_talk_passes_its_automated_checks() {
-        let reports = run_persona(&root(), "mara").unwrap();
+        let reports = run_persona(&root(), "mara", false).unwrap();
         let first = reports
             .iter()
             .find(|r| r.journey == "mara_first_talk")
@@ -398,7 +407,7 @@ mod tests {
 
     #[test]
     fn selin_register_passes_its_automated_checks() {
-        let reports = run_persona(&root(), "selin").unwrap();
+        let reports = run_persona(&root(), "selin", false).unwrap();
         let j = reports
             .iter()
             .find(|r| r.journey == "selin_register")
@@ -418,7 +427,7 @@ mod tests {
             &std::fs::read_to_string(root().join("qa/scripts/mara_first_talk.json")).unwrap(),
         )
         .unwrap();
-        let mut run = play(&root(), &persona, &script).unwrap();
+        let mut run = play(&root(), &persona, &script, false).unwrap();
         for e in &mut run.events {
             if let Event::Turn { outcome, .. } = e {
                 outcome.shown.clear();

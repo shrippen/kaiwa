@@ -1,0 +1,9 @@
+# Python tools for the speech spikes (0.3, 0.4); measurement only, never shipped.
+# python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt
+kokoro-onnx
+misaki[ja]
+pyopenjtalk-plus
+librosa
+soundfile
+sherpa-onnx
+numpy

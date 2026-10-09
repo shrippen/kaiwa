@@ -1,0 +1,942 @@
+{
+ "jf_alpha": {
+  "hits": 5,
+  "of": 13,
+  "rows": [
+   {
+    "word": "箸",
+    "phonemes": "ha↘ɕi ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "橋",
+    "phonemes": "haɕi↘ ɡa",
+    "want": [
+     0,
+     1,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "端",
+    "phonemes": "haɕi ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     1,
+     1
+    ]
+   },
+   {
+    "word": "雨",
+    "phonemes": "a↘me ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "飴",
+    "phonemes": "ame ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     1,
+     1
+    ]
+   },
+   {
+    "word": "神",
+    "phonemes": "ka↘mi ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "紙",
+    "phonemes": "kami↘ ɡa",
+    "want": [
+     0,
+     1,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "牡蠣",
+    "phonemes": "ka↘ki ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "柿",
+    "phonemes": "kaki ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     1,
+     1
+    ]
+   },
+   {
+    "word": "鮭",
+    "phonemes": "sa↘ke ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "酒",
+    "phonemes": "sake ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "日本",
+    "phonemes": "niho↘ɴ ɡa",
+    "want": [
+     0,
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     1,
+     1
+    ]
+   },
+   {
+    "word": "二本",
+    "phonemes": "ni↘hoɴ ɡa",
+    "want": [
+     1,
+     0
+    ],
+    "got": [
+     0,
+     1
+    ]
+   }
+  ]
+ },
+ "jf_gongitsune": {
+  "hits": 1,
+  "of": 13,
+  "rows": [
+   {
+    "word": "箸",
+    "phonemes": "ha↘ɕi ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "橋",
+    "phonemes": "haɕi↘ ɡa",
+    "want": [
+     0,
+     1,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "端",
+    "phonemes": "haɕi ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "雨",
+    "phonemes": "a↘me ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "飴",
+    "phonemes": "ame ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "神",
+    "phonemes": "ka↘mi ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "紙",
+    "phonemes": "kami↘ ɡa",
+    "want": [
+     0,
+     1,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "牡蠣",
+    "phonemes": "ka↘ki ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "柿",
+    "phonemes": "kaki ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "鮭",
+    "phonemes": "sa↘ke ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "酒",
+    "phonemes": "sake ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "日本",
+    "phonemes": "niho↘ɴ ɡa",
+    "want": [
+     0,
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "二本",
+    "phonemes": "ni↘hoɴ ɡa",
+    "want": [
+     1,
+     0
+    ],
+    "got": [
+     1,
+     0
+    ]
+   }
+  ]
+ },
+ "jf_nezumi": {
+  "hits": 1,
+  "of": 13,
+  "rows": [
+   {
+    "word": "箸",
+    "phonemes": "ha↘ɕi ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "橋",
+    "phonemes": "haɕi↘ ɡa",
+    "want": [
+     0,
+     1,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "端",
+    "phonemes": "haɕi ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "雨",
+    "phonemes": "a↘me ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "飴",
+    "phonemes": "ame ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "神",
+    "phonemes": "ka↘mi ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "紙",
+    "phonemes": "kami↘ ɡa",
+    "want": [
+     0,
+     1,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "牡蠣",
+    "phonemes": "ka↘ki ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "柿",
+    "phonemes": "kaki ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "鮭",
+    "phonemes": "sa↘ke ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     1,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "酒",
+    "phonemes": "sake ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "日本",
+    "phonemes": "niho↘ɴ ɡa",
+    "want": [
+     0,
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "二本",
+    "phonemes": "ni↘hoɴ ɡa",
+    "want": [
+     1,
+     0
+    ],
+    "got": [
+     1,
+     0
+    ]
+   }
+  ]
+ },
+ "jf_tebukuro": {
+  "hits": 5,
+  "of": 13,
+  "rows": [
+   {
+    "word": "箸",
+    "phonemes": "ha↘ɕi ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "橋",
+    "phonemes": "haɕi↘ ɡa",
+    "want": [
+     0,
+     1,
+     0
+    ],
+    "got": [
+     1,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "端",
+    "phonemes": "haɕi ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     1,
+     1
+    ]
+   },
+   {
+    "word": "雨",
+    "phonemes": "a↘me ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "飴",
+    "phonemes": "ame ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     1,
+     1
+    ]
+   },
+   {
+    "word": "神",
+    "phonemes": "ka↘mi ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "紙",
+    "phonemes": "kami↘ ɡa",
+    "want": [
+     0,
+     1,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "牡蠣",
+    "phonemes": "ka↘ki ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     1,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "柿",
+    "phonemes": "kaki ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "鮭",
+    "phonemes": "sa↘ke ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     1,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "酒",
+    "phonemes": "sake ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "word": "日本",
+    "phonemes": "niho↘ɴ ɡa",
+    "want": [
+     0,
+     1,
+     0,
+     0
+    ],
+    "got": [
+     0,
+     1,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "二本",
+    "phonemes": "ni↘hoɴ ɡa",
+    "want": [
+     1,
+     0
+    ],
+    "got": [
+     1,
+     0
+    ]
+   }
+  ]
+ },
+ "jm_kumo": {
+  "hits": 5,
+  "of": 13,
+  "rows": [
+   {
+    "word": "箸",
+    "phonemes": "ha↘ɕi ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "橋",
+    "phonemes": "haɕi↘ ɡa",
+    "want": [
+     0,
+     1,
+     0
+    ],
+    "got": [
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "端",
+    "phonemes": "haɕi ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "雨",
+    "phonemes": "a↘me ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "飴",
+    "phonemes": "ame ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "神",
+    "phonemes": "ka↘mi ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     1,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "紙",
+    "phonemes": "kami↘ ɡa",
+    "want": [
+     0,
+     1,
+     0
+    ],
+    "got": [
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "牡蠣",
+    "phonemes": "ka↘ki ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "柿",
+    "phonemes": "kaki ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "鮭",
+    "phonemes": "sa↘ke ɡa",
+    "want": [
+     1,
+     0,
+     0
+    ],
+    "got": [
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "酒",
+    "phonemes": "sake ɡa",
+    "want": [
+     0,
+     1,
+     1
+    ],
+    "got": [
+     1,
+     1,
+     0
+    ]
+   },
+   {
+    "word": "日本",
+    "phonemes": "niho↘ɴ ɡa",
+    "want": [
+     0,
+     1,
+     0,
+     0
+    ],
+    "got": [
+     1,
+     1,
+     0,
+     0
+    ]
+   },
+   {
+    "word": "二本",
+    "phonemes": "ni↘hoɴ ɡa",
+    "want": [
+     1,
+     0
+    ],
+    "got": [
+     1,
+     0
+    ]
+   }
+  ]
+ }
+}

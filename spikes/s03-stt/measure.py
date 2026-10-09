@@ -108,6 +108,9 @@ def run_reazon(model_dir, items, threads=4):
     t0 = time.perf_counter()
     for i in items:
         audio, sr = sf.read(i["file"], dtype="float32")
+        # The zipformer drops the first words without some silence around the utterance.
+        pad = np.zeros(int(0.3 * sr), dtype=np.float32)
+        audio = np.concatenate([pad, audio, pad])
         s = rec.create_stream()
         s.accept_waveform(sr, audio)
         rec.decode_stream(s)
@@ -147,12 +150,18 @@ def main():
     ap.add_argument("--whisper-cli", required=True)
     ap.add_argument("--models", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--engines", default="whisper-small,reazonspeech-zipformer,whisper-large-v3-turbo-q5",
+                    help="comma-separated; each engine writes out/<engine>.json as soon as it is done")
+    ap.add_argument("--subset", choices=["all", "small"], default="all",
+                    help="small: one voice, clean and 5 dB only (for slow engines on a CPU)")
     args = ap.parse_args()
     out = Path(args.out)
     work = out / "audio16k"
     work.mkdir(parents=True, exist_ok=True)
     rows = list(csv.DictReader(open(Path(args.corpus) / "saetze.tsv", encoding="utf-8"), delimiter="\t"))
     items = prepare(Path(args.corpus_audio), work)
+    if args.subset == "small":
+        items = [i for i in items if i["voice"] == VOICES[0] and i["snr"] in (None, 5)]
     total = sum(i["dur"] for i in items)
     models = Path(args.models)
     report = {"files": len(items), "audio_s": total, "engines": {}}
@@ -162,11 +171,16 @@ def main():
         ("whisper-large-v3-turbo-q5", lambda: run_whisper(args.whisper_cli, models / "ggml-large-v3-turbo-q5_0.bin", items)),
         ("reazonspeech-zipformer", lambda: run_reazon(next(models.glob("sherpa-onnx-zipformer-ja-reazonspeech*")), items)),
     ]
+    wanted = args.engines.split(",")
     for name, run in engines:
+        if name not in wanted:
+            continue
         hyps, dt = run()
-        report["engines"][name] = {"rtf": dt / total, **score(items, hyps, rows)}
+        result = {"files": len(items), "audio_s": total, "subset": args.subset, "rtf": dt / total, **score(items, hyps, rows)}
+        report["engines"][name] = result
         examples[name] = {Path(k).stem: v for k, v in hyps.items() if "_clean" in k and "_jf_alpha" in k}
-        print(name, json.dumps(report["engines"][name], ensure_ascii=False), flush=True)
+        (out / f"{name}.json").write_text(json.dumps({"result": result, "transcripts": examples[name]}, ensure_ascii=False, indent=1))
+        print(name, json.dumps(result, ensure_ascii=False), flush=True)
     (out / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=1))
     (out / "transcripts.json").write_text(json.dumps(examples, ensure_ascii=False, indent=1))
 
