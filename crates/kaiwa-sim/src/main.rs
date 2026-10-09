@@ -33,6 +33,9 @@ enum Command {
         /// Write the report as JSON into this file.
         #[arg(long)]
         report: Option<PathBuf>,
+        /// A real tutor from KAIWA_PROVIDER instead of the recorded answers (local test).
+        #[arg(long)]
+        live: bool,
     },
 }
 
@@ -65,16 +68,18 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
-        Command::Run { persona, report } => {
-            match run_all(&cli.root, persona.as_deref(), report.as_deref()) {
-                Ok(true) => ExitCode::SUCCESS,
-                Ok(false) => ExitCode::FAILURE,
-                Err(error) => {
-                    eprintln!("error: {error:#}");
-                    ExitCode::FAILURE
-                }
+        Command::Run {
+            persona,
+            report,
+            live,
+        } => match run_all(&cli.root, persona.as_deref(), report.as_deref(), live) {
+            Ok(true) => ExitCode::SUCCESS,
+            Ok(false) => ExitCode::FAILURE,
+            Err(error) => {
+                eprintln!("error: {error:#}");
+                ExitCode::FAILURE
             }
-        }
+        },
     }
 }
 
@@ -82,6 +87,7 @@ fn run_all(
     root: &std::path::Path,
     persona: Option<&str>,
     report: Option<&std::path::Path>,
+    live: bool,
 ) -> anyhow::Result<bool> {
     let ids: Vec<String> = match persona {
         Some(p) => vec![p.to_string()],
@@ -92,7 +98,7 @@ fn run_all(
     };
     let mut all = Vec::new();
     for id in ids {
-        all.extend(run::run_persona(root, &id)?);
+        all.extend(run::run_persona(root, &id, live)?);
     }
     let (mut pass, mut fail, mut open) = (0, 0, 0);
     for j in &all {
