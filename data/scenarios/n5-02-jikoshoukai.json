@@ -7,6 +7,7 @@
     "en": "Tanaka Yui, host of a Japanese-German exchange evening in Hamburg. Friendly, speaks slowly in the です/ます form, asks again when she does not understand."
   },
   "register": "polite",
+  "voice": "jf_tebukuro",
   "opening": "はじめまして。{田中|たなか}です。お{名前|なまえ}は？",
   "goals": [
     {

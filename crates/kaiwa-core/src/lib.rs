@@ -14,6 +14,17 @@ pub use session::{Input, Session, Summary, TurnOutcome};
 
 /// Text without furigana markup (`{漢字|かんじ}` → `漢字`, as in KanteRubyText).
 pub fn plain(markup: &str) -> String {
+    unmark(markup, false)
+}
+
+/// Text as it is spoken: the readings in place of the kanji, in katakana (`{田中|たなか}` →
+/// `タナカ`), so the voice says names and rare words as written and a tokenizer keeps each
+/// reading as one word.
+pub fn spoken(markup: &str) -> String {
+    unmark(markup, true)
+}
+
+fn unmark(markup: &str, reading: bool) -> String {
     let mut out = String::with_capacity(markup.len());
     let mut rest = markup;
     while let Some(start) = rest.find('{') {
@@ -21,7 +32,12 @@ pub fn plain(markup: &str) -> String {
         let tail = &rest[start + 1..];
         match (tail.find('|'), tail.find('}')) {
             (Some(bar), Some(end)) if bar < end => {
-                out.push_str(&tail[..bar]);
+                let ruby = &tail[bar + 1..end];
+                if reading {
+                    out.extend(ruby.split('|').next().unwrap_or(ruby).chars().map(katakana));
+                } else {
+                    out.push_str(&tail[..bar]);
+                }
                 rest = &tail[end + 1..];
             }
             _ => {
@@ -32,6 +48,13 @@ pub fn plain(markup: &str) -> String {
     }
     out.push_str(rest);
     out
+}
+
+fn katakana(c: char) -> char {
+    match c {
+        'ぁ'..='ゖ' => char::from_u32(c as u32 + 0x60).unwrap_or(c),
+        _ => c,
+    }
 }
 
 /// Comparison key for Japanese text: without punctuation and white space.
@@ -48,6 +71,19 @@ mod tests {
         assert_eq!(plain("{駅|えき}までは{歩|ある|new}いて"), "駅までは歩いて");
         assert_eq!(plain("はい{"), "はい{");
         assert_eq!(plain("a {b} c"), "a {b} c");
+    }
+
+    #[test]
+    fn spoken_uses_the_readings() {
+        assert_eq!(
+            spoken("はじめまして。{田中|たなか}です。"),
+            "はじめまして。タナカです。"
+        );
+        assert_eq!(
+            spoken("{駅|えき}までは{歩|ある|new}いて"),
+            "エキまではアルいて"
+        );
+        assert_eq!(spoken("はい{"), "はい{");
     }
 
     #[test]
