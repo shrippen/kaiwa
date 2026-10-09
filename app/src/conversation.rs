@@ -27,6 +27,14 @@ pub mod qobject {
         #[qproperty(i32, talk_state, cxx_name = "talkState")]
         #[qproperty(f64, level)]
         #[qproperty(QString, speech_error, cxx_name = "speechError")]
+        /// The character's voice when one is loaded ("" without), e.g. "Übergangsstimme".
+        #[qproperty(QString, voice)]
+        /// Whether the character speaks its replies (the learner can mute it).
+        #[qproperty(bool, voice_on, cxx_name = "voiceOn")]
+        /// Why there is no voice, with what to do about it.
+        #[qproperty(QString, voice_note, cxx_name = "voiceNote")]
+        /// Both speech models are loaded or known to be missing.
+        #[qproperty(bool, speech_ready, cxx_name = "speechReady")]
         type Conversation = super::ConversationRust;
 
         /// Start the scenario (the character's opening line).
@@ -60,15 +68,21 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "sayWav"]
         fn say_wav(self: Pin<&mut Conversation>, path: &QString);
+
+        /// Stop the character speaking (talk button tapped while it speaks).
+        #[qinvokable]
+        fn interrupt(self: Pin<&mut Conversation>);
     }
 
     impl cxx_qt::Threading for Conversation {}
 }
 
 use core::pin::Pin;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
-use cxx_qt::{CxxQtType, Threading};
+use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_ai::ChatProvider;
 use kaiwa_ai::mock::MockProvider;
@@ -76,8 +90,10 @@ use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::{Amount, Input, Scenario, Session, Summary, TurnOutcome};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
-use kaiwa_speech::models::{REAZONSPEECH_URL, reazonspeech_dir};
+use kaiwa_speech::models::{KOKORO_URL, REAZONSPEECH_URL, kokoro_dir, reazonspeech_dir};
+use kaiwa_speech::playback::Player;
 use kaiwa_speech::stt::Recognizer;
+use kaiwa_speech::tts::{self, Voice};
 use serde_json::{Value, json};
 
 const SCENARIO: &str = include_str!("../../data/scenarios/n5-02-jikoshoukai.json");
@@ -99,16 +115,34 @@ pub struct ConversationRust {
     talk_state: i32,
     level: f64,
     speech_error: QString,
+    voice: QString,
+    voice_on: bool,
+    voice_note: QString,
+    speech_ready: bool,
     session: Option<Arc<Mutex<Session>>>,
     log: Vec<Value>,
     recognizer: Option<Arc<Recognizer>>,
     capture: Option<Capture>,
+    speaker: Option<Speaker>,
+    /// Counts what the character said; speaking stops when it moves on.
+    utterance: Arc<AtomicU64>,
+}
+
+/// The interim voice and the speaker it plays through.
+#[derive(Clone)]
+struct Speaker {
+    voice: Arc<Mutex<Voice>>,
+    player: Arc<Player>,
 }
 
 const READY: i32 = 0;
 const LISTENING: i32 = 1;
 const THINKING: i32 = 2;
+const SPEAKING: i32 = 3;
 const ERROR: i32 = 4;
+
+/// Tanaka speaks slowly (the scenario says so), so a little below Kokoro's normal pace.
+const SPEED: f32 = 0.9;
 
 /// The tutor from the environment (`kaiwa_ai::provider_from_env`, for the owner's local
 /// test); recorded answers otherwise (demo mode).
@@ -182,6 +216,10 @@ impl qobject::Conversation {
         let (provider, demo) = provider();
         let title = scenario.title.get(LANG).to_string();
         let opening = scenario.opening.clone();
+        let voice = scenario
+            .voice
+            .clone()
+            .unwrap_or_else(|| "jf_tebukuro".into());
         let session = Session::new(scenario, provider, Amount::Little, LANG);
         {
             let mut rust = self.as_mut().rust_mut();
@@ -194,38 +232,70 @@ impl qobject::Conversation {
         self.as_mut().set_error(QString::default());
         self.as_mut().publish_turns();
         self.as_mut().publish_goals();
-        self.load_recognizer();
-    }
-
-    /// Loads ReazonSpeech on a worker thread; without the model the talk button shows why.
-    fn load_recognizer(mut self: Pin<&mut Self>) {
+        self.as_mut().set_voice_on(true);
         self.as_mut().set_talk_state(THINKING);
         let thread = self.qt_thread();
+        // One after the other: both models share ONNX Runtime, which the first sets up.
         std::thread::spawn(move || {
-            let dir = reazonspeech_dir();
-            let loaded = Recognizer::from_dir(&dir, 2);
-            let _ = thread.queue(move |mut q| match loaded {
-                Ok(rec) => {
-                    q.as_mut().rust_mut().recognizer = Some(Arc::new(rec));
-                    q.as_mut().set_speech_error(QString::default());
-                    q.as_mut().set_talk_state(READY);
+            load_recognizer(&thread);
+            load_voice(&thread, &voice);
+        });
+    }
+
+    /// Says a line of the character (furigana markup) sentence by sentence; the first plays
+    /// while the next is made. The talk button shows "speaks" until the speaker is quiet.
+    fn speak(mut self: Pin<&mut Self>, markup: &str) {
+        let Some(speaker) = self.speaker.clone() else {
+            return;
+        };
+        if !*self.voice_on() {
+            return;
+        }
+        let id = self.utterance.fetch_add(1, Ordering::SeqCst) + 1;
+        let current = self.utterance.clone();
+        if *self.talk_state() == READY {
+            self.as_mut().set_talk_state(SPEAKING);
+        }
+        let text = kaiwa_core::spoken(markup);
+        let thread = self.qt_thread();
+        std::thread::spawn(move || {
+            let still = || current.load(Ordering::SeqCst) == id;
+            for sentence in tts::sentences(&text) {
+                if !still() {
+                    return;
                 }
-                Err(e) => {
-                    let text = match e {
-                        SpeechError::ModelMissing(_) => format!(
-                            "Das Modell für die Spracherkennung fehlt. ReazonSpeech (Apache-2.0, etwa 150 MB) von {REAZONSPEECH_URL} laden und nach {} entpacken. Bis dahin geht Tippen.",
-                            dir.display()
-                        ),
-                        e => german(&e),
-                    };
-                    q.as_mut().set_speech_error(QString::from(&text));
-                    q.as_mut().set_talk_state(ERROR);
+                let audio = speaker.voice.lock().map(|mut v| v.speak(&sentence, SPEED));
+                match audio {
+                    Ok(Ok(samples)) if still() => speaker.player.play(&samples, tts::SAMPLE_RATE),
+                    Ok(Err(e)) => eprintln!("kaiwa: {e}"),
+                    _ => {}
+                }
+            }
+            while still() && speaker.player.playing() {
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            let _ = thread.queue(move |mut q| {
+                if q.utterance.load(Ordering::SeqCst) == id && *q.talk_state() == SPEAKING {
+                    q.as_mut().set_talk_state(READY);
                 }
             });
         });
     }
 
+    fn interrupt(mut self: Pin<&mut Self>) {
+        self.utterance.fetch_add(1, Ordering::SeqCst);
+        if let Some(speaker) = &self.speaker {
+            speaker.player.silence();
+        }
+        if *self.talk_state() == SPEAKING {
+            self.as_mut().set_talk_state(READY);
+        }
+    }
+
     fn start_talk(mut self: Pin<&mut Self>) {
+        if *self.talk_state() == SPEAKING {
+            self.as_mut().interrupt();
+        }
         if *self.talk_state() != READY || *self.busy() || *self.finished() {
             return;
         }
@@ -343,10 +413,12 @@ impl qobject::Conversation {
                                     Value::Array(outcome.shown.iter().map(shown_json).collect());
                                 turn["pending"] = json!(false);
                             }
-                            rust.log
-                                .push(json!({ "who": "character", "markup": outcome.reply }));
+                            rust.log.push(
+                                json!({ "who": "character", "markup": outcome.reply.clone() }),
+                            );
                         }
                         q.as_mut().set_error(QString::default());
+                        q.as_mut().speak(&outcome.reply);
                     }
                     Err(e) => {
                         if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index) {
@@ -376,6 +448,67 @@ impl qobject::Conversation {
     }
 }
 
+/// Loads ReazonSpeech; without the model the talk button shows why.
+fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>) {
+    let dir = reazonspeech_dir();
+    let loaded = Recognizer::from_dir(&dir, 2);
+    let _ = thread.queue(move |mut q| match loaded {
+        Ok(rec) => {
+            q.as_mut().rust_mut().recognizer = Some(Arc::new(rec));
+            q.as_mut().set_speech_error(QString::default());
+            if *q.talk_state() != SPEAKING {
+                q.as_mut().set_talk_state(READY);
+            }
+        }
+        Err(e) => {
+            let text = match e {
+                SpeechError::ModelMissing(_) => format!(
+                    "Das Modell für die Spracherkennung fehlt. ReazonSpeech (Apache-2.0, etwa 150 MB) von {REAZONSPEECH_URL} laden und nach {} entpacken. Bis dahin geht Tippen.",
+                    dir.display()
+                ),
+                e => german(&e),
+            };
+            q.as_mut().set_speech_error(QString::from(&text));
+            q.as_mut().set_talk_state(ERROR);
+        }
+    });
+}
+
+/// Loads Kokoro and opens the speaker, then says the opening line.
+fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str) {
+    let dir = kokoro_dir();
+    let loaded = Voice::from_dir(&dir, name, 2).and_then(|voice| {
+        Ok(Speaker {
+            voice: Arc::new(Mutex::new(voice)),
+            player: Arc::new(Player::start()?),
+        })
+    });
+    let _ = thread.queue(move |mut q| {
+        q.as_mut().set_speech_ready(true);
+        match loaded {
+        Ok(speaker) => {
+            q.as_mut().rust_mut().speaker = Some(speaker);
+            q.as_mut().set_voice(QString::from("Übergangsstimme"));
+            q.as_mut().set_voice_note(QString::default());
+            if q.log.len() == 1 && !*q.busy() {
+                let opening = q.log[0]["markup"].as_str().unwrap_or_default().to_string();
+                q.speak(&opening);
+            }
+        }
+        Err(e) => {
+            let text = match e {
+                SpeechError::ModelMissing(_) => format!(
+                    "Die Figur antwortet ohne Stimme. Für die Übergangsstimme Kokoro (Apache-2.0) kokoro-v1.0.int8.onnx (88 MB) und voices-v1.0.bin (27 MB) von {KOKORO_URL} nach {} laden.",
+                    dir.display()
+                ),
+                e => format!("Die Figur antwortet ohne Stimme: {}", german(&e)),
+            };
+            q.as_mut().set_voice_note(QString::from(&text));
+        }
+        }
+    });
+}
+
 /// What the learner reads when speaking does not work (the GUI is German for now).
 fn german(e: &SpeechError) -> String {
     match e {
@@ -387,7 +520,10 @@ fn german(e: &SpeechError) -> String {
             format!("Das Modell für die Spracherkennung fehlt in {dir}.")
         }
         SpeechError::ModelLoad(dir) => format!(
-            "Das Modell für die Spracherkennung in {dir} lässt sich nicht laden. Neu entpacken; bis dahin geht Tippen."
+            "Das Modell in {dir} lässt sich nicht laden. Neu entpacken; bis dahin geht Tippen."
         ),
+        SpeechError::NoSpeaker => "Kein Lautsprecher gefunden.".into(),
+        SpeechError::Speaker(why) => format!("Der Lautsprecher lässt sich nicht öffnen ({why})."),
+        SpeechError::Voice(why) => format!("Die Stimme ist ausgefallen ({why})."),
     }
 }
