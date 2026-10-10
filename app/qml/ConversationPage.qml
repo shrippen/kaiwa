@@ -93,10 +93,12 @@ Kirigami.ScrollablePage {
         Repeater {
             model: page.turns
             delegate: KanteMessage {
+                id: msg
                 required property var modelData
+                required property int index
                 Layout.fillWidth: true
                 from: modelData.who === "learner" ? KanteMessage.From.Own : KanteMessage.From.Other
-                author: modelData.who === "learner" ? (modelData.typed ? "Du · getippt" : "Du") : "田中 · Tanaka"
+                author: modelData.who === "learner" ? (modelData.typed ? "Du · getippt" : "Du") : conv.character
                 text: modelData.who === "learner" ? modelData.text : ""
 
                 KanteRubyText {
@@ -115,10 +117,35 @@ Kirigami.ScrollablePage {
                             : modelData.tier === "yellow" ? KanteHintCard.Tier.Yellow
                             : modelData.tier === "blue" ? KanteHintCard.Tier.Blue : KanteHintCard.Tier.None
                         tierText: modelData.tierText
-                        meta: modelData.meta
                         titleItem: KanteDiffText { parts: modelData.parts }
                         text: modelData.explanation
+                        meta: modelData.disputed ? modelData.meta + " · umstritten" : modelData.meta
+                        // /LF307/: the learner may say it was right; kept for the QA, no longer
+                        // counted as a mistake.
+                        KanteButton {
+                            size: KanteButton.Size.Small
+                            emphasis: KanteButton.Emphasis.Quiet
+                            text: modelData.disputed ? "Widersprochen" : "Widersprechen"
+                            enabled: !modelData.disputed
+                            Accessible.description: "Der Satz war richtig: Kaiwa merkt sich den Widerspruch und zählt es nicht als Fehler."
+                            onClicked: conv.dispute(msg.index, modelData.better)
+                        }
                     }
+                }
+                // /LF113/: what Kaiwa heard; a misrecognition is no learning mistake.
+                KanteButton {
+                    visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized
+                    size: KanteButton.Size.Small
+                    emphasis: KanteButton.Emphasis.Quiet
+                    text: "Falsch erkannt"
+                    Accessible.description: "So habe ich das nicht gesagt: Die Korrekturen zu diesem Zug zählen nicht."
+                    onClicked: conv.markMisrecognized(msg.index)
+                }
+                Text {
+                    visible: msg.modelData.misrecognized === true
+                    text: "Als falsch erkannt markiert. Das zählt nicht als Fehler."
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.smallFont
                 }
             }
         }

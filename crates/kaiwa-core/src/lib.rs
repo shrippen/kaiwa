@@ -12,6 +12,7 @@ pub mod feedback;
 pub mod learner;
 pub mod progress;
 pub mod prompts;
+pub mod romaji;
 pub mod scenario;
 pub mod session;
 pub mod srs;

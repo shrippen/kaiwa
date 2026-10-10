@@ -249,81 +249,9 @@ pub fn profile(st: &AppState) -> anyhow::Result<Value> {
     }))
 }
 
-/// "What leaves the device?" (/LF711/): per part the provider, local or cloud, and what goes out.
+/// "What leaves the device?" (/LF711/), from `kaiwa_ai::privacy`.
 pub fn privacy(lang: &str) -> Value {
-    let de = lang == "de";
-    let provider = std::env::var("KAIWA_PROVIDER").unwrap_or_default();
-    let base = std::env::var("KAIWA_OPENAI_BASE").unwrap_or_default();
-    let local_base = base.is_empty()
-        || base.contains("localhost")
-        || base.contains("127.0.0.1")
-        || base.contains("[::1]");
-    let (llm_name, llm_cloud) = match provider.as_str() {
-        "anthropic" => ("Anthropic Claude".to_string(), true),
-        "openai" if local_base => (
-            format!(
-                "OpenAI-kompatibel ({})",
-                if base.is_empty() { "lokal" } else { &base }
-            ),
-            false,
-        ),
-        "openai" => (format!("OpenAI-kompatibel ({base})"), true),
-        _ => (
-            if de {
-                "Aufgezeichnete Antworten (Demo)".to_string()
-            } else {
-                "Recorded answers (demo)".to_string()
-            },
-            false,
-        ),
-    };
-    let row = |part: &str, name: &str, cloud: bool, sends: &str| {
-        json!({
-            "part": part,
-            "provider": name,
-            "cloud": cloud,
-            "where": if cloud { "Cloud" } else if de { "Lokal" } else { "Local" },
-            "sends": sends,
-        })
-    };
-    Value::Array(vec![
-        row(
-            if de {
-                "Spracherkennung"
-            } else {
-                "Speech recognition"
-            },
-            "ReazonSpeech (sherpa-onnx)",
-            false,
-            if de { "nichts" } else { "nothing" },
-        ),
-        row(
-            if de {
-                "Tutor (Sprachmodell)"
-            } else {
-                "Tutor (language model)"
-            },
-            &llm_name,
-            llm_cloud,
-            if llm_cloud {
-                if de {
-                    "Text: das Gespräch dieses Szenarios, ohne Audio, ohne Profil"
-                } else {
-                    "Text: this scenario's conversation, no audio, no profile"
-                }
-            } else if de {
-                "nichts"
-            } else {
-                "nothing"
-            },
-        ),
-        row(
-            if de { "Stimme" } else { "Voice" },
-            "Kokoro-82M",
-            false,
-            if de { "nichts" } else { "nothing" },
-        ),
-    ])
+    serde_json::to_value(kaiwa_ai::privacy::flows_from_env(lang)).unwrap_or_default()
 }
 
 #[cfg(test)]

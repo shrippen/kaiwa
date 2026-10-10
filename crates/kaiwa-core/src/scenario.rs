@@ -46,6 +46,9 @@ pub struct Goal {
 pub struct Scenario {
     pub id: String,
     pub unit: String,
+    /// The character's name as the conversation shows it, e.g. "田中 · Tanaka".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     pub title: Text,
     /// The character: who they are and how they speak (goes into the tutor's instructions).
     pub character: Text,

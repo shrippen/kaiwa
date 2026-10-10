@@ -76,7 +76,6 @@ pub mod qobject {
 use core::pin::Pin;
 
 use cxx_qt_lib::QString;
-use kaiwa_core::difficulty::Knob;
 use kaiwa_core::learner::Skill;
 use kaiwa_core::progress::{DailyGoal, Pause};
 use kaiwa_core::srs::Grade;
@@ -195,24 +194,9 @@ impl qobject::KaiwaApp {
         {
             let st = state();
             if let Ok(mut l) = st.store.learning() {
-                l.model.nudge(skill, up);
                 // "Too easy" for listening lifts the speed one step at once (Selin, /LF202/).
-                let knob = match skill {
-                    Skill::Listening => Some(Knob::Speed),
-                    Skill::ReadingKanji => Some(Knob::Furigana),
-                    Skill::Speaking => Some(Knob::Length),
-                    Skill::Register => Some(Knob::Register),
-                    _ => None,
-                };
-                if let Some(k) = knob {
-                    let step = l.regulator.difficulty.get(k);
-                    let to = if up {
-                        step.saturating_add(1)
-                    } else {
-                        step.saturating_sub(1)
-                    };
-                    l.regulator.set_by_learner(k, to);
-                }
+                let (model, regulator) = (&mut l.model, &mut l.regulator);
+                kaiwa_core::difficulty::learner_says(model, regulator, skill, up);
                 let _ = st.store.set_learning(&l);
             }
         }

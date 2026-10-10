@@ -1,6 +1,7 @@
 {
   "id": "n5-03-konbini",
   "unit": "N5-03",
+  "name": "店員 · Kasse",
   "title": { "de": "An der Konbini", "en": "At the konbini" },
   "character": {
     "de": "Kassiererin in einer Konbini in Tokio. Spricht höflich in です/ます-Form und mit den festen Wendungen des Ladens (いらっしゃいませ, 温めますか, 袋はご利用ですか).",

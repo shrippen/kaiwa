@@ -231,6 +231,36 @@ impl Difficulty {
     }
 }
 
+/// The knob that follows a skill when the learner says "I know this" or "too hard" (/LF202/):
+/// listening → speed, reading kanji → furigana, speaking → sentence length, register → register.
+pub fn knob_for(skill: Skill) -> Option<Knob> {
+    match skill {
+        Skill::Listening => Some(Knob::Speed),
+        Skill::ReadingKanji => Some(Knob::Furigana),
+        Skill::Speaking => Some(Knob::Length),
+        Skill::Register => Some(Knob::Register),
+        _ => None,
+    }
+}
+
+/// The learner corrects the model (/LF202/): the skill moves, and its knob one step at once.
+pub fn learner_says(
+    m: &mut LearnerModel,
+    r: &mut Regulator,
+    skill: Skill,
+    up: bool,
+) -> Option<Change> {
+    m.nudge(skill, up);
+    let k = knob_for(skill)?;
+    let step = r.difficulty.get(k);
+    let to = if up {
+        step.saturating_add(1)
+    } else {
+        step.saturating_sub(1)
+    };
+    (to != step && to < k.steps()).then(|| r.set_by_learner(k, to))
+}
+
 /// One move of a knob.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Change {

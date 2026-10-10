@@ -39,6 +39,8 @@ pub mod qobject {
         #[qproperty(bool, speech_ready, cxx_name = "speechReady")]
         /// The scenario being played.
         #[qproperty(QString, scenario)]
+        /// The character's name, e.g. "田中 · Tanaka".
+        #[qproperty(QString, character)]
         /// What the end of the session did: XP and why, the difficulty, new review items.
         #[qproperty(QString, recorded)]
         type Conversation = super::ConversationRust;
@@ -50,6 +52,15 @@ pub mod qobject {
         /// Continue the session that was interrupted (/LF121/).
         #[qinvokable]
         fn resume(self: Pin<&mut Conversation>);
+
+        /// The learner's turn at `log_index` was misrecognised (/LF113/): no learning mistakes.
+        #[qinvokable]
+        #[cxx_name = "markMisrecognized"]
+        fn mark_misrecognized(self: Pin<&mut Conversation>, log_index: i32);
+
+        /// The learner disputes the correction `better` of the turn at `log_index` (/LF307/).
+        #[qinvokable]
+        fn dispute(self: Pin<&mut Conversation>, log_index: i32, better: &QString);
 
         /// The learner's turn, spoken (`typed` false) or typed.
         #[qinvokable]
@@ -129,6 +140,7 @@ pub struct ConversationRust {
     voice_note: QString,
     speech_ready: bool,
     scenario: QString,
+    character: QString,
     recorded: QString,
     lang: String,
     session_id: Option<i64>,
@@ -271,6 +283,13 @@ impl qobject::Conversation {
     ) {
         let title = session.scenario.title.get(&lang).to_string();
         let scenario = session.scenario.id.clone();
+        let character = session.scenario.name.clone().unwrap_or_else(|| {
+            if lang == "de" {
+                "Figur".into()
+            } else {
+                "Character".into()
+            }
+        });
         let voice = session
             .scenario
             .voice
@@ -287,6 +306,7 @@ impl qobject::Conversation {
         }
         self.as_mut().set_title(QString::from(&title));
         self.as_mut().set_scenario(QString::from(&scenario));
+        self.as_mut().set_character(QString::from(&character));
         self.as_mut().set_recorded(QString::default());
         self.as_mut().set_summary(QString::default());
         self.as_mut().set_demo(demo);
@@ -311,6 +331,78 @@ impl qobject::Conversation {
             load_recognizer(&thread);
             load_voice(&thread, &voice);
         });
+    }
+
+    /// The session's turn index of a log entry (learner entries before it).
+    fn turn_of(&self, log_index: i32) -> Option<usize> {
+        let i = usize::try_from(log_index).ok()?;
+        (self.log.get(i)?["who"] == "learner").then(|| {
+            self.log[..i]
+                .iter()
+                .filter(|e| e["who"] == "learner")
+                .count()
+        })
+    }
+
+    fn save(&self) {
+        if let (Some(session), Some(id)) = (&self.session, self.session_id)
+            && let Ok(s) = session.lock()
+            && let Err(e) = state().store.save_session(id, &s.snapshot())
+        {
+            eprintln!("kaiwa: {e}");
+        }
+    }
+
+    fn mark_misrecognized(mut self: Pin<&mut Self>, log_index: i32) {
+        let Some(turn) = self.turn_of(log_index) else {
+            return;
+        };
+        if let Some(session) = &self.session
+            && let Ok(mut s) = session.lock()
+        {
+            s.mark_misrecognized(turn);
+        }
+        if let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize) {
+            e["corrections"] = json!([]);
+            e["misrecognized"] = json!(true);
+        }
+        self.save();
+        self.as_mut().publish_turns();
+    }
+
+    fn dispute(mut self: Pin<&mut Self>, log_index: i32, better: &QString) {
+        let better = better.to_string();
+        let Some(turn) = self.turn_of(log_index) else {
+            return;
+        };
+        let found = self.session.as_ref().and_then(|session| {
+            let mut s = session.lock().ok()?;
+            let learner = s.turns().get(turn)?.learner.clone();
+            let c = s.dispute(turn, &better)?;
+            Some((s.scenario.id.clone(), learner, c))
+        });
+        let Some((scenario, learner, c)) = found else {
+            return;
+        };
+        if let Err(e) = state().store.add_dispute(&kaiwa_store::Dispute {
+            at: now(),
+            scenario,
+            learner,
+            original: c.original,
+            better: c.better.clone(),
+            explanation: c.explanation,
+        }) {
+            eprintln!("kaiwa: {e}");
+        }
+        if let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize)
+            && let Some(list) = e["corrections"].as_array_mut()
+        {
+            for x in list.iter_mut().filter(|x| x["better"] == c.better.as_str()) {
+                x["disputed"] = json!(true);
+            }
+        }
+        self.save();
+        self.as_mut().publish_turns();
     }
 
     fn resume(self: Pin<&mut Self>) {
@@ -503,6 +595,12 @@ impl qobject::Conversation {
 
     fn say(mut self: Pin<&mut Self>, text: &QString, typed: bool) {
         let text = text.to_string().trim().to_string();
+        // Typed rōmaji becomes kana, shown as such (/LF120/).
+        let text = if typed && kaiwa_core::romaji::has_romaji(&text) {
+            kaiwa_core::romaji::to_kana(&text)
+        } else {
+            text
+        };
         if text.is_empty() || *self.busy() || *self.finished() {
             return;
         }
@@ -659,12 +757,21 @@ fn log_of(scenario: &Scenario, state: &SessionState, lang: &str) -> Vec<Value> {
             if t.misrecognized { &[] } else { &t.corrections },
             state.amount,
         );
+        let corrections: Vec<Value> = shown
+            .iter()
+            .map(|x| {
+                let mut v = shown_json(x, lang);
+                v["disputed"] = json!(t.disputed.contains(&x.correction.better));
+                v
+            })
+            .collect();
         log.push(json!({
             "who": "learner",
             "text": t.learner,
             "typed": t.input == Input::Typed,
-            "corrections": shown.iter().map(|x| shown_json(x, lang)).collect::<Vec<_>>(),
+            "corrections": corrections,
             "pending": false,
+            "misrecognized": t.misrecognized,
         }));
         log.push(json!({ "who": "character", "markup": t.reply }));
     }

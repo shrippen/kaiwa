@@ -49,6 +49,7 @@ QQC2.ScrollView {
             currentText: page.t("jetzt", "now")
             reviewText: page.t("Wiederholung", "review")
             lockedText: page.t("gesperrt", "locked")
+            openText: page.t("offen", "open")
             onActivated: function (i) {
                 var n = page.nodes[i]
                 if (n.kind === "review") page.showTab(2)

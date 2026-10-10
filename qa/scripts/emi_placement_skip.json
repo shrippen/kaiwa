@@ -1,0 +1,9 @@
+{
+  "journey": "emi_placement_skip",
+  "days": 10,
+  "seed": 33,
+  "start": "2026-10-05",
+  "offset_hours": 2,
+  "every_day": true,
+  "note": "Placement as her start level (the placement conversation needs a live tutor). Ten days of daily sessions at the difficulty the regulator sets from there."
+}

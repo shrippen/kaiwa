@@ -385,7 +385,11 @@ impl Session {
                 .any(|g| crate::norm(&g.help.example) == crate::norm(text));
         let earlier: Vec<&str> = self.turns.iter().map(|t| t.learner.as_str()).collect();
         let (mut xp, xp_reason) = turn_xp(text, input, &earlier, from_help);
-        xp += XP_GOAL * goals_met_now.len() as u32;
+        // A goal reached by reading out the full example is practice, not an achievement:
+        // no goal bonus (/LF603/).
+        if !from_help {
+            xp += XP_GOAL * goals_met_now.len() as u32;
+        }
 
         let help = if goals_met_now.is_empty() {
             self.stuck += 1;
