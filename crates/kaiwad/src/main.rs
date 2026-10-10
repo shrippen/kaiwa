@@ -13,12 +13,16 @@
 //! - `OpenApp()`: the app, to see a talk in full (/LF503/).
 //! - Signal `Changed()` after anything that changes the profile.
 //!
-//! Turns run on the bus thread: a slow tutor holds other calls until it answers. Speech (the
-//! microphone and the models, /LF505/) follows with the shared audio path.
+//! - `StartTalk()`, `StopTalk()`: push-to-talk; the service listens, recognises and sends the
+//!   turn (/LF505/, feature `speech`).
+//!
+//! Turns run on the bus thread: a slow tutor holds other calls until it answers.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+mod ear;
 
 use kaiwa_backend::short::ShortTalk;
 use kaiwa_backend::{Backend, now, views};
@@ -44,6 +48,7 @@ struct Inner {
 
 struct Service {
     inner: Mutex<Inner>,
+    ear: Mutex<ear::Ear>,
     last_call: Arc<AtomicU64>,
 }
 
@@ -69,6 +74,24 @@ impl Service {
             }
         }
         inner
+    }
+}
+
+impl Service {
+    /// A turn of the short talk, typed or recognised.
+    fn turn(&self, text: &str, typed: bool) -> fdo::Result<serde_json::Value> {
+        let mut guard = self.lock();
+        let Inner { backend, short } = &mut *guard;
+        let Some(talk) = short.as_mut() else {
+            return Err(fdo::Error::Failed(
+                "no short talk; call StartShort first".into(),
+            ));
+        };
+        let v = talk.say(backend, text, typed, now()).map_err(failed)?;
+        if v["done"] == true {
+            *short = None;
+        }
+        Ok(v)
     }
 }
 
@@ -112,20 +135,38 @@ impl Service {
         typed: bool,
         #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
     ) -> fdo::Result<String> {
-        let v = {
-            let mut guard = self.lock();
-            let Inner { backend, short } = &mut *guard;
-            let Some(talk) = short.as_mut() else {
-                return Err(fdo::Error::Failed(
-                    "no short talk; call StartShort first".into(),
-                ));
-            };
-            let v = talk.say(backend, text, typed, now()).map_err(failed)?;
-            if v["done"] == true {
-                *short = None;
-            }
-            v
-        };
+        let v = self.turn(text, typed)?;
+        let _ = Self::changed(&emitter).await;
+        Ok(v.to_string())
+    }
+
+    /// Push-to-talk pressed: the service listens.
+    async fn start_talk(&self) -> fdo::Result<()> {
+        self.last_call.store(secs(), Ordering::Relaxed);
+        self.ear
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .start()
+            .map_err(failed)
+    }
+
+    /// Push-to-talk released: recognise and send it as a spoken turn. "heard" is what was
+    /// recognised; empty when nothing was understood (then no turn is sent).
+    async fn stop_talk(
+        &self,
+        #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
+    ) -> fdo::Result<String> {
+        let heard = self
+            .ear
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .stop()
+            .map_err(failed)?;
+        if heard.trim().is_empty() {
+            return Ok(serde_json::json!({ "heard": "" }).to_string());
+        }
+        let mut v = self.turn(&heard, false)?;
+        v["heard"] = serde_json::json!(heard);
         let _ = Self::changed(&emitter).await;
         Ok(v.to_string())
     }
@@ -159,6 +200,7 @@ impl Service {
 fn main() -> anyhow::Result<()> {
     let last_call = Arc::new(AtomicU64::new(secs()));
     let service = Service {
+        ear: Mutex::new(ear::Ear::new()),
         inner: Mutex::new(Inner {
             backend: Backend::open()?,
             short: None,

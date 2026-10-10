@@ -94,5 +94,5 @@ jobs:
       - name: The plasmoid in plasmoidviewer against kaiwad (/LF500/, ADR-008)
         run: |
           pacman -S --noconfirm --needed plasma-workspace plasma-sdk dbus glib2
-          cargo build --locked -p kaiwad
+          cargo build --locked -p kaiwad --features speech
           dbus-run-session -- env PLASMOID=1 tools/kaiwad-smoke.sh

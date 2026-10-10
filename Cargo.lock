@@ -1863,6 +1863,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "kaiwa-backend",
+ "kaiwa-speech",
  "serde_json",
  "zbus 5.13.2",
 ]

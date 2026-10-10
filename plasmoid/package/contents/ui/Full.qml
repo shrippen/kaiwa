@@ -7,7 +7,8 @@ import "KantePlasma"
 
 // The expanded plasmoid: today (goal, streak, what comes next), a short talk of two goals
 // (/LF501/) with corrections in one line each and "see it in the app" (/LF503/), and five
-// reviews (/LF502/). Typed for now; push-to-talk follows with the shared audio path (/LF505/).
+// reviews (/LF502/). Push-to-talk goes through kaiwad, which listens and recognises (/LF505/);
+// typing works too.
 ColumnLayout {
     id: full
 
@@ -26,6 +27,9 @@ ColumnLayout {
     property var reviews: []
     property var answer: null
     property bool busy: false
+    /** KanteTalkButton.State: 0 ready, 1 listening, 2 thinking, 4 no speech. */
+    property int talkState: 0
+    property string speechNote: ""
     readonly property var today: app.today
     readonly property var current: reviews.length > 0 ? reviews[0] : null
 
@@ -69,6 +73,37 @@ ColumnLayout {
             app.refresh()
         })
     }
+    function startTalk() {
+        if (busy || talkState === 1) return
+        speechNote = ""
+        kaiwad.call("StartTalk", "", [], function () { talkState = 1 }, function (why) {
+            // No microphone or no model: say why, typing still works.
+            talkState = 4
+            speechNote = why
+        })
+    }
+    function stopTalk() {
+        if (talkState !== 1) return
+        talkState = 2
+        busy = true
+        kaiwad.call("StopTalk", "", [], function (v) {
+            busy = false
+            talkState = 0
+            if (!v || !v.heard) {
+                speechNote = t("Nichts verstanden. Noch einmal, etwas lauter, oder tippen.", "Nothing understood. Once more, a little louder, or type.")
+                return
+            }
+            talk = v
+            lines = lines.concat([{ who: "learner", text: v.said, corrections: v.corrections },
+                                  { who: "character", markup: v.reply }])
+            app.refresh()
+        }, function (why) {
+            busy = false
+            talkState = 4
+            speechNote = why
+        })
+    }
+
     function startReviews() {
         answer = null
         kaiwad.call("Reviews", "(u)", [kaiwad.uint(5)], function (v) {
@@ -230,9 +265,25 @@ ColumnLayout {
             font: KanteStyle.defaultFont
             wrapMode: Text.Wrap
         }
+        Text {
+            Layout.fillWidth: true
+            visible: full.speechNote.length > 0
+            text: full.speechNote
+            color: KanteStyle.mutedTextColor
+            font: KanteStyle.smallFont
+            wrapMode: Text.Wrap
+        }
         RowLayout {
             Layout.fillWidth: true
             visible: !(full.talk && full.talk.done)
+            KanteTalkButton {
+                talkState: full.talkState
+                titles: [full.t("Sprechen", "Speak"), full.t("Hört zu", "Listening"), full.t("Denkt nach", "Thinking"), full.t("Spricht", "Speaking"), full.t("Kein Sprechen", "No speech")]
+                hints: [full.t("Halten", "Hold"), full.t("Loslassen zum Senden", "Release to send"), "", "", full.t("Warum? Siehe oben", "Why? See above")]
+                onTalkStarted: full.startTalk()
+                onTalkEnded: full.stopTalk()
+                onErrorActionRequested: full.talkState = 0
+            }
             KanteTextField {
                 id: input
                 Layout.fillWidth: true

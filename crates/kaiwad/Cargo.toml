@@ -11,8 +11,14 @@ publish = false
 [dependencies]
 anyhow = "1"
 kaiwa-backend = { path = "../kaiwa-backend" }
+kaiwa-speech = { path = "../kaiwa-speech", optional = true }
 serde_json = "1"
 zbus = { version = "5", default-features = false, features = ["blocking-api", "async-io"] }
+
+[features]
+# Push-to-talk in the service (microphone, ReazonSpeech): needs ALSA and sherpa-onnx, so the
+# plain CI job builds without it; packages build with it.
+speech = ["dep:kaiwa-speech"]
 
 [lints]
 workspace = true

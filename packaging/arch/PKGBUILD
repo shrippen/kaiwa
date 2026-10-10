@@ -24,7 +24,8 @@ pkgver() {
 build() {
   cd kaiwa
   export QMAKE=/usr/bin/qmake6
-  cargo build --release --locked -p kaiwa-app -p kaiwad
+  cargo build --release --locked -p kaiwa-app
+  cargo build --release --locked -p kaiwad --features speech
 }
 
 package() {
