@@ -66,6 +66,21 @@ pub mod qobject {
         #[cxx_name = "skipUnit"]
         fn skip_unit(self: Pin<&mut KaiwaApp>, unit: &QString);
 
+        /// Uses another profile of this device (/LF720/).
+        #[qinvokable]
+        #[cxx_name = "switchProfile"]
+        fn switch_profile(self: Pin<&mut KaiwaApp>, file: &QString);
+
+        /// Creates a profile called `name` and uses it (/LF720/).
+        #[qinvokable]
+        #[cxx_name = "newProfile"]
+        fn new_profile(self: Pin<&mut KaiwaApp>, name: &QString);
+
+        /// Keeps the tutor's API key in the system keyring; empty removes it (/LF713/).
+        #[qinvokable]
+        #[cxx_name = "storeKey"]
+        fn store_key(self: Pin<&mut KaiwaApp>, key: &QString);
+
         /// Starts at zero without the placement (/LF200/).
         #[qinvokable]
         #[cxx_name = "skipPlacement"]
@@ -78,12 +93,11 @@ use core::pin::Pin;
 use cxx_qt_lib::QString;
 use kaiwa_core::learner::Skill;
 use kaiwa_core::progress::{DailyGoal, Pause};
-use kaiwa_core::srs::Grade;
 use kaiwa_store::{Script, Store};
 use serde_json::json;
 
-use crate::state::{now, state};
-use crate::views;
+use crate::state::views;
+use crate::state::{AppState, now, state};
 
 #[derive(Default)]
 pub struct KaiwaAppRust {
@@ -177,11 +191,19 @@ impl qobject::KaiwaApp {
                     }
                 }
                 "reminder" => p.reminder = value.parse().ok(),
+                "costLimit" => p.cost_limit_cents = value.parse().ok(),
+                "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
                 "name" => p.name = value,
                 _ => return,
             }
             if let Err(e) = st.store.set_profile(&p) {
                 eprintln!("kaiwa: {e}");
+            }
+            // Turning recordings off (or shortening the days) deletes them now.
+            if key == "keepRecordings"
+                && let Err(e) = st.purge_recordings(now())
+            {
+                eprintln!("kaiwa: {e:#}");
             }
         }
         self.as_mut().refresh();
@@ -204,23 +226,8 @@ impl qobject::KaiwaApp {
     }
 
     fn answer_review(mut self: Pin<&mut Self>, text: &QString, said: &QString, helped: bool) {
-        let (text, said) = (text.to_string(), said.to_string());
-        let right = kaiwa_core::norm(&said) == kaiwa_core::norm(&text);
-        let grade = Grade::of(right, helped, false);
-        let result = {
-            let st = state();
-            st.store.review(&text, grade, now())
-        };
-        let next = match result {
-            Ok(Some(item)) => item.due.iso(),
-            _ => String::new(),
-        };
-        self.as_mut().set_answer(q(&json!({
-            "right": right,
-            "expected": text,
-            "said": said,
-            "next": next,
-        })));
+        let answer = state().answer_review(&text.to_string(), &said.to_string(), helped, now());
+        self.as_mut().set_answer(q(&answer));
         self.as_mut().refresh();
     }
 
@@ -250,6 +257,9 @@ impl qobject::KaiwaApp {
         let result = {
             let mut st = state();
             let path = st.path.clone();
+            if let Err(e) = st.delete_recordings() {
+                eprintln!("kaiwa: {e:#}");
+            }
             match Store::in_memory() {
                 Ok(mem) => {
                     // Close the file before removing it.
@@ -294,6 +304,56 @@ impl qobject::KaiwaApp {
                 let _ = st.store.set_learning(&l);
             }
         }
+        self.as_mut().refresh();
+    }
+
+    fn switch_profile(mut self: Pin<&mut Self>, file: &QString) {
+        let result = {
+            let mut st = state();
+            let dir = st.dir();
+            kaiwa_backend::profiles::set_current(&dir, &file.to_string())
+                .and_then(|path| AppState::open_at(path, false))
+                .map(|b| *st = b)
+        };
+        if let Err(e) = result {
+            self.as_mut().set_notice(QString::from(&format!("{e:#}")));
+        }
+        self.as_mut().refresh();
+    }
+
+    fn new_profile(mut self: Pin<&mut Self>, name: &QString) {
+        let name = name.to_string();
+        if name.trim().is_empty() {
+            return;
+        }
+        let result = {
+            let mut st = state();
+            let dir = st.dir();
+            let lang = st
+                .store
+                .profile()
+                .map(|p| p.ui_lang)
+                .unwrap_or_else(|_| "de".into());
+            kaiwa_backend::profiles::create(&dir, &name, &lang)
+                .and_then(|path| AppState::open_at(path, false))
+                .map(|b| *st = b)
+        };
+        if let Err(e) = result {
+            self.as_mut().set_notice(QString::from(&format!("{e:#}")));
+        }
+        self.as_mut().refresh();
+    }
+
+    fn store_key(mut self: Pin<&mut Self>, key: &QString) {
+        let provider = std::env::var("KAIWA_PROVIDER").unwrap_or_default();
+        let de = self.lang().to_string() == "de";
+        let msg = match (kaiwa_ai::secrets::store(&provider, &key.to_string()), de) {
+            (Ok(()), true) => "Der Schlüssel liegt im Schlüsselbund.".to_string(),
+            (Ok(()), false) => "The key is in the keyring.".to_string(),
+            (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
+            (Err(e), false) => format!("The keyring refused: {e}"),
+        };
+        self.as_mut().set_notice(QString::from(&msg));
         self.as_mut().refresh();
     }
 

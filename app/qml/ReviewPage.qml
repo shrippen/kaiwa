@@ -91,6 +91,7 @@ QQC2.ScrollView {
                         id: typed
                         Layout.fillWidth: true
                         placeholderText: page.t("Auf Japanisch tippen …", "Type in Japanese …")
+                        Accessible.name: page.t("Deine Antwort", "Your answer")
                         onAccepted: check()
                         function check() {
                             if (text.length === 0) return

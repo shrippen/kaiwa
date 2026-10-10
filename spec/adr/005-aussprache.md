@@ -26,3 +26,7 @@ Bewertet werden sollen Moren-Struktur (Langvokale, っ, ん, Entstimmung, Rhythm
 ## Entschieden (Fragenpaket 3)
 
 - **H-04:** Spike 0.6 beginnt jetzt mit den Moren-Längen: Langvokal, っ und ん an den synthetischen Fehlern. Beide Erkenner glätten diese Fehler (Spike 0.3), also muss die eigene Prüfung sie finden. Der Pitch-Teil folgt mit einer Stimme, die den Akzent trifft (H-01), und mit den eigenen Aufnahmen (F-04).
+
+## Entschieden (Fragenpaket 4)
+
+- **I-01:** Die Moren-Längen misst ein eigener Aligner mit einem Kana-CTC-Modell (wav2vec2, Ausgabe Hiragana) über ONNX Runtime: Zeiten pro Kana aus den CTC-Wahrscheinlichkeiten. Julius (Segmentation-Kit) und der Montreal Forced Aligner laufen im Spike als automatische Gegenprobe mit: Wo sie sich um mehr als eine Toleranz unterscheiden, meldet der Spike den Satz. Die Lizenz des CTC-Modells wird vor der Wahl geprüft.

@@ -358,6 +358,7 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
                 let outcome = crate::days::check(cid, &run)
                     .or_else(|| crate::engine::check(cid, root, &persona))
                     .or_else(|| crate::profile::check(cid, root))
+                    .or_else(|| crate::ui::check(cid, root))
                     .unwrap_or(Outcome::NotAutomated);
                 checks.insert(cid.to_string(), outcome);
             }
@@ -386,6 +387,7 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
                 .and_then(|r| check(cid, r))
                 .or_else(|| crate::engine::check(cid, root, &persona))
                 .or_else(|| crate::profile::check(cid, root))
+                .or_else(|| crate::ui::check(cid, root))
                 .unwrap_or(Outcome::NotAutomated);
             checks.insert(cid.to_string(), outcome);
         }
@@ -434,7 +436,7 @@ mod tests {
             .unwrap();
         assert_eq!(j.checks["selin_register_flag"], Outcome::Pass);
         assert_eq!(j.checks["selin_recast"], Outcome::Pass);
-        assert_eq!(j.checks["selin_casual_ok"], Outcome::NotAutomated);
+        assert_eq!(j.checks["selin_casual_ok"], Outcome::Pass);
     }
 
     #[test]

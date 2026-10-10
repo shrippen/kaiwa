@@ -8,6 +8,7 @@ mod days;
 mod engine;
 mod profile;
 mod run;
+mod ui;
 mod validate;
 
 use std::path::PathBuf;

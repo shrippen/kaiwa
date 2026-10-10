@@ -80,6 +80,9 @@ pub struct Profile {
     pub placed: bool,
     /// Reminder time as minutes after midnight; `None` sends none (/LF520/, /LF620/).
     pub reminder: Option<u32>,
+    /// Cost limit for a cloud tutor per month in euro cents; `None` without a limit (/LF714/).
+    #[serde(default)]
+    pub cost_limit_cents: Option<u32>,
 }
 
 impl Default for Profile {
@@ -96,6 +99,7 @@ impl Default for Profile {
             style: 0,
             placed: false,
             reminder: None,
+            cost_limit_cents: None,
         }
     }
 }
@@ -283,6 +287,24 @@ impl Store {
             .unwrap_or_default())
     }
 
+    /// A small value of the device's state (not part of the export), e.g. when the last
+    /// reminder went out.
+    pub fn state_value<T: for<'de> Deserialize<'de>>(&self, key: &str) -> Result<Option<T>> {
+        self.get_json(
+            "SELECT value FROM settings WHERE key = ?1",
+            &format!("state.{key}"),
+        )
+    }
+
+    pub fn set_state_value<T: Serialize>(&self, key: &str, v: &T) -> Result<()> {
+        self.db.execute(
+            "INSERT INTO settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![format!("state.{key}"), serde_json::to_string(v)?],
+        )?;
+        Ok(())
+    }
+
     pub fn set_profile(&self, p: &Profile) -> Result<()> {
         self.db.execute(
             "INSERT INTO settings (key, value) VALUES ('profile', ?1)
@@ -338,6 +360,34 @@ impl Store {
             ],
         )?;
         Ok(self.db.last_insert_rowid())
+    }
+
+    /// A finished session as it was, without recording it again (demo history, tests).
+    pub fn put_finished_session(
+        &self,
+        state: &SessionState,
+        started: Moment,
+        ended: Moment,
+        success: f64,
+    ) -> Result<i64> {
+        let id = self.begin_session(state, started)?;
+        self.db.execute(
+            "UPDATE sessions SET ended = ?2, finished = 1, success = ?3 WHERE id = ?1",
+            params![id, ended.unix, success],
+        )?;
+        Ok(id)
+    }
+
+    /// The finished sessions started at or after `from` (unix seconds), oldest first.
+    pub fn finished_since(&self, from: i64) -> Result<Vec<SessionRow>> {
+        let mut stmt = self.db.prepare(&format!(
+            "{} WHERE finished = 1 AND started >= ?1 ORDER BY started",
+            Self::ROW
+        ))?;
+        let rows = stmt
+            .query_map(params![from], Self::row)?
+            .collect::<rusqlite::Result<_>>()?;
+        Ok(rows)
     }
 
     /// Keeps the state after every turn, so an interruption loses nothing (/LF121/).

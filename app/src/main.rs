@@ -9,7 +9,6 @@
 mod app;
 mod conversation;
 mod state;
-mod views;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 

@@ -104,6 +104,7 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
         "selin_win_mixed" => mixed(),
         "selin_profile_split" => profile_split(p),
         "emi_ceiling" => ceiling(p),
+        "selin_casual_ok" => casual_ok(root),
         _ => return None,
     };
     Some(match r {
@@ -366,4 +367,19 @@ fn ceiling(p: &Value) -> Result<Option<String>> {
         why.push(format!("{minutes} min"));
     }
     Ok((!why.is_empty()).then(|| why.join(", ")))
+}
+
+/// /LF303/: between friends the plain form is right: a register correction that only asks
+/// for politeness is no mistake there (the recorded tutor flags it anyway, on purpose).
+fn casual_ok(root: &Path) -> Result<Option<String>> {
+    let mut s = session(root, "n5-07-tomodachi")?;
+    let out = s.turn("うん、行く！", Input::Spoken)?;
+    if !s.stats().mistakes.is_empty() {
+        return Ok(Some(format!("counted: {:?}", s.stats().mistakes)));
+    }
+    Ok(out
+        .shown
+        .iter()
+        .any(|x| !x.correction.also_possible)
+        .then(|| "shown as a mistake".into()))
 }

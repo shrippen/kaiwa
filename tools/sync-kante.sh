@@ -20,3 +20,4 @@ cp -r "$KANTE/qml/Kante" app/qml/Kante
   echo '</RCC>'
 } > app/qml/kante.qrc
 echo "synced app/qml/Kante from $KANTE ($(git -C "$KANTE" describe --always 2>/dev/null || echo unknown))"
+

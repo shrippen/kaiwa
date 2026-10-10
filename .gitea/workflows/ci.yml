@@ -84,3 +84,9 @@ jobs:
           timeout 120 ./target/debug/kaiwa --shot /tmp/place.png --view place --kind 1 --say "$L|$L|$L|$L|read:21" 2>&1 | tee -a /tmp/app.log
           test -s /tmp/place.png
           ! grep -E 'qrc:.*(Error|Unable|is not|TypeError|ReferenceError)' /tmp/app.log
+      - name: Packaging files (/LL500/)
+        run: |
+          pacman -S --noconfirm --needed desktop-file-utils appstream
+          desktop-file-validate packaging/org.shrippen.kaiwa.desktop
+          appstreamcli validate --no-net packaging/org.shrippen.kaiwa.metainfo.xml
+          bash -n packaging/arch/PKGBUILD

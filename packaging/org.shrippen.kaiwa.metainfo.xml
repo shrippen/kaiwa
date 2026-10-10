@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.shrippen.kaiwa</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Kaiwa</name>
+  <summary>Practise speaking and listening Japanese in conversations</summary>
+  <summary xml:lang="de">Japanisch sprechen und hören üben, im Gespräch</summary>
+  <description>
+    <p>Kaiwa is a conversation trainer for Japanese: you talk with characters in everyday scenes, read along with furigana and get corrections that explain themselves. The difficulty follows you, step by step.</p>
+    <ul>
+      <li>Speech recognition and the voice run on your device</li>
+      <li>A placement by conversation instead of a test</li>
+      <li>Reviews from your own corrections</li>
+      <li>Several profiles, a cost limit and the system keyring for cloud tutors</li>
+    </ul>
+    <p xml:lang="de">Kaiwa ist ein Gesprächstrainer für Japanisch: Du sprichst mit Figuren in Alltagsszenen, liest mit Furigana mit und bekommst Korrekturen, die sich selbst erklären. Die Schwierigkeit folgt dir, Schritt für Schritt.</p>
+  </description>
+  <launchable type="desktop-id">org.shrippen.kaiwa.desktop</launchable>
+  <provides>
+    <binary>kaiwa</binary>
+  </provides>
+  <screenshots>
+    <screenshot type="default">
+      <caption>A conversation with corrections</caption>
+      <image>https://git.arianw.de/shrippen/Kaiwa/raw/branch/main/app/shots/talk-kante.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Today: daily goal, what comes next, reviews</caption>
+      <image>https://git.arianw.de/shrippen/Kaiwa/raw/branch/main/app/shots/start-kante.png</image>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://shrippen.github.io/</url>
+  <url type="vcs-browser">https://git.arianw.de/shrippen/Kaiwa</url>
+  <developer id="io.github.shrippen">
+    <name>shrippen</name>
+  </developer>
+  <categories>
+    <category>Education</category>
+    <category>Languages</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.4.0" date="2026-10-10" type="development">
+      <description>
+        <p>Placement by conversation, several profiles, cost limit and keyring for cloud tutors, recordings only with consent, statistics over twelve weeks.</p>
+      </description>
+    </release>
+  </releases>
+</component>

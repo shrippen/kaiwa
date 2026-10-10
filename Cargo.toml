@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/*", "app"]
 # The app (Qt 6, Kirigami) and kaiwa-speech (sherpa-onnx libraries, ALSA) build in the CI job `qt`;
 # plain `cargo` commands build the rest.
-default-members = ["crates/kaiwa-ai", "crates/kaiwa-core", "crates/kaiwa-sim", "crates/kaiwa-store"]
+default-members = ["crates/kaiwa-ai", "crates/kaiwa-backend", "crates/kaiwa-core", "crates/kaiwa-sim", "crates/kaiwa-store"]
 # Spikes build on their own (Qt and other toolchains the CI does not have).
 exclude = ["spikes"]
 

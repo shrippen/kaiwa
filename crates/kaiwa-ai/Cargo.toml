@@ -13,5 +13,14 @@ serde_json = "1.0.151"
 thiserror = "2.0.21"
 ureq = { version = "3.4.2", features = ["json"] }
 
+# API keys in the system keyring (/LF713/): Secret Service (KWallet, GNOME Keyring) over zbus,
+# Windows Credential Manager, macOS Keychain.
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["async-secret-service", "async-io", "crypto-rust"] }
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["windows-native"] }
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["apple-native"] }
+
 [lints]
 workspace = true

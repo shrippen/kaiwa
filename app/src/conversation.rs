@@ -122,8 +122,6 @@ use std::time::Duration;
 
 use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
-use kaiwa_ai::ChatProvider;
-use kaiwa_ai::mock::MockProvider;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::learner::Skill;
 use kaiwa_core::placement::{self, Placement, Reading, STAGES, StageResult, TURNS_PER_STAGE};
@@ -137,7 +135,7 @@ use kaiwa_speech::stt::Recognizer;
 use kaiwa_speech::tts::{self, Voice};
 use serde_json::{Value, json};
 
-use crate::state::{now, state};
+use crate::state::{now, provider, state};
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -192,21 +190,6 @@ const ERROR: i32 = 4;
 
 /// Tanaka speaks slowly (the scenario says so), so a little below Kokoro's normal pace.
 const SPEED: f32 = 0.9;
-
-/// The tutor from the environment (`kaiwa_ai::provider_from_env`, for the owner's local
-/// test); recorded answers otherwise (demo mode).
-fn provider(scenario: &str) -> (Arc<dyn ChatProvider>, bool) {
-    match kaiwa_ai::provider_from_env() {
-        Ok(Some(p)) => return (p, false),
-        Ok(None) => {}
-        Err(e) => eprintln!("kaiwa: {e}; using recorded answers"),
-    }
-    let mock = crate::state::fixtures(scenario)
-        .and_then(|f| MockProvider::from_json(f).ok())
-        .unwrap_or_default()
-        .with_fallback("すみません、もう一度お願いします。");
-    (Arc::new(mock), true)
-}
 
 fn shown_json(s: &Shown, lang: &str) -> Value {
     json!({
@@ -580,6 +563,7 @@ impl qobject::Conversation {
             return;
         };
         let (provider, demo) = provider(&scenario.id);
+        let _ = state().arm_brake(now());
         let opening = scenario.opening.clone();
         let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
             .with_difficulty(learning.regulator.difficulty.clone());
@@ -712,6 +696,13 @@ impl qobject::Conversation {
             self.as_mut().set_talk_state(ERROR);
             return;
         };
+        // Kept only with the opt-in, for the chosen days (/LF712/).
+        if let Some(id) = self.session_id {
+            let turn = self.log.iter().filter(|e| e["who"] == "learner").count();
+            if let Err(e) = state().keep_recording(id, turn, &rec.samples, rec.sample_rate, now()) {
+                eprintln!("kaiwa: {e:#}");
+            }
+        }
         self.as_mut().set_talk_state(THINKING);
         let thread = self.qt_thread();
         std::thread::spawn(move || {
@@ -783,10 +774,12 @@ impl qobject::Conversation {
                         if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index) {
                             turn["pending"] = json!(false);
                         }
-                        let msg = if q.lang == "en" {
-                            format!("The tutor did not answer: {e}")
-                        } else {
-                            format!("Der Tutor hat nicht geantwortet: {e}")
+                        let budget = e == kaiwa_ai::AiError::Budget.to_string();
+                        let msg = match (budget, q.lang == "en") {
+                            (true, true) => "The cost limit for this month is reached. Raise it in the settings or switch to a local tutor.".to_string(),
+                            (true, false) => "Das Kostenlimit für diesen Monat ist erreicht. In den Einstellungen anheben oder auf einen lokalen Tutor wechseln.".to_string(),
+                            (false, true) => format!("The tutor did not answer: {e}"),
+                            (false, false) => format!("Der Tutor hat nicht geantwortet: {e}"),
                         };
                         q.as_mut().set_error(QString::from(&msg));
                     }
@@ -794,6 +787,10 @@ impl qobject::Conversation {
                 q.as_mut().set_busy(false);
                 q.as_mut().publish_turns();
                 q.as_mut().publish_goals();
+                // The cost brake: book what the turn cost (/LF714/).
+                if let Err(e) = state().book_costs(now(), *q.finished()) {
+                    eprintln!("kaiwa: {e}");
+                }
                 q.placement_step();
             });
         });

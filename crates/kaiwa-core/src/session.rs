@@ -359,6 +359,7 @@ impl Session {
             let second = self.provider.analyse(&analysis_request)?;
             analysis.corrections = cross_check(&analysis.corrections, &second.corrections);
         }
+        fit_register(&mut analysis.corrections, self.scenario.register);
         let reply = match self.provider.reply(&self.request(reply_system(
             &self.scenario,
             &self.lang,
@@ -558,22 +559,14 @@ impl Session {
                 Input::Spoken => s.speaking_secs += speaking_secs(&t.learner),
                 Input::Typed => s.typed_turns += 1,
             }
-            let mut clean = true;
-            for c in counted(t) {
-                if c.also_possible || c.severity < Severity::Unnatural {
-                    continue;
-                }
-                clean = false;
-                let kind = serde_json::to_value(c.kind)
-                    .ok()
-                    .and_then(|v| v.as_str().map(str::to_string))
-                    .unwrap_or_default();
+            let kinds = mistake_kinds(t);
+            for kind in &kinds {
                 if kind == "register" {
                     s.register_mistakes += 1;
                 }
-                *s.mistakes.entry(kind).or_default() += 1;
+                *s.mistakes.entry(kind.clone()).or_default() += 1;
             }
-            s.clean_turns += u32::from(clean);
+            s.clean_turns += u32::from(kinds.is_empty());
         }
         s.goals_met = self.goals_met.len() as u32;
         s.goals_unaided = self
@@ -635,6 +628,35 @@ impl Session {
     pub fn learner_turns(&self) -> impl Iterator<Item = &str> {
         self.turns.iter().map(|t| t.learner.as_str())
     }
+}
+
+/// Plain forms between friends are right (/LF303/): in a casual scenario a register
+/// correction that only asks for more politeness is an alternative ("also possible"), not a
+/// mistake. A form that is rude even there (おまえ to a stranger, marked wrong) stays.
+pub fn fit_register(corrections: &mut [Correction], register: Register) {
+    if register != Register::Casual {
+        return;
+    }
+    for c in corrections.iter_mut() {
+        if c.kind == kaiwa_ai::CorrectionKind::Register && c.severity <= Severity::Unnatural {
+            c.also_possible = true;
+        }
+    }
+}
+
+/// The kinds of the mistakes a turn counts (severity unnatural or above, not an alternative,
+/// not misrecognised, not disputed), e.g. "particle"; for the learner model and the statistics.
+pub fn mistake_kinds(t: &TurnRecord) -> Vec<String> {
+    counted(t)
+        .iter()
+        .filter(|c| !c.also_possible && c.severity >= Severity::Unnatural)
+        .map(|c| {
+            serde_json::to_value(c.kind)
+                .ok()
+                .and_then(|v| v.as_str().map(str::to_string))
+                .unwrap_or_default()
+        })
+        .collect()
 }
 
 /// The corrections of a turn that still count: none for a misrecognised turn, none disputed.

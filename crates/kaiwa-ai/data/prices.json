@@ -1,0 +1,19 @@
+{
+  "note": "Estimated list prices in US dollars per million tokens (input, output) for the cost brake (/LF714/). Claude checks them against the provider's price page at every release and updates as_of (I-05). A model missing here counts as unknown, a local server as free.",
+  "as_of": "2026-10",
+  "usd_to_eur": 0.92,
+  "models": {
+    "claude-haiku-5-5": [
+      1.0,
+      5.0
+    ],
+    "claude-sonnet-5-5": [
+      3.0,
+      15.0
+    ],
+    "claude-opus-5-5": [
+      15.0,
+      75.0
+    ]
+  }
+}

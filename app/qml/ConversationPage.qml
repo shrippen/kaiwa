@@ -68,7 +68,8 @@ Kirigami.ScrollablePage {
                 status: conv.talkState === KanteTalkButton.State.Speaking ? KantePill.State.Running : KantePill.State.Off
                 QQC2.ToolTip.visible: pillHover.hovered
                 QQC2.ToolTip.text: conv.voice.length > 0
-                    ? "Kokoro spricht die Antworten der Figur, aber ohne Tonhöhenakzent. Zum Nachsprechen kommt eine eigene Stimme."
+                    ? page.t("Kokoro spricht die Antworten der Figur, aber ohne Tonhöhenakzent. Zum Nachsprechen kommt eine eigene Stimme.",
+                             "Kokoro speaks the character's replies, but without pitch accent. A voice of its own follows for repeating after it.")
                     : conv.voiceNote
                 HoverHandler { id: pillHover }
             }
@@ -137,7 +138,7 @@ Kirigami.ScrollablePage {
                         tierText: modelData.tierText
                         titleItem: KanteDiffText { parts: modelData.parts }
                         text: modelData.explanation
-                        meta: modelData.disputed ? modelData.meta + " · umstritten" : modelData.meta
+                        meta: modelData.disputed ? modelData.meta + page.t(" · umstritten", " · disputed") : modelData.meta
                         // /LF307/: the learner may say it was right; kept for the QA, no longer
                         // counted as a mistake.
                         KanteButton {
@@ -373,6 +374,7 @@ Kirigami.ScrollablePage {
                 Layout.fillWidth: true
                 enabled: !conv.busy && !conv.finished
                 placeholderText: page.t("Auf Japanisch antworten …", "Answer in Japanese …")
+                Accessible.name: page.t("Deine Antwort", "Your answer")
                 onAccepted: page.send()
             }
             KanteButton {

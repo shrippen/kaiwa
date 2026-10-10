@@ -1,0 +1,40 @@
+# Flatpak of the app (/LL500/); the plasmoid and kaiwad (M4, before 1.0) will come from the
+# distribution packages (ADR-008, F-11). Cargo sources for the offline build: generate cargo-sources.json with
+# flatpak-cargo-generator from Cargo.lock before building.
+id: org.shrippen.kaiwa
+runtime: org.kde.Platform
+runtime-version: "6.8"
+sdk: org.kde.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: kaiwa
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Microphone and speaker (speech runs on the device).
+  - --socket=pulseaudio
+  # A cloud tutor, only when the learner sets one (/LF711/).
+  - --share=network
+  # The API key in the keyring (/LF713/).
+  - --talk-name=org.freedesktop.secrets
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/kaiwa/cargo
+    QMAKE: /usr/bin/qmake
+modules:
+  - name: kaiwa
+    buildsystem: simple
+    build-commands:
+      - cargo --offline build --release --locked -p kaiwa-app
+      - install -Dm755 target/release/kaiwa /app/bin/kaiwa
+      - install -Dm644 packaging/org.shrippen.kaiwa.desktop /app/share/applications/org.shrippen.kaiwa.desktop
+      - install -Dm644 packaging/org.shrippen.kaiwa.metainfo.xml /app/share/metainfo/org.shrippen.kaiwa.metainfo.xml
+      - install -Dm644 icons/kaiwa.svg /app/share/icons/hicolor/scalable/apps/org.shrippen.kaiwa.svg
+    sources:
+      - type: git
+        url: https://git.arianw.de/shrippen/Kaiwa.git
+        branch: main
+      - cargo-sources.json

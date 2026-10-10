@@ -36,6 +36,35 @@ QQC2.ScrollView {
             titleWidth: page.titleWidth
         }
 
+        // Several profiles on one device (/LF720/), each fully separate.
+        Row {
+            section: page.t("Profil", "Profile")
+            title: page.t("Wer übt?", "Who practises?")
+            hint: page.t("Jedes Profil hat eigenen Lernstand, Einstellungen und Kosten", "Each profile has its own progress, settings and costs")
+            RowLayout {
+                spacing: KanteStyle.unit(8)
+                KanteComboBox {
+                    id: who
+                    readonly property var list: page.p.profiles || []
+                    model: list.map(function (x) { return x.name })
+                    currentIndex: Math.max(0, list.findIndex(function (x) { return x.current }))
+                    onActivated: function (i) { if (!list[i].current) page.kaiwa.switchProfile(list[i].file) }
+                    Accessible.name: page.t("Profil", "Profile")
+                }
+                KanteTextField {
+                    id: newName
+                    Layout.preferredWidth: KanteStyle.unit(200)
+                    placeholderText: page.t("Neues Profil: Name", "New profile: name")
+                    Accessible.name: page.t("Name des neuen Profils", "Name of the new profile")
+                    onAccepted: page.addProfile()
+                }
+                KanteButton {
+                    text: page.t("Anlegen", "Add")
+                    enabled: newName.text.trim().length > 0
+                    onClicked: page.addProfile()
+                }
+            }
+        }
         Row {
             section: page.t("Üben", "Practice")
             title: page.t("Tagesziel", "Daily goal")
@@ -95,9 +124,11 @@ QQC2.ScrollView {
                 KanteButton { text: page.t("7 Tage", "7 days"); onClicked: page.kaiwa.pause(7) }
             }
         }
+        // Reminders come with the plasmoid (M4, before 1.0), which runs all day.
         Row {
+            visible: false
             title: page.t("Erinnerung", "Reminder")
-            hint: page.t("Höchstens eine am Tag", "At most one a day")
+            hint: page.t("Höchstens eine am Tag, über das Plasmoid; nur solange das Tagesziel offen ist", "At most one a day, through the plasmoid; only while the daily goal is open")
             KanteSegmented {
                 readonly property var values: [null, 8 * 60, 12 * 60 + 30, 19 * 60]
                 model: [page.t("Aus", "Off"), "08:00", "12:30", "19:00"]
@@ -143,6 +174,48 @@ QQC2.ScrollView {
                 meta: modelData.where
             }
         }
+        // The API key, only in the system keyring (/LF713/).
+        Row {
+            visible: !!page.p.key
+            title: page.t("API-Schlüssel", "API key") + (page.p.key ? " · " + page.p.key.provider : "")
+            hint: page.p.key ? page.p.key.text : ""
+            RowLayout {
+                spacing: KanteStyle.unit(8)
+                enabled: !!page.p.key && page.p.key.canStore
+                KanteTextField {
+                    id: apiKey
+                    Layout.preferredWidth: KanteStyle.unit(240)
+                    echoMode: TextInput.Password
+                    placeholderText: page.p.key && page.p.key.stored ? page.t("Neuer Schlüssel …", "New key …") : page.t("Schlüssel einfügen …", "Paste the key …")
+                    Accessible.name: page.t("API-Schlüssel", "API key")
+                }
+                KanteButton {
+                    text: page.t("Im Schlüsselbund speichern", "Keep in the keyring")
+                    enabled: apiKey.text.length > 0
+                    onClicked: { page.kaiwa.storeKey(apiKey.text); apiKey.text = "" }
+                }
+                KanteButton {
+                    visible: !!page.p.key && page.p.key.stored && page.p.key.canStore
+                    text: page.t("Entfernen", "Remove")
+                    emphasis: KanteButton.Emphasis.Quiet
+                    onClicked: page.kaiwa.storeKey("")
+                }
+            }
+        }
+        // The cost brake (/LF714/): only with a cloud tutor.
+        Row {
+            visible: page.privacy.some(function (f) { return f.cloud })
+            title: page.t("Kostenbremse", "Cost limit")
+            hint: (page.p.cost ? [page.p.cost.text, page.p.cost.unknown].filter(function (x) { return x.length > 0 }).join(" ") : "")
+                + page.t(" Geschätzt aus den Listenpreisen; am Limit antwortet der Cloud-Tutor bis Monatsende nicht mehr.",
+                         " Estimated from list prices; at the limit the cloud tutor stops answering until the month ends.")
+            KanteSegmented {
+                readonly property var values: [null, 200, 500, 1000, 2000]
+                model: [page.t("Ohne", "None"), "2 €", "5 €", "10 €", "20 €"]
+                currentIndex: Math.max(0, values.indexOf(page.p.costLimit === undefined ? null : page.p.costLimit))
+                onActivated: function (i) { page.kaiwa.setSetting("costLimit", values[i] === null ? "" : String(values[i])) }
+            }
+        }
 
         // Data (/LF710/, /LF712/).
         KanteSectionLabel {
@@ -151,12 +224,24 @@ QQC2.ScrollView {
             text: page.t("Deine Daten", "Your data")
             rule: true
         }
+        // Recordings only with the opt-in, for a chosen time (/LF712/).
+        Row {
+            title: page.t("Aufnahmen behalten", "Keep recordings")
+            hint: page.t("Zum Vergleichen mit früher. Abschalten löscht sie sofort; die Abschriften bleiben", "To compare with earlier. Turning it off deletes them at once; the transcripts stay")
+            KanteSegmented {
+                readonly property var values: [null, 7, 30]
+                model: [page.t("Nein", "No"), page.t("7 Tage", "7 days"), page.t("30 Tage", "30 days")]
+                currentIndex: Math.max(0, values.indexOf(page.p.keepRecordings === undefined ? null : page.p.keepRecordings))
+                onActivated: function (i) { page.kaiwa.setSetting("keepRecordings", values[i] === null ? "" : String(values[i])) }
+            }
+        }
         QQC2.Label {
             Layout.fillWidth: true
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
             Layout.topMargin: KanteStyle.unit(6)
-            text: page.t("Aufnahmen werden nicht gespeichert. Profil: ", "Recordings are not stored. Profile: ") + (page.p.path || "")
+            text: (page.p.keepRecordings ? page.t("Aufnahmen bleiben " + page.p.keepRecordings + " Tage. Profil: ", "Recordings stay " + page.p.keepRecordings + " days. Profile: ")
+                                         : page.t("Aufnahmen werden nicht gespeichert. Profil: ", "Recordings are not stored. Profile: ")) + (page.p.path || "")
             wrapMode: Text.Wrap
             font: KanteStyle.smallFont
             color: KanteStyle.mutedTextColor
@@ -187,6 +272,11 @@ QQC2.ScrollView {
             color: KanteStyle.textColor
         }
         Item { implicitHeight: KanteStyle.unit(18) }
+    }
+
+    function addProfile() {
+        page.kaiwa.newProfile(newName.text)
+        newName.text = ""
     }
 
     function exportPath() {
