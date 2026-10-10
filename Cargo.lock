@@ -1822,6 +1822,7 @@ dependencies = [
  "clap",
  "jsonschema",
  "kaiwa-ai",
+ "kaiwa-backend",
  "kaiwa-core",
  "kaiwa-store",
  "regex",
