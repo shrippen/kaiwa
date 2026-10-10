@@ -9,6 +9,7 @@
 //! - `Reviews(n)` and `AnswerReview(text, said, helped)`: five reviews (/LF502/).
 //! - `StartShort()`, `Say(text, typed)`: a short talk of two goals (/LF501/), saved after every
 //!   turn, so the app continues it (/LF507/); corrections in one line each (/LF503/).
+//! - `Reminder()`, `Snooze()`: the daily reminder, at most one a day (/LF520/, /LF620/).
 //! - `OpenApp()`: the app, to see a talk in full (/LF503/).
 //! - Signal `Changed()` after anything that changes the profile.
 //!
@@ -114,6 +115,17 @@ impl Service {
         };
         let _ = Self::changed(&emitter).await;
         Ok(v.to_string())
+    }
+
+    /// The reminder due now as JSON, or "null" (/LF520/, /LF620/: at most one a day).
+    async fn reminder(&self) -> fdo::Result<String> {
+        let v = self.lock().backend.reminder(now()).map_err(failed)?;
+        Ok(serde_json::to_string(&v).unwrap_or_else(|_| "null".into()))
+    }
+
+    /// "Später": the reminder once more in an hour.
+    async fn snooze(&self) -> fdo::Result<()> {
+        self.lock().backend.snooze(now()).map_err(failed)
     }
 
     /// Opens the app (the plasmoid's "In der App ansehen", /LF503/); it shows the open

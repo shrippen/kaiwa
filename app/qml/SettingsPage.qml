@@ -97,7 +97,7 @@ QQC2.ScrollView {
         }
         Row {
             title: page.t("Erinnerung", "Reminder")
-            hint: page.t("Höchstens eine am Tag", "At most one a day")
+            hint: page.t("Höchstens eine am Tag, über das Plasmoid; nur solange das Tagesziel offen ist", "At most one a day, through the plasmoid; only while the daily goal is open")
             KanteSegmented {
                 readonly property var values: [null, 8 * 60, 12 * 60 + 30, 19 * 60]
                 model: [page.t("Aus", "Off"), "08:00", "12:30", "19:00"]

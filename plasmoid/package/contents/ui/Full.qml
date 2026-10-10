@@ -31,6 +31,19 @@ ColumnLayout {
 
     KanteScope { target: full }
 
+    // "Jetzt 5 min" in the reminder.
+    function takeWish() {
+        if (app.wantShort) {
+            app.wantShort = false
+            startShort()
+        }
+    }
+    Component.onCompleted: takeWish()
+    Connections {
+        target: full.app
+        function onWantShortChanged() { full.takeWish() }
+    }
+
     function startShort() {
         busy = true
         kaiwad.call("StartShort", "", [], function (v) {

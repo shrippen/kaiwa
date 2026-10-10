@@ -19,6 +19,8 @@ call Reviews 5 | grep -q '"fromMistake"'
 call StartShort | grep -q '"goals"'
 call Say "はい、おねがいします。" true | grep -q '"reply"'
 call AnswerReview "天気" "天気" false | grep -q '"right":true'
+call Reminder | grep -q "null"   # the demo profile has no reminder (off by default)
+call Snooze >/dev/null
 echo "kaiwad: all calls answered"
 if [ "${PLASMOID:-}" = 1 ]; then
   timeout 20 plasmoidviewer -a plasmoid/package > /tmp/plasmoid.log 2>&1 || true

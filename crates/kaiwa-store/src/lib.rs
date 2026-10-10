@@ -283,6 +283,24 @@ impl Store {
             .unwrap_or_default())
     }
 
+    /// A small value of the device's state (not part of the export), e.g. when the last
+    /// reminder went out.
+    pub fn state_value<T: for<'de> Deserialize<'de>>(&self, key: &str) -> Result<Option<T>> {
+        self.get_json(
+            "SELECT value FROM settings WHERE key = ?1",
+            &format!("state.{key}"),
+        )
+    }
+
+    pub fn set_state_value<T: Serialize>(&self, key: &str, v: &T) -> Result<()> {
+        self.db.execute(
+            "INSERT INTO settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![format!("state.{key}"), serde_json::to_string(v)?],
+        )?;
+        Ok(())
+    }
+
     pub fn set_profile(&self, p: &Profile) -> Result<()> {
         self.db.execute(
             "INSERT INTO settings (key, value) VALUES ('profile', ?1)

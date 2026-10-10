@@ -8,6 +8,7 @@
 //! - `KAIWA_NOW=<unix>:<offset minutes>` fixes the clock (screenshots); otherwise it is the
 //!   system time in the local time zone.
 
+pub mod reminder;
 pub mod short;
 pub mod views;
 
