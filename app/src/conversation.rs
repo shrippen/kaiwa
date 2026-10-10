@@ -122,8 +122,6 @@ use std::time::Duration;
 
 use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
-use kaiwa_ai::ChatProvider;
-use kaiwa_ai::mock::MockProvider;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::learner::Skill;
 use kaiwa_core::placement::{self, Placement, Reading, STAGES, StageResult, TURNS_PER_STAGE};
@@ -137,7 +135,7 @@ use kaiwa_speech::stt::Recognizer;
 use kaiwa_speech::tts::{self, Voice};
 use serde_json::{Value, json};
 
-use crate::state::{now, state};
+use crate::state::{now, provider, state};
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -192,21 +190,6 @@ const ERROR: i32 = 4;
 
 /// Tanaka speaks slowly (the scenario says so), so a little below Kokoro's normal pace.
 const SPEED: f32 = 0.9;
-
-/// The tutor from the environment (`kaiwa_ai::provider_from_env`, for the owner's local
-/// test); recorded answers otherwise (demo mode).
-fn provider(scenario: &str) -> (Arc<dyn ChatProvider>, bool) {
-    match kaiwa_ai::provider_from_env() {
-        Ok(Some(p)) => return (p, false),
-        Ok(None) => {}
-        Err(e) => eprintln!("kaiwa: {e}; using recorded answers"),
-    }
-    let mock = crate::state::fixtures(scenario)
-        .and_then(|f| MockProvider::from_json(f).ok())
-        .unwrap_or_default()
-        .with_fallback("すみません、もう一度お願いします。");
-    (Arc::new(mock), true)
-}
 
 fn shown_json(s: &Shown, lang: &str) -> Value {
     json!({

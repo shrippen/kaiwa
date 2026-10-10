@@ -78,12 +78,11 @@ use core::pin::Pin;
 use cxx_qt_lib::QString;
 use kaiwa_core::learner::Skill;
 use kaiwa_core::progress::{DailyGoal, Pause};
-use kaiwa_core::srs::Grade;
 use kaiwa_store::{Script, Store};
 use serde_json::json;
 
+use crate::state::views;
 use crate::state::{now, state};
-use crate::views;
 
 #[derive(Default)]
 pub struct KaiwaAppRust {
@@ -204,23 +203,8 @@ impl qobject::KaiwaApp {
     }
 
     fn answer_review(mut self: Pin<&mut Self>, text: &QString, said: &QString, helped: bool) {
-        let (text, said) = (text.to_string(), said.to_string());
-        let right = kaiwa_core::norm(&said) == kaiwa_core::norm(&text);
-        let grade = Grade::of(right, helped, false);
-        let result = {
-            let st = state();
-            st.store.review(&text, grade, now())
-        };
-        let next = match result {
-            Ok(Some(item)) => item.due.iso(),
-            _ => String::new(),
-        };
-        self.as_mut().set_answer(q(&json!({
-            "right": right,
-            "expected": text,
-            "said": said,
-            "next": next,
-        })));
+        let answer = state().answer_review(&text.to_string(), &said.to_string(), helped, now());
+        self.as_mut().set_answer(q(&answer));
         self.as_mut().refresh();
     }
 

@@ -9,9 +9,9 @@ use kaiwa_core::progress::{DailyGoal, streak_note};
 use kaiwa_store::Script;
 use serde_json::{Value, json};
 
-use crate::state::AppState;
+use crate::Backend;
 
-fn scenario_title(st: &AppState, id: &str, lang: &str) -> String {
+fn scenario_title(st: &Backend, id: &str, lang: &str) -> String {
     st.scenarios
         .get(id)
         .map(|s| s.title.get(lang).to_string())
@@ -40,7 +40,7 @@ fn kind_word(kind: &str, de: bool) -> &'static str {
 }
 
 /// The start page (Lastenheft Kap. 7: today, daily goal, next scenario, review).
-pub fn today(st: &AppState, now: Moment) -> anyhow::Result<Value> {
+pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
     let lang = p.ui_lang.as_str();
     let de = lang == "de";
@@ -92,16 +92,18 @@ pub fn today(st: &AppState, now: Moment) -> anyhow::Result<Value> {
         "open": open,
         "next": next,
         "placed": p.placed,
+        "lang": lang,
+        "style": p.style,
     }))
 }
 
 /// The learning path (/LF600/): one node per scenario, units as meta, states with words.
-pub fn path(st: &AppState) -> anyhow::Result<Value> {
+pub fn path(st: &Backend) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
     let lang = p.ui_lang.as_str();
     let learning = st.store.learning()?;
     let items = st.store.items()?;
-    let today = crate::state::now().day();
+    let today = crate::now().day();
     let mut nodes = Vec::new();
     for unit in st.curriculum.path(&learning.course, lang) {
         for sc in &unit.scenarios {
@@ -141,7 +143,7 @@ pub fn path(st: &AppState) -> anyhow::Result<Value> {
 }
 
 /// The items to review now, at most `limit` (/LF230/, /LF502/: five in the plasmoid).
-pub fn review(st: &AppState, now: Moment, limit: usize) -> anyhow::Result<Value> {
+pub fn review(st: &Backend, now: Moment, limit: usize) -> anyhow::Result<Value> {
     let due = st.store.due(now, limit)?;
     Ok(Value::Array(
         due.iter()
@@ -159,7 +161,7 @@ pub fn review(st: &AppState, now: Moment, limit: usize) -> anyhow::Result<Value>
 }
 
 /// The learner model in words (/LF202/), the difficulty in words, weak spots.
-pub fn learner(st: &AppState) -> anyhow::Result<Value> {
+pub fn learner(st: &Backend) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
     let lang = p.ui_lang.as_str();
     let de = lang == "de";
@@ -196,7 +198,7 @@ pub fn learner(st: &AppState) -> anyhow::Result<Value> {
 }
 
 /// Statistics (/LF610/): 12 weeks of practice as a heat map, totals.
-pub fn stats(st: &AppState, now: Moment) -> anyhow::Result<Value> {
+pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let days = st.store.days()?;
     let today = now.day();
     // Monday of the week 11 weeks back, to today: whole weeks in columns.
@@ -227,7 +229,7 @@ pub fn stats(st: &AppState, now: Moment) -> anyhow::Result<Value> {
 }
 
 /// The settings page.
-pub fn profile(st: &AppState) -> anyhow::Result<Value> {
+pub fn profile(st: &Backend) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
     let goal = match p.daily_goal {
         DailyGoal::Minutes(m) => json!({ "kind": "minutes", "value": m }),

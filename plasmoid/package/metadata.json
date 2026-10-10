@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "shrippen" }],
+        "Category": "Education",
+        "Description": "Japanese conversation practice in between: daily goal, a short talk, five reviews",
+        "Description[de]": "Japanisch-Gespräche nebenbei: Tagesziel, ein Kurzgespräch, fünf Wiederholungen",
+        "Icon": "org.shrippen.kaiwa",
+        "Id": "org.shrippen.kaiwa.plasmoid",
+        "License": "MIT",
+        "Name": "Kaiwa",
+        "Version": "0.4.0",
+        "Website": "https://git.arianw.de/shrippen/Kaiwa"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

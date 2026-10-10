@@ -28,6 +28,11 @@ jobs:
         run: cargo run -q -p kaiwa-sim -- validate
       - name: Journeys (text mode, recorded tutor answers)
         run: cargo run -q -p kaiwa-sim -- run
+      - name: kaiwad on a session bus (ADR-008)
+        run: |
+          S=$(command -v sudo || true)
+          $S apt-get update -qq && $S apt-get install -y -qq --no-install-recommends dbus libglib2.0-bin
+          dbus-run-session -- tools/kaiwad-smoke.sh
 
   # The Qt side (G-01: Arch Linux container, current Qt 6 and KF6 from the packages).
   # Also the probe for G-02: the first step fails unless the job really runs in the container.
@@ -58,7 +63,7 @@ jobs:
       - name: Kante copy matches Kante main (GUI rule)
         run: |
           tools/sync-kante.sh ../Kante
-          git diff --exit-code -- app/qml
+          git diff --exit-code -- app/qml plasmoid/package/contents/ui/Kante plasmoid/package/contents/ui/KantePlasma
       - name: Speech crate (microphone, ReazonSpeech; the model test skips without a model)
         run: cargo test --locked -p kaiwa-speech
       - name: Build the app
@@ -78,3 +83,8 @@ jobs:
           timeout 120 ./target/debug/kaiwa --shot /tmp/place.png --view place --kind 1 --say "$L|$L|$L|$L|read:21" 2>&1 | tee -a /tmp/app.log
           test -s /tmp/place.png
           ! grep -E 'qrc:.*(Error|Unable|is not|TypeError|ReferenceError)' /tmp/app.log
+      - name: The plasmoid in plasmoidviewer against kaiwad (/LF500/, ADR-008)
+        run: |
+          pacman -S --noconfirm --needed plasma-workspace plasma-sdk dbus glib2
+          cargo build --locked -p kaiwad
+          dbus-run-session -- env PLASMOID=1 tools/kaiwad-smoke.sh

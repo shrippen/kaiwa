@@ -1,0 +1,18 @@
+[package]
+name = "kaiwad"
+version = "0.1.0"
+description = "Kaiwa's session service on D-Bus (org.shrippen.Kaiwa1) for the plasmoid and the app (ADR-008)"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+anyhow = "1"
+kaiwa-backend = { path = "../kaiwa-backend" }
+serde_json = "1"
+zbus = { version = "5", default-features = false, features = ["blocking-api", "async-io"] }
+
+[lints]
+workspace = true

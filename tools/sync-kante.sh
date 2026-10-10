@@ -5,7 +5,8 @@
 #
 #   tools/sync-kante.sh [path to the Kante checkout, default ../Kante]
 #
-# CI runs it against Kante's main and fails when app/qml/Kante differs (job `qt`).
+# CI runs it against Kante's main and fails when app/qml/Kante or the plasmoid's copy differs
+# (job `qt`).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 KANTE=${1:-../Kante}
@@ -20,3 +21,11 @@ cp -r "$KANTE/qml/Kante" app/qml/Kante
   echo '</RCC>'
 } > app/qml/kante.qrc
 echo "synced app/qml/Kante from $KANTE ($(git -C "$KANTE" describe --always 2>/dev/null || echo unknown))"
+
+# The plasmoid (ADR-008, /LF504/): Kante and KantePlasma side by side, as directory imports
+# (a Plasma package has no import path).
+UI=plasmoid/package/contents/ui
+rm -rf "$UI/Kante" "$UI/KantePlasma"
+cp -r "$KANTE/qml/Kante" "$UI/Kante"
+cp -r "$KANTE/qml/KantePlasma" "$UI/KantePlasma"
+echo "synced $UI/Kante and $UI/KantePlasma"
