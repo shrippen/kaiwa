@@ -300,5 +300,47 @@ fn seed(st: &Backend) -> anyhow::Result<()> {
         }
         st.store.put_item(&item)?;
     }
+    // Talks of the last weeks with their corrections, for the statistics (/LF610/): particles
+    // fade, counters stay. Recorded answers, so the corrections are the real ones.
+    let n502 = st
+        .scenarios
+        .get("n5-02-jikoshoukai")
+        .cloned()
+        .ok_or_else(|| anyhow::anyhow!("scenario n5-02"))?;
+    for (days_ago, particles, counters) in [
+        (70, 3, 1),
+        (56, 3, 1),
+        (42, 2, 1),
+        (28, 1, 1),
+        (21, 1, 2),
+        (1, 0, 2),
+    ] {
+        // Always the recorded answers here, never a configured tutor.
+        let mock: Arc<dyn ChatProvider> = Arc::new(
+            fixtures("n5-02-jikoshoukai")
+                .and_then(|f| MockProvider::from_json(f).ok())
+                .unwrap_or_default()
+                .with_fallback("そうですか。"),
+        );
+        let mut s = kaiwa_core::Session::new(
+            n502.clone(),
+            mock,
+            kaiwa_core::Amount::Little,
+            &profile.ui_lang,
+        );
+        s.turn(
+            "マラです。よろしくおねがいします。",
+            kaiwa_core::Input::Spoken,
+        )?;
+        for _ in 0..particles {
+            s.turn("コーヒーを好きです。", kaiwa_core::Input::Spoken)?;
+        }
+        for _ in 0..counters {
+            s.turn("ビール二ください。", kaiwa_core::Input::Spoken)?;
+        }
+        let started = now.plus_secs(-days_ago * 86_400 - 3600);
+        st.store
+            .put_finished_session(&s.snapshot(), started, started.plus_secs(420), 0.8)?;
+    }
     Ok(())
 }

@@ -132,6 +132,44 @@ QQC2.ScrollView {
             KanteKpi { value: String(page.stats.items || 0); label: page.t("Wörter und Wendungen", "words and phrases") }
             KanteKpi { value: String(page.stats.learnt || 0); label: page.t("sicher (3 Wochen +)", "solid (3 weeks +)") }
         }
+        // Vocabulary per level and the kinds of mistakes over the same weeks (/LF610/).
+        RowLayout {
+            Layout.leftMargin: KanteStyle.unit(18)
+            spacing: KanteStyle.unit(24)
+            visible: (page.stats.vocab || []).length > 1
+            Repeater {
+                model: page.stats.vocab || []
+                delegate: KanteKpi {
+                    required property var modelData
+                    value: String(modelData.count)
+                    label: page.t("Wörter und Wendungen ", "words and phrases ") + modelData.level
+                }
+            }
+        }
+        Repeater {
+            model: page.stats.mistakes || []
+            delegate: RowLayout {
+                required property var modelData
+                Layout.fillWidth: true
+                Layout.leftMargin: KanteStyle.unit(18)
+                Layout.rightMargin: KanteStyle.unit(18)
+                spacing: KanteStyle.unit(14)
+                KanteSparkline {
+                    values: modelData.weeks
+                    implicitWidth: KanteStyle.unit(120)
+                    implicitHeight: KanteStyle.unit(24)
+                    Accessible.role: Accessible.Graphic
+                    Accessible.name: modelData.word + ": " + modelData.weeks.join(", ")
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: modelData.text
+                    color: KanteStyle.textColor
+                    font: KanteStyle.defaultFont
+                    wrapMode: Text.Wrap
+                }
+            }
+        }
         KanteHeatmap {
             Layout.leftMargin: KanteStyle.unit(18)
             levels: page.stats.heat

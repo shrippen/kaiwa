@@ -1,6 +1,8 @@
 //! What the app's pages show, as JSON for QML: built from the profile with plain functions,
 //! so the content of every view is testable without Qt.
 
+use std::collections::BTreeMap;
+
 use kaiwa_core::clock::Moment;
 use kaiwa_core::curriculum::NodeState;
 use kaiwa_core::difficulty::KNOBS;
@@ -219,7 +221,62 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let minutes: u32 = days.values().map(|r| r.speaking_secs / 60).sum();
     let practice_days = days.values().filter(|r| r.speaking_secs > 0).count();
     let items = st.store.items()?;
+    // Kinds of mistakes per week over the same twelve weeks (/LF610/).
+    let de = st.store.profile()?.ui_lang != "en";
+    let from = start.start(now.offset_min).unix;
+    let mut weeks: BTreeMap<String, [u32; 12]> = BTreeMap::new();
+    for row in st.store.finished_since(from)? {
+        let Ok(state) = st.store.session_state(row.id) else {
+            continue;
+        };
+        let w = ((row.started.day().0 - start.0) / 7).clamp(0, 11) as usize;
+        for t in &state.turns {
+            for k in kaiwa_core::session::mistake_kinds(t) {
+                weeks.entry(k).or_default()[w] += 1;
+            }
+        }
+    }
+    let mut kinds: Vec<(String, [u32; 12])> = weeks.into_iter().collect();
+    kinds.sort_by_key(|(_, w)| std::cmp::Reverse(w.iter().sum::<u32>()));
+    let mistakes: Vec<Value> = kinds
+        .iter()
+        .take(3)
+        .map(|(k, w)| {
+            let (early, late): (u32, u32) = (w[..6].iter().sum(), w[6..].iter().sum());
+            let word = kind_word(k, de);
+            let trend = match (late.cmp(&early), de) {
+                (std::cmp::Ordering::Less, true) => {
+                    format!("{word}: seltener als vor sechs Wochen")
+                }
+                (std::cmp::Ordering::Less, false) => {
+                    format!("{word}: less often than six weeks ago")
+                }
+                (std::cmp::Ordering::Greater, true) => {
+                    format!("{word}: zuletzt häufiger, ein Fall für die Wiederholung")
+                }
+                (std::cmp::Ordering::Greater, false) => {
+                    format!("{word}: more often lately, one for the review")
+                }
+                (_, true) => format!("{word}: etwa gleich oft"),
+                (_, false) => format!("{word}: about as often"),
+            };
+            json!({ "kind": k, "word": word, "weeks": w, "text": trend })
+        })
+        .collect();
+    // Words and phrases per level, from the unit they came from ("n5-03" is N5).
+    let mut vocab: BTreeMap<String, usize> = BTreeMap::new();
+    for i in &items {
+        let level = i
+            .unit
+            .as_deref()
+            .and_then(|u| u.split('-').next())
+            .map(str::to_uppercase)
+            .unwrap_or_else(|| "?".into());
+        *vocab.entry(level).or_default() += 1;
+    }
     Ok(json!({
+        "mistakes": mistakes,
+        "vocab": vocab.iter().map(|(l, n)| json!({ "level": l, "count": n })).collect::<Vec<_>>(),
         "heat": levels,
         "minutes": minutes,
         "days": practice_days,
@@ -306,5 +363,31 @@ mod tests {
                     .all(|r| r["cloud"] == false && r["sends"] == "nichts")
             );
         }
+    }
+
+    #[test]
+    fn mistakes_over_twelve_weeks() {
+        let dir = std::env::temp_dir().join(format!("kaiwa-stats-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let b = Backend::open_at(dir.join("demo.kaiwa"), true).unwrap();
+        let v = stats(&b, crate::now()).unwrap();
+        let m = v["mistakes"].as_array().unwrap();
+        let particle = m
+            .iter()
+            .find(|x| x["kind"] == "particle")
+            .expect("particles");
+        assert!(
+            particle["text"].as_str().unwrap().contains("seltener"),
+            "{particle}"
+        );
+        assert!(m.iter().any(|x| x["kind"] == "counter"), "{m:?}");
+        assert_eq!(particle["weeks"].as_array().unwrap().len(), 12);
+        assert!(
+            v["vocab"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|x| x["level"] == "N5")
+        );
     }
 }

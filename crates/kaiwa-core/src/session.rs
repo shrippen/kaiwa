@@ -558,22 +558,14 @@ impl Session {
                 Input::Spoken => s.speaking_secs += speaking_secs(&t.learner),
                 Input::Typed => s.typed_turns += 1,
             }
-            let mut clean = true;
-            for c in counted(t) {
-                if c.also_possible || c.severity < Severity::Unnatural {
-                    continue;
-                }
-                clean = false;
-                let kind = serde_json::to_value(c.kind)
-                    .ok()
-                    .and_then(|v| v.as_str().map(str::to_string))
-                    .unwrap_or_default();
+            let kinds = mistake_kinds(t);
+            for kind in &kinds {
                 if kind == "register" {
                     s.register_mistakes += 1;
                 }
-                *s.mistakes.entry(kind).or_default() += 1;
+                *s.mistakes.entry(kind.clone()).or_default() += 1;
             }
-            s.clean_turns += u32::from(clean);
+            s.clean_turns += u32::from(kinds.is_empty());
         }
         s.goals_met = self.goals_met.len() as u32;
         s.goals_unaided = self
@@ -635,6 +627,21 @@ impl Session {
     pub fn learner_turns(&self) -> impl Iterator<Item = &str> {
         self.turns.iter().map(|t| t.learner.as_str())
     }
+}
+
+/// The kinds of the mistakes a turn counts (severity unnatural or above, not an alternative,
+/// not misrecognised, not disputed), e.g. "particle"; for the learner model and the statistics.
+pub fn mistake_kinds(t: &TurnRecord) -> Vec<String> {
+    counted(t)
+        .iter()
+        .filter(|c| !c.also_possible && c.severity >= Severity::Unnatural)
+        .map(|c| {
+            serde_json::to_value(c.kind)
+                .ok()
+                .and_then(|v| v.as_str().map(str::to_string))
+                .unwrap_or_default()
+        })
+        .collect()
 }
 
 /// The corrections of a turn that still count: none for a misrecognised turn, none disputed.
