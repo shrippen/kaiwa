@@ -16,7 +16,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | Pakete | Symbol, Desktop-Datei, AppStream, PKGBUILD `kaiwa-git`, Flatpak-Manifest (App) | #17 |
 | QA | `kaiwa-sim`: 42 von 82 Prüfregeln automatisch (Textmodus, 30-Tage-Läufe, Profil, Engine, QML-Prüfungen) | laufend |
 
-**Geparkt:** Plasmoid und Dienst `kaiwad` (M4) auf dem Zweig `later/plasmoid`, bis die App nahe 1.0 ist. Dort laufen Kurzgespräch, fünf Wiederholungen, Sprechtaste über den Dienst und Erinnerungen; die CI hatte das Plasmoid in `plasmoidviewer` geladen. Die Erinnerungs-Einstellung der App ist bis dahin ausgeblendet.
+**Geparkt:** Plasmoid und Dienst `kaiwad` (M4) auf dem Zweig `later/plasmoid`, bis die App nahe 1.0 ist. Dort sind Kurzgespräch, fünf Wiederholungen, Sprechtaste über den Dienst und Erinnerungen gebaut. **Offen:** In der CI lädt `plasmoidviewer` das Plasmoid ohne QML-Fehler, aber sein `Today`-Aufruf kommt bei `kaiwad` nicht an (Lauf 1530, „plasmoid: no call reached kaiwad“). Ob das am Offscreen-Betrieb, an der Wartezeit (20 s) oder am D-Bus-Modul von Plasma liegt, ist beim Wiederaufnehmen als Erstes zu klären. Die Erinnerungs-Einstellung der App ist bis dahin ausgeblendet.
 
 ## Entscheidungen aus Fragenpaket 4
 
@@ -44,7 +44,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 - **Vor jedem Commit `cargo fmt --all --check`.** Ein unformatierter Push kostet einen ganzen CI-Lauf. Lokal hilft ein pre-commit-Hook.
 - **Ein Runner, seriell.** Jeder Push stellt einen Lauf von etwa 12 Minuten in die Schlange; Läufe lassen sich über die API nicht abbrechen. Änderungen bündeln und selten pushen. Steht der Runner (wie am 2026-10-10 von 07:30 bis 07:55 UTC), wartet alles.
 - **Kante bewegt sich.** Der Abgleich `tools/sync-kante.sh` prüft gegen Kantes `main`; zieht Kante nach dem letzten Abgleich nach, wird `main` hier rot. Vor dem Mergen neu abgleichen.
-- **Positive Signale prüfen.** „Keine Fehler im Log“ bewies nicht, dass das Plasmoid lief; erst der Aufruf, der beim Dienst ankam, tat es.
+- **Positive Signale prüfen.** „Keine Fehler im Log“ bewies nicht, dass das Plasmoid lief. Die strengere Prüfung (der Aufruf muss beim Dienst ankommen) schlug fehl und zeigte, dass es in der CI nie bis zum Dienst kam.
 - **Prüfregeln finden echte Fehler.** Die neuen Prüfungen fanden deutsche Reste in der englischen Oberfläche, XP trotz ausgeschalteter Gamification und Felder ohne Namen. Prüfregeln früh automatisieren, auch statisch.
 - **Spezifiziertes Verhalten nicht „verbessern“.** Die Freeze-Regel verbraucht Freezes Tag für Tag; das verlangt `jonas_freeze`. Ein Umbau wurde zurückgenommen, als die Prüfung fiel.
 - **Demo-Daten wirken auf alles.** Zusätzliche Verlaufsdaten änderten Serie und „Willkommen zurück“. Nach jeder Änderung an `seed` die Startseite ansehen. Der Seed nutzt nie einen eingestellten Tutor.
