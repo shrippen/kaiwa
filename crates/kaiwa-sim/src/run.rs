@@ -436,7 +436,7 @@ mod tests {
             .unwrap();
         assert_eq!(j.checks["selin_register_flag"], Outcome::Pass);
         assert_eq!(j.checks["selin_recast"], Outcome::Pass);
-        assert_eq!(j.checks["selin_casual_ok"], Outcome::NotAutomated);
+        assert_eq!(j.checks["selin_casual_ok"], Outcome::Pass);
     }
 
     #[test]

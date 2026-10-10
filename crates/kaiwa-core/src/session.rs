@@ -359,6 +359,7 @@ impl Session {
             let second = self.provider.analyse(&analysis_request)?;
             analysis.corrections = cross_check(&analysis.corrections, &second.corrections);
         }
+        fit_register(&mut analysis.corrections, self.scenario.register);
         let reply = match self.provider.reply(&self.request(reply_system(
             &self.scenario,
             &self.lang,
@@ -626,6 +627,20 @@ impl Session {
     /// The learner's turns so far (for the transcript and `kaiwa-sim`).
     pub fn learner_turns(&self) -> impl Iterator<Item = &str> {
         self.turns.iter().map(|t| t.learner.as_str())
+    }
+}
+
+/// Plain forms between friends are right (/LF303/): in a casual scenario a register
+/// correction that only asks for more politeness is an alternative ("also possible"), not a
+/// mistake. A form that is rude even there (おまえ to a stranger, marked wrong) stays.
+pub fn fit_register(corrections: &mut [Correction], register: Register) {
+    if register != Register::Casual {
+        return;
+    }
+    for c in corrections.iter_mut() {
+        if c.kind == kaiwa_ai::CorrectionKind::Register && c.severity <= Severity::Unnatural {
+            c.also_possible = true;
+        }
     }
 }
 
