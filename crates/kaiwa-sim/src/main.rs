@@ -5,6 +5,7 @@
 //! model (`days`). Audio and GUI modes follow with the app.
 
 mod days;
+mod engine;
 mod profile;
 mod run;
 mod validate;

@@ -65,7 +65,16 @@ jobs:
         run: cargo build --locked -p kaiwa-app
       - name: One scripted conversation offscreen
         run: |
-          timeout 90 ./target/debug/kaiwa --shot /tmp/app.png --kind 1 --height 2300 \
+          export KAIWA_DEMO=1
+          timeout 90 ./target/debug/kaiwa --shot /tmp/app.png --view talk --scenario n5-02-jikoshoukai --kind 1 --height 2300 \
             --say '?|マラです。よろしくおねがいします。|ビール二ください。|コーヒーを好きです。' 2>&1 | tee /tmp/app.log
+          for v in start path review profile settings; do
+            timeout 60 ./target/debug/kaiwa --shot /tmp/$v.png --view $v --kind 1 2>&1 | tee -a /tmp/app.log
+            test -s /tmp/$v.png
+          done
           test -s /tmp/app.png
+          # The placement through its stages to the result (/LF200/).
+          L='マラです。|ドイツから来ました。|よろしくおねがいします。|コーヒーが好きです。'
+          timeout 120 ./target/debug/kaiwa --shot /tmp/place.png --view place --kind 1 --say "$L|$L|$L|$L|read:21" 2>&1 | tee -a /tmp/app.log
+          test -s /tmp/place.png
           ! grep -E 'qrc:.*(Error|Unable|is not|TypeError|ReferenceError)' /tmp/app.log

@@ -1,0 +1,6 @@
+[
+  {"learner": "コーヒーをください。", "reply": "サイズはどうしますか。", "analysis": {"understood": true, "goals_met": ["drink"], "corrections": [], "new_words": []}},
+  {"learner": "大きいのをおねがいします。", "reply": "かしこまりました。ほかに何かいかがですか。", "analysis": {"understood": true, "goals_met": ["size"], "corrections": [], "new_words": []}},
+  {"learner": "それと、チーズケーキをひとつください。", "reply": "店内でお召し上がりですか。", "analysis": {"understood": true, "goals_met": ["food"], "corrections": [], "new_words": []}},
+  {"learner": "ここで食べます。", "reply": "かしこまりました。少々お待ちください。", "analysis": {"understood": true, "goals_met": ["here"], "corrections": [], "new_words": []}}
+]

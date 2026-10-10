@@ -1,5 +1,7 @@
 //! The conversation as a QObject for QML. State goes to QML as JSON strings (turns, goals,
 //! summary), so the page renders it with Kante components without a C++ model class.
+//! The session lives in the profile: saved after every turn (to continue later, /LF121/) and
+//! recorded at the end (learner model, difficulty, path, review, day).
 //! Provider calls run on a worker thread and come back through `qt_thread().queue`, the
 //! path spike 0.2 tried (ADR-001).
 
@@ -35,11 +37,47 @@ pub mod qobject {
         #[qproperty(QString, voice_note, cxx_name = "voiceNote")]
         /// Both speech models are loaded or known to be missing.
         #[qproperty(bool, speech_ready, cxx_name = "speechReady")]
+        /// The scenario being played.
+        #[qproperty(QString, scenario)]
+        /// The character's name, e.g. "田中 · Tanaka".
+        #[qproperty(QString, character)]
+        /// What the end of the session did: XP and why, the difficulty, new review items.
+        #[qproperty(QString, recorded)]
+        /// A placement is running (/LF200/): stages at rising levels, nothing recorded.
+        #[qproperty(bool, placing)]
+        /// The stage, e.g. "2/4".
+        #[qproperty(QString, stage)]
+        /// The stages are over; the two reading questions are open.
+        #[qproperty(bool, placement_ask, cxx_name = "placementAsk")]
         type Conversation = super::ConversationRust;
 
-        /// Start the scenario (the character's opening line).
+        /// Start a scenario (the character's opening line); "" plays the next one on the path.
         #[qinvokable]
-        fn start(self: Pin<&mut Conversation>);
+        fn start(self: Pin<&mut Conversation>, scenario: &QString);
+
+        /// Start the placement by conversation (/LF200/).
+        #[qinvokable]
+        #[cxx_name = "startPlacement"]
+        fn start_placement(self: Pin<&mut Conversation>);
+
+        /// End the placement with what the learner says about reading (0 none, 1 some,
+        /// 2 fluently) and keep the result as the learner model.
+        #[qinvokable]
+        #[cxx_name = "finishPlacement"]
+        fn finish_placement(self: Pin<&mut Conversation>, kana: i32, kanji: i32);
+
+        /// Continue the session that was interrupted (/LF121/).
+        #[qinvokable]
+        fn resume(self: Pin<&mut Conversation>);
+
+        /// The learner's turn at `log_index` was misrecognised (/LF113/): no learning mistakes.
+        #[qinvokable]
+        #[cxx_name = "markMisrecognized"]
+        fn mark_misrecognized(self: Pin<&mut Conversation>, log_index: i32);
+
+        /// The learner disputes the correction `better` of the turn at `log_index` (/LF307/).
+        #[qinvokable]
+        fn dispute(self: Pin<&mut Conversation>, log_index: i32, better: &QString);
 
         /// The learner's turn, spoken (`typed` false) or typed.
         #[qinvokable]
@@ -87,7 +125,10 @@ use cxx_qt_lib::QString;
 use kaiwa_ai::ChatProvider;
 use kaiwa_ai::mock::MockProvider;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
-use kaiwa_core::{Amount, Input, Scenario, Session, Summary, TurnOutcome};
+use kaiwa_core::learner::Skill;
+use kaiwa_core::placement::{self, Placement, Reading, STAGES, StageResult, TURNS_PER_STAGE};
+use kaiwa_core::session::SessionState;
+use kaiwa_core::{Input, Scenario, Session, Summary, TurnOutcome};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
 use kaiwa_speech::models::{KOKORO_URL, REAZONSPEECH_URL, kokoro_dir, reazonspeech_dir};
@@ -96,9 +137,7 @@ use kaiwa_speech::stt::Recognizer;
 use kaiwa_speech::tts::{self, Voice};
 use serde_json::{Value, json};
 
-const SCENARIO: &str = include_str!("../../data/scenarios/n5-02-jikoshoukai.json");
-const FIXTURES: &str = include_str!("../../qa/fixtures/n5-02-jikoshoukai.json");
-const LANG: &str = "de";
+use crate::state::{now, state};
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -119,6 +158,16 @@ pub struct ConversationRust {
     voice_on: bool,
     voice_note: QString,
     speech_ready: bool,
+    scenario: QString,
+    character: QString,
+    recorded: QString,
+    placing: bool,
+    stage: QString,
+    placement_ask: bool,
+    placement: Option<Placement>,
+    lang: String,
+    session_id: Option<i64>,
+    started: Option<kaiwa_core::Moment>,
     session: Option<Arc<Mutex<Session>>>,
     log: Vec<Value>,
     recognizer: Option<Arc<Recognizer>>,
@@ -146,23 +195,24 @@ const SPEED: f32 = 0.9;
 
 /// The tutor from the environment (`kaiwa_ai::provider_from_env`, for the owner's local
 /// test); recorded answers otherwise (demo mode).
-fn provider() -> (Arc<dyn ChatProvider>, bool) {
+fn provider(scenario: &str) -> (Arc<dyn ChatProvider>, bool) {
     match kaiwa_ai::provider_from_env() {
         Ok(Some(p)) => return (p, false),
         Ok(None) => {}
         Err(e) => eprintln!("kaiwa: {e}; using recorded answers"),
     }
-    let mock = MockProvider::from_json(FIXTURES)
-        .expect("bundled fixtures are valid")
+    let mock = crate::state::fixtures(scenario)
+        .and_then(|f| MockProvider::from_json(f).ok())
+        .unwrap_or_default()
         .with_fallback("すみません、もう一度お願いします。");
     (Arc::new(mock), true)
 }
 
-fn shown_json(s: &Shown) -> Value {
+fn shown_json(s: &Shown, lang: &str) -> Value {
     json!({
         "tier": s.tier,
-        "tierText": if s.correction.also_possible { if LANG == "de" { "Auch möglich" } else { "Also possible" } } else { severity_word(s.correction.severity, LANG) },
-        "meta": kind_word(s.correction.kind, LANG),
+        "tierText": if s.correction.also_possible { if lang == "de" { "Auch möglich" } else { "Also possible" } } else { severity_word(s.correction.severity, lang) },
+        "meta": kind_word(s.correction.kind, lang),
         "parts": s.parts,
         "better": s.correction.better,
         "explanation": s.correction.explanation,
@@ -170,11 +220,11 @@ fn shown_json(s: &Shown) -> Value {
     })
 }
 
-fn summary_json(s: &Summary) -> Value {
+fn summary_json(s: &Summary, lang: &str) -> Value {
     json!({
         "goalsMet": s.goals_met.len(),
         "goalsTotal": s.goals_total,
-        "top": s.top.iter().map(shown_json).collect::<Vec<_>>(),
+        "top": s.top.iter().map(|x| shown_json(x, lang)).collect::<Vec<_>>(),
         "review": s.review,
         "spoken": s.spoken_turns,
         "typed": s.typed_turns,
@@ -192,54 +242,350 @@ impl qobject::Conversation {
         let Some(session) = self.session.clone() else {
             return;
         };
-        let session = session.lock().expect("session lock");
-        let met = session.summary().goals_met;
-        let goals: Vec<Value> = session
-            .scenario
-            .goals
+        let lang = self.lang.clone();
+        let session_id = self.session_id;
+        let started = self.started;
+        let guard = session.lock().expect("session lock");
+        let met = guard.summary().goals_met;
+        let goals: Vec<Value> = guard
+            .goals()
             .iter()
-            .map(|g| json!({ "id": g.id, "text": g.text.get(LANG), "done": met.contains(&g.id) }))
+            .map(|g| json!({ "id": g.id, "text": g.text.get(&lang), "done": met.contains(&g.id) }))
             .collect();
-        let done = session.done();
-        let summary = summary_json(&session.summary()).to_string();
-        drop(session);
+        let done = guard.done();
+        let summary = summary_json(&guard.summary(), &lang).to_string();
+        // Keep the state after every turn; record the session once it is done.
+        let recorded = {
+            let st = state();
+            match session_id {
+                Some(id) if done && !*self.finished() => {
+                    let end = now();
+                    match st.store.record(
+                        id,
+                        &guard,
+                        started.unwrap_or(end),
+                        end,
+                        Some(&st.curriculum),
+                    ) {
+                        Ok(r) => Some(recorded_json(&r, &guard, st.store.profile().ok(), &lang)),
+                        Err(e) => {
+                            eprintln!("kaiwa: {e}");
+                            None
+                        }
+                    }
+                }
+                Some(id) if !done => {
+                    if let Err(e) = st.store.save_session(id, &guard.snapshot()) {
+                        eprintln!("kaiwa: {e}");
+                    }
+                    None
+                }
+                _ => None,
+            }
+        };
+        drop(guard);
         self.as_mut()
             .set_goals(QString::from(&Value::Array(goals).to_string()));
-        if done {
+        if let Some(r) = recorded {
+            self.as_mut().set_recorded(QString::from(&r.to_string()));
+        }
+        if done && self.placement.is_none() {
             self.as_mut().set_summary(QString::from(&summary));
             self.as_mut().set_finished(true);
         }
     }
 
-    fn start(mut self: Pin<&mut Self>) {
-        let scenario = Scenario::from_json(SCENARIO).expect("bundled scenario is valid");
-        let (provider, demo) = provider();
-        let title = scenario.title.get(LANG).to_string();
-        let opening = scenario.opening.clone();
-        let voice = scenario
+    fn start_placement(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().placement = Some(Placement::default());
+        self.as_mut().set_placement_ask(false);
+        self.begin_stage(0);
+    }
+
+    /// Plays stage `i` of the placement: its scenario at the stage's level, help only on
+    /// request, nothing stored.
+    fn begin_stage(mut self: Pin<&mut Self>, i: usize) {
+        let (id, level) = STAGES[i];
+        let prepared = {
+            let st = state();
+            let profile = st.store.profile().unwrap_or_default();
+            st.scenarios.get(id).cloned().map(|s| (s, profile))
+        };
+        let Some((scenario, profile)) = prepared else {
+            return;
+        };
+        let (provider, demo) = provider(&scenario.id);
+        let log = vec![json!({ "who": "character", "markup": scenario.opening.clone() })];
+        let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
+            .with_difficulty(placement::difficulty_at(level));
+        let lang = profile.ui_lang;
+        self.as_mut().begin(session, None, demo, log, lang.clone());
+        let word = if lang == "en" {
+            "Placement"
+        } else {
+            "Einstufung"
+        };
+        let title = format!("{word} · {}", self.title());
+        self.as_mut().set_title(QString::from(&title));
+        self.as_mut()
+            .set_stage(QString::from(&format!("{}/{}", i + 1, STAGES.len())));
+        self.as_mut().set_placing(true);
+    }
+
+    /// After a turn of the placement: the stage ends after its turns (or its goals), then the
+    /// next stage follows while the learner keeps up.
+    fn placement_step(mut self: Pin<&mut Self>) {
+        if self.placement.is_none() {
+            return;
+        }
+        let Some(session) = self.session.clone() else {
+            return;
+        };
+        let (turns, done, stats) = {
+            let s = session.lock().expect("session lock");
+            (s.turns().len() as u32, s.done(), s.stats())
+        };
+        if turns < TURNS_PER_STAGE && !done {
+            return;
+        }
+        let next = {
+            let mut rust = self.as_mut().rust_mut();
+            let Some(p) = rust.placement.as_mut() else {
+                return;
+            };
+            let level = STAGES[p.results.len()].1;
+            p.add(StageResult::from_stats(level, &stats));
+            p.next_stage()
+        };
+        match next {
+            Some(i) => self.begin_stage(i),
+            None => {
+                self.as_mut().set_placement_ask(true);
+                self.as_mut().set_finished(true);
+            }
+        }
+    }
+
+    fn finish_placement(mut self: Pin<&mut Self>, kana: i32, kanji: i32) {
+        let Some(mut p) = self.as_mut().rust_mut().placement.take() else {
+            return;
+        };
+        let reading = |i: i32| match i {
+            2 => Reading::Fluent,
+            1 => Reading::Some,
+            _ => Reading::None,
+        };
+        p.kana = reading(kana);
+        p.kanji = reading(kanji);
+        let mut model = p.result();
+        // A talk does not show pronunciation (typed turns count too): it stays as it was.
+        let before = state()
+            .store
+            .learning()
+            .map(|l| l.model)
+            .unwrap_or_default();
+        model.set(Skill::Pronunciation, before.level(Skill::Pronunciation));
+        let lang = self.lang.clone();
+        let words: Vec<String> = model
+            .describe(&lang)
+            .into_iter()
+            .filter(|(s, _)| *s != Skill::Pronunciation)
+            .map(|(_, w)| w)
+            .collect();
+        if let Err(e) = state().store.set_placement(model) {
+            eprintln!("kaiwa: {e}");
+        }
+        let minutes = (p.results.len() as u32 * TURNS_PER_STAGE).div_ceil(2);
+        let r = json!({ "placement": words, "stages": p.results.len(), "minutes": minutes });
+        self.as_mut().set_recorded(QString::from(&r.to_string()));
+        self.as_mut().set_placement_ask(false);
+        self.as_mut().set_placing(false);
+    }
+
+    /// Shows a session (new or restored) and loads speech once.
+    fn begin(
+        mut self: Pin<&mut Self>,
+        session: Session,
+        id: Option<i64>,
+        demo: bool,
+        log: Vec<Value>,
+        lang: String,
+    ) {
+        let title = session.scenario.title.get(&lang).to_string();
+        let scenario = session.scenario.id.clone();
+        let character = session.scenario.name.clone().unwrap_or_else(|| {
+            if lang == "de" {
+                "Figur".into()
+            } else {
+                "Character".into()
+            }
+        });
+        let voice = session
+            .scenario
             .voice
             .clone()
             .unwrap_or_else(|| "jf_tebukuro".into());
-        let session = Session::new(scenario, provider, Amount::Little, LANG);
+        let opening = (log.len() == 1).then(|| session.opening().to_string());
         {
             let mut rust = self.as_mut().rust_mut();
             rust.session = Some(Arc::new(Mutex::new(session)));
-            rust.log = vec![json!({ "who": "character", "markup": opening })];
+            rust.log = log;
+            rust.lang = lang;
+            rust.session_id = id;
+            rust.started = Some(now());
         }
         self.as_mut().set_title(QString::from(&title));
+        self.as_mut().set_scenario(QString::from(&scenario));
+        self.as_mut().set_character(QString::from(&character));
+        self.as_mut().set_recorded(QString::default());
+        self.as_mut().set_summary(QString::default());
         self.as_mut().set_demo(demo);
         self.as_mut().set_finished(false);
         self.as_mut().set_error(QString::default());
+        self.as_mut().set_help_text(QString::default());
+        self.as_mut().set_help_level(0);
         self.as_mut().publish_turns();
         self.as_mut().publish_goals();
+        if *self.speech_ready() {
+            // Speech is loaded already: speak the opening of the new scenario.
+            if let Some(o) = opening {
+                self.as_mut().speak(&o);
+            }
+            return;
+        }
         self.as_mut().set_voice_on(true);
         self.as_mut().set_talk_state(THINKING);
         let thread = self.qt_thread();
+        let lang = self.lang.clone();
         // One after the other: both models share ONNX Runtime, which the first sets up.
         std::thread::spawn(move || {
-            load_recognizer(&thread);
-            load_voice(&thread, &voice);
+            load_recognizer(&thread, &lang);
+            load_voice(&thread, &voice, &lang);
         });
+    }
+
+    /// The session's turn index of a log entry (learner entries before it).
+    fn turn_of(&self, log_index: i32) -> Option<usize> {
+        let i = usize::try_from(log_index).ok()?;
+        (self.log.get(i)?["who"] == "learner").then(|| {
+            self.log[..i]
+                .iter()
+                .filter(|e| e["who"] == "learner")
+                .count()
+        })
+    }
+
+    fn save(&self) {
+        if let (Some(session), Some(id)) = (&self.session, self.session_id)
+            && let Ok(s) = session.lock()
+            && let Err(e) = state().store.save_session(id, &s.snapshot())
+        {
+            eprintln!("kaiwa: {e}");
+        }
+    }
+
+    fn mark_misrecognized(mut self: Pin<&mut Self>, log_index: i32) {
+        let Some(turn) = self.turn_of(log_index) else {
+            return;
+        };
+        if let Some(session) = &self.session
+            && let Ok(mut s) = session.lock()
+        {
+            s.mark_misrecognized(turn);
+        }
+        if let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize) {
+            e["corrections"] = json!([]);
+            e["misrecognized"] = json!(true);
+        }
+        self.save();
+        self.as_mut().publish_turns();
+    }
+
+    fn dispute(mut self: Pin<&mut Self>, log_index: i32, better: &QString) {
+        let better = better.to_string();
+        let Some(turn) = self.turn_of(log_index) else {
+            return;
+        };
+        let found = self.session.as_ref().and_then(|session| {
+            let mut s = session.lock().ok()?;
+            let learner = s.turns().get(turn)?.learner.clone();
+            let c = s.dispute(turn, &better)?;
+            Some((s.scenario.id.clone(), learner, c))
+        });
+        let Some((scenario, learner, c)) = found else {
+            return;
+        };
+        if let Err(e) = state().store.add_dispute(&kaiwa_store::Dispute {
+            at: now(),
+            scenario,
+            learner,
+            original: c.original,
+            better: c.better.clone(),
+            explanation: c.explanation,
+        }) {
+            eprintln!("kaiwa: {e}");
+        }
+        if let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize)
+            && let Some(list) = e["corrections"].as_array_mut()
+        {
+            for x in list.iter_mut().filter(|x| x["better"] == c.better.as_str()) {
+                x["disputed"] = json!(true);
+            }
+        }
+        self.save();
+        self.as_mut().publish_turns();
+    }
+
+    fn resume(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().placement = None;
+        self.as_mut().set_placing(false);
+        let found = {
+            let st = state();
+            let profile = st.store.profile().unwrap_or_default();
+            st.store.open_session().ok().flatten().and_then(|row| {
+                let state = st.store.session_state(row.id).ok()?;
+                let scenario = st.scenarios.get(&state.scenario)?.clone();
+                Some((row.id, state, scenario, profile.ui_lang))
+            })
+        };
+        let Some((id, state, scenario, lang)) = found else {
+            return;
+        };
+        let log = log_of(&scenario, &state, &lang);
+        let (provider, demo) = provider(&scenario.id);
+        let session = Session::restore(scenario, provider, state);
+        self.begin(session, Some(id), demo, log, lang);
+    }
+
+    fn start(mut self: Pin<&mut Self>, scenario: &QString) {
+        self.as_mut().rust_mut().placement = None;
+        self.as_mut().set_placing(false);
+        let wanted = scenario.to_string();
+        let prepared = {
+            let st = state();
+            let profile = st.store.profile().unwrap_or_default();
+            let learning = st.store.learning().unwrap_or_default();
+            let id = if wanted.is_empty() {
+                st.curriculum
+                    .next_scenario(&learning.course)
+                    .unwrap_or_else(|| "n5-02-jikoshoukai".into())
+            } else {
+                wanted
+            };
+            st.scenarios
+                .get(&id)
+                .cloned()
+                .map(|s| (s, profile, learning))
+        };
+        let Some((scenario, profile, learning)) = prepared else {
+            return;
+        };
+        let (provider, demo) = provider(&scenario.id);
+        let opening = scenario.opening.clone();
+        let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
+            .with_difficulty(learning.regulator.difficulty.clone());
+        let id = state().store.begin_session(&session.snapshot(), now()).ok();
+        let log = vec![json!({ "who": "character", "markup": opening })];
+        self.begin(session, id, demo, log, profile.ui_lang);
     }
 
     /// Says a line of the character (furigana markup) sentence by sentence; the first plays
@@ -306,7 +652,8 @@ impl qobject::Conversation {
                 self.as_mut().set_talk_state(LISTENING);
             }
             Err(e) => {
-                self.as_mut().set_speech_error(QString::from(&german(&e)));
+                let text = speech_text(&e, &self.lang);
+                self.as_mut().set_speech_error(QString::from(&text));
                 self.as_mut().set_talk_state(ERROR);
             }
         }
@@ -329,7 +676,8 @@ impl qobject::Conversation {
         match capture.stop() {
             Ok(rec) => self.recognize(rec),
             Err(e) => {
-                self.as_mut().set_speech_error(QString::from(&german(&e)));
+                let text = speech_text(&e, &self.lang);
+                self.as_mut().set_speech_error(QString::from(&text));
                 self.as_mut().set_talk_state(ERROR);
             }
         }
@@ -371,9 +719,12 @@ impl qobject::Conversation {
             let _ = thread.queue(move |mut q| {
                 q.as_mut().set_talk_state(READY);
                 if text.is_empty() {
-                    q.as_mut().set_error(QString::from(
-                        "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon.",
-                    ));
+                    let msg = if q.lang == "en" {
+                        "Nothing understood. Once more, a little louder or closer to the microphone."
+                    } else {
+                        "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon."
+                    };
+                    q.as_mut().set_error(QString::from(msg));
                 } else {
                     q.as_mut().say(&QString::from(&text), false);
                 }
@@ -383,6 +734,12 @@ impl qobject::Conversation {
 
     fn say(mut self: Pin<&mut Self>, text: &QString, typed: bool) {
         let text = text.to_string().trim().to_string();
+        // Typed rōmaji becomes kana, shown as such (/LF120/).
+        let text = if typed && kaiwa_core::romaji::has_romaji(&text) {
+            kaiwa_core::romaji::to_kana(&text)
+        } else {
+            text
+        };
         if text.is_empty() || *self.busy() || *self.finished() {
             return;
         }
@@ -408,9 +765,11 @@ impl qobject::Conversation {
                     Ok(outcome) => {
                         {
                             let mut rust = q.as_mut().rust_mut();
+                            let lang = rust.lang.clone();
                             if let Some(turn) = rust.log.get_mut(index) {
-                                turn["corrections"] =
-                                    Value::Array(outcome.shown.iter().map(shown_json).collect());
+                                turn["corrections"] = Value::Array(
+                                    outcome.shown.iter().map(|x| shown_json(x, &lang)).collect(),
+                                );
                                 turn["pending"] = json!(false);
                             }
                             rust.log.push(
@@ -424,14 +783,18 @@ impl qobject::Conversation {
                         if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index) {
                             turn["pending"] = json!(false);
                         }
-                        q.as_mut().set_error(QString::from(&format!(
-                            "Der Tutor hat nicht geantwortet: {e}"
-                        )));
+                        let msg = if q.lang == "en" {
+                            format!("The tutor did not answer: {e}")
+                        } else {
+                            format!("Der Tutor hat nicht geantwortet: {e}")
+                        };
+                        q.as_mut().set_error(QString::from(&msg));
                     }
                 }
                 q.as_mut().set_busy(false);
                 q.as_mut().publish_turns();
-                q.publish_goals();
+                q.as_mut().publish_goals();
+                q.placement_step();
             });
         });
     }
@@ -449,7 +812,8 @@ impl qobject::Conversation {
 }
 
 /// Loads ReazonSpeech; without the model the talk button shows why.
-fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>) {
+fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>, lang: &str) {
+    let lang = lang.to_string();
     let dir = reazonspeech_dir();
     let loaded = Recognizer::from_dir(&dir, 2);
     let _ = thread.queue(move |mut q| match loaded {
@@ -462,11 +826,15 @@ fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>) {
         }
         Err(e) => {
             let text = match e {
-                SpeechError::ModelMissing(_) => format!(
+                SpeechError::ModelMissing(_) if lang == "de" => format!(
                     "Das Modell für die Spracherkennung fehlt. ReazonSpeech (Apache-2.0, etwa 150 MB) von {REAZONSPEECH_URL} laden und nach {} entpacken. Bis dahin geht Tippen.",
                     dir.display()
                 ),
-                e => german(&e),
+                SpeechError::ModelMissing(_) => format!(
+                    "The speech recognition model is missing. Download ReazonSpeech (Apache-2.0, about 150 MB) from {REAZONSPEECH_URL} and unpack it to {}. You can type meanwhile.",
+                    dir.display()
+                ),
+                e => speech_text(&e, &lang),
             };
             q.as_mut().set_speech_error(QString::from(&text));
             q.as_mut().set_talk_state(ERROR);
@@ -475,7 +843,8 @@ fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>) {
 }
 
 /// Loads Kokoro and opens the speaker, then says the opening line.
-fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str) {
+fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &str) {
+    let lang = lang.to_string();
     let dir = kokoro_dir();
     let loaded = Voice::from_dir(&dir, name, 2).and_then(|voice| {
         Ok(Speaker {
@@ -496,12 +865,17 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str) {
             }
         }
         Err(e) => {
-            let text = match e {
-                SpeechError::ModelMissing(_) => format!(
+            let text = match (e, lang == "de") {
+                (SpeechError::ModelMissing(_), true) => format!(
                     "Die Figur antwortet ohne Stimme. Für die Übergangsstimme Kokoro (Apache-2.0) kokoro-v1.0.int8.onnx (88 MB) und voices-v1.0.bin (27 MB) von {KOKORO_URL} nach {} laden.",
                     dir.display()
                 ),
-                e => format!("Die Figur antwortet ohne Stimme: {}", german(&e)),
+                (SpeechError::ModelMissing(_), false) => format!(
+                    "The character answers without a voice. For the interim voice, download Kokoro (Apache-2.0) kokoro-v1.0.int8.onnx (88 MB) and voices-v1.0.bin (27 MB) from {KOKORO_URL} to {}.",
+                    dir.display()
+                ),
+                (e, true) => format!("Die Figur antwortet ohne Stimme: {}", speech_text(&e, "de")),
+                (e, false) => format!("The character answers without a voice: {}", speech_text(&e, "en")),
             };
             q.as_mut().set_voice_note(QString::from(&text));
         }
@@ -509,21 +883,86 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str) {
     });
 }
 
-/// What the learner reads when speaking does not work (the GUI is German for now).
-fn german(e: &SpeechError) -> String {
-    match e {
-        SpeechError::NoMicrophone => "Kein Mikrofon gefunden. Bis dahin geht Tippen.".into(),
-        SpeechError::Microphone(why) => {
+/// What the learner reads when speaking does not work, in the UI language.
+fn speech_text(e: &SpeechError, lang: &str) -> String {
+    let de = lang == "de";
+    match (e, de) {
+        (SpeechError::NoMicrophone, true) => {
+            "Kein Mikrofon gefunden. Bis dahin geht Tippen.".into()
+        }
+        (SpeechError::NoMicrophone, false) => "No microphone found. You can type meanwhile.".into(),
+        (SpeechError::Microphone(why), true) => {
             format!("Das Mikrofon lässt sich nicht öffnen ({why}). Bis dahin geht Tippen.")
         }
-        SpeechError::ModelMissing(dir) => {
+        (SpeechError::Microphone(why), false) => {
+            format!("The microphone cannot be opened ({why}). You can type meanwhile.")
+        }
+        (SpeechError::ModelMissing(dir), true) => {
             format!("Das Modell für die Spracherkennung fehlt in {dir}.")
         }
-        SpeechError::ModelLoad(dir) => format!(
+        (SpeechError::ModelMissing(dir), false) => format!("The speech model is missing in {dir}."),
+        (SpeechError::ModelLoad(dir), true) => format!(
             "Das Modell in {dir} lässt sich nicht laden. Neu entpacken; bis dahin geht Tippen."
         ),
-        SpeechError::NoSpeaker => "Kein Lautsprecher gefunden.".into(),
-        SpeechError::Speaker(why) => format!("Der Lautsprecher lässt sich nicht öffnen ({why})."),
-        SpeechError::Voice(why) => format!("Die Stimme ist ausgefallen ({why})."),
+        (SpeechError::ModelLoad(dir), false) => {
+            format!("The model in {dir} cannot be loaded. Unpack it again; you can type meanwhile.")
+        }
+        (SpeechError::NoSpeaker, true) => "Kein Lautsprecher gefunden.".into(),
+        (SpeechError::NoSpeaker, false) => "No speaker found.".into(),
+        (SpeechError::Speaker(why), true) => {
+            format!("Der Lautsprecher lässt sich nicht öffnen ({why}).")
+        }
+        (SpeechError::Speaker(why), false) => format!("The speaker cannot be opened ({why})."),
+        (SpeechError::Voice(why), true) => format!("Die Stimme ist ausgefallen ({why})."),
+        (SpeechError::Voice(why), false) => format!("The voice failed ({why})."),
     }
+}
+
+/// The page's log of a restored session: the opening, then each turn with its corrections and
+/// the character's reply.
+fn log_of(scenario: &Scenario, state: &SessionState, lang: &str) -> Vec<Value> {
+    let mut log = vec![json!({ "who": "character", "markup": scenario.opening })];
+    for t in &state.turns {
+        let shown = kaiwa_core::feedback::visible(
+            if t.misrecognized { &[] } else { &t.corrections },
+            state.amount,
+        );
+        let corrections: Vec<Value> = shown
+            .iter()
+            .map(|x| {
+                let mut v = shown_json(x, lang);
+                v["disputed"] = json!(t.disputed.contains(&x.correction.better));
+                v
+            })
+            .collect();
+        log.push(json!({
+            "who": "learner",
+            "text": t.learner,
+            "typed": t.input == Input::Typed,
+            "corrections": corrections,
+            "pending": false,
+            "misrecognized": t.misrecognized,
+        }));
+        log.push(json!({ "who": "character", "markup": t.reply }));
+    }
+    log
+}
+
+/// What the end of the session did, in words (/LF310/, /LF603/, /LF605/).
+fn recorded_json(
+    r: &kaiwa_store::Recorded,
+    s: &Session,
+    profile: Option<kaiwa_store::Profile>,
+    lang: &str,
+) -> Value {
+    let gamification = profile.map(|p| p.gamification).unwrap_or(true);
+    let change = r.change.as_ref().map(|c| c.words(lang));
+    json!({
+        "xp": if gamification { Some(r.xp) } else { None },
+        "xpWhy": if gamification { s.summary().xp.explain(lang) } else { Vec::new() },
+        "change": change,
+        "newItems": r.new_items,
+        "scenarioDone": r.scenario_done,
+        "minutes": r.day.speaking_secs / 60,
+    })
 }

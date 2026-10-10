@@ -11,8 +11,16 @@ import org.shrippen.kaiwa
 Kirigami.ScrollablePage {
     id: page
 
-    property int styleKind: 0
-    signal styleKindChangeRequested(int kind)
+    /** The scenario to play ("" = the next on the path), or continue the interrupted one. */
+    property string scenarioId: ""
+    property bool resume: false
+    /** Play the placement (/LF200/) instead of a scenario. */
+    property bool placement: false
+    /** UI language of the profile, "de" or "en". */
+    property string lang: "de"
+    function t(de, en) { return lang === "en" ? en : de }
+    /** Back to the start page (finished, or to continue later). */
+    signal done()
     /** Screenshot mode: say the lines of `script` (separated by "|"), save `shot`, quit. */
     property string shot: ""
     property string script: ""
@@ -24,12 +32,15 @@ Kirigami.ScrollablePage {
 
     Conversation {
         id: conv
-        Component.onCompleted: start()
+        Component.onCompleted: page.placement ? startPlacement() : page.resume ? resume() : start(page.scenarioId)
     }
 
     readonly property var turns: conv.turns.length > 0 ? JSON.parse(conv.turns) : []
     readonly property var goals: conv.goals.length > 0 ? JSON.parse(conv.goals) : []
     readonly property var summary: conv.summary.length > 0 ? JSON.parse(conv.summary) : null
+    readonly property var recorded: conv.recorded.length > 0 ? JSON.parse(conv.recorded) : null
+    /** The placement's stages are over: the questions or the result take the page. */
+    readonly property bool placementOver: conv.placementAsk || (recorded !== null && recorded.placement !== undefined)
     readonly property int currentGoal: {
         for (var i = 0; i < goals.length; i++) if (!goals[i].done) return i
         return goals.length
@@ -41,7 +52,7 @@ Kirigami.ScrollablePage {
             Layout.fillWidth: true
             visible: conv.demo
             title: "Demo"
-            text: "Aufgezeichnete Antworten. Ein echter Tutor kommt über KAIWA_PROVIDER (siehe README)."
+            text: page.t("Aufgezeichnete Antworten. Ein echter Tutor kommt über KAIWA_PROVIDER (siehe README).", "Recorded answers. A real tutor comes through KAIWA_PROVIDER (see the README).")
         }
     }
 
@@ -53,7 +64,7 @@ Kirigami.ScrollablePage {
             KanteHeading { text: conv.title; pageTitle: true; Layout.fillWidth: true }
             // H-02: Kokoro speaks without pitch accent, so the page says it is a stand-in.
             KantePill {
-                text: conv.voice.length > 0 ? conv.voice : "Ohne Stimme"
+                text: conv.voice.length > 0 ? page.t(conv.voice, "Interim voice") : page.t("Ohne Stimme", "No voice")
                 status: conv.talkState === KanteTalkButton.State.Speaking ? KantePill.State.Running : KantePill.State.Off
                 QQC2.ToolTip.visible: pillHover.hovered
                 QQC2.ToolTip.text: conv.voice.length > 0
@@ -63,35 +74,49 @@ Kirigami.ScrollablePage {
             }
             KanteSegmented {
                 visible: conv.voice.length > 0
-                model: ["Laut", "Stumm"]
-                tooltips: ["Die Figur spricht ihre Antworten", "Nur lesen"]
+                model: [page.t("Laut", "Sound"), page.t("Stumm", "Mute")]
+                tooltips: [page.t("Die Figur spricht ihre Antworten", "The character speaks its replies"), page.t("Nur lesen", "Read only")]
                 currentIndex: conv.voiceOn ? 0 : 1
                 onActivated: function (i) {
                     conv.voiceOn = i === 0
                     if (i === 1) conv.interrupt()
                 }
             }
-            KanteSegmented {
-                model: ["System", "Kante", "Light"]
-                tooltips: ["Plattform-Stil", "Kante", "Kante Light"]
-                currentIndex: page.styleKind
-                onActivated: function (i) { page.styleKindChangeRequested(i) }
+            KanteButton {
+                visible: !conv.finished && !conv.placing
+                text: page.t("Später weiter", "Continue later")
+                emphasis: KanteButton.Emphasis.Quiet
+                Accessible.description: page.t("Das Gespräch bleibt offen und lässt sich auf der Startseite fortsetzen.", "The talk stays open; continue it from the start page.")
+                onClicked: page.done()
             }
         }
 
+        // Placement (/LF200/): no test, a talk that gets harder while it goes well.
+        KanteCallout {
+            Layout.fillWidth: true
+            visible: conv.placing && !conv.placementAsk
+            kind: KanteCallout.Kind.Info
+            title: page.t("Einstufung, Stufe ", "Placement, stage ") + conv.stage
+            text: page.t("Kein Test: Rede einfach, so gut es geht. Nach höchstens vier Antworten wird es eine Stufe schwerer, solange es gut läuft. Hilfe gibt es nur, wenn du sie holst. Alles zusammen dauert höchstens acht Minuten.",
+                         "No test: just talk as well as you can. After at most four answers it gets one stage harder, as long as it goes well. Help comes only when you ask for it. All of it takes at most eight minutes.")
+        }
+
         KanteSteps {
+            visible: !page.placementOver
             Layout.fillWidth: true
             model: page.goals.map(function (g) { return g.text })
             current: page.currentGoal
         }
 
         Repeater {
-            model: page.turns
+            model: page.placementOver ? [] : page.turns
             delegate: KanteMessage {
+                id: msg
                 required property var modelData
+                required property int index
                 Layout.fillWidth: true
                 from: modelData.who === "learner" ? KanteMessage.From.Own : KanteMessage.From.Other
-                author: modelData.who === "learner" ? (modelData.typed ? "Du · getippt" : "Du") : "田中 · Tanaka"
+                author: modelData.who === "learner" ? (modelData.typed ? page.t("Du · getippt", "You · typed") : page.t("Du", "You")) : conv.character
                 text: modelData.who === "learner" ? modelData.text : ""
 
                 KanteRubyText {
@@ -110,10 +135,35 @@ Kirigami.ScrollablePage {
                             : modelData.tier === "yellow" ? KanteHintCard.Tier.Yellow
                             : modelData.tier === "blue" ? KanteHintCard.Tier.Blue : KanteHintCard.Tier.None
                         tierText: modelData.tierText
-                        meta: modelData.meta
                         titleItem: KanteDiffText { parts: modelData.parts }
                         text: modelData.explanation
+                        meta: modelData.disputed ? modelData.meta + " · umstritten" : modelData.meta
+                        // /LF307/: the learner may say it was right; kept for the QA, no longer
+                        // counted as a mistake.
+                        KanteButton {
+                            size: KanteButton.Size.Small
+                            emphasis: KanteButton.Emphasis.Quiet
+                            text: modelData.disputed ? page.t("Widersprochen", "Disputed") : page.t("Widersprechen", "Dispute")
+                            enabled: !modelData.disputed
+                            Accessible.description: page.t("Der Satz war richtig: Kaiwa merkt sich den Widerspruch und zählt es nicht als Fehler.", "The sentence was right: Kaiwa keeps the dispute and does not count it as a mistake.")
+                            onClicked: conv.dispute(msg.index, modelData.better)
+                        }
                     }
+                }
+                // /LF113/: what Kaiwa heard; a misrecognition is no learning mistake.
+                KanteButton {
+                    visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized
+                    size: KanteButton.Size.Small
+                    emphasis: KanteButton.Emphasis.Quiet
+                    text: page.t("Falsch erkannt", "Misheard")
+                    Accessible.description: page.t("So habe ich das nicht gesagt: Die Korrekturen zu diesem Zug zählen nicht.", "That is not what I said: the corrections of this turn do not count.")
+                    onClicked: conv.markMisrecognized(msg.index)
+                }
+                Text {
+                    visible: msg.modelData.misrecognized === true
+                    text: page.t("Als falsch erkannt markiert. Das zählt nicht als Fehler.", "Marked as misheard. It does not count as a mistake.")
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.smallFont
                 }
             }
         }
@@ -121,28 +171,95 @@ Kirigami.ScrollablePage {
         KanteCallout {
             Layout.fillWidth: true
             visible: conv.helpLevel > 0
-            title: ["", "Stichwort", "Satzanfang", "Zum Nachsprechen"][conv.helpLevel]
+            title: ["", page.t("Stichwort", "Keyword"), page.t("Satzanfang", "Sentence start"), page.t("Zum Nachsprechen", "To say after me")][conv.helpLevel]
             text: conv.helpText
         }
         KanteCallout {
             Layout.fillWidth: true
             visible: page.showSpeechHelp && conv.speechError.length > 0
             kind: KanteCallout.Kind.Warn
-            title: "Sprechen geht noch nicht"
+            title: page.t("Sprechen geht noch nicht", "Speaking does not work yet")
             text: conv.speechError
         }
         KanteCallout {
             Layout.fillWidth: true
             visible: page.showSpeechHelp && conv.voiceNote.length > 0
-            title: "Ohne Stimme"
+            title: page.t("Ohne Stimme", "No voice")
             text: conv.voiceNote
         }
         KanteCallout {
             Layout.fillWidth: true
             visible: conv.error.length > 0
             kind: KanteCallout.Kind.Danger
-            title: "Keine Antwort"
+            title: page.t("Keine Antwort", "No answer")
             text: conv.error
+        }
+
+        // ── Placement: reading, then the result (/LF200/, /LF201/) ──
+        ColumnLayout {
+            visible: conv.placementAsk
+            Layout.fillWidth: true
+            spacing: KanteStyle.unit(10)
+            KanteHeading { text: page.t("Noch zwei Fragen zum Lesen", "Two questions about reading"); level: 2 }
+            Text {
+                Layout.fillWidth: true
+                text: page.t("Lesen kommt im Gespräch nicht vor. Sag selbst, wie es geht; das lässt sich im Profil jederzeit ändern.",
+                             "Reading does not come up in a talk. Say how it goes; you can change it in the profile at any time.")
+                color: KanteStyle.mutedTextColor
+                font: KanteStyle.defaultFont
+                wrapMode: Text.Wrap
+            }
+            Text { text: page.t("Hiragana und Katakana", "Hiragana and katakana"); color: KanteStyle.textColor; font: KanteStyle.defaultFont }
+            KanteSegmented {
+                id: kana
+                model: [page.t("Noch nicht", "Not yet"), page.t("Einige, langsam", "Some, slowly"), page.t("Flüssig", "Fluently")]
+                currentIndex: 0
+                onActivated: function (i) { currentIndex = i }
+            }
+            Text { text: page.t("Kanji", "Kanji"); color: KanteStyle.textColor; font: KanteStyle.defaultFont }
+            KanteSegmented {
+                id: kanji
+                model: [page.t("Noch nicht", "Not yet"), page.t("Einige, langsam", "Some, slowly"), page.t("Die von N5", "Those of N5")]
+                currentIndex: 0
+                onActivated: function (i) { currentIndex = i }
+            }
+            KanteButton {
+                text: page.t("Ergebnis zeigen", "Show the result")
+                emphasis: KanteButton.Emphasis.Primary
+                onClicked: conv.finishPlacement(kana.currentIndex, kanji.currentIndex)
+            }
+        }
+        ColumnLayout {
+            visible: page.recorded !== null && page.recorded.placement !== undefined
+            Layout.fillWidth: true
+            spacing: KanteStyle.unit(10)
+            KanteHeading { text: page.t("So steigst du ein", "Where you start"); level: 2 }
+            Text {
+                Layout.fillWidth: true
+                text: page.recorded && page.recorded.stages
+                    ? page.t(page.recorded.stages + " von 4 Stufen gespielt. Kaiwa stellt Tempo, Länge und Hilfen danach ein und passt sie nach jedem Gespräch weiter an.",
+                             page.recorded.stages + " of 4 stages played. Kaiwa sets speed, length and help from this and keeps adjusting them after every talk.")
+                    : ""
+                color: KanteStyle.mutedTextColor
+                font: KanteStyle.defaultFont
+                wrapMode: Text.Wrap
+            }
+            Repeater {
+                model: page.recorded && page.recorded.placement ? page.recorded.placement : []
+                delegate: Text {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    text: "· " + modelData
+                    color: KanteStyle.textColor
+                    font: KanteStyle.defaultFont
+                    wrapMode: Text.Wrap
+                }
+            }
+            KanteButton {
+                text: page.t("Los geht's", "Let's go")
+                emphasis: KanteButton.Emphasis.Primary
+                onClicked: page.done()
+            }
         }
 
         // ── Summary (/LF310/) ──
@@ -150,13 +267,13 @@ Kirigami.ScrollablePage {
             visible: conv.finished && page.summary !== null
             Layout.fillWidth: true
             spacing: KanteStyle.unit(10)
-            KanteHeading { text: "Bilanz"; level: 2 }
+            KanteHeading { text: page.t("Bilanz", "Summary"); level: 2 }
             RowLayout {
-                spacing: KanteStyle.unit(12)
-                KanteKpi { label: "Ziele"; value: page.summary ? page.summary.goalsMet + " / " + page.summary.goalsTotal : "" }
-                KanteKpi { label: "Gesprochen"; value: page.summary ? String(page.summary.spoken) : "" }
-                KanteKpi { label: "Getippt"; value: page.summary ? String(page.summary.typed) : "" }
-                KanteKpi { label: "Hilfen"; value: page.summary ? String(page.summary.helps) : "" }
+                spacing: KanteStyle.unit(28)
+                KanteKpi { label: page.t("Ziele", "Goals"); value: page.summary ? page.summary.goalsMet + " / " + page.summary.goalsTotal : "" }
+                KanteKpi { label: page.t("Gesprochen", "Spoken"); value: page.summary ? String(page.summary.spoken) : "" }
+                KanteKpi { label: page.t("Getippt", "Typed"); value: page.summary ? String(page.summary.typed) : "" }
+                KanteKpi { label: page.t("Hilfen", "Helps"); value: page.summary ? String(page.summary.helps) : "" }
             }
             Repeater {
                 model: page.summary ? page.summary.top : []
@@ -175,10 +292,55 @@ Kirigami.ScrollablePage {
             Text {
                 Layout.fillWidth: true
                 visible: page.summary && page.summary.review.length > 0
-                text: "In die Wiederholung: " + (page.summary ? page.summary.review.join(" · ") : "")
+                text: page.t("In die Wiederholung: ", "Into the review: ") + (page.summary ? page.summary.review.join(" · ") : "")
                 color: KanteStyle.mutedTextColor
                 font: KanteStyle.defaultFont
                 wrapMode: Text.Wrap
+            }
+            // What the session did for the learning model (/LF310/, /LF603/; XP only with
+            // gamification, /LF605/).
+            RowLayout {
+                visible: page.recorded !== null
+                spacing: KanteStyle.unit(28)
+                KanteKpi { label: page.t("Minuten", "Minutes"); value: page.recorded ? String(page.recorded.minutes) : "" }
+                KanteKpi { label: page.t("Neu zum Wiederholen", "New to review"); value: page.recorded ? String(page.recorded.newItems) : "" }
+                KanteKpi {
+                    visible: page.recorded !== null && page.recorded.xp !== null
+                    label: "XP"
+                    value: page.recorded && page.recorded.xp !== null ? String(page.recorded.xp) : ""
+                }
+            }
+            Repeater {
+                model: page.recorded ? page.recorded.xpWhy : []
+                delegate: Text {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    text: modelData
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.smallFont
+                    wrapMode: Text.Wrap
+                }
+            }
+            Text {
+                Layout.fillWidth: true
+                visible: page.recorded !== null && !!page.recorded.change
+                text: page.recorded && page.recorded.change ? page.recorded.change : ""
+                color: KanteStyle.textColor
+                font: KanteStyle.defaultFont
+                wrapMode: Text.Wrap
+            }
+            Text {
+                Layout.fillWidth: true
+                visible: page.recorded !== null && page.recorded.scenarioDone === true
+                text: page.t("Dieses Gespräch ist auf dem Lernpfad erledigt.", "This talk is done on the learning path.")
+                color: KanteStyle.textColor
+                font: KanteStyle.defaultFont
+                wrapMode: Text.Wrap
+            }
+            KanteButton {
+                text: page.t("Fertig", "Done")
+                emphasis: KanteButton.Emphasis.Primary
+                onClicked: page.done()
             }
         }
     }
@@ -192,8 +354,8 @@ Kirigami.ScrollablePage {
                 id: talk
                 talkState: conv.busy && conv.talkState === KanteTalkButton.State.Ready ? KanteTalkButton.State.Thinking : conv.talkState
                 level: conv.level
-                titles: ["Sprechen", "Hört zu", "Denkt nach", "Spricht", "Kein Sprechen"]
-                hints: ["Leertaste halten", "Loslassen zum Senden", "", "Tippen zum Unterbrechen", "Warum? Klicken"]
+                titles: [page.t("Sprechen", "Speak"), page.t("Hört zu", "Listening"), page.t("Denkt nach", "Thinking"), page.t("Spricht", "Speaking"), page.t("Kein Sprechen", "No speech")]
+                hints: [page.t("Leertaste halten", "Hold space"), page.t("Loslassen zum Senden", "Release to send"), "", page.t("Tippen zum Unterbrechen", "Tap to interrupt"), page.t("Warum? Klicken", "Why? Click")]
                 enabled: !conv.finished
                 onTalkStarted: conv.startTalk()
                 onTalkEnded: conv.stopTalk()
@@ -210,16 +372,16 @@ Kirigami.ScrollablePage {
                 id: input
                 Layout.fillWidth: true
                 enabled: !conv.busy && !conv.finished
-                placeholderText: "Auf Japanisch antworten …"
+                placeholderText: page.t("Auf Japanisch antworten …", "Answer in Japanese …")
                 onAccepted: page.send()
             }
             KanteButton {
-                text: "Hilfe"
+                text: page.t("Hilfe", "Help")
                 enabled: !conv.finished
                 onClicked: conv.help()
             }
             KanteButton {
-                text: "Senden"
+                text: page.t("Senden", "Send")
                 emphasis: KanteButton.Emphasis.Primary
                 busy: conv.busy
                 enabled: !conv.busy && !conv.finished && input.text.length > 0
@@ -252,6 +414,7 @@ Kirigami.ScrollablePage {
                 else if (next.indexOf("wav:") === 0) conv.sayWav(next.substring(4))
                 else if (next === "!") page.showSpeechHelp = true
                 else if (next === "~") {}
+                else if (next.indexOf("read:") === 0) conv.finishPlacement(Number(next.charAt(5)), Number(next.charAt(6)))
                 else conv.say(next, true)
             } else {
                 stop()

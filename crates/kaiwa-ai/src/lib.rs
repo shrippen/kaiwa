@@ -12,6 +12,7 @@
 pub mod anthropic;
 pub mod mock;
 pub mod openai;
+pub mod privacy;
 pub mod transport;
 pub mod types;
 

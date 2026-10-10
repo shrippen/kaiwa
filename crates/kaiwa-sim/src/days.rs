@@ -126,7 +126,7 @@ fn logistic(x: f64) -> f64 {
 }
 
 /// Probability of success with ability `a` on material at level `l`: 80 % when they match.
-fn p_success(a: f64, l: f64) -> f64 {
+pub(crate) fn p_success(a: f64, l: f64) -> f64 {
     logistic(4f64.ln() + 2.0 * (a - l))
 }
 
@@ -673,6 +673,21 @@ pub fn check(id: &str, run: &DaysRun) -> Option<Outcome> {
             }
             match run.texts.iter().find(|t| !progress::blameless(t)) {
                 Some(t) => fail(format!("blame in: {t}")),
+                None => pass,
+            }
+        }
+        // /LF210/: never two sessions in a row at 98 % or more (underchallenged).
+        "emi_no_baby_talk" => {
+            match run
+                .sessions
+                .windows(2)
+                .find(|w| w[0].success >= 0.98 && w[1].success >= 0.98)
+            {
+                Some(w) => fail(format!(
+                    "days {} and {} at {:.2} and {:.2}",
+                    w[0].sim_day, w[1].sim_day, w[0].success, w[1].success
+                )),
+                None if run.sessions.len() < 2 => fail("fewer than two sessions".into()),
                 None => pass,
             }
         }

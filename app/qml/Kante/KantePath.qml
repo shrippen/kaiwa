@@ -8,6 +8,7 @@ import "."
  *
  *   done     positive bar and a check
  *   current  accent bar, tinted surface and a filled square: the chosen node
+ *   open     neutral bar and a hollow square: unlocked, to do, not the chosen node
  *   review   info bar and a diamond, indented as a side branch (repetition between units)
  *   locked   muted, dimmed, with `lockedText` after the meta line
  *
@@ -24,6 +25,7 @@ Column {
     property string doneText: "erledigt"
     property string reviewText: "Wiederholung"
     property string currentText: "aktuell"
+    property string openText: "offen"
 
     signal activated(int index)
 
@@ -45,7 +47,7 @@ Column {
                 : st === "current" ? KanteStyle.accentColor
                 : st === "review" ? KanteStyle.infoColor : KanteStyle.frameColor
             readonly property string stateWord: st === "done" ? path.doneText : st === "current" ? path.currentText
-                : st === "review" ? path.reviewText : path.lockedText
+                : st === "review" ? path.reviewText : st === "open" ? path.openText : path.lockedText
 
             width: path.width
             height: Math.max(KanteStyle.heightLarge, texts.implicitHeight + KanteStyle.unit(14))
@@ -82,14 +84,16 @@ Column {
                 antialiasing: true
                 ShapePath {
                     readonly property real s: sign.width
-                    strokeWidth: node.st === "done" ? 2 : -1
-                    strokeColor: node.st === "done" ? node.tone : "transparent"
-                    fillColor: node.st === "done" ? "transparent" : node.tone
+                    readonly property bool line: node.st === "done" || node.st === "open"
+                    strokeWidth: line ? 2 : -1
+                    strokeColor: node.st === "open" ? KanteStyle.mutedTextColor : line ? node.tone : "transparent"
+                    fillColor: line ? "transparent" : node.tone
                     PathSvg {
                         path: {
                             var s = sign.width
                             if (node.st === "done") return "M " + 0.1 * s + " " + 0.55 * s + " L " + 0.4 * s + " " + 0.85 * s + " L " + 0.95 * s + " " + 0.15 * s
                             if (node.st === "review") return "M " + s / 2 + " 0 L " + s + " " + s / 2 + " L " + s / 2 + " " + s + " L 0 " + s / 2 + " Z"
+                            if (node.st === "open") return "M 1 1 L " + (s - 1) + " 1 L " + (s - 1) + " " + (s - 1) + " L 1 " + (s - 1) + " Z"
                             return "M 0 0 L " + s + " 0 L " + s + " " + s + " L 0 " + s + " Z"
                         }
                     }

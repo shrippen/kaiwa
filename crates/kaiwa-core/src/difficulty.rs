@@ -231,6 +231,36 @@ impl Difficulty {
     }
 }
 
+/// The knob that follows a skill when the learner says "I know this" or "too hard" (/LF202/):
+/// listening → speed, reading kanji → furigana, speaking → sentence length, register → register.
+pub fn knob_for(skill: Skill) -> Option<Knob> {
+    match skill {
+        Skill::Listening => Some(Knob::Speed),
+        Skill::ReadingKanji => Some(Knob::Furigana),
+        Skill::Speaking => Some(Knob::Length),
+        Skill::Register => Some(Knob::Register),
+        _ => None,
+    }
+}
+
+/// The learner corrects the model (/LF202/): the skill moves, and its knob one step at once.
+pub fn learner_says(
+    m: &mut LearnerModel,
+    r: &mut Regulator,
+    skill: Skill,
+    up: bool,
+) -> Option<Change> {
+    m.nudge(skill, up);
+    let k = knob_for(skill)?;
+    let step = r.difficulty.get(k);
+    let to = if up {
+        step.saturating_add(1)
+    } else {
+        step.saturating_sub(1)
+    };
+    (to != step && to < k.steps()).then(|| r.set_by_learner(k, to))
+}
+
 /// One move of a knob.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Change {
@@ -239,6 +269,52 @@ pub struct Change {
     pub to: u8,
     /// By the regulator, or set by the learner.
     pub by_learner: bool,
+}
+
+impl Change {
+    /// The change in plain words for the summary, e.g. "Die Figur spricht etwas schneller."
+    pub fn words(&self, lang: &str) -> &'static str {
+        let de = lang == "de";
+        let harder = self.to > self.from;
+        match (self.knob, harder, de) {
+            (Knob::Speed, true, true) => "Die Figur spricht nächstes Mal etwas schneller.",
+            (Knob::Speed, true, false) => "Next time the character speaks a little faster.",
+            (Knob::Speed, false, true) => "Die Figur spricht nächstes Mal etwas langsamer.",
+            (Knob::Speed, false, false) => "Next time the character speaks a little slower.",
+            (Knob::Length, true, true) => "Nächstes Mal etwas längere Sätze.",
+            (Knob::Length, true, false) => "Next time a little longer sentences.",
+            (Knob::Length, false, true) => "Nächstes Mal kürzere Sätze.",
+            (Knob::Length, false, false) => "Next time shorter sentences.",
+            (Knob::Vocabulary, true, true) => "Nächstes Mal ein paar neue Wörter mehr.",
+            (Knob::Vocabulary, true, false) => "Next time a few more new words.",
+            (Knob::Vocabulary, false, true) => "Nächstes Mal weniger neue Wörter.",
+            (Knob::Vocabulary, false, false) => "Next time fewer new words.",
+            (Knob::Clauses, true, true) => "Nächstes Mal auch Nebensätze.",
+            (Knob::Clauses, true, false) => "Next time some subordinate clauses too.",
+            (Knob::Clauses, false, true) => "Nächstes Mal einfachere Sätze ohne Nebensätze.",
+            (Knob::Clauses, false, false) => "Next time simpler sentences without clauses.",
+            (Knob::Furigana, true, true) => "Nächstes Mal etwas weniger Lesehilfe über den Kanji.",
+            (Knob::Furigana, true, false) => "Next time a little less reading aid over the kanji.",
+            (Knob::Furigana, false, true) => "Nächstes Mal wieder Lesehilfe über allen Kanji.",
+            (Knob::Furigana, false, false) => "Next time reading aid over every kanji again.",
+            (Knob::Register, true, true) => "Nächstes Mal mehr Höflichkeitsformen.",
+            (Knob::Register, true, false) => "Next time more polite forms.",
+            (Knob::Register, false, true) => "Nächstes Mal weniger Höflichkeitsformen.",
+            (Knob::Register, false, false) => "Next time fewer polite forms.",
+            (Knob::Help, true, true) => {
+                "Hilfe kommt nächstes Mal etwas später; du hast sie kaum gebraucht."
+            }
+            (Knob::Help, true, false) => {
+                "Next time help comes a little later; you hardly needed it."
+            }
+            (Knob::Help, false, true) => "Hilfe kommt nächstes Mal früher.",
+            (Knob::Help, false, false) => "Next time help comes sooner.",
+            (Knob::Goals, true, true) => "Nächstes Mal ein Ziel mehr im Gespräch.",
+            (Knob::Goals, true, false) => "Next time one more goal in the talk.",
+            (Knob::Goals, false, true) => "Nächstes Mal ein Ziel weniger im Gespräch.",
+            (Knob::Goals, false, false) => "Next time one goal less in the talk.",
+        }
+    }
 }
 
 /// The regulator between sessions.

@@ -278,10 +278,10 @@ impl SessionXp {
                     format!("{n} repeats of the same sentence do not count.")
                 }
                 (XpReason::FromHelp, true) => {
-                    format!("{n} Sätze aus der Hilfe zählen halb. Eigene Sätze zählen voll.")
+                    format!("{n} Sätze aus der Hilfe zählen halb, und ein so erreichtes Ziel bringt keine Extrapunkte. Eigene Sätze zählen voll.")
                 }
                 (XpReason::FromHelp, false) => {
-                    format!("{n} sentences from the help count half. Your own count in full.")
+                    format!("{n} sentences from the help count half, and a goal reached that way earns no bonus. Your own count in full.")
                 }
             })
             .collect()

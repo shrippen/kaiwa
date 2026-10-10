@@ -1,0 +1,6 @@
+[
+  {"learner": "土曜日は買い物をします。", "reply": "そうですか。日曜日は美術館に行きませんか。", "analysis": {"understood": true, "goals_met": ["plan"], "corrections": [], "new_words": []}},
+  {"learner": "いいですね。行きたいです。", "reply": "よかった。", "analysis": {"understood": true, "goals_met": ["accept"], "corrections": [], "new_words": []}},
+  {"learner": "何時に会いますか。", "reply": "十時はどうですか。", "analysis": {"understood": true, "goals_met": ["time"], "corrections": [], "new_words": []}},
+  {"learner": "駅の前で会いませんか。", "reply": "いいですね。じゃあ、駅の前で。", "analysis": {"understood": true, "goals_met": ["place"], "corrections": [], "new_words": []}}
+]

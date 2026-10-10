@@ -313,6 +313,26 @@ impl Curriculum {
             .map(|s| s.id)
     }
 
+    /// After the placement (/LF200/, /LF215/): the units below the learner's level, to offer
+    /// skipping at once. A learner who speaks and understands at N4 or above (heritage speakers,
+    /// false beginners) does not have to start with N5 greetings.
+    pub fn placement_skip(
+        &self,
+        m: &crate::learner::LearnerModel,
+        p: &CourseProgress,
+    ) -> Vec<String> {
+        use crate::learner::Skill;
+        let n4 = crate::learner::level_index("n4").unwrap_or(5.0);
+        if m.level(Skill::Speaking) < n4 || m.level(Skill::Listening) < n4 {
+            return Vec::new();
+        }
+        self.units
+            .iter()
+            .filter(|u| u.id.starts_with("n5") && !self.unit_done(u, p))
+            .map(|u| u.id.clone())
+            .collect()
+    }
+
     /// Units not done yet, in path order: the skip offer (/LF215/) lets the learner choose up to
     /// which one, after a short check conversation.
     pub fn skippable(&self, p: &CourseProgress) -> Vec<String> {
