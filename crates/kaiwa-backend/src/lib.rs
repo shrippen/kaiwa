@@ -1,14 +1,15 @@
 //! What the app and the service `kaiwad` share (ADR-008): the profile (store), the curriculum,
 //! the scenarios, the tutor and the content of every view as JSON.
 //!
-//! - The profile file is `$KAIWA_DATA/default.kaiwa` (see `kaiwa_store::profiles_dir`), or
-//!   `KAIWA_PROFILE`.
+//! - The profile file is the current one in `$KAIWA_DATA` (see `kaiwa_store::profiles_dir` and
+//!   [`profiles`]), or `KAIWA_PROFILE`.
 //! - `KAIWA_DEMO=1` uses a fresh profile in a temporary directory, filled with two weeks of
 //!   history, for screenshots and the demo (`KAIWA_LANG=en` for the English UI).
 //! - `KAIWA_NOW=<unix>:<offset minutes>` fixes the clock (screenshots); otherwise it is the
 //!   system time in the local time zone.
 
 pub mod cost;
+pub mod profiles;
 pub mod reminder;
 pub mod short;
 pub mod views;
@@ -124,7 +125,7 @@ impl Backend {
             let _ = std::fs::remove_dir_all(&dir);
             dir.join("demo.kaiwa")
         } else {
-            kaiwa_store::profiles_dir().join("default.kaiwa")
+            profiles::current_in(&kaiwa_store::profiles_dir())
         };
         Self::open_at(path, demo_data)
     }

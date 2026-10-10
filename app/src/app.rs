@@ -66,6 +66,16 @@ pub mod qobject {
         #[cxx_name = "skipUnit"]
         fn skip_unit(self: Pin<&mut KaiwaApp>, unit: &QString);
 
+        /// Uses another profile of this device (/LF720/).
+        #[qinvokable]
+        #[cxx_name = "switchProfile"]
+        fn switch_profile(self: Pin<&mut KaiwaApp>, file: &QString);
+
+        /// Creates a profile called `name` and uses it (/LF720/).
+        #[qinvokable]
+        #[cxx_name = "newProfile"]
+        fn new_profile(self: Pin<&mut KaiwaApp>, name: &QString);
+
         /// Starts at zero without the placement (/LF200/).
         #[qinvokable]
         #[cxx_name = "skipPlacement"]
@@ -82,7 +92,7 @@ use kaiwa_store::{Script, Store};
 use serde_json::json;
 
 use crate::state::views;
-use crate::state::{now, state};
+use crate::state::{AppState, now, state};
 
 #[derive(Default)]
 pub struct KaiwaAppRust {
@@ -278,6 +288,43 @@ impl qobject::KaiwaApp {
                 l.course.skipped_units.insert(unit.to_string());
                 let _ = st.store.set_learning(&l);
             }
+        }
+        self.as_mut().refresh();
+    }
+
+    fn switch_profile(mut self: Pin<&mut Self>, file: &QString) {
+        let result = {
+            let mut st = state();
+            let dir = st.dir();
+            kaiwa_backend::profiles::set_current(&dir, &file.to_string())
+                .and_then(|path| AppState::open_at(path, false))
+                .map(|b| *st = b)
+        };
+        if let Err(e) = result {
+            self.as_mut().set_notice(QString::from(&format!("{e:#}")));
+        }
+        self.as_mut().refresh();
+    }
+
+    fn new_profile(mut self: Pin<&mut Self>, name: &QString) {
+        let name = name.to_string();
+        if name.trim().is_empty() {
+            return;
+        }
+        let result = {
+            let mut st = state();
+            let dir = st.dir();
+            let lang = st
+                .store
+                .profile()
+                .map(|p| p.ui_lang)
+                .unwrap_or_else(|_| "de".into());
+            kaiwa_backend::profiles::create(&dir, &name, &lang)
+                .and_then(|path| AppState::open_at(path, false))
+                .map(|b| *st = b)
+        };
+        if let Err(e) = result {
+            self.as_mut().set_notice(QString::from(&format!("{e:#}")));
         }
         self.as_mut().refresh();
     }

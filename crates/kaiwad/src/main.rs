@@ -55,7 +55,20 @@ impl Service {
     /// Notes the call (for the idle exit) and locks the profile.
     fn lock(&self) -> MutexGuard<'_, Inner> {
         self.last_call.store(secs(), Ordering::Relaxed);
-        self.inner.lock().unwrap_or_else(|e| e.into_inner())
+        let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        // The app switched profiles (/LF720/): follow it.
+        let fixed = std::env::var_os("KAIWA_PROFILE").is_some() || inner.backend.demo_data;
+        let current = kaiwa_backend::profiles::current_in(&inner.backend.dir());
+        if !fixed && current != inner.backend.path {
+            match Backend::open_at(current, false) {
+                Ok(b) => {
+                    inner.backend = b;
+                    inner.short = None;
+                }
+                Err(e) => eprintln!("kaiwad: {e:#}"),
+            }
+        }
+        inner
     }
 }
 

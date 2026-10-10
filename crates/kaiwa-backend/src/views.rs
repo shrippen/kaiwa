@@ -249,6 +249,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "costLimit": p.cost_limit_cents,
         "cost": st.cost_view(crate::now())?,
         "path": st.path.display().to_string(),
+        "profiles": st.profiles(),
         "demoData": st.demo_data,
     }))
 }

@@ -36,6 +36,34 @@ QQC2.ScrollView {
             titleWidth: page.titleWidth
         }
 
+        // Several profiles on one device (/LF720/), each fully separate.
+        Row {
+            section: page.t("Profil", "Profile")
+            title: page.t("Wer übt?", "Who practises?")
+            hint: page.t("Jedes Profil hat eigenen Lernstand, Einstellungen und Kosten", "Each profile has its own progress, settings and costs")
+            RowLayout {
+                spacing: KanteStyle.unit(8)
+                KanteComboBox {
+                    id: who
+                    readonly property var list: page.p.profiles || []
+                    model: list.map(function (x) { return x.name })
+                    currentIndex: Math.max(0, list.findIndex(function (x) { return x.current }))
+                    onActivated: function (i) { if (!list[i].current) page.kaiwa.switchProfile(list[i].file) }
+                    Accessible.name: page.t("Profil", "Profile")
+                }
+                KanteTextField {
+                    id: newName
+                    Layout.preferredWidth: KanteStyle.unit(200)
+                    placeholderText: page.t("Neues Profil: Name", "New profile: name")
+                    onAccepted: page.addProfile()
+                }
+                KanteButton {
+                    text: page.t("Anlegen", "Add")
+                    enabled: newName.text.trim().length > 0
+                    onClicked: page.addProfile()
+                }
+            }
+        }
         Row {
             section: page.t("Üben", "Practice")
             title: page.t("Tagesziel", "Daily goal")
@@ -201,6 +229,11 @@ QQC2.ScrollView {
             color: KanteStyle.textColor
         }
         Item { implicitHeight: KanteStyle.unit(18) }
+    }
+
+    function addProfile() {
+        page.kaiwa.newProfile(newName.text)
+        newName.text = ""
     }
 
     function exportPath() {
