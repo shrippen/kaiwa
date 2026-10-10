@@ -1,5 +1,5 @@
-# Flatpak of the app (/LL500/); the plasmoid and kaiwad come from the distribution packages
-# (ADR-008, F-11). Cargo sources for the offline build: generate cargo-sources.json with
+# Flatpak of the app (/LL500/); the plasmoid and kaiwad (M4, before 1.0) will come from the
+# distribution packages (ADR-008, F-11). Cargo sources for the offline build: generate cargo-sources.json with
 # flatpak-cargo-generator from Cargo.lock before building.
 id: org.shrippen.kaiwa
 runtime: org.kde.Platform

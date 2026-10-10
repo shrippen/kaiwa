@@ -28,12 +28,6 @@ jobs:
         run: cargo run -q -p kaiwa-sim -- validate
       - name: Journeys (text mode, recorded tutor answers)
         run: cargo run -q -p kaiwa-sim -- run
-      - name: kaiwad on a session bus (ADR-008)
-        run: |
-          S=$(command -v sudo || true)
-          $S apt-get update -qq && $S apt-get install -y -qq --no-install-recommends dbus libglib2.0-bin
-          cargo build -q -p kaiwad
-          dbus-run-session -- tools/kaiwad-smoke.sh
 
   # The Qt side (G-01: Arch Linux container, current Qt 6 and KF6 from the packages).
   # Also the probe for G-02: the first step fails unless the job really runs in the container.
@@ -64,7 +58,7 @@ jobs:
       - name: Kante copy matches Kante main (GUI rule)
         run: |
           tools/sync-kante.sh ../Kante
-          git diff --exit-code -- app/qml plasmoid/package/contents/ui/Kante plasmoid/package/contents/ui/KantePlasma
+          git diff --exit-code -- app/qml
       - name: Speech crate (microphone, ReazonSpeech; the model test skips without a model)
         run: cargo test --locked -p kaiwa-speech
       - name: Build the app
@@ -90,9 +84,3 @@ jobs:
           desktop-file-validate packaging/org.shrippen.kaiwa.desktop
           appstreamcli validate --no-net packaging/org.shrippen.kaiwa.metainfo.xml
           bash -n packaging/arch/PKGBUILD
-          node -e "JSON.parse(require('fs').readFileSync('plasmoid/package/metadata.json', 'utf8'))"
-      - name: The plasmoid in plasmoidviewer against kaiwad (/LF500/, ADR-008)
-        run: |
-          pacman -S --noconfirm --needed plasma-workspace plasma-sdk dbus glib2
-          cargo build --locked -p kaiwad --features speech
-          dbus-run-session -- env PLASMOID=1 tools/kaiwad-smoke.sh

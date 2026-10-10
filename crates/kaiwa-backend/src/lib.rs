@@ -1,4 +1,4 @@
-//! What the app and the service `kaiwad` share (ADR-008): the profile (store), the curriculum,
+//! What the app and, with M4 before 1.0, the service `kaiwad` share (ADR-008): the profile (store), the curriculum,
 //! the scenarios, the tutor and the content of every view as JSON.
 //!
 //! - The profile file is the current one in `$KAIWA_DATA` (see `kaiwa_store::profiles_dir` and

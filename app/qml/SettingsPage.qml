@@ -124,7 +124,9 @@ QQC2.ScrollView {
                 KanteButton { text: page.t("7 Tage", "7 days"); onClicked: page.kaiwa.pause(7) }
             }
         }
+        // Reminders come with the plasmoid (M4, before 1.0), which runs all day.
         Row {
+            visible: false
             title: page.t("Erinnerung", "Reminder")
             hint: page.t("Höchstens eine am Tag, über das Plasmoid; nur solange das Tagesziel offen ist", "At most one a day, through the plasmoid; only while the daily goal is open")
             KanteSegmented {

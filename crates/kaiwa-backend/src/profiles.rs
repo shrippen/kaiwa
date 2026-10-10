@@ -1,6 +1,6 @@
 //! Several profiles on one device (Lastenheft /LF720/), e.g. a family: one file each in the
 //! profiles directory, fully separate (progress, review, settings, costs). The file `current`
-//! names the one in use; the app and `kaiwad` follow it.
+//! names the one in use; the app follows it (and `kaiwad` with M4).
 
 use std::path::{Path, PathBuf};
 

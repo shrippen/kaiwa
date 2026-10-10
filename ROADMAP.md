@@ -20,7 +20,7 @@
  └───────────────┬──────────────────────┘   └───────────────┬────────────────┘
                  │ cxx-qt (QML-Modul org.shrippen.kaiwa)    │
                  └──────────────┬───────────────────────────┘
-          in-process (alle OS)  │  oder D-Bus-Dienst kaiwad (Plasma, ab M4)
+          in-process (alle OS)  │  oder D-Bus-Dienst kaiwad (Plasma, M4 vor 1.0)
  ┌──────────────────────────────┴───────────────────────────────────────────┐
  │ kaiwa-core   Lernmodell · Curriculum · Schwierigkeitsregler · Sessions   │
  │ kaiwa-lang   Morphologie (vibrato/lindera + UniDic) · Furigana · JLPT-Tags│
@@ -91,14 +91,6 @@ Ein Szenario funktioniert durchgehend: **Selbstvorstellung (自己紹介)**.
 - Gewichtung: Nur Fehler, die die Verständlichkeit gefährden, unterbrechen. Der Rest landet in der Bilanz (/LF306/).
 - **QA:** Theo (Pitch-Akzent-Perfektionist) prüft Fehlalarme, Hinnerk prüft langsames Sprechen und lange Pausen, Jonas prüft Störgeräusche (Zug).
 
-### M4 – Plasma-Integration und Plasmoid (0.4) · M
-
-- **Plasmoid** im Panel und auf dem Desktop: Kurzgespräch (3–5 min), 5 Wiederholungen, Tagesziel und Serie, Push-to-Talk (/LF500/–/LF506/)
-- `kaiwad` als D-Bus-Dienst mit Session-Aktivierung: Er lädt die Modelle einmal, App und Plasmoid teilen sich Sitzung und Mikrofon (/LF510/, ADR-008).
-- Globales Tastenkürzel für Push-to-Talk (KGlobalAccel), Erinnerungen über KNotification, optional KRunner („kaiwa 駅“ → Wort nachschlagen und vorsprechen) (/LF520/–/LF522/)
-- Eine im Plasmoid begonnene Sitzung lässt sich in der App fortsetzen (/LF507/).
-- **QA:** Mara (5-Minuten-Sitzungen zwischen Terminen, Unterbrechung durch Anruf) und Jonas (Plasmoid + Android)
-
 ### M5 – Motivation und Lernpfad (0.5) · M
 
 - Lernpfad-Ansicht (Einheiten, Szenarien, Wiederholungsknoten), XP, Tagesziel, Serie mit Freeze und Wochenrückblick (/LF600/–/LF606/)
@@ -114,6 +106,17 @@ Ein Szenario funktioniert durchgehend: **Selbstvorstellung (自己紹介)**.
 - **Sync** (optional): Ende-zu-Ende-verschlüsselte Datei per WebDAV/Nextcloud, ohne eigenen Server (/LF700/)
 - Export und Löschung aller Daten (DSGVO), Datenschutzansicht „Was verlässt das Gerät?“ (/LF710/, /LF711/)
 - **QA:** Lena (nur lokal, prüft den Netzwerkverkehr), Jonas (Gerätewechsel), Selin (Windows)
+
+### M4 – Plasma-Integration und Plasmoid (vor 1.0) · M
+
+Zeitlich nach M6, wenn die App nahe 1.0 ist (Entscheidung im Chat, 2026-10-10). Der Stand von `kaiwad` und Plasmoid liegt auf dem Zweig `later/plasmoid` (Kurzgespräch, fünf Wiederholungen, Sprechtaste über den Dienst, Erinnerungen) und wird dann auf den aktuellen Stand gebracht.
+
+
+- **Plasmoid** im Panel und auf dem Desktop: Kurzgespräch (3–5 min), 5 Wiederholungen, Tagesziel und Serie, Push-to-Talk (/LF500/–/LF506/)
+- `kaiwad` als D-Bus-Dienst mit Session-Aktivierung: Er lädt die Modelle einmal, App und Plasmoid teilen sich Sitzung und Mikrofon (/LF510/, ADR-008).
+- Globales Tastenkürzel für Push-to-Talk (KGlobalAccel), Erinnerungen über KNotification, optional KRunner („kaiwa 駅“ → Wort nachschlagen und vorsprechen) (/LF520/–/LF522/)
+- Eine im Plasmoid begonnene Sitzung lässt sich in der App fortsetzen (/LF507/).
+- **QA:** Mara (5-Minuten-Sitzungen zwischen Terminen, Unterbrechung durch Anruf) und Jonas (Plasmoid + Android)
 
 ### M7 – 1.0 · M
 

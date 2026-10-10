@@ -1,5 +1,5 @@
-//! What the plasmoid offers (Lastenheft /LF501/–/LF503/, /LF507/): a short talk of two goals
-//! from the path, typed or spoken turns with corrections in one line each, and five reviews.
+//! What the plasmoid will offer (M4, before 1.0; the app uses the review answer already),
+//! Lastenheft /LF501/–/LF503/, /LF507/: a short talk of two goals from the path, typed or spoken turns with corrections in one line each, and five reviews.
 //! A short talk is an ordinary session in the profile, so the app continues it (and the other
 //! way round).
 

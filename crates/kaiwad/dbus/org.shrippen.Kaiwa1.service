@@ -1,5 +1,0 @@
-# D-Bus activation (ADR-008): the first call starts kaiwad; it quits after ten idle minutes.
-# Installed to /usr/share/dbus-1/services/.
-[D-BUS Service]
-Name=org.shrippen.Kaiwa1
-Exec=/usr/bin/kaiwad

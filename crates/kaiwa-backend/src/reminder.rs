@@ -1,7 +1,8 @@
 //! Reminders (Lastenheft /LF520/, /LF620/, /LL300/): off by default; at the chosen time, at
 //! most one a day, only while today's goal is open and no pause runs. The text invites and
 //! never blames: no missed days, no loss. "Später" moves the same reminder once by an hour.
-//! The plasmoid asks for it every minute and shows it as a notification.
+//! The plasmoid (M4, before 1.0) asks for it every minute and shows it as a notification;
+//! until then the setting is hidden.
 
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::progress::blameless;

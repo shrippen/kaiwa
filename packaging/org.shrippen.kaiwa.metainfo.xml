@@ -12,15 +12,13 @@
       <li>Speech recognition and the voice run on your device</li>
       <li>A placement by conversation instead of a test</li>
       <li>Reviews from your own corrections</li>
-      <li>A Plasma widget for short talks in between</li>
+      <li>Several profiles, a cost limit and the system keyring for cloud tutors</li>
     </ul>
     <p xml:lang="de">Kaiwa ist ein Gesprächstrainer für Japanisch: Du sprichst mit Figuren in Alltagsszenen, liest mit Furigana mit und bekommst Korrekturen, die sich selbst erklären. Die Schwierigkeit folgt dir, Schritt für Schritt.</p>
   </description>
   <launchable type="desktop-id">org.shrippen.kaiwa.desktop</launchable>
   <provides>
     <binary>kaiwa</binary>
-    <binary>kaiwad</binary>
-    <dbus type="user">org.shrippen.Kaiwa1</dbus>
   </provides>
   <screenshots>
     <screenshot type="default">
@@ -45,7 +43,7 @@
   <releases>
     <release version="0.4.0" date="2026-10-10" type="development">
       <description>
-        <p>Plasma widget with short talks and reviews, placement by conversation, reminders, several profiles, cost limit and keyring for cloud tutors.</p>
+        <p>Placement by conversation, several profiles, cost limit and keyring for cloud tutors, recordings only with consent, statistics over twelve weeks.</p>
       </description>
     </release>
   </releases>

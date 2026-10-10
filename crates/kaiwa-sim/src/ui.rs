@@ -1,6 +1,6 @@
-//! Checks on what the app and the plasmoid show, without a screen: the English UI has no
-//! German left (/LL506/), the plasmoid's short talk and its five reviews (/LF501/, /LF502/).
-//! They run on the backend the app and `kaiwad` share, with the demo profile.
+//! Checks on what the app shows, without a screen: the English UI has no German left
+//! (/LL506/), recordings, gamification and accessible names. They run on the backend with the
+//! demo profile and on the app's QML.
 
 use std::path::Path;
 
@@ -15,8 +15,6 @@ use crate::run::Outcome;
 pub fn check(id: &str, root: &Path) -> Option<Outcome> {
     let r = match id {
         "theo_ui_en" => ui_en(root),
-        "mara_plasmoid_short" => short(),
-        "mara_plasmoid_reviews" => reviews(),
         "lena_retention" => retention(),
         "hinnerk_gamification_off" => gamification_off(root),
         "hinnerk_a11y_names" => a11y_names(root),
@@ -143,7 +141,7 @@ fn qml_texts(src: &str) -> (Vec<String>, Vec<String>) {
 /// German literal outside t(), and the content of every view of an English profile.
 fn ui_en(root: &Path) -> Result<Option<String>> {
     let mut found = Vec::new();
-    for dir in ["app/qml", "plasmoid/package/contents/ui"] {
+    for dir in ["app/qml"] {
         for e in std::fs::read_dir(root.join(dir))? {
             let p = e?.path();
             if p.extension().is_none_or(|x| x != "qml") {
@@ -188,37 +186,6 @@ fn ui_en(root: &Path) -> Result<Option<String>> {
             .map(|s| format!("view: {s}")),
     );
     Ok((!found.is_empty()).then(|| found.join("; ")))
-}
-
-/// /LF501/: the short talk has at most 6 goals (two from the path) and ends by itself with a
-/// mini summary once they are reached.
-fn short() -> Result<Option<String>> {
-    let b = demo("short", "de")?;
-    let mut t = ShortTalk::start(&b, NOW)?;
-    let goals = t.session.goals().to_vec();
-    if goals.is_empty() || goals.len() > 6 {
-        return Ok(Some(format!("{} goals", goals.len())));
-    }
-    let mut last = Value::Null;
-    for g in &goals {
-        last = t.say(&b, &g.help.example, false, NOW)?;
-    }
-    if last["done"] != true {
-        return Ok(Some(format!("not done after the goals' examples: {last}")));
-    }
-    Ok(last["recorded"]
-        .is_null()
-        .then(|| "no mini summary at the end".into()))
-}
-
-/// /LF502/: "five reviews" offers exactly five due items when at least five are due.
-fn reviews() -> Result<Option<String>> {
-    let b = demo("reviews", "de")?;
-    let due = b.store.today(NOW)?.due;
-    let v = views::review(&b, NOW, 5)?;
-    let n = v.as_array().map(Vec::len).unwrap_or(0);
-    let want = due.min(5);
-    Ok((n != want).then(|| format!("{n} offered, {due} due")))
 }
 
 /// /LF712/: with recordings kept for 7 days, after 8 days they are gone and the transcripts
@@ -290,7 +257,7 @@ fn gamification_off(root: &Path) -> Result<Option<String>> {
     if last["recorded"].get("xp").is_some() {
         found.push("XP after a short talk".into());
     }
-    for dir in ["app/qml", "plasmoid/package/contents/ui"] {
+    for dir in ["app/qml"] {
         for e in std::fs::read_dir(root.join(dir))? {
             let path = e?.path();
             if path.extension().is_none_or(|x| x != "qml") {
@@ -357,7 +324,7 @@ fn blocks<'a>(src: &'a str, types: &[&str]) -> Vec<(usize, String, &'a str)> {
 }
 
 /// /LL201/ (static part; the AT-SPI tree follows with the gui mode): every control of the
-/// app and the plasmoid has a name for assistive technology:
+/// app has a name for assistive technology:
 /// a visible text, or an Accessible.name (text fields always need the latter). The Kante
 /// controls give the role; KanteSegmented names each segment from its model.
 fn a11y_names(root: &Path) -> Result<Option<String>> {
@@ -375,7 +342,7 @@ fn a11y_names(root: &Path) -> Result<Option<String>> {
         "QQC2.TextField",
     ];
     let mut found = Vec::new();
-    for dir in ["app/qml", "plasmoid/package/contents/ui"] {
+    for dir in ["app/qml"] {
         for e in std::fs::read_dir(root.join(dir))? {
             let path = e?.path();
             if path.extension().is_none_or(|x| x != "qml") {
