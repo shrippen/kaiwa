@@ -291,6 +291,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 enabled: !full.busy
                 placeholderText: full.t("Auf Japanisch antworten …", "Answer in Japanese …")
+                Accessible.name: full.t("Deine Antwort", "Your answer")
                 onAccepted: full.send()
             }
             KantePlasmaButton {
@@ -339,6 +340,7 @@ ColumnLayout {
                 id: reviewInput
                 Layout.fillWidth: true
                 placeholderText: full.t("Tippen (Rōmaji geht auch) …", "Type it (rōmaji works too) …")
+                Accessible.name: full.t("Deine Antwort", "Your answer")
                 onAccepted: full.check()
             }
             KantePlasmaButton { text: full.t("Prüfen", "Check"); onClicked: full.check() }

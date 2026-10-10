@@ -19,6 +19,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "mara_plasmoid_reviews" => reviews(),
         "lena_retention" => retention(),
         "hinnerk_gamification_off" => gamification_off(root),
+        "hinnerk_a11y_names" => a11y_names(root),
         _ => return None,
     };
     Some(match r {
@@ -317,4 +318,105 @@ fn gamification_off(root: &Path) -> Result<Option<String>> {
         }
     }
     Ok((!found.is_empty()).then(|| found.join("; ")))
+}
+
+/// The blocks `Type { … }` of a QML file: (line, type, body).
+fn blocks<'a>(src: &'a str, types: &[&str]) -> Vec<(usize, String, &'a str)> {
+    let mut out = Vec::new();
+    for t in types {
+        let open = format!("{t} {{");
+        let mut from = 0;
+        while let Some(i) = src[from..].find(&open) {
+            let start = from + i;
+            // A whole word: not the tail of a longer type name.
+            let before = src[..start].chars().last();
+            if before.is_some_and(|c| c.is_alphanumeric() || c == '.') {
+                from = start + open.len();
+                continue;
+            }
+            let body_start = start + open.len();
+            let mut depth = 1;
+            let mut end = body_start;
+            for (j, c) in src[body_start..].char_indices() {
+                match c {
+                    '{' => depth += 1,
+                    '}' => depth -= 1,
+                    _ => {}
+                }
+                if depth == 0 {
+                    end = body_start + j;
+                    break;
+                }
+            }
+            let line = src[..start].lines().count() + 1;
+            out.push((line, (*t).to_string(), &src[body_start..end]));
+            from = body_start;
+        }
+    }
+    out
+}
+
+/// /LL201/ (static part; the AT-SPI tree follows with the gui mode): every control of the
+/// app and the plasmoid has a name for assistive technology:
+/// a visible text, or an Accessible.name (text fields always need the latter). The Kante
+/// controls give the role; KanteSegmented names each segment from its model.
+fn a11y_names(root: &Path) -> Result<Option<String>> {
+    const NAMED_BY_TEXT: &[&str] = &[
+        "KanteButton",
+        "KantePlasmaButton",
+        "KantePlasmaToolButton",
+        "KanteToolButton",
+        "QQC2.Button",
+    ];
+    const FIELDS: &[&str] = &[
+        "KanteTextField",
+        "KanteComboBox",
+        "QQC2.ComboBox",
+        "QQC2.TextField",
+    ];
+    let mut found = Vec::new();
+    for dir in ["app/qml", "plasmoid/package/contents/ui"] {
+        for e in std::fs::read_dir(root.join(dir))? {
+            let path = e?.path();
+            if path.extension().is_none_or(|x| x != "qml") {
+                continue;
+            }
+            let src = std::fs::read_to_string(&path)?;
+            let name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+            for (line, t, body) in blocks(&src, NAMED_BY_TEXT) {
+                // Only the block's own properties, not those of nested items.
+                let own: String = own_lines(body);
+                if !own.contains("text:") && !own.contains("Accessible.name:") {
+                    found.push(format!("{name}:{line} {t} without text"));
+                }
+            }
+            for (line, t, body) in blocks(&src, FIELDS) {
+                let own = own_lines(body);
+                // Kirigami.FormData.label names a field in a form.
+                if !own.contains("Accessible.name:") && !own.contains("FormData.label:") {
+                    found.push(format!("{name}:{line} {t} without Accessible.name"));
+                }
+            }
+        }
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
+}
+
+/// The lines of a block body at its own depth (nested blocks left out).
+fn own_lines(body: &str) -> String {
+    let mut depth = 0;
+    let mut out = String::new();
+    for l in body.lines() {
+        if depth == 0 {
+            out.push_str(l);
+            out.push('\n');
+        }
+        depth += l.matches('{').count() as i32 - l.matches('}').count() as i32;
+        depth = depth.max(0);
+    }
+    out
 }

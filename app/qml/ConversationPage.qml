@@ -374,6 +374,7 @@ Kirigami.ScrollablePage {
                 Layout.fillWidth: true
                 enabled: !conv.busy && !conv.finished
                 placeholderText: page.t("Auf Japanisch antworten …", "Answer in Japanese …")
+                Accessible.name: page.t("Deine Antwort", "Your answer")
                 onAccepted: page.send()
             }
             KanteButton {

@@ -55,6 +55,7 @@ QQC2.ScrollView {
                     id: newName
                     Layout.preferredWidth: KanteStyle.unit(200)
                     placeholderText: page.t("Neues Profil: Name", "New profile: name")
+                    Accessible.name: page.t("Name des neuen Profils", "Name of the new profile")
                     onAccepted: page.addProfile()
                 }
                 KanteButton {
