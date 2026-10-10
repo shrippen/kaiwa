@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Kaiwa
+GenericName=Japanese Conversation Trainer
+GenericName[de]=Japanisch-Gesprächstrainer
+Comment=Practise speaking and listening Japanese in conversations that adapt to you
+Comment[de]=Japanisch sprechen und hören üben, in Gesprächen, die sich dir anpassen
+Exec=kaiwa
+Icon=org.shrippen.kaiwa
+Terminal=false
+Categories=Education;Languages;Qt;KDE;
+Keywords=Japanese;language;speaking;listening;conversation;Japanisch;Sprache;Gespräch;
+StartupWMClass=kaiwa

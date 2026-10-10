@@ -1,0 +1,41 @@
+# Kaiwa from the Git main branch: app, kaiwad and the plasmoid (/LL500/, F-11: the plasmoid
+# comes with the package, not from the KDE Store).
+pkgname=kaiwa-git
+pkgver=0.4.0
+pkgrel=1
+pkgdesc="Japanese conversation trainer for KDE Plasma (app, Plasma widget, session service)"
+arch=(x86_64)
+url="https://git.arianw.de/shrippen/Kaiwa"
+license=(MIT)
+depends=(qt6-base qt6-declarative qt6-svg kirigami alsa-lib dbus)
+optdepends=('plasma-workspace: the Plasma widget'
+            'kwallet: keep API keys of a cloud tutor (or another Secret Service)')
+makedepends=(git rust qt6-shadertools pkgconf)
+provides=(kaiwa)
+conflicts=(kaiwa)
+source=("kaiwa::git+$url.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd kaiwa
+  printf "0.4.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd kaiwa
+  export QMAKE=/usr/bin/qmake6
+  cargo build --release --locked -p kaiwa-app -p kaiwad
+}
+
+package() {
+  cd kaiwa
+  install -Dm755 target/release/kaiwa "$pkgdir/usr/bin/kaiwa"
+  install -Dm755 target/release/kaiwad "$pkgdir/usr/bin/kaiwad"
+  install -Dm644 crates/kaiwad/dbus/org.shrippen.Kaiwa1.service "$pkgdir/usr/share/dbus-1/services/org.shrippen.Kaiwa1.service"
+  install -Dm644 packaging/org.shrippen.kaiwa.desktop "$pkgdir/usr/share/applications/org.shrippen.kaiwa.desktop"
+  install -Dm644 packaging/org.shrippen.kaiwa.metainfo.xml "$pkgdir/usr/share/metainfo/org.shrippen.kaiwa.metainfo.xml"
+  install -Dm644 icons/kaiwa.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/org.shrippen.kaiwa.svg"
+  install -d "$pkgdir/usr/share/plasma/plasmoids/org.shrippen.kaiwa.plasmoid"
+  cp -r plasmoid/package/. "$pkgdir/usr/share/plasma/plasmoids/org.shrippen.kaiwa.plasmoid/"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
