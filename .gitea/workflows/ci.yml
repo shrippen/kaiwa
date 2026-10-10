@@ -73,4 +73,8 @@ jobs:
             test -s /tmp/$v.png
           done
           test -s /tmp/app.png
+          # The placement through its stages to the result (/LF200/).
+          L='マラです。|ドイツから来ました。|よろしくおねがいします。|コーヒーが好きです。'
+          timeout 120 ./target/debug/kaiwa --shot /tmp/place.png --view place --kind 1 --say "$L|$L|$L|$L|read:21" 2>&1 | tee -a /tmp/app.log
+          test -s /tmp/place.png
           ! grep -E 'qrc:.*(Error|Unable|is not|TypeError|ReferenceError)' /tmp/app.log

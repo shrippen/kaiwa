@@ -9,8 +9,8 @@ import org.shrippen.kaiwa
 // settings; a conversation opens as its own page on top. Style follows the Kante rule:
 // System by default, Kante and Kante Light from the settings.
 //
-// Screenshot mode: --shot out.png [--view start|path|review|profile|settings|talk]
-// [--scenario id] [--resume] [--say "a|b|wav:file|?|!|~"] [--kind 0|1|2] [--light 0|1].
+// Screenshot mode: --shot out.png [--view start|path|review|profile|settings|talk|place]
+// [--scenario id] [--resume] [--say "a|b|wav:file|?|!|~|read:KK"] [--kind 0|1|2] [--light 0|1].
 Kirigami.ApplicationWindow {
     id: root
     width: Number(arg("--width", "900"))
@@ -40,6 +40,10 @@ Kirigami.ApplicationWindow {
 
     function talk(scenario, resume) {
         pageStack.push(talkPage, { scenarioId: scenario, resume: resume, lang: kaiwa.lang, script: shot.length > 0 ? arg("--say", "") : "", shot: shot })
+    }
+
+    function place() {
+        pageStack.push(talkPage, { placement: true, lang: kaiwa.lang, script: shot.length > 0 ? arg("--say", "") : "", shot: shot })
     }
 
     Component {
@@ -85,6 +89,7 @@ Kirigami.ApplicationWindow {
                 kaiwa: kaiwa
                 onTalk: function (scenario, resume) { root.talk(scenario, resume) }
                 onShowTab: function (i) { tabs.currentIndex = i }
+                onPlace: root.place()
             }
             PathPage {
                 kaiwa: kaiwa
@@ -92,7 +97,7 @@ Kirigami.ApplicationWindow {
                 onShowTab: function (i) { tabs.currentIndex = i }
             }
             ReviewPage { kaiwa: kaiwa }
-            ProfilePage { kaiwa: kaiwa }
+            ProfilePage { kaiwa: kaiwa; onPlace: root.place() }
             SettingsPage { kaiwa: kaiwa }
         }
     }
@@ -103,7 +108,9 @@ Kirigami.ApplicationWindow {
         interval: 900
         onTriggered: {
             var v = root.arg("--view", "start")
-            if (v === "talk") {
+            if (v === "place") {
+                root.place()
+            } else if (v === "talk") {
                 root.talk(root.arg("--scenario", ""), root.args.indexOf("--resume") >= 0)
             } else {
                 home.grabToImage(function (r) { r.saveToFile(root.shot); Qt.quit() })

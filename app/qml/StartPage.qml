@@ -11,6 +11,7 @@ QQC2.ScrollView {
     required property var kaiwa
     signal talk(string scenario, bool resume)
     signal showTab(int index)
+    signal place()
     function t(de, en) { return kaiwa.lang === "en" ? en : de }
 
     readonly property var today: kaiwa.today.length > 0 ? JSON.parse(kaiwa.today) : ({})
@@ -28,22 +29,30 @@ QQC2.ScrollView {
             pageTitle: true
         }
 
-        // Placement (/LF200/): the conversation for it comes with the real tutor; until then the
-        // learner starts at zero or later corrects the profile (/LF202/).
+        // Placement (/LF200/): a short talk that gets harder while it goes well, or start at
+        // zero; both can be corrected later in the profile (/LF202/).
         KanteCallout {
             Layout.fillWidth: true
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
             visible: page.today.placed === false
             title: page.t("Erst einmal ankommen", "Getting started")
-            text: page.t("Kaiwa beginnt bei null und passt sich nach jedem Gespräch an. Wenn du schon etwas kannst, sag es im Profil: „Kann ich schon“.",
-                         "Kaiwa starts at zero and adapts after every talk. If you know some Japanese already, say so in the profile: “I know this”.")
+            text: page.t("Kannst du schon etwas Japanisch? Ein kurzes Gespräch (höchstens 8 Minuten) zeigt, wo du einsteigst. Kein Test, keine Note. Wer bei null anfängt, überspringt es.",
+                         "Do you know some Japanese already? A short talk (8 minutes at most) shows where you start. No test, no grade. Starting at zero skips it.")
         }
-        KanteButton {
+        RowLayout {
             Layout.leftMargin: KanteStyle.unit(18)
             visible: page.today.placed === false
-            text: page.t("Bei null anfangen", "Start at zero")
-            onClicked: page.kaiwa.skipPlacement()
+            spacing: KanteStyle.unit(8)
+            KanteButton {
+                text: page.t("Einstufen", "Find my level")
+                emphasis: KanteButton.Emphasis.Primary
+                onClicked: page.place()
+            }
+            KanteButton {
+                text: page.t("Bei null anfangen", "Start at zero")
+                onClicked: page.kaiwa.skipPlacement()
+            }
         }
 
         // Continue where it stopped (/LF121/).

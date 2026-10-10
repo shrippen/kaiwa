@@ -9,6 +9,8 @@ import Kante
 QQC2.ScrollView {
     id: page
     required property var kaiwa
+    /** Do the placement again (/LF200/: repeatable). */
+    signal place()
     function t(de, en) { return kaiwa.lang === "en" ? en : de }
 
     readonly property var learner: kaiwa.learner.length > 0 ? JSON.parse(kaiwa.learner) : ({ skills: [], weak: [], knobs: [] })
@@ -24,6 +26,14 @@ QQC2.ScrollView {
             Layout.leftMargin: KanteStyle.unit(18)
             text: page.t("Dein Stand", "Where you are")
             pageTitle: true
+        }
+        KanteButton {
+            Layout.leftMargin: KanteStyle.unit(18)
+            size: KanteButton.Size.Small
+            emphasis: KanteButton.Emphasis.Quiet
+            text: page.t("Neu einstufen", "Place me again")
+            Accessible.description: page.t("Ein kurzes Gespräch, höchstens acht Minuten; das Ergebnis ersetzt den Stand oben.", "A short talk, eight minutes at most; the result replaces the levels above.")
+            onClicked: page.place()
         }
 
         Repeater {

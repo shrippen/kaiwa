@@ -116,6 +116,8 @@ pub struct Stats {
     pub mistakes: BTreeMap<String, u32>,
     pub register_mistakes: u32,
     pub eased: u32,
+    /// Turns without a counted mistake.
+    pub clean_turns: u32,
 }
 
 impl Stats {
@@ -556,10 +558,12 @@ impl Session {
                 Input::Spoken => s.speaking_secs += speaking_secs(&t.learner),
                 Input::Typed => s.typed_turns += 1,
             }
+            let mut clean = true;
             for c in counted(t) {
                 if c.also_possible || c.severity < Severity::Unnatural {
                     continue;
                 }
+                clean = false;
                 let kind = serde_json::to_value(c.kind)
                     .ok()
                     .and_then(|v| v.as_str().map(str::to_string))
@@ -569,6 +573,7 @@ impl Session {
                 }
                 *s.mistakes.entry(kind).or_default() += 1;
             }
+            s.clean_turns += u32::from(clean);
         }
         s.goals_met = self.goals_met.len() as u32;
         s.goals_unaided = self

@@ -11,7 +11,8 @@ use anyhow::{Context, Result};
 use kaiwa_ai::mock::MockProvider;
 use kaiwa_core::curriculum::{CourseProgress, Curriculum};
 use kaiwa_core::difficulty::{Difficulty, Knob, learner_says};
-use kaiwa_core::learner::{LearnerModel, Skill};
+use kaiwa_core::learner::{LearnerModel, Skill, level_index};
+use kaiwa_core::placement::{Placement, Reading, STAGES, StageResult, TURNS_PER_STAGE};
 use kaiwa_core::romaji;
 use kaiwa_core::session::{Input, Session};
 use kaiwa_core::{Amount, Regulator, Scenario};
@@ -31,26 +32,55 @@ fn session(root: &Path, scenario: &str) -> Result<Session> {
     Ok(Session::new(sc, Arc::new(mock), Amount::Little, "de"))
 }
 
-/// The persona's start level as a placement result (the placement conversation itself needs a
-/// live tutor; until then the truth stands in for it).
+/// The persona's placement (/LF200/), played against the simulated learner: each stage gives
+/// the expected share of good turns at the persona's true level (as in `days`), rounded to
+/// whole turns; register slips follow the persona's register.
+pub fn simulate_placement(persona: &Value) -> Placement {
+    let truth = |k: &str| {
+        persona["start_level"][k]
+            .as_str()
+            .and_then(level_index)
+            .unwrap_or(0.0)
+    };
+    let (listening, speaking, register) =
+        (truth("listening"), truth("speaking"), truth("register"));
+    let n = f64::from(TURNS_PER_STAGE);
+    let turns = |p: f64| (p * n).round() / n;
+    let mut pl = Placement::default();
+    while let Some(i) = pl.next_stage() {
+        let level = STAGES[i].1;
+        let speak = turns(crate::days::p_success(speaking, level));
+        let slips = match register as u32 {
+            0 | 1 => 0.75,
+            2 => 0.25,
+            _ => 0.0,
+        };
+        pl.add(StageResult {
+            level,
+            turns: TURNS_PER_STAGE,
+            listening: turns(crate::days::p_success(listening, level)),
+            speaking: speak,
+            fluency: speak,
+            register_mistakes: (slips * n).round() as u32,
+        });
+    }
+    let says = |k: &str, fluent: &str| {
+        let (t, f) = (truth(k), level_index(fluent).unwrap_or(4.0));
+        if t >= f {
+            Reading::Fluent
+        } else if t > 0.0 {
+            Reading::Some
+        } else {
+            Reading::None
+        }
+    };
+    pl.kana = says("reading_kana", "n3");
+    pl.kanji = says("reading_kanji", "n5");
+    pl
+}
+
 fn placed(persona: &Value) -> LearnerModel {
-    let l = &persona["start_level"];
-    let get = |k: &str| l[k].as_str().unwrap_or("none").to_string();
-    let (li, sp, ka, kj, re) = (
-        get("listening"),
-        get("speaking"),
-        get("reading_kana"),
-        get("reading_kanji"),
-        get("register"),
-    );
-    LearnerModel::placed(&[
-        (Skill::Listening, &li),
-        (Skill::Speaking, &sp),
-        (Skill::Fluency, &sp),
-        (Skill::ReadingKana, &ka),
-        (Skill::ReadingKanji, &kj),
-        (Skill::Register, &re),
-    ])
+    simulate_placement(persona).result()
 }
 
 fn persona(root: &Path, id: &str) -> Result<Value> {
@@ -72,6 +102,8 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
         "emi_skip" => skip(root, p),
         "lena_transparency" => transparency(),
         "selin_win_mixed" => mixed(),
+        "selin_profile_split" => profile_split(p),
+        "emi_ceiling" => ceiling(p),
         _ => return None,
     };
     Some(match r {
@@ -284,4 +316,54 @@ fn mixed() -> Result<Option<String>> {
         && f[1].sends.starts_with("Text")
         && !f[2].cloud;
     Ok((!ok).then(|| format!("{f:?}")))
+}
+
+/// /LF200/, /LF201/: Selin's uneven profile: listening ≥ n4_low, speaking ≤ n5, no kanji,
+/// casual only, each within one step of the truth.
+fn profile_split(p: &Value) -> Result<Option<String>> {
+    let m = placed(p);
+    let mut why = Vec::new();
+    let near = |s: Skill, k: &str| {
+        let t = p["start_level"][k]
+            .as_str()
+            .and_then(level_index)
+            .unwrap_or(0.0);
+        (m.level(s) - t).abs() <= 1.0
+    };
+    if m.level(Skill::Listening) < 4.0 || !near(Skill::Listening, "listening") {
+        why.push(format!("listening {:.1}", m.level(Skill::Listening)));
+    }
+    if m.level(Skill::Speaking) > 3.0 || !near(Skill::Speaking, "speaking") {
+        why.push(format!("speaking {:.1}", m.level(Skill::Speaking)));
+    }
+    if m.level(Skill::ReadingKanji) != 0.0 {
+        why.push("kanji".into());
+    }
+    if m.level(Skill::Register) != 1.0 {
+        why.push(format!("register {}", m.level(Skill::Register)));
+    }
+    Ok((!why.is_empty()).then(|| why.join(", ")))
+}
+
+/// /LF200/, /LF201/: Emi reaches the top of the scale within 8 minutes.
+fn ceiling(p: &Value) -> Result<Option<String>> {
+    let pl = simulate_placement(p);
+    let m = pl.result();
+    let mut why = Vec::new();
+    for s in [Skill::Listening, Skill::Speaking] {
+        if m.level(s) < 7.0 {
+            why.push(format!("{s:?} {:.1}", m.level(s)));
+        }
+    }
+    if m.level(Skill::Register) != 3.0 {
+        why.push(format!("register {}", m.level(Skill::Register)));
+    }
+    if m.level(Skill::ReadingKanji) != 3.0 {
+        why.push(format!("kanji {}", m.level(Skill::ReadingKanji)));
+    }
+    let minutes = (pl.results.len() as u32 * TURNS_PER_STAGE).div_ceil(2);
+    if minutes > 8 {
+        why.push(format!("{minutes} min"));
+    }
+    Ok((!why.is_empty()).then(|| why.join(", ")))
 }

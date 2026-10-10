@@ -43,11 +43,28 @@ pub mod qobject {
         #[qproperty(QString, character)]
         /// What the end of the session did: XP and why, the difficulty, new review items.
         #[qproperty(QString, recorded)]
+        /// A placement is running (/LF200/): stages at rising levels, nothing recorded.
+        #[qproperty(bool, placing)]
+        /// The stage, e.g. "2/4".
+        #[qproperty(QString, stage)]
+        /// The stages are over; the two reading questions are open.
+        #[qproperty(bool, placement_ask, cxx_name = "placementAsk")]
         type Conversation = super::ConversationRust;
 
         /// Start a scenario (the character's opening line); "" plays the next one on the path.
         #[qinvokable]
         fn start(self: Pin<&mut Conversation>, scenario: &QString);
+
+        /// Start the placement by conversation (/LF200/).
+        #[qinvokable]
+        #[cxx_name = "startPlacement"]
+        fn start_placement(self: Pin<&mut Conversation>);
+
+        /// End the placement with what the learner says about reading (0 none, 1 some,
+        /// 2 fluently) and keep the result as the learner model.
+        #[qinvokable]
+        #[cxx_name = "finishPlacement"]
+        fn finish_placement(self: Pin<&mut Conversation>, kana: i32, kanji: i32);
 
         /// Continue the session that was interrupted (/LF121/).
         #[qinvokable]
@@ -108,6 +125,8 @@ use cxx_qt_lib::QString;
 use kaiwa_ai::ChatProvider;
 use kaiwa_ai::mock::MockProvider;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
+use kaiwa_core::learner::Skill;
+use kaiwa_core::placement::{self, Placement, Reading, STAGES, StageResult, TURNS_PER_STAGE};
 use kaiwa_core::session::SessionState;
 use kaiwa_core::{Input, Scenario, Session, Summary, TurnOutcome};
 use kaiwa_speech::SpeechError;
@@ -142,6 +161,10 @@ pub struct ConversationRust {
     scenario: QString,
     character: QString,
     recorded: QString,
+    placing: bool,
+    stage: QString,
+    placement_ask: bool,
+    placement: Option<Placement>,
     lang: String,
     session_id: Option<i64>,
     started: Option<kaiwa_core::Moment>,
@@ -266,10 +289,116 @@ impl qobject::Conversation {
         if let Some(r) = recorded {
             self.as_mut().set_recorded(QString::from(&r.to_string()));
         }
-        if done {
+        if done && self.placement.is_none() {
             self.as_mut().set_summary(QString::from(&summary));
             self.as_mut().set_finished(true);
         }
+    }
+
+    fn start_placement(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().placement = Some(Placement::default());
+        self.as_mut().set_placement_ask(false);
+        self.begin_stage(0);
+    }
+
+    /// Plays stage `i` of the placement: its scenario at the stage's level, help only on
+    /// request, nothing stored.
+    fn begin_stage(mut self: Pin<&mut Self>, i: usize) {
+        let (id, level) = STAGES[i];
+        let prepared = {
+            let st = state();
+            let profile = st.store.profile().unwrap_or_default();
+            st.scenarios.get(id).cloned().map(|s| (s, profile))
+        };
+        let Some((scenario, profile)) = prepared else {
+            return;
+        };
+        let (provider, demo) = provider(&scenario.id);
+        let log = vec![json!({ "who": "character", "markup": scenario.opening.clone() })];
+        let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
+            .with_difficulty(placement::difficulty_at(level));
+        let lang = profile.ui_lang;
+        self.as_mut().begin(session, None, demo, log, lang.clone());
+        let word = if lang == "en" {
+            "Placement"
+        } else {
+            "Einstufung"
+        };
+        let title = format!("{word} · {}", self.title());
+        self.as_mut().set_title(QString::from(&title));
+        self.as_mut()
+            .set_stage(QString::from(&format!("{}/{}", i + 1, STAGES.len())));
+        self.as_mut().set_placing(true);
+    }
+
+    /// After a turn of the placement: the stage ends after its turns (or its goals), then the
+    /// next stage follows while the learner keeps up.
+    fn placement_step(mut self: Pin<&mut Self>) {
+        if self.placement.is_none() {
+            return;
+        }
+        let Some(session) = self.session.clone() else {
+            return;
+        };
+        let (turns, done, stats) = {
+            let s = session.lock().expect("session lock");
+            (s.turns().len() as u32, s.done(), s.stats())
+        };
+        if turns < TURNS_PER_STAGE && !done {
+            return;
+        }
+        let next = {
+            let mut rust = self.as_mut().rust_mut();
+            let Some(p) = rust.placement.as_mut() else {
+                return;
+            };
+            let level = STAGES[p.results.len()].1;
+            p.add(StageResult::from_stats(level, &stats));
+            p.next_stage()
+        };
+        match next {
+            Some(i) => self.begin_stage(i),
+            None => {
+                self.as_mut().set_placement_ask(true);
+                self.as_mut().set_finished(true);
+            }
+        }
+    }
+
+    fn finish_placement(mut self: Pin<&mut Self>, kana: i32, kanji: i32) {
+        let Some(mut p) = self.as_mut().rust_mut().placement.take() else {
+            return;
+        };
+        let reading = |i: i32| match i {
+            2 => Reading::Fluent,
+            1 => Reading::Some,
+            _ => Reading::None,
+        };
+        p.kana = reading(kana);
+        p.kanji = reading(kanji);
+        let mut model = p.result();
+        // A talk does not show pronunciation (typed turns count too): it stays as it was.
+        let before = state()
+            .store
+            .learning()
+            .map(|l| l.model)
+            .unwrap_or_default();
+        model.set(Skill::Pronunciation, before.level(Skill::Pronunciation));
+        let lang = self.lang.clone();
+        let words: Vec<String> = model
+            .describe(&lang)
+            .into_iter()
+            .filter(|(s, _)| *s != Skill::Pronunciation)
+            .map(|(_, w)| w)
+            .collect();
+        if let Err(e) = state().store.set_placement(model) {
+            eprintln!("kaiwa: {e}");
+        }
+        let minutes = (p.results.len() as u32 * TURNS_PER_STAGE).div_ceil(2);
+        let r = json!({ "placement": words, "stages": p.results.len(), "minutes": minutes });
+        self.as_mut().set_recorded(QString::from(&r.to_string()));
+        self.as_mut().set_placement_ask(false);
+        self.as_mut().set_placing(false);
     }
 
     /// Shows a session (new or restored) and loads speech once.
@@ -406,7 +535,9 @@ impl qobject::Conversation {
         self.as_mut().publish_turns();
     }
 
-    fn resume(self: Pin<&mut Self>) {
+    fn resume(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().placement = None;
+        self.as_mut().set_placing(false);
         let found = {
             let st = state();
             let profile = st.store.profile().unwrap_or_default();
@@ -425,7 +556,9 @@ impl qobject::Conversation {
         self.begin(session, Some(id), demo, log, lang);
     }
 
-    fn start(self: Pin<&mut Self>, scenario: &QString) {
+    fn start(mut self: Pin<&mut Self>, scenario: &QString) {
+        self.as_mut().rust_mut().placement = None;
+        self.as_mut().set_placing(false);
         let wanted = scenario.to_string();
         let prepared = {
             let st = state();
@@ -660,7 +793,8 @@ impl qobject::Conversation {
                 }
                 q.as_mut().set_busy(false);
                 q.as_mut().publish_turns();
-                q.publish_goals();
+                q.as_mut().publish_goals();
+                q.placement_step();
             });
         });
     }

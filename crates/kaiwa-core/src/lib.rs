@@ -10,6 +10,7 @@ pub mod diff;
 pub mod difficulty;
 pub mod feedback;
 pub mod learner;
+pub mod placement;
 pub mod progress;
 pub mod prompts;
 pub mod romaji;

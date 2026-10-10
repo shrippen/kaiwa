@@ -14,6 +14,8 @@ Kirigami.ScrollablePage {
     /** The scenario to play ("" = the next on the path), or continue the interrupted one. */
     property string scenarioId: ""
     property bool resume: false
+    /** Play the placement (/LF200/) instead of a scenario. */
+    property bool placement: false
     /** UI language of the profile, "de" or "en". */
     property string lang: "de"
     function t(de, en) { return lang === "en" ? en : de }
@@ -30,13 +32,15 @@ Kirigami.ScrollablePage {
 
     Conversation {
         id: conv
-        Component.onCompleted: page.resume ? resume() : start(page.scenarioId)
+        Component.onCompleted: page.placement ? startPlacement() : page.resume ? resume() : start(page.scenarioId)
     }
 
     readonly property var turns: conv.turns.length > 0 ? JSON.parse(conv.turns) : []
     readonly property var goals: conv.goals.length > 0 ? JSON.parse(conv.goals) : []
     readonly property var summary: conv.summary.length > 0 ? JSON.parse(conv.summary) : null
     readonly property var recorded: conv.recorded.length > 0 ? JSON.parse(conv.recorded) : null
+    /** The placement's stages are over: the questions or the result take the page. */
+    readonly property bool placementOver: conv.placementAsk || (recorded !== null && recorded.placement !== undefined)
     readonly property int currentGoal: {
         for (var i = 0; i < goals.length; i++) if (!goals[i].done) return i
         return goals.length
@@ -79,7 +83,7 @@ Kirigami.ScrollablePage {
                 }
             }
             KanteButton {
-                visible: !conv.finished
+                visible: !conv.finished && !conv.placing
                 text: page.t("Später weiter", "Continue later")
                 emphasis: KanteButton.Emphasis.Quiet
                 Accessible.description: page.t("Das Gespräch bleibt offen und lässt sich auf der Startseite fortsetzen.", "The talk stays open; continue it from the start page.")
@@ -87,14 +91,25 @@ Kirigami.ScrollablePage {
             }
         }
 
+        // Placement (/LF200/): no test, a talk that gets harder while it goes well.
+        KanteCallout {
+            Layout.fillWidth: true
+            visible: conv.placing && !conv.placementAsk
+            kind: KanteCallout.Kind.Info
+            title: page.t("Einstufung, Stufe ", "Placement, stage ") + conv.stage
+            text: page.t("Kein Test: Rede einfach, so gut es geht. Nach höchstens vier Antworten wird es eine Stufe schwerer, solange es gut läuft. Hilfe gibt es nur, wenn du sie holst. Alles zusammen dauert höchstens acht Minuten.",
+                         "No test: just talk as well as you can. After at most four answers it gets one stage harder, as long as it goes well. Help comes only when you ask for it. All of it takes at most eight minutes.")
+        }
+
         KanteSteps {
+            visible: !page.placementOver
             Layout.fillWidth: true
             model: page.goals.map(function (g) { return g.text })
             current: page.currentGoal
         }
 
         Repeater {
-            model: page.turns
+            model: page.placementOver ? [] : page.turns
             delegate: KanteMessage {
                 id: msg
                 required property var modelData
@@ -180,6 +195,73 @@ Kirigami.ScrollablePage {
             text: conv.error
         }
 
+        // ── Placement: reading, then the result (/LF200/, /LF201/) ──
+        ColumnLayout {
+            visible: conv.placementAsk
+            Layout.fillWidth: true
+            spacing: KanteStyle.unit(10)
+            KanteHeading { text: page.t("Noch zwei Fragen zum Lesen", "Two questions about reading"); level: 2 }
+            Text {
+                Layout.fillWidth: true
+                text: page.t("Lesen kommt im Gespräch nicht vor. Sag selbst, wie es geht; das lässt sich im Profil jederzeit ändern.",
+                             "Reading does not come up in a talk. Say how it goes; you can change it in the profile at any time.")
+                color: KanteStyle.mutedTextColor
+                font: KanteStyle.defaultFont
+                wrapMode: Text.Wrap
+            }
+            Text { text: page.t("Hiragana und Katakana", "Hiragana and katakana"); color: KanteStyle.textColor; font: KanteStyle.defaultFont }
+            KanteSegmented {
+                id: kana
+                model: [page.t("Noch nicht", "Not yet"), page.t("Einige, langsam", "Some, slowly"), page.t("Flüssig", "Fluently")]
+                currentIndex: 0
+                onActivated: function (i) { currentIndex = i }
+            }
+            Text { text: page.t("Kanji", "Kanji"); color: KanteStyle.textColor; font: KanteStyle.defaultFont }
+            KanteSegmented {
+                id: kanji
+                model: [page.t("Noch nicht", "Not yet"), page.t("Einige, langsam", "Some, slowly"), page.t("Die von N5", "Those of N5")]
+                currentIndex: 0
+                onActivated: function (i) { currentIndex = i }
+            }
+            KanteButton {
+                text: page.t("Ergebnis zeigen", "Show the result")
+                emphasis: KanteButton.Emphasis.Primary
+                onClicked: conv.finishPlacement(kana.currentIndex, kanji.currentIndex)
+            }
+        }
+        ColumnLayout {
+            visible: page.recorded !== null && page.recorded.placement !== undefined
+            Layout.fillWidth: true
+            spacing: KanteStyle.unit(10)
+            KanteHeading { text: page.t("So steigst du ein", "Where you start"); level: 2 }
+            Text {
+                Layout.fillWidth: true
+                text: page.recorded && page.recorded.stages
+                    ? page.t(page.recorded.stages + " von 4 Stufen gespielt. Kaiwa stellt Tempo, Länge und Hilfen danach ein und passt sie nach jedem Gespräch weiter an.",
+                             page.recorded.stages + " of 4 stages played. Kaiwa sets speed, length and help from this and keeps adjusting them after every talk.")
+                    : ""
+                color: KanteStyle.mutedTextColor
+                font: KanteStyle.defaultFont
+                wrapMode: Text.Wrap
+            }
+            Repeater {
+                model: page.recorded && page.recorded.placement ? page.recorded.placement : []
+                delegate: Text {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    text: "· " + modelData
+                    color: KanteStyle.textColor
+                    font: KanteStyle.defaultFont
+                    wrapMode: Text.Wrap
+                }
+            }
+            KanteButton {
+                text: page.t("Los geht's", "Let's go")
+                emphasis: KanteButton.Emphasis.Primary
+                onClicked: page.done()
+            }
+        }
+
         // ── Summary (/LF310/) ──
         ColumnLayout {
             visible: conv.finished && page.summary !== null
@@ -249,7 +331,7 @@ Kirigami.ScrollablePage {
             }
             Text {
                 Layout.fillWidth: true
-                visible: page.recorded !== null && page.recorded.scenarioDone
+                visible: page.recorded !== null && page.recorded.scenarioDone === true
                 text: page.t("Dieses Gespräch ist auf dem Lernpfad erledigt.", "This talk is done on the learning path.")
                 color: KanteStyle.textColor
                 font: KanteStyle.defaultFont
@@ -332,6 +414,7 @@ Kirigami.ScrollablePage {
                 else if (next.indexOf("wav:") === 0) conv.sayWav(next.substring(4))
                 else if (next === "!") page.showSpeechHelp = true
                 else if (next === "~") {}
+                else if (next.indexOf("read:") === 0) conv.finishPlacement(Number(next.charAt(5)), Number(next.charAt(6)))
                 else conv.say(next, true)
             } else {
                 stop()

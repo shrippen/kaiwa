@@ -126,7 +126,7 @@ fn logistic(x: f64) -> f64 {
 }
 
 /// Probability of success with ability `a` on material at level `l`: 80 % when they match.
-fn p_success(a: f64, l: f64) -> f64 {
+pub(crate) fn p_success(a: f64, l: f64) -> f64 {
     logistic(4f64.ln() + 2.0 * (a - l))
 }
 

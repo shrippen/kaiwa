@@ -23,6 +23,12 @@ Das Profil ist eine Datei: `~/.local/share/kaiwa/profiles/default.kaiwa` (oder `
 |---|---|
 | ![](shots/profile-kante.png) | ![](shots/settings-kante.png) |
 
+Einstufung per Gespräch (/LF200/): erster Start, eine Stufe, Ergebnis (deutsch und englisch).
+
+| Erster Start | Stufe 1 von 4 | Ergebnis | Result |
+|---|---|---|---|
+| ![](shots/start-new-kante.png) | ![](shots/place-kante.png) | ![](shots/place-result-kante.png) | ![](shots/place-result-en.png) |
+
 ## Bauen und starten
 
 ```sh
@@ -91,4 +97,5 @@ cargo run -p kaiwa-app -- --shot out.png --view path --kind 1           # start,
 cargo run -p kaiwa-app -- --shot out.png --view talk --scenario n5-03-konbini --kind 1 \
   --say 'はい、おねがいします。|袋はいりません。'                        # "?" Hilfe, "!" Sprechhilfe, "wav:datei", "~" wartet auf die Stimme
 cargo run -p kaiwa-app -- --shot out.png --view talk --resume           # die unterbrochene Sitzung
+cargo run -p kaiwa-app -- --shot out.png --view place --say '…|read:21'  # Einstufung; "read:KK" beantwortet die Lesefragen
 ```
