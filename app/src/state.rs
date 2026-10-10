@@ -3,7 +3,7 @@
 //!
 //! - The profile file is `$KAIWA_DATA/default.kaiwa` (see `kaiwa_store::profiles_dir`).
 //! - `KAIWA_DEMO=1` uses a fresh profile in a temporary directory, filled with two weeks of
-//!   history, for screenshots and the demo.
+//!   history, for screenshots and the demo (`KAIWA_LANG=en` for the English UI).
 //! - `KAIWA_NOW=<unix>:<offset minutes>` fixes the clock (screenshots); otherwise it is the
 //!   system time in the local time zone.
 
@@ -161,6 +161,11 @@ fn seed(st: &AppState) -> anyhow::Result<()> {
     let profile = Profile {
         name: "Mara".into(),
         placed: true,
+        ui_lang: if std::env::var("KAIWA_LANG").as_deref() == Ok("en") {
+            "en".into()
+        } else {
+            "de".into()
+        },
         ..Default::default()
     };
     st.store.set_profile(&profile)?;

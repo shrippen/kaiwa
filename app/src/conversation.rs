@@ -326,10 +326,11 @@ impl qobject::Conversation {
         self.as_mut().set_voice_on(true);
         self.as_mut().set_talk_state(THINKING);
         let thread = self.qt_thread();
+        let lang = self.lang.clone();
         // One after the other: both models share ONNX Runtime, which the first sets up.
         std::thread::spawn(move || {
-            load_recognizer(&thread);
-            load_voice(&thread, &voice);
+            load_recognizer(&thread, &lang);
+            load_voice(&thread, &voice, &lang);
         });
     }
 
@@ -518,7 +519,8 @@ impl qobject::Conversation {
                 self.as_mut().set_talk_state(LISTENING);
             }
             Err(e) => {
-                self.as_mut().set_speech_error(QString::from(&german(&e)));
+                let text = speech_text(&e, &self.lang);
+                self.as_mut().set_speech_error(QString::from(&text));
                 self.as_mut().set_talk_state(ERROR);
             }
         }
@@ -541,7 +543,8 @@ impl qobject::Conversation {
         match capture.stop() {
             Ok(rec) => self.recognize(rec),
             Err(e) => {
-                self.as_mut().set_speech_error(QString::from(&german(&e)));
+                let text = speech_text(&e, &self.lang);
+                self.as_mut().set_speech_error(QString::from(&text));
                 self.as_mut().set_talk_state(ERROR);
             }
         }
@@ -583,9 +586,12 @@ impl qobject::Conversation {
             let _ = thread.queue(move |mut q| {
                 q.as_mut().set_talk_state(READY);
                 if text.is_empty() {
-                    q.as_mut().set_error(QString::from(
-                        "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon.",
-                    ));
+                    let msg = if q.lang == "en" {
+                        "Nothing understood. Once more, a little louder or closer to the microphone."
+                    } else {
+                        "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon."
+                    };
+                    q.as_mut().set_error(QString::from(msg));
                 } else {
                     q.as_mut().say(&QString::from(&text), false);
                 }
@@ -644,9 +650,12 @@ impl qobject::Conversation {
                         if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index) {
                             turn["pending"] = json!(false);
                         }
-                        q.as_mut().set_error(QString::from(&format!(
-                            "Der Tutor hat nicht geantwortet: {e}"
-                        )));
+                        let msg = if q.lang == "en" {
+                            format!("The tutor did not answer: {e}")
+                        } else {
+                            format!("Der Tutor hat nicht geantwortet: {e}")
+                        };
+                        q.as_mut().set_error(QString::from(&msg));
                     }
                 }
                 q.as_mut().set_busy(false);
@@ -669,7 +678,8 @@ impl qobject::Conversation {
 }
 
 /// Loads ReazonSpeech; without the model the talk button shows why.
-fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>) {
+fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>, lang: &str) {
+    let lang = lang.to_string();
     let dir = reazonspeech_dir();
     let loaded = Recognizer::from_dir(&dir, 2);
     let _ = thread.queue(move |mut q| match loaded {
@@ -682,11 +692,15 @@ fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>) {
         }
         Err(e) => {
             let text = match e {
-                SpeechError::ModelMissing(_) => format!(
+                SpeechError::ModelMissing(_) if lang == "de" => format!(
                     "Das Modell für die Spracherkennung fehlt. ReazonSpeech (Apache-2.0, etwa 150 MB) von {REAZONSPEECH_URL} laden und nach {} entpacken. Bis dahin geht Tippen.",
                     dir.display()
                 ),
-                e => german(&e),
+                SpeechError::ModelMissing(_) => format!(
+                    "The speech recognition model is missing. Download ReazonSpeech (Apache-2.0, about 150 MB) from {REAZONSPEECH_URL} and unpack it to {}. You can type meanwhile.",
+                    dir.display()
+                ),
+                e => speech_text(&e, &lang),
             };
             q.as_mut().set_speech_error(QString::from(&text));
             q.as_mut().set_talk_state(ERROR);
@@ -695,7 +709,8 @@ fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>) {
 }
 
 /// Loads Kokoro and opens the speaker, then says the opening line.
-fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str) {
+fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &str) {
+    let lang = lang.to_string();
     let dir = kokoro_dir();
     let loaded = Voice::from_dir(&dir, name, 2).and_then(|voice| {
         Ok(Speaker {
@@ -716,12 +731,17 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str) {
             }
         }
         Err(e) => {
-            let text = match e {
-                SpeechError::ModelMissing(_) => format!(
+            let text = match (e, lang == "de") {
+                (SpeechError::ModelMissing(_), true) => format!(
                     "Die Figur antwortet ohne Stimme. Für die Übergangsstimme Kokoro (Apache-2.0) kokoro-v1.0.int8.onnx (88 MB) und voices-v1.0.bin (27 MB) von {KOKORO_URL} nach {} laden.",
                     dir.display()
                 ),
-                e => format!("Die Figur antwortet ohne Stimme: {}", german(&e)),
+                (SpeechError::ModelMissing(_), false) => format!(
+                    "The character answers without a voice. For the interim voice, download Kokoro (Apache-2.0) kokoro-v1.0.int8.onnx (88 MB) and voices-v1.0.bin (27 MB) from {KOKORO_URL} to {}.",
+                    dir.display()
+                ),
+                (e, true) => format!("Die Figur antwortet ohne Stimme: {}", speech_text(&e, "de")),
+                (e, false) => format!("The character answers without a voice: {}", speech_text(&e, "en")),
             };
             q.as_mut().set_voice_note(QString::from(&text));
         }
@@ -729,22 +749,38 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str) {
     });
 }
 
-/// What the learner reads when speaking does not work (the GUI is German for now).
-fn german(e: &SpeechError) -> String {
-    match e {
-        SpeechError::NoMicrophone => "Kein Mikrofon gefunden. Bis dahin geht Tippen.".into(),
-        SpeechError::Microphone(why) => {
+/// What the learner reads when speaking does not work, in the UI language.
+fn speech_text(e: &SpeechError, lang: &str) -> String {
+    let de = lang == "de";
+    match (e, de) {
+        (SpeechError::NoMicrophone, true) => {
+            "Kein Mikrofon gefunden. Bis dahin geht Tippen.".into()
+        }
+        (SpeechError::NoMicrophone, false) => "No microphone found. You can type meanwhile.".into(),
+        (SpeechError::Microphone(why), true) => {
             format!("Das Mikrofon lässt sich nicht öffnen ({why}). Bis dahin geht Tippen.")
         }
-        SpeechError::ModelMissing(dir) => {
+        (SpeechError::Microphone(why), false) => {
+            format!("The microphone cannot be opened ({why}). You can type meanwhile.")
+        }
+        (SpeechError::ModelMissing(dir), true) => {
             format!("Das Modell für die Spracherkennung fehlt in {dir}.")
         }
-        SpeechError::ModelLoad(dir) => format!(
+        (SpeechError::ModelMissing(dir), false) => format!("The speech model is missing in {dir}."),
+        (SpeechError::ModelLoad(dir), true) => format!(
             "Das Modell in {dir} lässt sich nicht laden. Neu entpacken; bis dahin geht Tippen."
         ),
-        SpeechError::NoSpeaker => "Kein Lautsprecher gefunden.".into(),
-        SpeechError::Speaker(why) => format!("Der Lautsprecher lässt sich nicht öffnen ({why})."),
-        SpeechError::Voice(why) => format!("Die Stimme ist ausgefallen ({why})."),
+        (SpeechError::ModelLoad(dir), false) => {
+            format!("The model in {dir} cannot be loaded. Unpack it again; you can type meanwhile.")
+        }
+        (SpeechError::NoSpeaker, true) => "Kein Lautsprecher gefunden.".into(),
+        (SpeechError::NoSpeaker, false) => "No speaker found.".into(),
+        (SpeechError::Speaker(why), true) => {
+            format!("Der Lautsprecher lässt sich nicht öffnen ({why}).")
+        }
+        (SpeechError::Speaker(why), false) => format!("The speaker cannot be opened ({why})."),
+        (SpeechError::Voice(why), true) => format!("Die Stimme ist ausgefallen ({why})."),
+        (SpeechError::Voice(why), false) => format!("The voice failed ({why})."),
     }
 }
 
