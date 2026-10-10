@@ -32,6 +32,7 @@ jobs:
         run: |
           S=$(command -v sudo || true)
           $S apt-get update -qq && $S apt-get install -y -qq --no-install-recommends dbus libglib2.0-bin
+          cargo build -q -p kaiwad
           dbus-run-session -- tools/kaiwad-smoke.sh
 
   # The Qt side (G-01: Arch Linux container, current Qt 6 and KF6 from the packages).

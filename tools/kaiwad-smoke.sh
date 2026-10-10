@@ -6,6 +6,7 @@
 #   dbus-run-session -- tools/kaiwad-smoke.sh [target/debug/kaiwad]
 set -euo pipefail
 KAIWAD=${1:-target/debug/kaiwad}
+[ -x "$KAIWAD" ] || { echo "no $KAIWAD: cargo build -p kaiwad first" >&2; exit 1; }
 export KAIWA_DEMO=1 KAIWA_NOW=1791100000:120 KAIWAD_IDLE_SECS=60
 "$KAIWAD" & pid=$!
 trap 'kill $pid 2>/dev/null || true' EXIT
