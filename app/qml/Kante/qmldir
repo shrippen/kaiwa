@@ -16,6 +16,7 @@ KanteCard 1.0 KanteCard.qml
 KanteCheckSkin 1.0 KanteCheckSkin.qml
 KanteChip 1.0 KanteChip.qml
 KanteClock 1.0 KanteClock.qml
+KanteComboBox 1.0 KanteComboBox.qml
 KanteCommandBox 1.0 KanteCommandBox.qml
 KanteCounter 1.0 KanteCounter.qml
 KanteCurveEditor 1.0 KanteCurveEditor.qml
@@ -73,6 +74,7 @@ KanteStatusLight 1.0 KanteStatusLight.qml
 KanteSteps 1.0 KanteSteps.qml
 KanteSticker 1.0 KanteSticker.qml
 KanteSwatch 1.0 KanteSwatch.qml
+KanteSwitch 1.0 KanteSwitch.qml
 KanteTabBar 1.0 KanteTabBar.qml
 KanteTabLane 1.0 KanteTabLane.qml
 KanteTabStaff 1.0 KanteTabStaff.qml

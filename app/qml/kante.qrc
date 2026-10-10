@@ -15,6 +15,7 @@
   <file>Kante/KanteCheckSkin.qml</file>
   <file>Kante/KanteChip.qml</file>
   <file>Kante/KanteClock.qml</file>
+  <file>Kante/KanteComboBox.qml</file>
   <file>Kante/KanteCommandBox.qml</file>
   <file>Kante/KanteCounter.qml</file>
   <file>Kante/KanteCurveEditor.qml</file>
@@ -74,6 +75,7 @@
   <file>Kante/KanteSticker.qml</file>
   <file>Kante/KanteStyle.qml</file>
   <file>Kante/KanteSwatch.qml</file>
+  <file>Kante/KanteSwitch.qml</file>
   <file>Kante/KanteTabBar.qml</file>
   <file>Kante/KanteTabLane.qml</file>
   <file>Kante/KanteTabStaff.qml</file>
