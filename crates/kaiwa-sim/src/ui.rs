@@ -43,15 +43,12 @@ fn demo(name: &str, lang: &str) -> Result<Backend> {
 
 /// German in a text meant for English: umlauts, ß or common German words.
 fn german(s: &str) -> bool {
-    const WORDS: &[&str] = &[
-        "und", "der", "die", "das", "den", "dem", "nicht", "mit", "ist", "ein", "eine", "für",
-        "du", "dich", "dein", "deine", "noch", "zum", "beim", "oder", "wird", "auf", "aber",
-        "ohne", "sich", "wenn", "nur", "auch", "bei", "von", "im", "ich", "wir", "spricht",
-        "umstritten", "erledigt", "gesperrt", "offen", "jetzt", "weiter", "zurück", "fertig",
-    ];
+    const WORDS: &str = "und der die das den dem nicht mit ist ein eine für du dich dein deine \
+        noch zum beim oder wird auf aber ohne sich wenn nur auch bei von im ich wir spricht \
+        umstritten erledigt gesperrt offen jetzt weiter zurück fertig";
     s.chars().any(|c| "äöüÄÖÜß".contains(c))
         || s.split(|c: char| !c.is_alphabetic())
-            .any(|w| WORDS.contains(&w))
+            .any(|w| WORDS.split_whitespace().any(|x| x == w))
 }
 
 fn strings(v: &Value, out: &mut Vec<String>) {
