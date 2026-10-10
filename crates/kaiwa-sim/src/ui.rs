@@ -18,6 +18,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "mara_plasmoid_short" => short(),
         "mara_plasmoid_reviews" => reviews(),
         "lena_retention" => retention(),
+        "hinnerk_gamification_off" => gamification_off(root),
         _ => return None,
     };
     Some(match r {
@@ -264,4 +265,56 @@ fn retention() -> Result<Option<String>> {
     }
     Ok((turns_after != turns_before || turns_before == 0)
         .then(|| format!("transcripts {turns_before} → {turns_after}")))
+}
+
+/// /LF605/: with gamification off nothing shows XP, the streak or the goal meter: the views
+/// carry no streak note, a short talk ends without XP, and in the QML every XP, streak and
+/// meter display sits behind the gamification setting.
+fn gamification_off(root: &Path) -> Result<Option<String>> {
+    let b = demo("gamification", "de")?;
+    let mut p = b.store.profile()?;
+    p.gamification = false;
+    b.store.set_profile(&p)?;
+    let mut found = Vec::new();
+    let today = views::today(&b, NOW)?;
+    if today["streakNote"].as_str().is_some_and(|s| !s.is_empty()) {
+        found.push(format!("streak note: {}", today["streakNote"]));
+    }
+    let mut t = ShortTalk::start(&b, NOW)?;
+    let goals = t.session.goals().to_vec();
+    let mut last = Value::Null;
+    for g in &goals {
+        last = t.say(&b, &g.help.example, false, NOW)?;
+    }
+    if last["recorded"].get("xp").is_some() {
+        found.push("XP after a short talk".into());
+    }
+    for dir in ["app/qml", "plasmoid/package/contents/ui"] {
+        for e in std::fs::read_dir(root.join(dir))? {
+            let path = e?.path();
+            if path.extension().is_none_or(|x| x != "qml") {
+                continue;
+            }
+            let src = std::fs::read_to_string(&path)?;
+            let lines: Vec<&str> = src.lines().collect();
+            for (i, l) in lines.iter().enumerate() {
+                let shows = l.contains("label: \"XP\"")
+                    || l.contains("KanteGoalMeter {")
+                    || (l.contains("streakDays") && !l.trim_start().starts_with("//"))
+                    || l.contains(" XP");
+                if !shows {
+                    continue;
+                }
+                let near = &lines[i.saturating_sub(8)..(i + 8).min(lines.len())];
+                if !near
+                    .iter()
+                    .any(|x| x.contains("gamification") || x.contains(".meter"))
+                {
+                    let name = path.file_name().unwrap_or_default().to_string_lossy();
+                    found.push(format!("{name}:{}: {}", i + 1, l.trim()));
+                }
+            }
+        }
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
 }

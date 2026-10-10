@@ -68,14 +68,23 @@ PlasmoidItem {
         : today ? today.goalText + (today.gamification ? " · " + t(today.streakDays + " Tage in Folge", today.streakDays + " days in a row") : "") : ""
 
     compactRepresentation: MouseArea {
-        Layout.minimumWidth: meter.implicitWidth + Kirigami.Units.smallSpacing * 2
+        readonly property bool meter: root.today !== null && root.today.gamification === true
+        Layout.minimumWidth: (meter ? goalMeter.implicitWidth : icon.implicitWidth) + Kirigami.Units.smallSpacing * 2
         hoverEnabled: true
         onClicked: root.expanded = !root.expanded
+        // Without gamification no meter and no streak (/LF605/): the plain symbol.
+        Kirigami.Icon {
+            id: icon
+            anchors.fill: parent
+            visible: !parent.meter
+            source: "org.shrippen.kaiwa"
+        }
         KanteGoalMeter {
-            id: meter
+            id: goalMeter
             anchors.centerIn: parent
+            visible: parent.meter
             value: root.today ? root.today.goalFraction : 0
-            label: root.today && root.today.gamification ? root.today.streakDays + root.t(" T", " d") : ""
+            label: parent.meter ? root.today.streakDays + root.t(" T", " d") : ""
             stackHeight: Math.max(Kirigami.Units.iconSizes.small, parent.height - Kirigami.Units.smallSpacing * 2)
             accessibleName: root.t("Tagesziel", "Daily goal")
         }

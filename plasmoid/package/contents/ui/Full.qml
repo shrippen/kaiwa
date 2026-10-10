@@ -148,6 +148,7 @@ ColumnLayout {
         RowLayout {
             spacing: Kirigami.Units.largeSpacing
             KanteGoalMeter {
+                visible: full.today !== null && full.today.gamification === true
                 value: full.today ? full.today.goalFraction : 0
                 label: full.today && full.today.gamification ? full.today.streakDays + full.t(" T", " d") : ""
                 stackHeight: Kirigami.Units.gridUnit * 2
@@ -258,7 +259,8 @@ ColumnLayout {
         Text {
             Layout.fillWidth: true
             visible: full.talk !== null && full.talk.done === true
-            text: full.talk && full.talk.recorded && full.talk.recorded.xp !== undefined
+            // XP only with gamification (/LF605/; kaiwad leaves it out otherwise).
+            text: full.talk && full.talk.recorded && full.talk.recorded.xp !== undefined && full.today && full.today.gamification
                 ? full.t("Geschafft. +" + full.talk.recorded.xp + " XP, im Profil gespeichert.", "Done. +" + full.talk.recorded.xp + " XP, kept in the profile.")
                 : full.t("Geschafft.", "Done.")
             color: KanteStyle.textColor

@@ -109,7 +109,11 @@ impl ShortTalk {
                 let r =
                     b.store
                         .record(id, &self.session, self.started, now, Some(&b.curriculum))?;
-                recorded = json!({ "xp": r.xp, "minutes": r.day.speaking_secs / 60, "newItems": r.new_items });
+                recorded = json!({ "minutes": r.day.speaking_secs / 60, "newItems": r.new_items });
+                // XP only with gamification (/LF605/).
+                if b.store.profile()?.gamification {
+                    recorded["xp"] = json!(r.xp);
+                }
                 self.id = None;
             } else {
                 b.store.save_session(id, &self.session.snapshot())?;
