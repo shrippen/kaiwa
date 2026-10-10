@@ -14,6 +14,7 @@ pub mod cost;
 pub mod mock;
 pub mod openai;
 pub mod privacy;
+pub mod secrets;
 pub mod transport;
 pub mod types;
 
@@ -52,15 +53,16 @@ pub fn analysis_schema() -> serde_json::Value {
 /// The tutor named by the environment, for the owner's local test (ADR-004); `None` when
 /// none is configured.
 ///
-///   KAIWA_PROVIDER=anthropic  ANTHROPIC_API_KEY=…
-///   KAIWA_PROVIDER=openai     KAIWA_MODEL=…  [KAIWA_OPENAI_BASE=http://localhost:11434/v1]  [KAIWA_API_KEY=…]
+///   KAIWA_PROVIDER=anthropic  [ANTHROPIC_API_KEY=…, else the system keyring]
+///   KAIWA_PROVIDER=openai     KAIWA_MODEL=…  [KAIWA_OPENAI_BASE=http://localhost:11434/v1]  [KAIWA_API_KEY=…, else the keyring]
 pub fn provider_from_env() -> Result<Option<std::sync::Arc<dyn ChatProvider>>, String> {
     let env = |k: &str| std::env::var(k).ok().filter(|v| !v.is_empty());
     match env("KAIWA_PROVIDER").as_deref() {
         None => Ok(None),
         Some("anthropic") => {
-            let key = env("ANTHROPIC_API_KEY")
-                .ok_or("KAIWA_PROVIDER=anthropic needs ANTHROPIC_API_KEY")?;
+            let key = secrets::key("anthropic", env).ok_or(
+                "KAIWA_PROVIDER=anthropic needs a key: in the settings (system keyring) or ANTHROPIC_API_KEY",
+            )?;
             let p = anthropic::AnthropicProvider::preset(key);
             Ok(Some(std::sync::Arc::new(anthropic::AnthropicProvider {
                 url: p.url,
@@ -77,7 +79,7 @@ pub fn provider_from_env() -> Result<Option<std::sync::Arc<dyn ChatProvider>>, S
             let p = openai::OpenAiCompatible::new(base, model);
             Ok(Some(std::sync::Arc::new(openai::OpenAiCompatible {
                 base_url: p.base_url,
-                api_key: env("KAIWA_API_KEY").unwrap_or_default(),
+                api_key: secrets::key("openai", env).unwrap_or_default(),
                 reply_model: p.reply_model,
                 analysis_model: p.analysis_model,
                 transport: cost::Metered::new(p.transport),

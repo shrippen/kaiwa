@@ -250,8 +250,40 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "cost": st.cost_view(crate::now())?,
         "path": st.path.display().to_string(),
         "profiles": st.profiles(),
+        "key": key_view(&p.ui_lang),
         "demoData": st.demo_data,
     }))
+}
+
+/// The tutor's API key (/LF713/): which provider, where its key comes from, in words.
+pub fn key_view(lang: &str) -> Value {
+    use kaiwa_ai::secrets::{KeyState, state};
+    let env = |k: &str| std::env::var(k).ok();
+    let Some(provider) = env("KAIWA_PROVIDER").filter(|p| p == "anthropic" || p == "openai") else {
+        return Value::Null;
+    };
+    let de = lang != "en";
+    let s = state(&provider, env);
+    let text = match (&s, de) {
+        (KeyState::Environment, true) => "Aus der Umgebung (lokaler Test).".to_string(),
+        (KeyState::Environment, false) => "From the environment (local test).".to_string(),
+        (KeyState::Keyring, true) => "Im Schlüsselbund des Systems gespeichert.".to_string(),
+        (KeyState::Keyring, false) => "Kept in the system keyring.".to_string(),
+        (KeyState::Missing, true) => {
+            "Fehlt. Er wird im Schlüsselbund gespeichert, nie in einer Datei.".to_string()
+        }
+        (KeyState::Missing, false) => {
+            "Missing. It is kept in the keyring, never in a file.".to_string()
+        }
+        (KeyState::Unavailable(e), true) => format!("Kein Schlüsselbund erreichbar ({e})."),
+        (KeyState::Unavailable(e), false) => format!("No keyring reachable ({e})."),
+    };
+    json!({
+        "provider": provider,
+        "stored": matches!(s, KeyState::Keyring | KeyState::Environment),
+        "canStore": !matches!(s, KeyState::Unavailable(_) | KeyState::Environment),
+        "text": text,
+    })
 }
 
 /// "What leaves the device?" (/LF711/), from `kaiwa_ai::privacy`.

@@ -171,6 +171,34 @@ QQC2.ScrollView {
                 meta: modelData.where
             }
         }
+        // The API key, only in the system keyring (/LF713/).
+        Row {
+            visible: !!page.p.key
+            title: page.t("API-Schlüssel", "API key") + (page.p.key ? " · " + page.p.key.provider : "")
+            hint: page.p.key ? page.p.key.text : ""
+            RowLayout {
+                spacing: KanteStyle.unit(8)
+                enabled: !!page.p.key && page.p.key.canStore
+                KanteTextField {
+                    id: apiKey
+                    Layout.preferredWidth: KanteStyle.unit(240)
+                    echoMode: TextInput.Password
+                    placeholderText: page.p.key && page.p.key.stored ? page.t("Neuer Schlüssel …", "New key …") : page.t("Schlüssel einfügen …", "Paste the key …")
+                    Accessible.name: page.t("API-Schlüssel", "API key")
+                }
+                KanteButton {
+                    text: page.t("Im Schlüsselbund speichern", "Keep in the keyring")
+                    enabled: apiKey.text.length > 0
+                    onClicked: { page.kaiwa.storeKey(apiKey.text); apiKey.text = "" }
+                }
+                KanteButton {
+                    visible: !!page.p.key && page.p.key.stored && page.p.key.canStore
+                    text: page.t("Entfernen", "Remove")
+                    emphasis: KanteButton.Emphasis.Quiet
+                    onClicked: page.kaiwa.storeKey("")
+                }
+            }
+        }
         // The cost brake (/LF714/): only with a cloud tutor.
         Row {
             visible: page.privacy.some(function (f) { return f.cloud })

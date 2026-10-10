@@ -76,6 +76,11 @@ pub mod qobject {
         #[cxx_name = "newProfile"]
         fn new_profile(self: Pin<&mut KaiwaApp>, name: &QString);
 
+        /// Keeps the tutor's API key in the system keyring; empty removes it (/LF713/).
+        #[qinvokable]
+        #[cxx_name = "storeKey"]
+        fn store_key(self: Pin<&mut KaiwaApp>, key: &QString);
+
         /// Starts at zero without the placement (/LF200/).
         #[qinvokable]
         #[cxx_name = "skipPlacement"]
@@ -326,6 +331,19 @@ impl qobject::KaiwaApp {
         if let Err(e) = result {
             self.as_mut().set_notice(QString::from(&format!("{e:#}")));
         }
+        self.as_mut().refresh();
+    }
+
+    fn store_key(mut self: Pin<&mut Self>, key: &QString) {
+        let provider = std::env::var("KAIWA_PROVIDER").unwrap_or_default();
+        let de = self.lang().to_string() == "de";
+        let msg = match (kaiwa_ai::secrets::store(&provider, &key.to_string()), de) {
+            (Ok(()), true) => "Der Schlüssel liegt im Schlüsselbund.".to_string(),
+            (Ok(()), false) => "The key is in the keyring.".to_string(),
+            (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
+            (Err(e), false) => format!("The keyring refused: {e}"),
+        };
+        self.as_mut().set_notice(QString::from(&msg));
         self.as_mut().refresh();
     }
 
