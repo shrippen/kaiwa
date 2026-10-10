@@ -80,6 +80,9 @@ pub struct Profile {
     pub placed: bool,
     /// Reminder time as minutes after midnight; `None` sends none (/LF520/, /LF620/).
     pub reminder: Option<u32>,
+    /// Cost limit for a cloud tutor per month in euro cents; `None` without a limit (/LF714/).
+    #[serde(default)]
+    pub cost_limit_cents: Option<u32>,
 }
 
 impl Default for Profile {
@@ -96,6 +99,7 @@ impl Default for Profile {
             style: 0,
             placed: false,
             reminder: None,
+            cost_limit_cents: None,
         }
     }
 }

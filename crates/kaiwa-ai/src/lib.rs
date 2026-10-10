@@ -10,6 +10,7 @@
 //! parsing of both real providers are tested against recorded payloads without a network.
 
 pub mod anthropic;
+pub mod cost;
 pub mod mock;
 pub mod openai;
 pub mod privacy;
@@ -29,6 +30,9 @@ pub enum AiError {
     Format(String),
     #[error("no recorded answer for this turn")]
     NoFixture,
+    /// The month's cost limit is reached (/LF714/).
+    #[error("the cost limit for this month is reached")]
+    Budget,
 }
 
 /// Who answers the tutor's two calls.
@@ -57,17 +61,27 @@ pub fn provider_from_env() -> Result<Option<std::sync::Arc<dyn ChatProvider>>, S
         Some("anthropic") => {
             let key = env("ANTHROPIC_API_KEY")
                 .ok_or("KAIWA_PROVIDER=anthropic needs ANTHROPIC_API_KEY")?;
-            Ok(Some(std::sync::Arc::new(
-                anthropic::AnthropicProvider::preset(key),
-            )))
+            let p = anthropic::AnthropicProvider::preset(key);
+            Ok(Some(std::sync::Arc::new(anthropic::AnthropicProvider {
+                url: p.url,
+                api_key: p.api_key,
+                reply_model: p.reply_model,
+                analysis_model: p.analysis_model,
+                transport: cost::Metered::new(p.transport),
+            })))
         }
         Some("openai") => {
             let model = env("KAIWA_MODEL").ok_or("KAIWA_PROVIDER=openai needs KAIWA_MODEL")?;
             let base =
                 env("KAIWA_OPENAI_BASE").unwrap_or_else(|| "http://localhost:11434/v1".into());
-            let mut p = openai::OpenAiCompatible::new(base, model);
-            p.api_key = env("KAIWA_API_KEY").unwrap_or_default();
-            Ok(Some(std::sync::Arc::new(p)))
+            let p = openai::OpenAiCompatible::new(base, model);
+            Ok(Some(std::sync::Arc::new(openai::OpenAiCompatible {
+                base_url: p.base_url,
+                api_key: env("KAIWA_API_KEY").unwrap_or_default(),
+                reply_model: p.reply_model,
+                analysis_model: p.analysis_model,
+                transport: cost::Metered::new(p.transport),
+            })))
         }
         Some(other) => Err(format!(
             "KAIWA_PROVIDER={other}: expected anthropic or openai"

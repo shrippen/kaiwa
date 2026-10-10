@@ -26,7 +26,8 @@
         "feedback": { "enum": ["little", "normal", "much"] },
         "script": { "enum": ["furigana", "kana", "hidden"] },
         "gamification": { "type": "boolean" },
-        "keep_recordings_days": { "type": ["integer", "null"], "minimum": 1 }
+        "keep_recordings_days": { "type": ["integer", "null"], "minimum": 1 },
+        "cost_limit_cents": { "type": ["integer", "null"], "minimum": 0 }
       }
     },
     "learning": {

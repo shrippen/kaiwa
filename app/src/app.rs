@@ -176,6 +176,7 @@ impl qobject::KaiwaApp {
                     }
                 }
                 "reminder" => p.reminder = value.parse().ok(),
+                "costLimit" => p.cost_limit_cents = value.parse().ok(),
                 "name" => p.name = value,
                 _ => return,
             }

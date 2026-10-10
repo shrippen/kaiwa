@@ -55,6 +55,7 @@ impl ShortTalk {
             .cloned()
             .ok_or_else(|| anyhow::anyhow!("no scenario {id}"))?;
         let (p, demo) = provider(&sc.id);
+        b.arm_brake(now)?;
         let mut d = learning.regulator.difficulty.clone();
         d.set(Knob::Goals, 0);
         let session = Session::new(sc, p, profile.feedback, &profile.ui_lang).with_difficulty(d);
@@ -101,6 +102,7 @@ impl ShortTalk {
         };
         let input = if typed { Input::Typed } else { Input::Spoken };
         let o = self.session.turn(&text, input)?;
+        b.book_costs(now, self.session.done())?;
         let mut recorded = Value::Null;
         if let Some(id) = self.id {
             if self.session.done() {

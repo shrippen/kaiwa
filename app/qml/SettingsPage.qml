@@ -143,6 +143,20 @@ QQC2.ScrollView {
                 meta: modelData.where
             }
         }
+        // The cost brake (/LF714/): only with a cloud tutor.
+        Row {
+            visible: page.privacy.some(function (f) { return f.cloud })
+            title: page.t("Kostenbremse", "Cost limit")
+            hint: (page.p.cost ? [page.p.cost.text, page.p.cost.unknown].filter(function (x) { return x.length > 0 }).join(" ") : "")
+                + page.t(" Geschätzt aus den Listenpreisen; am Limit antwortet der Cloud-Tutor bis Monatsende nicht mehr.",
+                         " Estimated from list prices; at the limit the cloud tutor stops answering until the month ends.")
+            KanteSegmented {
+                readonly property var values: [null, 200, 500, 1000, 2000]
+                model: [page.t("Ohne", "None"), "2 €", "5 €", "10 €", "20 €"]
+                currentIndex: Math.max(0, values.indexOf(page.p.costLimit === undefined ? null : page.p.costLimit))
+                onActivated: function (i) { page.kaiwa.setSetting("costLimit", values[i] === null ? "" : String(values[i])) }
+            }
+        }
 
         // Data (/LF710/, /LF712/).
         KanteSectionLabel {

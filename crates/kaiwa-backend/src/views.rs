@@ -246,6 +246,8 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "keepRecordings": p.keep_recordings_days,
         "style": p.style,
         "reminder": p.reminder,
+        "costLimit": p.cost_limit_cents,
+        "cost": st.cost_view(crate::now())?,
         "path": st.path.display().to_string(),
         "demoData": st.demo_data,
     }))

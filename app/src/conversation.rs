@@ -563,6 +563,7 @@ impl qobject::Conversation {
             return;
         };
         let (provider, demo) = provider(&scenario.id);
+        let _ = state().arm_brake(now());
         let opening = scenario.opening.clone();
         let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
             .with_difficulty(learning.regulator.difficulty.clone());
@@ -766,10 +767,12 @@ impl qobject::Conversation {
                         if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index) {
                             turn["pending"] = json!(false);
                         }
-                        let msg = if q.lang == "en" {
-                            format!("The tutor did not answer: {e}")
-                        } else {
-                            format!("Der Tutor hat nicht geantwortet: {e}")
+                        let budget = e == kaiwa_ai::AiError::Budget.to_string();
+                        let msg = match (budget, q.lang == "en") {
+                            (true, true) => "The cost limit for this month is reached. Raise it in the settings or switch to a local tutor.".to_string(),
+                            (true, false) => "Das Kostenlimit für diesen Monat ist erreicht. In den Einstellungen anheben oder auf einen lokalen Tutor wechseln.".to_string(),
+                            (false, true) => format!("The tutor did not answer: {e}"),
+                            (false, false) => format!("Der Tutor hat nicht geantwortet: {e}"),
                         };
                         q.as_mut().set_error(QString::from(&msg));
                     }
@@ -777,6 +780,10 @@ impl qobject::Conversation {
                 q.as_mut().set_busy(false);
                 q.as_mut().publish_turns();
                 q.as_mut().publish_goals();
+                // The cost brake: book what the turn cost (/LF714/).
+                if let Err(e) = state().book_costs(now(), *q.finished()) {
+                    eprintln!("kaiwa: {e}");
+                }
                 q.placement_step();
             });
         });
