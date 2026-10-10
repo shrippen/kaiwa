@@ -381,6 +381,7 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
             let outcome = run
                 .as_ref()
                 .and_then(|r| check(cid, r))
+                .or_else(|| crate::profile::check(cid, root))
                 .unwrap_or(Outcome::NotAutomated);
             checks.insert(cid.to_string(), outcome);
         }

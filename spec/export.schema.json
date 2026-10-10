@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://git.arianw.de/shrippen/Kaiwa/spec/export.schema.json",
+  "title": "Kaiwa profile export (kaiwa-export/1)",
+  "description": "Everything Kaiwa keeps about one profile (Lastenheft /LF710/, /LD010/-/LD060/). Audio is never part of it.",
+  "type": "object",
+  "required": ["schema", "exported_at", "profile", "learning", "sessions", "items", "days", "pauses", "disputes"],
+  "additionalProperties": false,
+  "$defs": {
+    "moment": {
+      "type": "object",
+      "required": ["unix", "offset_min"],
+      "properties": { "unix": { "type": "integer" }, "offset_min": { "type": "integer" } },
+      "additionalProperties": false
+    },
+    "day": { "type": "integer", "description": "Local days since 1970-01-01." }
+  },
+  "properties": {
+    "schema": { "const": "kaiwa-export/1" },
+    "exported_at": { "$ref": "#/$defs/moment" },
+    "profile": {
+      "type": "object",
+      "required": ["name", "ui_lang", "daily_goal", "gamification", "feedback", "script", "end_pause_secs", "keep_recordings_days", "style", "placed", "reminder"],
+      "properties": {
+        "ui_lang": { "enum": ["de", "en"] },
+        "feedback": { "enum": ["little", "normal", "much"] },
+        "script": { "enum": ["furigana", "kana", "hidden"] },
+        "gamification": { "type": "boolean" },
+        "keep_recordings_days": { "type": ["integer", "null"], "minimum": 1 }
+      }
+    },
+    "learning": {
+      "type": "object",
+      "required": ["model", "regulator", "course"],
+      "properties": {
+        "model": { "type": "object", "required": ["skills"] },
+        "regulator": { "type": "object", "required": ["difficulty", "success", "changes"] },
+        "course": { "type": "object", "required": ["scenarios_done", "skipped_units"] }
+      }
+    },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["row", "state"],
+        "properties": {
+          "row": {
+            "type": "object",
+            "required": ["id", "scenario", "started", "finished", "xp", "speaking_secs"],
+            "properties": { "started": { "$ref": "#/$defs/moment" }, "finished": { "type": "boolean" } }
+          },
+          "state": { "type": "object", "required": ["scenario", "messages", "turns", "goals_met"] }
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "kind", "source", "added", "due", "reps", "lapses"],
+        "properties": { "kind": { "enum": ["word", "phrase", "pattern"] }, "due": { "$ref": "#/$defs/day" } }
+      }
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["day", "n", "record"],
+        "properties": { "day": { "type": "string", "format": "date" }, "n": { "$ref": "#/$defs/day" } }
+      }
+    },
+    "pauses": { "type": "array", "items": { "type": "object", "required": ["from", "to"] } },
+    "disputes": {
+      "type": "array",
+      "items": { "type": "object", "required": ["at", "scenario", "learner", "original", "better", "explanation"] }
+    }
+  }
+}
