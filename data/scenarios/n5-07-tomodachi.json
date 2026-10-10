@@ -1,0 +1,65 @@
+{
+  "id": "n5-07-tomodachi",
+  "unit": "N5-07",
+  "title": {
+    "de": "Mit einer Freundin quatschen",
+    "en": "Chatting with a friend"
+  },
+  "character": {
+    "de": "Aoi, eine Studentin und gute Freundin. Spricht locker in der einfachen Form (だ, 〜よ, 〜ね), lacht viel, fragt nach Hobbys.",
+    "en": "Aoi, a student and a good friend. Speaks casually in plain forms (だ, 〜よ, 〜ね), laughs a lot, asks about hobbies."
+  },
+  "register": "casual",
+  "voice": "jf_alpha",
+  "opening": "ひさしぶり！{最近|さいきん}、なにしてる？",
+  "goals": [
+    {
+      "id": "hobby",
+      "text": {
+        "de": "Erzähl von einem Hobby.",
+        "en": "Tell her about a hobby."
+      },
+      "help": {
+        "keyword": "しゅみ",
+        "start": "さいきん、…",
+        "example": "さいきん、テニスしてるよ。"
+      }
+    },
+    {
+      "id": "like",
+      "text": {
+        "de": "Sag, was du gern magst.",
+        "en": "Say what you like."
+      },
+      "help": {
+        "keyword": "好き（すき）",
+        "start": "アニメが…",
+        "example": "アニメが好き。"
+      }
+    },
+    {
+      "id": "ask_back",
+      "text": {
+        "de": "Frag sie dasselbe zurück.",
+        "en": "Ask her the same back."
+      },
+      "help": {
+        "keyword": "アオイは？",
+        "start": "アオイは…",
+        "example": "アオイは？しゅみ、なに？"
+      }
+    },
+    {
+      "id": "plan",
+      "text": {
+        "de": "Schlag vor, etwas zusammen zu machen.",
+        "en": "Suggest doing something together."
+      },
+      "help": {
+        "keyword": "いっしょに",
+        "start": "こんど、…",
+        "example": "こんど、いっしょに行かない？"
+      }
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "id": "n5-11-kazoku",
+  "unit": "N5-11",
+  "title": {
+    "de": "Von der Familie erzählen",
+    "en": "Talking about family"
+  },
+  "character": {
+    "de": "Frau Suzuki, Gastmutter einer Austauschfamilie in Nagoya. Herzlich, höflich in です/ます-Form, fragt neugierig nach der Familie.",
+    "en": "Mrs Suzuki, host mother of an exchange family in Nagoya. Warm, polite in the です/ます form, asks curiously about family."
+  },
+  "register": "polite",
+  "voice": "jf_gongitsune",
+  "opening": "ご{家族|かぞく}は{何人|なんにん}ですか。",
+  "goals": [
+    {
+      "id": "number",
+      "text": {
+        "de": "Sag, wie viele ihr in der Familie seid.",
+        "en": "Say how many there are in your family."
+      },
+      "help": {
+        "keyword": "四人（よにん）",
+        "start": "…家族です",
+        "example": "四人家族です。"
+      }
+    },
+    {
+      "id": "siblings",
+      "text": {
+        "de": "Erzähl von deinen Geschwistern.",
+        "en": "Tell her about your siblings."
+      },
+      "help": {
+        "keyword": "兄（あに）／姉（あね）",
+        "start": "兄が…",
+        "example": "兄が一人います。"
+      }
+    },
+    {
+      "id": "job",
+      "text": {
+        "de": "Sag, was deine Mutter oder dein Vater beruflich macht.",
+        "en": "Say what your mother or father does."
+      },
+      "help": {
+        "keyword": "母（はは）",
+        "start": "母は…",
+        "example": "母は先生です。"
+      }
+    },
+    {
+      "id": "ask_back",
+      "text": {
+        "de": "Frag nach ihrer Familie.",
+        "en": "Ask about her family."
+      },
+      "help": {
+        "keyword": "ご家族",
+        "start": "鈴木さんの…",
+        "example": "鈴木さんのご家族は？"
+      }
+    }
+  ]
+}

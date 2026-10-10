@@ -1,0 +1,65 @@
+{
+  "id": "n5-12-kinou",
+  "unit": "N5-12",
+  "title": {
+    "de": "Was hast du gestern gemacht?",
+    "en": "What did you do yesterday?"
+  },
+  "character": {
+    "de": "Herr Tanaka, Japanischlehrer, plaudert vor dem Unterricht. Höflich, fragt nach dem gestrigen Tag und achtet auf die Vergangenheitsform.",
+    "en": "Mr Tanaka, a Japanese teacher, chats before class. Polite, asks about yesterday and listens for the past tense."
+  },
+  "register": "polite",
+  "voice": "jm_kumo",
+  "opening": "きのうは{何|なに}をしましたか。",
+  "goals": [
+    {
+      "id": "did",
+      "text": {
+        "de": "Erzähl, was du gestern gemacht hast.",
+        "en": "Say what you did yesterday."
+      },
+      "help": {
+        "keyword": "〜ました",
+        "start": "きのうは…",
+        "example": "きのうは映画を見ました。"
+      }
+    },
+    {
+      "id": "where",
+      "text": {
+        "de": "Sag, wo das war.",
+        "en": "Say where it was."
+      },
+      "help": {
+        "keyword": "〜で",
+        "start": "新宿で…",
+        "example": "新宿で見ました。"
+      }
+    },
+    {
+      "id": "how",
+      "text": {
+        "de": "Sag, wie es war.",
+        "en": "Say how it was."
+      },
+      "help": {
+        "keyword": "おもしろかった",
+        "start": "とても…",
+        "example": "とてもおもしろかったです。"
+      }
+    },
+    {
+      "id": "with",
+      "text": {
+        "de": "Sag, mit wem du dort warst.",
+        "en": "Say who you were with."
+      },
+      "help": {
+        "keyword": "〜と",
+        "start": "ともだちと…",
+        "example": "ともだちと行きました。"
+      }
+    }
+  ]
+}

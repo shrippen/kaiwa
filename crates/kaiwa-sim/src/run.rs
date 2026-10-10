@@ -350,6 +350,21 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
     let mut reports = Vec::new();
     for journey in persona["journeys"].as_array().into_iter().flatten() {
         let jid = journey["id"].as_str().unwrap_or_default().to_string();
+        if let Some(days) = crate::days::script_for(root, &jid)? {
+            let run = crate::days::simulate(root, &persona, &days)?;
+            let mut checks = BTreeMap::new();
+            for c in journey["checks"].as_array().into_iter().flatten() {
+                let cid = c["id"].as_str().unwrap_or_default();
+                let outcome = crate::days::check(cid, &run).unwrap_or(Outcome::NotAutomated);
+                checks.insert(cid.to_string(), outcome);
+            }
+            reports.push(JourneyReport {
+                persona: persona_id.into(),
+                journey: jid,
+                checks,
+            });
+            continue;
+        }
         let script_path = root.join(format!("qa/scripts/{jid}.json"));
         let run = if script_path.exists() {
             let script: Script = serde_json::from_str(&std::fs::read_to_string(&script_path)?)?;
