@@ -109,7 +109,7 @@ Ein Szenario funktioniert durchgehend: **Selbstvorstellung (自己紹介)**.
 
 ### M4 – Plasma-Integration und Plasmoid (vor 1.0) · M
 
-Zeitlich nach M6, wenn die App nahe 1.0 ist (Entscheidung im Chat, 2026-10-10). Der Stand von `kaiwad` und Plasmoid liegt auf dem Zweig `later/plasmoid` (Kurzgespräch, fünf Wiederholungen, Sprechtaste über den Dienst, Erinnerungen) und wird dann auf den aktuellen Stand gebracht.
+Zeitlich nach M6, wenn die App nahe 1.0 ist (Entscheidung im Chat, 2026-10-10). Der Stand von `kaiwad` und Plasmoid liegt auf dem Zweig `later/plasmoid` (Kurzgespräch, fünf Wiederholungen, Sprechtaste über den Dienst, Erinnerungen) und wird dann auf den aktuellen Stand gebracht. Dazu gehören Erinnerungen mit frei wählbarer Uhrzeit (I-07, KanteTimeField statt der festen Auswahl) und die ruhenden Fragen I-02 bis I-04.
 
 
 - **Plasmoid** im Panel und auf dem Desktop: Kurzgespräch (3–5 min), 5 Wiederholungen, Tagesziel und Serie, Push-to-Talk (/LF500/–/LF506/)

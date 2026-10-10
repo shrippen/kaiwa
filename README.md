@@ -4,6 +4,7 @@
 
 **Status:** Planung (M0).
 
+- [Stand und Übergabe](spec/STAND.md): was da ist, was offen ist, Lessons learned
 - [Roadmap](ROADMAP.md)
 - [Lastenheft](spec/LASTENHEFT.md)
 - [QA-Personas](qa/README.md)

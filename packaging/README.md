@@ -10,4 +10,4 @@
 
 Die CI (Job `qt`) prüft den Startereintrag (`desktop-file-validate`), die Metainfo (`appstreamcli validate`), und die Syntax des PKGBUILD. Ein echter `makepkg`- und `flatpak-builder`-Lauf gehört zum Release (M5); für das Flatpak muss vorher `cargo-sources.json` mit `flatpak-cargo-generator` erzeugt werden.
 
-Pakete für openSUSE, Fedora und Debian folgen mit M5 nach demselben Muster wie das PKGBUILD.
+Pakete für openSUSE, Fedora und Debian folgen nach demselben Muster wie das PKGBUILD. Ins AUR lädt der Besitzer `kaiwa-git` mit 1.0 hoch (I-09), zusammen mit der Übersichtsseite (G-09).
