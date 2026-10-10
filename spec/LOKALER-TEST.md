@@ -47,3 +47,24 @@ Die Modelle: `kokoro-v1.0.onnx` und `voices-v1.0.bin` (kokoro-onnx Releases), gg
 ## 4. Eigene Aufnahmen (F-04)
 
 `qa/corpus/README.md`: 50 Sätze und 20 Minimalpaare. Die Aufnahmen kommen per Git LFS nach `qa/corpus/audio/`.
+
+## 5. Plasmoid und Dienst (M4, ADR-008)
+
+Hier gibt es kein Plasma; die CI lädt das Plasmoid nur in `plasmoidviewer`. Bitte einmal im echten Panel:
+
+```sh
+cargo build --release -p kaiwa-app && cargo build --release -p kaiwad --features speech
+install -Dm755 target/release/kaiwad ~/.local/bin/kaiwad
+sed "s|/usr/bin/kaiwad|$HOME/.local/bin/kaiwad|" crates/kaiwad/dbus/org.shrippen.Kaiwa1.service \
+  > ~/.local/share/dbus-1/services/org.shrippen.Kaiwa1.service
+kpackagetool6 -t Plasma/Applet -i plasmoid/package      # danach: Panel bearbeiten → Widget „Kaiwa“
+```
+
+1. **Kompakt:** Der Tagesziel-Messer mit Serie steht im Panel; der Tooltip nennt Minuten und Serie (`mara_plasmoid_compact`).
+2. **Kurzgespräch:** Ausklappen, „Kurzgespräch“, zwei Antworten tippen oder mit der Sprechtaste sprechen; nach zwei Zielen „Geschafft“ (`mara_plasmoid_short`).
+3. **Fortsetzen:** Ein Kurzgespräch nach einer Antwort mit „Später weiter“ verlassen, die App öffnen: Die Startseite bietet „Weiter, wo du warst“ an (/LF507/).
+4. **Wiederholen:** „5 Wiederholungen“, eine richtig und eine falsch tippen (`mara_plasmoid_reviews`).
+5. **Erinnerung:** In der App unter Einstellungen eine Uhrzeit kurz vor jetzt wählen; innerhalb einer Minute erscheint die Benachrichtigung mit „Jetzt 5 min“ und „Später“.
+6. **Stil:** In den Plasmoid-Einstellungen „Kante“ wählen und zurück auf „System“.
+
+Notizen und Bildschirmfotos kommen nach `qa/local/<datum>/plasmoid.md` (H-05).
