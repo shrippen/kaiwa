@@ -17,6 +17,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "theo_ui_en" => ui_en(root),
         "mara_plasmoid_short" => short(),
         "mara_plasmoid_reviews" => reviews(),
+        "lena_retention" => retention(),
         _ => return None,
     };
     Some(match r {
@@ -216,4 +217,51 @@ fn reviews() -> Result<Option<String>> {
     let n = v.as_array().map(Vec::len).unwrap_or(0);
     let want = due.min(5);
     Ok((n != want).then(|| format!("{n} offered, {due} due")))
+}
+
+/// /LF712/: with recordings kept for 7 days, after 8 days they are gone and the transcripts
+/// (the sessions' turns) stay.
+fn retention() -> Result<Option<String>> {
+    let b = demo("retention", "de")?;
+    let mut p = b.store.profile()?;
+    p.keep_recordings_days = Some(7);
+    b.store.set_profile(&p)?;
+    let sessions = b.store.finished_since(0)?;
+    let turns_before: usize = sessions
+        .iter()
+        .map(|r| {
+            b.store
+                .session_state(r.id)
+                .map(|s| s.turns.len())
+                .unwrap_or(0)
+        })
+        .sum();
+    for (i, r) in sessions.iter().take(3).enumerate() {
+        b.keep_recording(r.id, i, &[0.05; 8000], 16_000, NOW)?;
+    }
+    let files = |b: &Backend| {
+        std::fs::read_dir(b.recordings_dir())
+            .map(|d| d.count())
+            .unwrap_or(0)
+    };
+    if files(&b) != 3 {
+        return Ok(Some(format!("{} recordings kept, 3 expected", files(&b))));
+    }
+    b.purge_recordings(NOW.plus_secs(8 * 86_400))?;
+    let turns_after: usize = b
+        .store
+        .finished_since(0)?
+        .iter()
+        .map(|r| {
+            b.store
+                .session_state(r.id)
+                .map(|s| s.turns.len())
+                .unwrap_or(0)
+        })
+        .sum();
+    if files(&b) != 0 {
+        return Ok(Some(format!("{} recordings left after 8 days", files(&b))));
+    }
+    Ok((turns_after != turns_before || turns_before == 0)
+        .then(|| format!("transcripts {turns_before} → {turns_after}")))
 }

@@ -10,6 +10,7 @@
 
 pub mod cost;
 pub mod profiles;
+pub mod recordings;
 pub mod reminder;
 pub mod short;
 pub mod views;
@@ -148,6 +149,10 @@ impl Backend {
         };
         if demo && fresh {
             seed(&st)?;
+        }
+        // Recordings past their days go when the profile opens (/LF712/).
+        if let Err(e) = st.purge_recordings(now()) {
+            eprintln!("kaiwa: {e:#}");
         }
         Ok(st)
     }

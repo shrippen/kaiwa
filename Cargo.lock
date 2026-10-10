@@ -1797,6 +1797,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "hound",
  "kaiwa-ai",
  "kaiwa-core",
  "kaiwa-store",

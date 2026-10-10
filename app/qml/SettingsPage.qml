@@ -221,12 +221,24 @@ QQC2.ScrollView {
             text: page.t("Deine Daten", "Your data")
             rule: true
         }
+        // Recordings only with the opt-in, for a chosen time (/LF712/).
+        Row {
+            title: page.t("Aufnahmen behalten", "Keep recordings")
+            hint: page.t("Zum Vergleichen mit früher. Abschalten löscht sie sofort; die Abschriften bleiben", "To compare with earlier. Turning it off deletes them at once; the transcripts stay")
+            KanteSegmented {
+                readonly property var values: [null, 7, 30]
+                model: [page.t("Nein", "No"), page.t("7 Tage", "7 days"), page.t("30 Tage", "30 days")]
+                currentIndex: Math.max(0, values.indexOf(page.p.keepRecordings === undefined ? null : page.p.keepRecordings))
+                onActivated: function (i) { page.kaiwa.setSetting("keepRecordings", values[i] === null ? "" : String(values[i])) }
+            }
+        }
         QQC2.Label {
             Layout.fillWidth: true
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
             Layout.topMargin: KanteStyle.unit(6)
-            text: page.t("Aufnahmen werden nicht gespeichert. Profil: ", "Recordings are not stored. Profile: ") + (page.p.path || "")
+            text: (page.p.keepRecordings ? page.t("Aufnahmen bleiben " + page.p.keepRecordings + " Tage. Profil: ", "Recordings stay " + page.p.keepRecordings + " days. Profile: ")
+                                         : page.t("Aufnahmen werden nicht gespeichert. Profil: ", "Recordings are not stored. Profile: ")) + (page.p.path || "")
             wrapMode: Text.Wrap
             font: KanteStyle.smallFont
             color: KanteStyle.mutedTextColor

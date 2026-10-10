@@ -192,11 +192,18 @@ impl qobject::KaiwaApp {
                 }
                 "reminder" => p.reminder = value.parse().ok(),
                 "costLimit" => p.cost_limit_cents = value.parse().ok(),
+                "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
                 "name" => p.name = value,
                 _ => return,
             }
             if let Err(e) = st.store.set_profile(&p) {
                 eprintln!("kaiwa: {e}");
+            }
+            // Turning recordings off (or shortening the days) deletes them now.
+            if key == "keepRecordings"
+                && let Err(e) = st.purge_recordings(now())
+            {
+                eprintln!("kaiwa: {e:#}");
             }
         }
         self.as_mut().refresh();
@@ -250,6 +257,9 @@ impl qobject::KaiwaApp {
         let result = {
             let mut st = state();
             let path = st.path.clone();
+            if let Err(e) = st.delete_recordings() {
+                eprintln!("kaiwa: {e:#}");
+            }
             match Store::in_memory() {
                 Ok(mem) => {
                     // Close the file before removing it.

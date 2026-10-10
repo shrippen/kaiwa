@@ -170,11 +170,26 @@ impl Service {
             .unwrap_or_else(|e| e.into_inner())
             .stop()
             .map_err(failed)?;
-        if heard.trim().is_empty() {
+        if heard.text.trim().is_empty() {
             return Ok(serde_json::json!({ "heard": "" }).to_string());
         }
-        let mut v = self.turn(&heard, false)?;
-        v["heard"] = serde_json::json!(heard);
+        {
+            let inner = self.lock();
+            if let Some(talk) = &inner.short
+                && let Some(id) = talk.id
+                && let Err(e) = inner.backend.keep_recording(
+                    id,
+                    talk.session.turns().len(),
+                    &heard.samples,
+                    heard.sample_rate,
+                    now(),
+                )
+            {
+                eprintln!("kaiwad: {e:#}");
+            }
+        }
+        let mut v = self.turn(&heard.text, false)?;
+        v["heard"] = serde_json::json!(heard.text);
         let _ = Self::changed(&emitter).await;
         Ok(v.to_string())
     }

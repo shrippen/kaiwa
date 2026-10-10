@@ -696,6 +696,13 @@ impl qobject::Conversation {
             self.as_mut().set_talk_state(ERROR);
             return;
         };
+        // Kept only with the opt-in, for the chosen days (/LF712/).
+        if let Some(id) = self.session_id {
+            let turn = self.log.iter().filter(|e| e["who"] == "learner").count();
+            if let Err(e) = state().keep_recording(id, turn, &rec.samples, rec.sample_rate, now()) {
+                eprintln!("kaiwa: {e:#}");
+            }
+        }
         self.as_mut().set_talk_state(THINKING);
         let thread = self.qt_thread();
         std::thread::spawn(move || {
