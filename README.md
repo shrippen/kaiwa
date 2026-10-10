@@ -4,6 +4,17 @@
 
 **Status:** Planung (M0).
 
+## Starten
+
+```sh
+./start.sh                # App mit dem eigenen Profil
+./start.sh demo [de|en]   # App mit frischem Demo-Profil (temporär)
+./start.sh sim            # QA-Personas im Textmodus (kaiwa-sim run)
+./start.sh check          # fmt, clippy, Tests, Personas wie in der CI
+```
+
+Voraussetzungen und Sprachmodell: [app/README.md](app/README.md).
+
 - [Roadmap](ROADMAP.md)
 - [Lastenheft](spec/LASTENHEFT.md)
 - [QA-Personas](qa/README.md)
