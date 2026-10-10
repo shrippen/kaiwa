@@ -52,6 +52,13 @@ struct Service {
     last_call: Arc<AtomicU64>,
 }
 
+/// `KAIWAD_TRACE=1` logs calls (the CI checks that the plasmoid really calls).
+fn trace(call: &str) {
+    if std::env::var_os("KAIWAD_TRACE").is_some() {
+        eprintln!("kaiwad: call {call}");
+    }
+}
+
 fn failed(e: impl std::fmt::Display) -> fdo::Error {
     fdo::Error::Failed(e.to_string())
 }
@@ -98,6 +105,7 @@ impl Service {
 #[zbus::interface(name = "org.shrippen.Kaiwa1")]
 impl Service {
     async fn today(&self) -> fdo::Result<String> {
+        trace("Today");
         views::today(&self.lock().backend, now())
             .map(|v| v.to_string())
             .map_err(failed)
