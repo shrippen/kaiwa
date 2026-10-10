@@ -1,6 +1,6 @@
 # Stand und Übergabe (2026-10-10)
 
-Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die nächste Session zuerst lesen, dann `ROADMAP.md`.
+Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die nächste Session zuerst lesen, dann `ROADMAP.md`. Starten und prüfen: `./start.sh` (`demo`, `sim`, `check`).
 
 ## Was da ist
 

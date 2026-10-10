@@ -4,6 +4,17 @@
 
 **Status:** Kern, Profil und App bis auf die endgültige Stimme und die Aussprache-Prüfung (M3); Plasmoid geparkt bis nahe 1.0. Einzelheiten in [spec/STAND.md](spec/STAND.md).
 
+## Starten
+
+```sh
+./start.sh                # App mit dem eigenen Profil
+./start.sh demo [de|en]   # App mit frischem Demo-Profil (temporär)
+./start.sh sim            # QA-Personas im Textmodus (kaiwa-sim run)
+./start.sh check          # fmt, clippy, Tests, Personas wie in der CI
+```
+
+Voraussetzungen und Sprachmodell: [app/README.md](app/README.md).
+
 - [Stand und Übergabe](spec/STAND.md): was da ist, was offen ist, Lessons learned
 - [Roadmap](ROADMAP.md)
 - [Lastenheft](spec/LASTENHEFT.md)
