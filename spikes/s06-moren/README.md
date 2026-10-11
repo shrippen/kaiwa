@@ -147,6 +147,6 @@ Echte Stimmen, nur Kürzungen:
 | prj-beatrice v4 | 34,1 % bei 4,9 % | 52,0 % bei 5,7 % |
 | Parakeet-Hiragana | 26,1 % bei 4,6 % | 39,1 % bei 5,1 % |
 
-- **Ein besserer Erkenner ist kein besserer Prüfer.** Parakeet erkennt Sprache viermal genauer als v2, findet aber weniger Kürzungen: 80-ms-Frames, Teilwörter (`ばー`, `って`) und ein starkes Sprachvorwissen lassen es das gemeinte Wort hören, auch wenn eine More fehlt. Dasselbe glättete die Spracherkennung in Spike 0.3.
-- prj-beatrice schreibt Langvokale als zwei gleiche Phoneme; CTC braucht dazwischen eine Lücke, und das Modell lässt sie oft weg.
+- **Ein besserer Erkenner ist kein besserer Prüfer.** Parakeet hat laut Modellkarte 5,7 % Zeichenfehler auf Common Voice (v2: 22 % auf den eigenen zurückgehaltenen Sprechern, also eine andere Testmenge), findet aber weniger Kürzungen. Vermutlich lassen 80-ms-Frames, Teilwörter (`ばー`, `って`) und ein starkes Sprachvorwissen es das gemeinte Wort hören, auch wenn eine More fehlt; so glättete die Spracherkennung in Spike 0.3 die Fehler.
+- prj-beatrice schreibt Langvokale als zwei gleiche Phoneme; CTC braucht dazwischen eine Lücke. Vermutlich trennt das kurz und lang schlechter als ein eigenes Zeichen ー (nicht eigens gemessen).
 - Synthetisch (alle Versuche, mit Referenz): prj-beatrice 76 % bei 9,2 %, Parakeet 60 % bei 6,2 %, v2 je Fehlerart 74 % bei 7,4 %.
