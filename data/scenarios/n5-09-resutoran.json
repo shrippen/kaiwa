@@ -13,6 +13,7 @@
   "register": "polite",
   "voice": "jf_tebukuro",
   "opening": "いらっしゃいませ。{何名様|なんめいさま}ですか。",
+  "opening_translation": { "de": "Willkommen. Wie viele Personen?", "en": "Welcome. How many people?" },
   "goals": [
     {
       "id": "people",

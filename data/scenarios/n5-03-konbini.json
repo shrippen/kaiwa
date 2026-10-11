@@ -10,6 +10,7 @@
   "register": "polite",
   "voice": "jf_alpha",
   "opening": "いらっしゃいませ。お{弁当|べんとう}、{温|あたた}めますか。",
+  "opening_translation": { "de": "Willkommen. Soll ich das Bento aufwärmen?", "en": "Welcome. Shall I heat up your bento?" },
   "goals": [
     {
       "id": "warm",

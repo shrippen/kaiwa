@@ -67,6 +67,12 @@ pub struct Run {
     pub scenario: Scenario,
     pub events: Vec<Event>,
     pub summary: Summary,
+    /// After the journey, every line of the character translated (/LF111/): the line and the
+    /// translation, or why there is none.
+    pub translations: Vec<(String, Result<String, String>)>,
+    /// The aids the session counted after the translations.
+    pub aids: u32,
+    pub root: std::path::PathBuf,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -157,12 +163,33 @@ pub fn play(root: &Path, persona: &Value, script: &Script, live: bool) -> Result
         }
     }
     let summary = session.summary();
+    let lines: Vec<String> = std::iter::once(kaiwa_core::plain(&scenario.opening))
+        .chain(turns_of(&events).map(|o| kaiwa_core::plain(&o.reply)))
+        .collect();
+    let translations = lines
+        .into_iter()
+        .map(|l| {
+            let t = session.translate(&l).map_err(|e| e.to_string());
+            (l, t)
+        })
+        .collect();
+    let aids = session.stats().aids;
     Ok(Run {
         persona: persona.clone(),
         amount,
         scenario,
         events,
         summary,
+        translations,
+        aids,
+        root: root.to_path_buf(),
+    })
+}
+
+fn turns_of(events: &[Event]) -> impl Iterator<Item = &TurnOutcome> {
+    events.iter().filter_map(|e| match e {
+        Event::Turn { outcome, .. } => Some(outcome.as_ref()),
+        _ => None,
     })
 }
 
@@ -190,10 +217,41 @@ fn right_forms(persona: &Value, id: &str) -> Option<(Severity, Vec<String>)> {
     Some((sev, forms))
 }
 
+fn is_japanese(c: char) -> bool {
+    ('\u{3040}'..='\u{30ff}').contains(&c) || ('\u{4e00}'..='\u{9fff}').contains(&c)
+}
+
 /// The automated form of a check, by its id. `None`: not automated yet.
 pub fn check(id: &str, run: &Run) -> Option<Outcome> {
     let fail = |m: String| Some(Outcome::Fail(m));
     match id {
+        // /LF110/, /LF111/: every line of the character can be translated into the UI language,
+        // each use counts as help, and the page offers again, slower and translate on every
+        // line. That the line is spoken needs the audio mode.
+        "mara_listen_tools" => {
+            for (line, t) in &run.translations {
+                match t {
+                    Ok(t) if !t.is_empty() && !t.chars().any(is_japanese) => {}
+                    Ok(t) => return fail(format!("{line}: translation '{t}' is not German")),
+                    Err(e) => return fail(format!("{line}: no translation ({e})")),
+                }
+            }
+            if run.aids as usize != run.translations.len() {
+                return fail(format!(
+                    "{} translations counted as {} aids",
+                    run.translations.len(),
+                    run.aids
+                ));
+            }
+            let page = std::fs::read_to_string(run.root.join("app/qml/ConversationPage.qml"))
+                .unwrap_or_default();
+            for aid in 0..3 {
+                if !page.contains(&format!("conv.listen(msg.index, {aid})")) {
+                    return fail(format!("the conversation page has no listening aid {aid}"));
+                }
+            }
+            Some(Outcome::Pass)
+        }
         // /LF114/: help after 4 s of silence, three steps, the last a full sentence.
         "mara_hint_offered" => {
             let offered = run
@@ -424,6 +482,7 @@ mod tests {
         ] {
             assert_eq!(first.checks[id], Outcome::Pass, "{id}");
         }
+        assert_eq!(first.checks["mara_listen_tools"], Outcome::Pass);
         assert_eq!(first.checks["mara_codeswitch"], Outcome::NotAutomated);
     }
 

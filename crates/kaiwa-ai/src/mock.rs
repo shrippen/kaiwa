@@ -23,6 +23,9 @@ pub struct Fixture {
     pub learner: String,
     pub reply: String,
     pub analysis: Analysis,
+    /// The reply in the UI languages, for the listening aid (/LF111/).
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub translation: HashMap<String, String>,
 }
 
 #[derive(Debug, Default)]
@@ -65,6 +68,7 @@ impl MockProvider {
                 corrections: vec![],
                 new_words: vec![],
             },
+            translation: HashMap::new(),
         });
         self
     }
@@ -97,6 +101,16 @@ impl ChatProvider for MockProvider {
     }
     fn analyse(&self, request: &TurnRequest) -> Result<Analysis, AiError> {
         Ok(self.lookup(request)?.analysis.clone())
+    }
+    /// The recorded translation of a reply; none recorded is [`AiError::NoFixture`].
+    fn translate(&self, line: &str, lang: &str) -> Result<String, AiError> {
+        let line = key(line);
+        self.turns
+            .values()
+            .chain(self.fallback.as_ref())
+            .find(|f| key(&f.reply) == line)
+            .and_then(|f| f.translation.get(lang).cloned())
+            .ok_or(AiError::NoFixture)
     }
 }
 
@@ -131,6 +145,19 @@ mod tests {
             m.analyse(&turn("コーヒーを好きです！")).unwrap().goals_met,
             vec!["likes".to_string()]
         );
+    }
+
+    #[test]
+    fn translations_come_from_the_fixtures() {
+        let json = r#"[{ "learner": "はい", "reply": "そうですか。",
+            "analysis": { "understood": true, "goals_met": [], "corrections": [], "new_words": [] },
+            "translation": { "de": "Ach so.", "en": "I see." } }]"#;
+        let m = MockProvider::from_json(json).unwrap();
+        assert_eq!(m.translate("そうですか", "en").unwrap(), "I see.");
+        assert!(matches!(
+            m.translate("ちがいます。", "de"),
+            Err(AiError::NoFixture)
+        ));
     }
 
     #[test]

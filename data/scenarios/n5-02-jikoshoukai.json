@@ -10,6 +10,7 @@
   "register": "polite",
   "voice": "jf_tebukuro",
   "opening": "はじめまして。{田中|たなか}です。お{名前|なまえ}は？",
+  "opening_translation": { "de": "Freut mich. Ich bin Tanaka. Wie heißen Sie?", "en": "Nice to meet you. I'm Tanaka. What is your name?" },
   "goals": [
     {
       "id": "name",

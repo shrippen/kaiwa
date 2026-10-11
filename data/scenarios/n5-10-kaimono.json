@@ -13,6 +13,7 @@
   "register": "polite",
   "voice": "jm_kumo",
   "opening": "いらっしゃいませ。{何|なに}かお{探|さが}しですか。",
+  "opening_translation": { "de": "Willkommen. Suchen Sie etwas?", "en": "Welcome. Are you looking for something?" },
   "goals": [
     {
       "id": "look",

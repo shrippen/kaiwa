@@ -7,7 +7,9 @@ import org.shrippen.kaiwa
 
 // One scenario as a conversation (M1): the character speaks with furigana, the learner
 // types (speech follows with spike 0.3), help comes in three steps, corrections sit under
-// the learner's turn as hint cards with a diff, and the summary closes the scenario.
+// the learner's turn as hint cards with a diff, and the summary closes the scenario. Each
+// line of the character can be heard again, slower or translated (/LF111/); a spoken turn
+// may get a mora hint (/LF320/, a preview).
 Kirigami.ScrollablePage {
     id: page
 
@@ -125,6 +127,43 @@ Kirigami.ScrollablePage {
                     Layout.fillWidth: true
                     markup: modelData.who === "character" ? modelData.markup : ""
                     density: KanteRubyText.Density.All
+                }
+                // /LF111/: again, slower, translated; each counts as help (/LF212/).
+                RowLayout {
+                    visible: msg.modelData.who === "character"
+                    spacing: KanteStyle.unit(6)
+                    KanteButton {
+                        size: KanteButton.Size.Small
+                        emphasis: KanteButton.Emphasis.Quiet
+                        text: page.t("Nochmal", "Again")
+                        enabled: conv.voice.length > 0 && conv.voiceOn
+                        Accessible.description: page.t("Die Figur sagt den Satz noch einmal.", "The character says the line again.")
+                        onClicked: conv.listen(msg.index, 0)
+                    }
+                    KanteButton {
+                        size: KanteButton.Size.Small
+                        emphasis: KanteButton.Emphasis.Quiet
+                        text: page.t("Langsamer", "Slower")
+                        enabled: conv.voice.length > 0 && conv.voiceOn
+                        Accessible.description: page.t("Die Figur sagt den Satz langsamer, mit 0,7-facher Geschwindigkeit.", "The character says the line slower, at 0.7 times the speed.")
+                        onClicked: conv.listen(msg.index, 1)
+                    }
+                    KanteButton {
+                        size: KanteButton.Size.Small
+                        emphasis: KanteButton.Emphasis.Quiet
+                        text: page.t("Übersetzen", "Translate")
+                        enabled: msg.modelData.translation === undefined
+                        Accessible.description: page.t("Zeigt den Satz auf Deutsch.", "Shows the line in English.")
+                        onClicked: conv.listen(msg.index, 2)
+                    }
+                }
+                Text {
+                    visible: msg.modelData.who === "character" && msg.modelData.translation !== undefined
+                    Layout.fillWidth: true
+                    text: msg.modelData.translation || ""
+                    wrapMode: Text.Wrap
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.defaultFont
                 }
                 KanteLoader { visible: modelData.pending === true }
                 Repeater {
@@ -430,6 +469,7 @@ Kirigami.ScrollablePage {
                 else if (next === "!") page.showSpeechHelp = true
                 else if (next === "~") {}
                 else if (next.indexOf("read:") === 0) conv.finishPlacement(Number(next.charAt(5)), Number(next.charAt(6)))
+                else if (next.indexOf("translate:") === 0) conv.listen(Number(next.substring(10)), 2)
                 else conv.say(next, true)
             } else {
                 stop()

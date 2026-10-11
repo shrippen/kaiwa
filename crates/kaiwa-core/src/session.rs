@@ -330,6 +330,19 @@ impl Session {
         self.aid_on_line = true;
     }
 
+    /// A line of the character (plain text) in the UI language (/LF111/); counts as an aid.
+    /// The opening comes from the scenario when it has a translation, every other line from
+    /// the tutor.
+    pub fn translate(&mut self, line: &str) -> Result<String, AiError> {
+        self.aid(Aid::Translate);
+        if let Some(t) = &self.scenario.opening_translation
+            && line == plain(&self.scenario.opening)
+        {
+            return Ok(t.get(&self.lang).to_string());
+        }
+        self.provider.translate(line, &self.lang)
+    }
+
     fn request(&self, system: String) -> TurnRequest {
         TurnRequest {
             system,
@@ -802,6 +815,24 @@ mod tests {
         r.turn("ドイツのハンブルクから来ました。", Input::Spoken)
             .unwrap();
         assert_eq!(r.summary().goals_met.len(), 2);
+    }
+
+    #[test]
+    fn translations_count_as_aids() {
+        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let opening = crate::plain(s.opening());
+        assert_eq!(
+            s.translate(&opening).unwrap(),
+            "Freut mich. Ich bin Tanaka. Wie heißen Sie?"
+        );
+        s.turn("マラです。よろしくおねがいします。", Input::Spoken)
+            .unwrap();
+        let line = s.last_line().to_string();
+        assert_eq!(
+            s.translate(&line).unwrap(),
+            "Sie sind Mara. Freut mich. Woher kommen Sie?"
+        );
+        assert_eq!(s.stats().aids, 2);
     }
 
     #[test]

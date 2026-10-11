@@ -13,6 +13,7 @@
   "register": "polite",
   "voice": "jf_tebukuro",
   "opening": "どちらまでですか。",
+  "opening_translation": { "de": "Wohin möchten Sie?", "en": "Where are you going?" },
   "goals": [
     {
       "id": "destination",

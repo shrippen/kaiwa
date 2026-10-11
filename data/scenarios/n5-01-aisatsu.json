@@ -13,6 +13,7 @@
   "register": "polite",
   "voice": "jm_kumo",
   "opening": "おはようございます。いい{天気|てんき}ですね。",
+  "opening_translation": { "de": "Guten Morgen. Schönes Wetter heute, nicht wahr?", "en": "Good morning. Nice weather today, isn't it?" },
   "goals": [
     {
       "id": "greet",

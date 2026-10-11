@@ -12,9 +12,9 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | Backend (`kaiwa-backend`) | Ansichten als JSON, Tutor-Wahl, Kostenbremse, mehrere Profile, Aufnahmen mit Opt-in, Statistik, Erinnerungsregel | #17 |
 | KI (`kaiwa-ai`) | Anthropic und OpenAI-kompatibel, aufgezeichnete Antworten (Demo), Token-Zähler, Schlüsselbund, „Was verlässt das Gerät?“ | #6, #17 |
 | Sprache (`kaiwa-speech`) | Push-to-Talk, ReazonSpeech (sherpa-onnx), Übergangsstimme Kokoro ohne Pitch-Akzent | #11, #12 |
-| App | Heute, Lernpfad, Wiederholen, Profil mit Statistik, Einstellungen, Gespräch mit Bilanz, Widersprechen, „Falsch erkannt“, Einstufung; Deutsch und Englisch; Stile System, Kante, Kante Light | #7, #16, #17 |
+| App | Heute, Lernpfad, Wiederholen, Profil mit Statistik, Einstellungen, Gespräch mit Bilanz, Widersprechen, „Falsch erkannt“, Hörhilfen (nochmal, langsamer, übersetzen), Moren-Hinweise (Vorschau), Einstufung; Deutsch und Englisch; Stile System, Kante, Kante Light | #7, #16, #17 |
 | Pakete | Symbol, Desktop-Datei, AppStream, PKGBUILD `kaiwa-git`, Flatpak-Manifest (App) | #17 |
-| QA | `kaiwa-sim`: 42 von 82 Prüfregeln automatisch (Textmodus, 30-Tage-Läufe, Profil, Engine, QML-Prüfungen) | laufend |
+| QA | `kaiwa-sim`: 43 von 83 Prüfregeln automatisch (Textmodus, 30-Tage-Läufe, Profil, Engine, QML-Prüfungen) | laufend |
 
 **Geparkt:** Plasmoid und Dienst `kaiwad` (M4) auf dem Zweig `later/plasmoid`, bis die App nahe 1.0 ist. Dort sind Kurzgespräch, fünf Wiederholungen, Sprechtaste über den Dienst und Erinnerungen gebaut. **Offen:** In der CI lädt `plasmoidviewer` das Plasmoid ohne QML-Fehler, aber sein `Today`-Aufruf kommt bei `kaiwad` nicht an (Lauf 1530, „plasmoid: no call reached kaiwad“). Ob das am Offscreen-Betrieb, an der Wartezeit (20 s) oder am D-Bus-Modul von Plasma liegt, ist beim Wiederaufnehmen als Erstes zu klären. Die Erinnerungs-Einstellung der App ist bis dahin ausgeblendet.
 

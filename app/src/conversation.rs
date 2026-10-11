@@ -110,6 +110,11 @@ pub mod qobject {
         /// Stop the character speaking (talk button tapped while it speaks).
         #[qinvokable]
         fn interrupt(self: Pin<&mut Conversation>);
+
+        /// A listening aid on the character's line at `log_index` (/LF111/): 0 says it again,
+        /// 1 says it at 0.7×, 2 translates it into the UI language. Each counts as help.
+        #[qinvokable]
+        fn listen(self: Pin<&mut Conversation>, log_index: i32, aid: i32);
     }
 
     impl cxx_qt::Threading for Conversation {}
@@ -125,7 +130,7 @@ use cxx_qt_lib::QString;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::learner::Skill;
 use kaiwa_core::placement::{self, Placement, Reading, STAGES, StageResult, TURNS_PER_STAGE};
-use kaiwa_core::session::SessionState;
+use kaiwa_core::session::{Aid, SessionState};
 use kaiwa_core::{Input, Scenario, Session, Summary, TurnOutcome};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
@@ -587,7 +592,11 @@ impl qobject::Conversation {
 
     /// Says a line of the character (furigana markup) sentence by sentence; the first plays
     /// while the next is made. The talk button shows "speaks" until the speaker is quiet.
-    fn speak(mut self: Pin<&mut Self>, markup: &str) {
+    fn speak(self: Pin<&mut Self>, markup: &str) {
+        self.speak_at(markup, SPEED);
+    }
+
+    fn speak_at(mut self: Pin<&mut Self>, markup: &str, speed: f32) {
         let Some(speaker) = self.speaker.clone() else {
             return;
         };
@@ -607,7 +616,7 @@ impl qobject::Conversation {
                 if !still() {
                     return;
                 }
-                let audio = speaker.voice.lock().map(|mut v| v.speak(&sentence, SPEED));
+                let audio = speaker.voice.lock().map(|mut v| v.speak(&sentence, speed));
                 match audio {
                     Ok(Ok(samples)) if still() => speaker.player.play(&samples, tts::SAMPLE_RATE),
                     Ok(Err(e)) => eprintln!("kaiwa: {e}"),
@@ -623,6 +632,66 @@ impl qobject::Conversation {
                 }
             });
         });
+    }
+
+    fn listen(mut self: Pin<&mut Self>, log_index: i32, aid: i32) {
+        let Some(i) = usize::try_from(log_index).ok() else {
+            return;
+        };
+        let Some(entry) = self.log.get(i).filter(|e| e["who"] == "character") else {
+            return;
+        };
+        let markup = entry["markup"].as_str().unwrap_or_default().to_string();
+        let translated = entry.get("translation").is_some();
+        let Some(session) = self.session.clone() else {
+            return;
+        };
+        match aid {
+            0 | 1 => {
+                if let Ok(mut s) = session.lock() {
+                    s.aid(if aid == 0 { Aid::Repeat } else { Aid::Slow });
+                }
+                self.as_mut().interrupt();
+                let speed = if aid == 0 { SPEED } else { SPEED * 0.7 };
+                self.speak_at(&markup, speed);
+            }
+            2 if !translated => {
+                let lang = self.lang.clone();
+                let thread = self.qt_thread();
+                std::thread::spawn(move || {
+                    let line = kaiwa_core::plain(&markup);
+                    let result = session.lock().ok().map(|mut s| s.translate(&line));
+                    let _ = thread.queue(move |mut q| {
+                        match result {
+                            Some(Ok(text)) => {
+                                if let Some(e) = q.as_mut().rust_mut().log.get_mut(i) {
+                                    e["translation"] = json!(text);
+                                }
+                                q.as_mut().publish_turns();
+                            }
+                            Some(Err(kaiwa_ai::AiError::NoFixture)) => {
+                                let msg = if lang == "en" {
+                                    "The recorded answers have no translation for this line."
+                                } else {
+                                    "Für diese Zeile haben die aufgezeichneten Antworten keine Übersetzung."
+                                };
+                                q.as_mut().set_error(QString::from(msg));
+                            }
+                            Some(Err(e)) => {
+                                let msg = if lang == "en" {
+                                    format!("No translation right now: {e}")
+                                } else {
+                                    format!("Gerade keine Übersetzung: {e}")
+                                };
+                                q.as_mut().set_error(QString::from(&msg));
+                            }
+                            None => {}
+                        }
+                    });
+                });
+            }
+            _ => {}
+        }
     }
 
     fn interrupt(mut self: Pin<&mut Self>) {

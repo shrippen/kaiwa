@@ -13,6 +13,7 @@
   "register": "polite",
   "voice": "jm_kumo",
   "opening": "きのうは{何|なに}をしましたか。",
+  "opening_translation": { "de": "Was haben Sie gestern gemacht?", "en": "What did you do yesterday?" },
   "goals": [
     {
       "id": "did",
