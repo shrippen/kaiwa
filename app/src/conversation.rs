@@ -724,6 +724,7 @@ impl qobject::Conversation {
     }
 
     fn start_talk(mut self: Pin<&mut Self>) {
+        // Speaking over the character silences it and starts the new turn (/LF103/).
         if *self.talk_state() == SPEAKING {
             self.as_mut().interrupt();
         }

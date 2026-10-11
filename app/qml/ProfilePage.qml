@@ -117,6 +117,42 @@ QQC2.ScrollView {
             }
         }
 
+        // The weekly review (/LF604/): the last seven days against the seven before.
+        KanteSectionLabel {
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.topMargin: KanteStyle.unit(8)
+            text: page.t("Diese Woche", "This week")
+            rule: true
+        }
+        RowLayout {
+            readonly property var w: page.stats.week || ({})
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            spacing: KanteStyle.unit(24)
+            KanteKpi {
+                value: String(parent.w.minutes || 0)
+                label: page.t("Minuten gesprochen (Vorwoche ", "minutes spoken (week before ") + (parent.w.minutesBefore || 0) + ")"
+            }
+            KanteKpi { value: String(parent.w.days || 0); label: page.t("Übungstage", "days practised") }
+            KanteKpi { value: String(parent.w.newItems || 0); label: page.t("neue Wörter und Wendungen", "new words and phrases") }
+            KanteKpi {
+                visible: parent.w.unaided !== undefined && parent.w.unaided !== null
+                value: (parent.w.unaided || 0) + " %"
+                label: page.t("ohne Hilfe verstanden", "understood without help")
+                    + (parent.w.unaidedBefore !== undefined && parent.w.unaidedBefore !== null ? page.t(" (Vorwoche ", " (week before ") + parent.w.unaidedBefore + " %)" : "")
+            }
+        }
+        Text {
+            readonly property var examples: (page.stats.week || {}).newExamples || []
+            visible: examples.length > 0
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            text: page.t("Neu: ", "New: ") + examples.join("、")
+            wrapMode: Text.Wrap
+            color: KanteStyle.mutedTextColor
+            font: KanteStyle.defaultFont
+        }
         KanteSectionLabel {
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.topMargin: KanteStyle.unit(8)

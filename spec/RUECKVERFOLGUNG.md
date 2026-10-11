@@ -9,7 +9,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
 | Muss | 42 | 18 | 16 | 3 | 0 |
-| Soll | 6 | 6 | 11 | 0 | 0 |
+| Soll | 6 | 8 | 9 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
 | ID | Prio | Anforderung | Code | Stand | Prüfregeln |
@@ -23,7 +23,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | speech | Code | 0 von 1 automatisch grün: `mara_ptt` |
 | /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | – | offen | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
-| /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | – | offen | – |
+| /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
 | /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, store | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF112/ | M | Ein Klick auf ein Wort zeigt Lesung, Bedeutung und Wortart und spielt … | core, store | Code | 0 von 1 automatisch grün: `mara_word_lookup` |
@@ -76,7 +76,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF601/ | M | Tagesziel in Minuten Sprechzeit oder Szenarien, selbst wählbar … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_daily_goal` |
 | /LF602/ | M | Serie (Tage mit erreichtem Tagesziel), mit Freeze (zwei pro Monat … | app, core, store | geprüft | 4 von 4 automatisch grün: `jonas_freeze`, `jonas_midnight`, `jonas_timezone`, `mara_comeback` |
 | /LF603/ | S | XP für Sprechzeit, erreichte Ziele und Wiederholungen. | app, core | geprüft | 1 von 1 automatisch grün: `jonas_xp_fair` |
-| /LF604/ | S | Wochenrückblick: Sprechzeit, neue Wörter, Fortschritt pro Fähigkeit. | – | offen | – |
+| /LF604/ | S | Wochenrückblick: Sprechzeit, neue Wörter, Fortschritt pro Fähigkeit. | app, backend | Code | – |
 | /LF605/ | M | Gamification lässt sich ganz abschalten (keine XP, keine Serie, nur … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_gamification_off` |
 | /LF606/ | M | Es gibt keine Herzen, Leben oder Sperren nach Fehlern. | core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_hearts` |
 | /LF610/ | S | Statistik: Heatmap der Übungstage, Wortschatz pro Niveau, Sprechzeit … | app, backend | Code | – |

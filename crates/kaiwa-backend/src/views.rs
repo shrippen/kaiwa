@@ -275,6 +275,7 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         *vocab.entry(level).or_default() += 1;
     }
     Ok(json!({
+        "week": week(st, now)?,
         "mistakes": mistakes,
         "vocab": vocab.iter().map(|(l, n)| json!({ "level": l, "count": n })).collect::<Vec<_>>(),
         "heat": levels,
@@ -282,6 +283,52 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         "days": practice_days,
         "items": items.len(),
         "learnt": items.iter().filter(|i| i.stability.is_some_and(|s| s >= 21.0)).count(),
+    }))
+}
+
+/// The weekly review (/LF604/): the last seven days against the seven before: speaking time,
+/// practice days, new words and phrases, and how many turns were understood without help.
+pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
+    let today = now.day();
+    let this = today.plus(-6);
+    let before = today.plus(-13);
+    let days = st.store.days()?;
+    let span = |from: kaiwa_core::Day, to: kaiwa_core::Day| {
+        days.range(from..=to)
+            .fold((0u32, 0usize), |(m, n), (_, r)| {
+                (m + r.speaking_secs, n + usize::from(r.speaking_secs > 0))
+            })
+    };
+    let (secs, practised) = span(this, today);
+    let (secs_before, _) = span(before, this.plus(-1));
+    let start = |d: kaiwa_core::Day| d.start(now.offset_min).unix;
+    let items = st.store.items()?;
+    let mut new: Vec<&kaiwa_core::srs::Item> = items
+        .iter()
+        .filter(|i| i.added.unix >= start(this))
+        .collect();
+    new.sort_by_key(|i| std::cmp::Reverse(i.added.unix));
+    // Turns understood without help or a listening aid, per week (misheard turns left out).
+    let mut unaided = [(0usize, 0usize); 2];
+    for row in st.store.finished_since(start(before))? {
+        let Ok(state) = st.store.session_state(row.id) else {
+            continue;
+        };
+        let w = usize::from(row.started.unix >= start(this));
+        for t in state.turns.iter().filter(|t| !t.misrecognized) {
+            unaided[w].1 += 1;
+            unaided[w].0 += usize::from(t.understood && !t.aided && !t.from_help);
+        }
+    }
+    let share = |(ok, all): (usize, usize)| (all > 0).then(|| (100 * ok / all) as u32);
+    Ok(json!({
+        "minutes": secs / 60,
+        "minutesBefore": secs_before / 60,
+        "days": practised,
+        "newItems": new.len(),
+        "newExamples": new.iter().take(5).map(|i| i.text.clone()).collect::<Vec<_>>(),
+        "unaided": share(unaided[1]),
+        "unaidedBefore": share(unaided[0]),
     }))
 }
 
@@ -363,6 +410,27 @@ mod tests {
                 rows.iter()
                     .all(|r| r["cloud"] == false && r["sends"] == "nichts")
             );
+        }
+    }
+
+    #[test]
+    fn the_week_adds_up_the_last_seven_days() {
+        let dir = std::env::temp_dir().join(format!("kaiwa-week-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let b = Backend::open_at(dir.join("demo.kaiwa"), true).unwrap();
+        let now = crate::now();
+        let w = week(&b, now).unwrap();
+        let days = b.store.days().unwrap();
+        let today = now.day();
+        let secs: u32 = days
+            .range(today.plus(-6)..=today)
+            .map(|(_, r)| r.speaking_secs)
+            .sum();
+        assert_eq!(w["minutes"], secs / 60);
+        assert!(w["days"].as_u64().unwrap() <= 7);
+        assert!(w["newExamples"].as_array().unwrap().len() <= 5);
+        if let Some(u) = w["unaided"].as_u64() {
+            assert!(u <= 100);
         }
     }
 
