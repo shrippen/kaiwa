@@ -39,4 +39,19 @@ Messung und Zahlen in [`spikes/s06-moren`](../../spikes/s06-moren/README.md). Ku
 - **Punkt 3 (Dauerverhältnisse) trägt nicht**, weder aus der CTC-Ausrichtung noch aus MFA: Die natürliche Streuung der Längen ist größer als der Fehler.
 - **Was trägt, ist der Varianten-Vergleich:** die CTC-Wahrscheinlichkeit der gemeinten Kana gegen die Formen, die ein Moren-Fehler ergäbe (おばあさん/おばさん), mit einer Schwelle je Fehlerart. Er nennt die Stelle gleich mit (88 %).
 - **Modell:** Nur `vumichien/wav2vec2-large-xlsr-japanese-hiragana` gibt Kana je Zeichen. Es hört ん vor Vokal grundsätzlich als n-Reihe (Schreibungs-Vorwissen) und wurde auch auf JSUT trainiert (Audio nur nicht-kommerziell frei). Die ReazonSpeech-Modelle schreiben Kanji und helfen nicht.
-- **Vorschlag (offen, Fragenpaket 5):** Punkt 3 durch den Varianten-Vergleich ersetzen; ein eigenes Kana-CTC-Modell feinjustieren (ReazonSpeech-wav2vec2-base, Common Voice CC0, Aussprache-Kana aus OpenJTalk); Abnahme an den eigenen Aufnahmen (F-04). Bis dahin gilt F-09.
+- Vorschläge gingen als Fragenpaket 5 an den Eigentümer, Antworten unten.
+
+## Entschieden (Fragenpaket 5)
+
+- **J-01:** Die Moren prüft der **Varianten-Vergleich** (Schwelle je Fehlerart). Die **Dauer bleibt als Zusatzsignal**; sie entscheidet nicht allein, weil sie im Spike nichts trennte. Ihre Quelle in der App ist die Ausrichtung des eigenen Modells (J-02), MFA wird nicht ausgeliefert.
+- **J-02:** **Eigenes Kana-CTC-Modell:** `reazon-research/japanese-wav2vec2-base` (Apache-2.0), feinjustiert auf Common Voice Japanisch (CC0) mit Aussprache-Kana aus OpenJTalk (ー, っ, ん wie gesprochen). Das gemessene Hiragana-Modell (JSUT im Training) wird nicht ausgeliefert.
+- **J-03:** Julius entfällt; MFA war die Gegenprobe.
+- **J-04:** Der Eigentümer hat keine richtige Aussprache als Referenz. Statt eigener Aufnahmen: **echte Stimmen aus frei lizenzierten Korpora**, die Fehler hineingeschnitten (Common Voice Test, CC0; `spikes/s06-moren/real.py`). Nachrichtensendungen (NHK) sind geschützt und kommen nicht in Frage; ReazonSpeech (Fernsehen, nur nach Art. 30-4 des japanischen Urheberrechts) erst nach Annahme der Bedingungen durch den Eigentümer.
+- **J-05:** Moren-Hinweise sind **an, nur in Sätzen**, mit den Schwellen je Fehlerart (F-09), sobald das eigene Modell (J-02) in der App ist.
+
+## Entschieden (Fragenpaket 6)
+
+- **K-01:** Gemeldet werden nur **Kürzungen**: Langvokal zu kurz, っ weggelassen. Dehnungen und eingefügte っ erkennt kein Verfahren brauchbar (Echt-Stimmen-Test unter 18 %).
+- **K-02:** Die Hinweise erscheinen, sobald im Echt-Stimmen-Test (`spikes/s06-moren/real.py`) insgesamt mindestens 60 % und je gemeldeter Art mindestens 55 % erkannt werden, bei höchstens 5 % Fehlalarmen. Die 80 % oben bleiben Ziel für 1.0. Der Hinweis ist vorsichtig formuliert und zählt nicht als Fehler.
+- **K-03:** ReazonSpeech kommt als Trainingsdaten dazu; der Eigentümer nimmt die Bedingungen an (Art. 30-4) und hinterlegt ein Hugging-Face-Token. Ergebnis (v3, ab v2 mit ReazonSpeech `small`, 110 h): nicht besser als v2 (echte Stimmen, nur Kürzungen 59,3 % bei 5,1 % gegen 61,2 % bei 4,8 %). Ausgeliefert wird v2, das nur Common Voice (CC0) gesehen hat.
+- **K-04 bis K-06** gelten für ein eigenes Modell: Hosting auf Hugging Face unter `shrippen`, Lizenz Apache-2.0 mit Eintrag in `NOTICE`, auf dem Desktop v2 (large), für Android später ein base-Modell. Nach der Antwort wurden zwei fertige, auf Aussprache trainierte Modelle gefunden (`prj-beatrice/japanese-hubert-base-phoneme-ctc-v4`, `kizuna-intelligence/hiragana-parakeet-tdt-ctc-0.6b-ja-beta`); gemessen fanden sie auf echten Stimmen weniger Kürzungen als v2 (prj-beatrice 52 %, Parakeet 39 %, v2 61 %; `spikes/s06-moren/README.md`). Es bleibt beim eigenen Modell v2.

@@ -33,7 +33,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 ## Offen
 
-1. **Spike 0.6** (Moren-Längen, ADR-005): gemessen, Ziel nicht erreicht (76 % Erkennung bei 4,3 % Fehlalarmen im Satzrahmen; `spikes/s06-moren`). Der Varianten-Vergleich trägt, Dauerschwellen nicht. Offen in Fragenpaket 5: eigenes Kana-CTC-Modell feinjustieren (Lizenz, Schreibungs-Vorwissen), dann Aligner in Rust (`ctc.py` ist die Vorlage) und Abnahme an den eigenen Aufnahmen.
+1. **Moren-Prüfung** (ADR-005, Fragenpakete 5 und 6 entschieden): eigenes Kana-CTC-Modell trainiert (`spikes/s06-moren/finetune.py`, v1 base, v2 large), Test mit echten Stimmen (`real.py`, Common Voice mit hineingeschnittenen Fehlern): nur Kürzungen geprüft erkennt v2 61 % bei 4,8 % Fehlalarmen (v1 62 % bei 6,0 %; v3 mit ReazonSpeech dazu nicht besser, 59 % bei 5,1 %), alle Fehlerarten zusammen unter 25 %. Daten und Modelle liegen unter `target/` (Common Voice 8 GB, `kana-ctc-v1`, `kana-ctc-v2`), nicht im Repository. Rust: `kaiwa-speech::mora` (Varianten, CTC, `Checker` über ONNX Runtime, `G2p::pronounced`). Als Nächstes: v2 auf Hugging Face unter `shrippen` veröffentlichen (Apache-2.0, `NOTICE`, K-04/K-05), dann die Hinweise in der App (nur in Sätzen, nur Kürzungen, J-05/K-01/K-02).
 2. **Lokaler Test** (`spec/LOKALER-TEST.md`): KI-Anbindung (Spike 0.5), VOICEVOX (H-01), Messwerte auf dem Framework 13, eigene Aufnahmen. Ergebnisse als PR nach `qa/local/<datum>/` (H-05).
 3. **40 Prüfregeln** sind noch nicht automatisch, meist Audio, GUI (AT-SPI, Tastatur) oder Verhalten des echten Tutors. Sie brauchen den gui- und audio-Modus von `kaiwa-sim` oder den lokalen Test.
 4. **Stimme:** H-01 (VOICEVOX) entscheidet die endgültige Stimme; bis dahin Kokoro als Übergang.
@@ -53,4 +53,6 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 - **`tea pr edit` kann keinen Titel ändern;** dafür die API (`PATCH /repos/…/pulls/{n}`).
 - **Synthetische Stimmen sind keine Wahrheit für Aussprache.** Kokoro spricht げんいん als げにん und ありがと als ありがとう; ein Teil der „Fehlalarme“ war die Stimme. Für Moren-Fehler OpenJTalk nehmen (spricht wie geschrieben), für die Abnahme eigene Aufnahmen.
 - **Rohwerte ansehen, bevor ein Verfahren verworfen wird.** Die MFA-Dauern trennten einzelne Paare deutlich (`aː` 69 gegen 139 ms), die erste Auswertung zeigte trotzdem fast nichts. Erst der Blick auf die Einzelwerte zeigte, warum: Die Streuung über Sätze ist größer als der Fehler.
+- **Synthetische Erfolge halten auf echten Stimmen nicht.** Dasselbe Verfahren erkannte synthetisch 58–74 %, auf Common Voice mit allen Fehlerarten unter 25 %. Früh an echten Aufnahmen messen; wo es keine Lerner-Aufnahmen gibt, Fehler in echte Muttersprachler hineinschneiden und mit einem Schein-Schnitt kontrollieren.
+- **Wartende Shell-Schleifen mit `pgrep -f`** finden ihre eigene Befehlszeile, wenn das Muster darin steht, und warten ewig; `pkill -f` beendet so die eigene Shell.
 - **Fragen gebündelt** im Artifact mit Vorschlag und Datenübergabe funktionierten gut: Antworten kamen schnell und ließen sich direkt einarbeiten.

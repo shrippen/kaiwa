@@ -1840,6 +1840,7 @@ dependencies = [
  "lindera",
  "ort",
  "ort-sys",
+ "serde_json",
  "sherpa-onnx",
  "thiserror 2.0.21",
  "unicode-normalization",

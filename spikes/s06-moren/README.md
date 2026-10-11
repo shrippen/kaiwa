@@ -8,13 +8,19 @@ Findet ein Kana-CTC-Modell Fehler bei Langvokal, っ und ん? Die Spracherkennun
 | `ctc.py` | CTC-Teile in numpy, als Vorlage für Rust: Wahrscheinlichkeit einer Kana-Folge (Vorwärts), Ausrichtung (Viterbi), Fehlervarianten einer Lesung. |
 | `measure.py` | Prüfungen mit einem Kana-CTC-Modell, Schwellen per Kreuzvalidierung über die Stimmen. |
 | `mfa_check.py` | Gegenprobe mit dem Montreal Forced Aligner (HMM, `japanese_mfa`). |
+| `real.py` | Echte Stimmen (J-04): Common Voice Japanisch, Testteil (CC0), 500 Sprecher; Moren-Fehler hineingeschnitten. |
+| `finetune.py` | Eigenes Kana-CTC-Modell (J-02) auf Common Voice mit Aussprache-Kana. |
 | `results/` | Messwerte je Modell, jeder Versuch einzeln. |
 
 ```sh
 python -I synth.py --models <kokoro-dir> --corpus ../../qa/corpus --out ../../target/s06
 python -I measure.py --corpus-audio ../../target/s06 --out results --model hiragana [--noise 10]
 python -I mfa_check.py --corpus-audio ../../target/s06 --mfa <env>/bin/mfa --work ../../target/s06/mfa --out results
+python -I finetune.py --cv <common-voice-19-ja> --work ../../target/kana-ctc-v1 --steps 12000
+python -I real.py --cv <common-voice-19-ja> --mfa <env>/bin/mfa --work ../../target/s06-real --out results --model hiragana|<model-dir>
 ```
+
+Common Voice 19.0 Japanisch kommt aus dem CC0-Spiegel `fsicoli/common_voice_19_0` auf Hugging Face (`transcript/ja/*.tsv`, `audio/ja/<split>/*.tar`). Daten und Modelle liegen unter `target/`, nicht im Repository.
 
 MFA kommt aus conda-forge (`montreal-forced-aligner` 3.4.3, ohne root über micromamba), dazu `mfa model download acoustic|dictionary japanese_mfa`.
 
@@ -86,3 +92,64 @@ Trifft der Varianten-Vergleich, nennt er in 88 % der Fälle die richtige Stelle 
 3. **Eigene Aufnahmen (F-04)** vor der Abnahme: erst sie zeigen, ob die Zahlen mit einer echten Stimme halten.
 4. Bis dahin gilt F-09: Moren-Hinweise nur dort, wo die Fehlalarm-Grenze hält, also im Satz und mit den Schwellen je Fehlerart.
 5. Julius als zweite Gegenprobe ist nach dem MFA-Befund verzichtbar: Beide HMM-Aligner messen Dauern, und die Dauern sind das Problem, nicht ihre Messung.
+
+## Echte Stimmen und eigenes Modell (Fragenpaket 5: J-02, J-04)
+
+Nach J-04 gibt es keine eigenen Aufnahmen. Frei lizenzierte Aufnahmen von *Lernenden* mit Moren-Fehlern gibt es nicht; NHK-Nachrichten sind geschützt. `real.py` nimmt deshalb echte Muttersprachler aus Common Voice (Testteil, CC0) und schneidet die Fehler hinein:
+
+- 500 Sprecher, je ein Satz. Nur Sätze, deren Lesung das Hiragana-Modell hört (Zeichenfehler ≤ 20 %); die Auswahl steht in `clips.json` und gilt für alle Modelle.
+- MFA richtet die Laute aus. Dann wird je Satz eine Stelle geändert:
+  - **long-:** Langvokal auf den mittleren kurzen Vokal des Satzes gekürzt.
+  - **q-:** っ auf den mittleren kurzen Konsonanten gekürzt.
+  - **long+:** kurzer Vokal auf das Doppelte gedehnt (ganze Grundperioden wiederholt).
+  - **q+:** Verschlusspause vor k, t, p um eine More verlängert.
+- **Kontrolle:** jede Aufnahme unverändert und mit einem Schein-Schnitt (eine Grundperiode aus einem kurzen Vokal). Der Schein-Schnitt löst nicht öfter Alarm aus als die unveränderte Aufnahme; die Prüfung reagiert also nicht auf Schnittspuren.
+- ん vor Vokal ändert einen Laut, keine Länge, und bleibt hier draußen.
+- Schwellen auf der einen Hälfte der Sprecher kalibriert, auf der anderen gezählt (und umgekehrt).
+
+Eigene Modelle (`finetune.py`): `reazon-research/japanese-wav2vec2-base` bzw. `-large` (Apache-2.0), feinjustiert auf Common Voice Japanisch (CC0, ohne die Test-Sprecher) mit Aussprache-Kana aus OpenJTalk.
+
+| Modell | Training | Zeichenfehler (40 zurückgehaltene Sprecher) |
+|---|---|---|
+| v0 | base, `train` + `dev`, 16 h, 3000 Schritte | 32 % |
+| v1 | base, dazu `other` mit Zustimmung, 49 h, 12 000 Schritte | 24,7 % |
+| v2 | large (24 Schichten), dieselben 49 h, 7000 Schritte | 22,1 % |
+| v3 | ab v2 weiter, dazu ReazonSpeech `small` (K-03), 110 h, 8000 Schritte | 22,0 % |
+
+**Echte Stimmen**, Erkennung bei Fehlalarmen (Varianten-Vergleich):
+
+| Modell | alle Fehlerarten | nur Kürzungen (long-, q-) | davon long- / q- |
+|---|---|---|---|
+| Hiragana (vumichien) | 18,5 % bei 5,1 % | 44,7 % bei 4,8 % | 42 / 48 % |
+| v0 | 15,4 % bei 4,5 % | **63,8 % bei 5,5 %** | 68 / 59 % |
+| v1 | 16,2 % bei 5,1 % | **62,3 % bei 6,0 %** | 64 / 60 % |
+| v2 | 22,9 % bei 5,7 % | **61,2 % bei 4,8 %** | 59 / 64 % |
+| v3 | 22,5 % bei 5,7 % | 59,3 % bei 5,1 % | 57 / 62 % |
+
+- **Dehnungen und eingefügte っ erkennt der Varianten-Vergleich kaum** (long+, q+ unter 18 % bei jedem Modell). Sie teilen sich aber das Fehlalarm-Budget mit den Kürzungen. Prüft man nur die Kürzungen, steigt deren Erkennung auf etwa das Doppelte.
+- **Referenz-Normierung** (OpenJTalk spricht den gemeinten Satz) hilft dem Hiragana-Modell (alle Arten 31 % statt 19 %), den eigenen Modellen kaum: Sie haben das Schreibungs-Vorwissen nicht, das die Referenz abzieht.
+- **„Gestützt“** (nur Varianten, denen auch die freie Erkennung näher ist) senkt die Fehlalarme auf 1,6–3,7 %, kostet aber mehr Erkennung, als es spart.
+- **v2 hält als einziges Modell die 5-%-Grenze auf echten Stimmen** und benennt bei einem Treffer die Fehlerart in 97 % der Fälle richtig. Es ist dreimal so groß (int8 356 MB, v1 122 MB).
+- **ReazonSpeech bringt nichts Messbares** (v3): 60 h Fernsehsprache mehr, aber auf den zurückgehaltenen Sprechern dieselben Zeichenfehler und auf echten Stimmen 59,3 % bei 5,1 % statt 61,2 % bei 4,8 %. Mit Referenz-Normierung 61,6 % bei 4,9 % (v2 58,8 %). Die Unterschiede liegen im Rauschen des Tests (500 Sprecher); v2 bleibt, weil es ohne die Nutzungsbedingungen von ReazonSpeech auskommt.
+- **Synthetisch** sind die eigenen Modelle viel besser als das Hiragana-Modell: im Satzrahmen v1 83 % bei 3,8 %, v2 je Fehlerart 87 % bei 4,8 % (Hiragana 62 %); alle Versuche v1 65 % bei 5,1 %, v2 je Fehlerart 74 % bei 7,4 % (Hiragana 47 %). Auf echten Stimmen liegen v0, v1 und v2 dicht beieinander; Common Voice ist mit Laptop- und Handymikrofonen aufgenommen und schwerer als jede Synthese.
+
+**App:** `kaiwa-speech::mora` (Rust) rechnet dasselbe über ONNX Runtime. `export_onnx.py` exportiert das Modell (v1: fp32 378 MB, exakt wie PyTorch; int8 nur für MatMul 122 MB, v2 356 MB; Varianten-Werte im Median 0,04 daneben, auf der CPU dieses Rechners mit 24 Kernen 25-mal schneller als Echtzeit). Welche Fehlerarten geprüft werden, steht in `thresholds.json` neben dem Modell.
+
+## Fertige Modelle zum Vergleich
+
+Eine Suche auf Hugging Face nach japanischen Modellen mit Kana- oder Phonem-Ausgabe fand zwei, die wie das eigene auf *Aussprache* trainiert sind, beide auf ReazonSpeech:
+
+- `prj-beatrice/japanese-hubert-base-phoneme-ctc-v4` (Apache-2.0): OpenJTalk-Phoneme (`cl` für っ, `N` für ん, Langvokale als doppelte Vokale). `measure.py` übersetzt die Kana-Varianten mit pyopenjtalk in Phoneme.
+- `kizuna-intelligence/hiragana-parakeet-tdt-ctc-0.6b-ja-beta` (Apache-2.0 auf NVIDIAs Parakeet, CC-BY-4.0): Aussprache-Hiragana als Teilwörter, 5,7 % Zeichenfehler auf Common Voice. Gemessen wird der CTC-Kopf; braucht NVIDIA NeMo (eigene Umgebung mit Python 3.11).
+
+Echte Stimmen, nur Kürzungen:
+
+| Modell | einfach | mit Referenz |
+|---|---|---|
+| eigenes v2 | **61,2 % bei 4,8 %** | 58,8 % bei 4,8 % |
+| prj-beatrice v4 | 34,1 % bei 4,9 % | 52,0 % bei 5,7 % |
+| Parakeet-Hiragana | 26,1 % bei 4,6 % | 39,1 % bei 5,1 % |
+
+- **Ein besserer Erkenner ist kein besserer Prüfer.** Parakeet hat laut Modellkarte 5,7 % Zeichenfehler auf Common Voice (v2: 22 % auf den eigenen zurückgehaltenen Sprechern, also eine andere Testmenge), findet aber weniger Kürzungen. Vermutlich lassen 80-ms-Frames, Teilwörter (`ばー`, `って`) und ein starkes Sprachvorwissen es das gemeinte Wort hören, auch wenn eine More fehlt; so glättete die Spracherkennung in Spike 0.3 die Fehler.
+- prj-beatrice schreibt Langvokale als zwei gleiche Phoneme; CTC braucht dazwischen eine Lücke. Vermutlich trennt das kurz und lang schlechter als ein eigenes Zeichen ー (nicht eigens gemessen).
+- Synthetisch (alle Versuche, mit Referenz): prj-beatrice 76 % bei 9,2 %, Parakeet 60 % bei 6,2 %, v2 je Fehlerart 74 % bei 7,4 %.

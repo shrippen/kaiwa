@@ -68,14 +68,15 @@ fn joins(prev_pos: &str, prev_sub: &[String; 2], pos: &str, sub: &[String; 2], b
 
 /// Long vowels as UniDic writes them and Tokyo speech has them: えい → えー, おう → おー,
 /// いい → いー, うう → うー, within a word.
-fn lengthen(kana: &str, keep: Option<usize>) -> String {
+/// Long vowels as ー: ei, ou, uu, and ii unless `keep_ii` (OpenJTalk keeps いい, misaki does not).
+fn lengthen(kana: &str, keep: Option<usize>, keep_ii: bool) -> String {
     let chars: Vec<char> = kana.chars().collect();
     let mut out = String::with_capacity(kana.len());
     for (i, &c) in chars.iter().enumerate() {
         let vowel = i.checked_sub(1).and_then(|j| vowel_of(chars[j]));
         let long = Some(i) != keep
             && match c {
-                'い' => matches!(vowel, Some('e' | 'i')),
+                'い' => vowel == Some('e') || (vowel == Some('i') && !keep_ii),
                 'う' => matches!(vowel, Some('o' | 'u')),
                 _ => false,
             };
@@ -110,7 +111,10 @@ impl G2p {
 
     /// The phoneme string for Kokoro, e.g. 「コーヒーが好きです。」 → `koːçiː ɡa sɨkʲi desɨ.`
     pub fn phonemes(&self, text: &str) -> String {
-        let words = self.words(&normalize(text));
+        let mut words = self.words(&normalize(text));
+        for w in words.iter_mut().filter(|w| w.kind == Kind::Kana) {
+            w.kana = lengthen(&w.kana, w.verb_end, false);
+        }
         let mut out: Vec<(String, bool)> = Vec::with_capacity(words.len());
         for word in &words {
             let roma = self.word(word);
@@ -134,6 +138,22 @@ impl G2p {
             .map(|(r, space)| if *space { format!("{r} ") } else { r.clone() })
             .collect();
         tidy(&joined)
+    }
+
+    /// The pronounced hiragana of a text, as the mora check's model writes them (OpenJTalk's
+    /// convention): 「東京から来ました。」 → とーきょーからきました, は as わ, 先生 せんせー, but いい
+    /// stays いい. Punctuation, latin letters and unknown kanji drop out.
+    pub fn pronounced(&self, text: &str) -> String {
+        self.words(&normalize(text))
+            .into_iter()
+            .filter(|w| w.kind == Kind::Kana)
+            .flat_map(|w| {
+                lengthen(&w.kana, w.verb_end, true)
+                    .chars()
+                    .collect::<Vec<_>>()
+            })
+            .filter(|c| ('ぁ'..='ゖ').contains(c) || *c == 'ー')
+            .collect()
     }
 
     fn words(&self, text: &str) -> Vec<Word> {
@@ -192,9 +212,6 @@ impl G2p {
                     });
                 }
             }
-        }
-        for w in words.iter_mut().filter(|w| w.kind == Kind::Kana) {
-            w.kana = lengthen(&w.kana, w.verb_end);
         }
         words
     }
@@ -431,6 +448,24 @@ mod tests {
             "{}",
             g.phonemes("1万円")
         );
+    }
+
+    #[test]
+    fn pronounced_kana_as_openjtalk_gives_them() {
+        // Expected: pyopenjtalk 'pron' (spikes/s06-moren, ctc.pron)
+        let g = g2p();
+        for (text, want) in [
+            ("東京から来ました。", "とーきょーからきました"),
+            ("原因はわかりません。", "げんいんわわかりません"),
+            ("ちょっと待ってください。", "ちょっとまってください"),
+            ("おばあさんは元気です。", "おばーさんわげんきです"),
+            ("切手を三枚ください。", "きってをさんまいください"),
+            ("下がったら買えばいい", "さがったらかえばいい"),
+            ("先生の空気", "せんせーのくーき"),
+            ("アンドレア・デル・サルト", "あんどれあでるさると"),
+        ] {
+            assert_eq!(g.pronounced(text), want, "{text}");
+        }
     }
 
     #[test]
