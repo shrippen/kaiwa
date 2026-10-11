@@ -1,0 +1,58 @@
+{
+  "id": "frei-shumi",
+  "unit": "FREI",
+  "name": "佐藤 · Satō",
+  "title": {
+    "de": "Freies Gespräch: Hobbys",
+    "en": "Free talk: hobbies"
+  },
+  "character": {
+    "de": "Satō Ken, ein Bekannter aus dem Sprachcafé. Spricht frei über das Thema, auf dem Niveau des Gegenübers, in der です/ます-Form, stellt Nachfragen und erzählt auch von sich.",
+    "en": "Satō Ken, an acquaintance from the language café. Talks freely about the topic at the learner's level, in the です/ます form, asks follow-up questions and also talks about themself."
+  },
+  "register": "polite",
+  "voice": "jm_kumo",
+  "opening": "{趣味|しゅみ}は{何|なん}ですか。",
+  "opening_translation": {
+    "de": "Was sind Ihre Hobbys?",
+    "en": "What are your hobbies?"
+  },
+  "goals": [
+    {
+      "id": "tell",
+      "text": {
+        "de": "Erzähl von einem Hobby.",
+        "en": "Tell about a hobby."
+      },
+      "help": {
+        "keyword": "趣味（しゅみ）",
+        "start": "わたしの趣味は…",
+        "example": "わたしの趣味は料理です。"
+      }
+    },
+    {
+      "id": "ask",
+      "text": {
+        "de": "Stell eine Frage zurück.",
+        "en": "Ask a question back."
+      },
+      "help": {
+        "keyword": "〜は？",
+        "start": "佐藤さんは…",
+        "example": "佐藤さんの趣味は何ですか。"
+      }
+    },
+    {
+      "id": "when",
+      "text": {
+        "de": "Sag, wann oder wie oft du es machst.",
+        "en": "Say when or how often you do it."
+      },
+      "help": {
+        "keyword": "週末（しゅうまつ）・よく",
+        "start": "週末に…",
+        "example": "週末によく料理をします。"
+      }
+    }
+  ]
+}

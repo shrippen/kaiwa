@@ -1,0 +1,58 @@
+{
+  "id": "frei-mainichi",
+  "unit": "FREI",
+  "name": "小林 · Kobayashi",
+  "title": {
+    "de": "Freies Gespräch: Alltag",
+    "en": "Free talk: everyday life"
+  },
+  "character": {
+    "de": "Kobayashi Mei, eine Bekannte aus dem Sprachcafé. Spricht frei über das Thema, auf dem Niveau des Gegenübers, in der です/ます-Form, stellt Nachfragen und erzählt auch von sich.",
+    "en": "Kobayashi Mei, an acquaintance from the language café. Talks freely about the topic at the learner's level, in the です/ます form, asks follow-up questions and also talks about themself."
+  },
+  "register": "polite",
+  "voice": "jf_gongitsune",
+  "opening": "{毎日|まいにち}、{何時|なんじ}に{起|お}きますか。",
+  "opening_translation": {
+    "de": "Wann stehen Sie jeden Tag auf?",
+    "en": "What time do you get up every day?"
+  },
+  "goals": [
+    {
+      "id": "tell",
+      "text": {
+        "de": "Erzähl, wann du aufstehst.",
+        "en": "Say when you get up."
+      },
+      "help": {
+        "keyword": "起きます（おきます）",
+        "start": "…時に…",
+        "example": "七時に起きます。"
+      }
+    },
+    {
+      "id": "ask",
+      "text": {
+        "de": "Stell eine Frage zurück.",
+        "en": "Ask a question back."
+      },
+      "help": {
+        "keyword": "何時（なんじ）",
+        "start": "小林さんは…",
+        "example": "小林さんは何時に起きますか。"
+      }
+    },
+    {
+      "id": "evening",
+      "text": {
+        "de": "Sag, was du abends machst.",
+        "en": "Say what you do in the evening."
+      },
+      "help": {
+        "keyword": "夜（よる）",
+        "start": "夜は…",
+        "example": "夜はテレビを見ます。"
+      }
+    }
+  ]
+}
