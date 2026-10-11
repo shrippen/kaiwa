@@ -13,6 +13,21 @@ mod state;
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 
 fn main() {
+    // The text size of the profile scales the whole interface, readings included (/LL202/),
+    // on top of the system's own scaling.
+    let scale = state::state()
+        .store
+        .profile()
+        .map(|p| p.text_scale)
+        .unwrap_or(1.0);
+    if scale > 1.0 {
+        let base: f32 = std::env::var("QT_SCALE_FACTOR")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(1.0);
+        // SAFETY: still single-threaded, before Qt or any worker thread starts.
+        unsafe { std::env::set_var("QT_SCALE_FACTOR", (base * scale).to_string()) };
+    }
     let mut app = QGuiApplication::new();
     let mut engine = QQmlApplicationEngine::new();
     if let Some(engine) = engine.as_mut() {

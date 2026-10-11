@@ -79,7 +79,19 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
             n,
         ),
     };
+    // Free talk (/LF116/): the topic scenarios outside the path, at the learner's difficulty.
+    let free: Vec<Value> = st
+        .scenarios
+        .values()
+        .filter(|s| s.unit == "FREI")
+        .map(|s| {
+            let topic = s.title.get(lang);
+            let topic = topic.rsplit(": ").next().unwrap_or(topic);
+            json!({ "id": s.id, "topic": topic })
+        })
+        .collect();
     Ok(json!({
+        "free": free,
         "name": p.name,
         "gamification": p.gamification,
         "goalFraction": t.goal_fraction,
@@ -352,6 +364,9 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "reminder": p.reminder,
         "costLimit": p.cost_limit_cents,
         "moraHints": p.mora_hints,
+        "unloadAfter": p.unload_after_min,
+        "handsFree": p.hands_free,
+        "textScale": p.text_scale,
         "cost": st.cost_view(crate::now())?,
         "path": st.path.display().to_string(),
         "profiles": st.profiles(),
@@ -410,6 +425,21 @@ mod tests {
                 rows.iter()
                     .all(|r| r["cloud"] == false && r["sends"] == "nichts")
             );
+        }
+    }
+
+    #[test]
+    fn free_talk_offers_the_topics_outside_the_path() {
+        let dir = std::env::temp_dir().join(format!("kaiwa-free-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let b = Backend::open_at(dir.join("demo.kaiwa"), true).unwrap();
+        let v = today(&b, crate::now()).unwrap();
+        let free = v["free"].as_array().unwrap();
+        assert_eq!(free.len(), 4);
+        for f in free {
+            let id = f["id"].as_str().unwrap();
+            assert!(b.curriculum.unit_of(id).is_none(), "{id} is on the path");
+            assert!(!f["topic"].as_str().unwrap().contains(':'));
         }
     }
 

@@ -238,6 +238,19 @@ Kirigami.ScrollablePage {
             }
         }
 
+        // /LF101/: two turns sounded cut off by the pause; offer the next longer one.
+        KanteCallout {
+            Layout.fillWidth: true
+            visible: conv.longerPause > 0
+            kind: KanteCallout.Kind.Info
+            title: page.t("Zu früh unterbrochen?", "Cut off too early?")
+            text: page.t("Zweimal klang dein Satz, als wäre er noch nicht fertig. Mit einer längeren Pause hast du mehr Zeit zum Nachdenken.",
+                         "Twice your sentence sounded unfinished. A longer pause gives you more time to think.")
+            KanteButton {
+                text: page.t("Pause auf ", "Pause to ") + String(conv.longerPause).replace(".", page.t(",", ".")) + " s"
+                onClicked: conv.takeLongerPause()
+            }
+        }
         KanteCallout {
             Layout.fillWidth: true
             visible: conv.helpLevel > 0
@@ -425,7 +438,11 @@ Kirigami.ScrollablePage {
                 talkState: conv.busy && conv.talkState === KanteTalkButton.State.Ready ? KanteTalkButton.State.Thinking : conv.talkState
                 level: conv.level
                 titles: [page.t("Sprechen", "Speak"), page.t("Hört zu", "Listening"), page.t("Denkt nach", "Thinking"), page.t("Spricht", "Speaking"), page.t("Kein Sprechen", "No speech")]
-                hints: [page.t("Leertaste halten", "Hold space"), page.t("Loslassen zum Senden", "Release to send"), "", page.t("Tippen zum Unterbrechen", "Tap to interrupt"), page.t("Warum? Klicken", "Why? Click")]
+                // Hands-free (/LF100/): a click starts and ends, the pause ends the turn too.
+                mode: conv.handsFree ? KanteTalkButton.Mode.Toggle : KanteTalkButton.Mode.Hold
+                hints: conv.handsFree
+                    ? [page.t("Klicken oder Leertaste", "Click or space"), page.t("Eine Pause beendet den Satz", "A pause ends the sentence"), "", page.t("Klicken zum Unterbrechen", "Click to interrupt"), page.t("Warum? Klicken", "Why? Click")]
+                    : [page.t("Leertaste halten", "Hold space"), page.t("Loslassen zum Senden", "Release to send"), "", page.t("Tippen zum Unterbrechen", "Tap to interrupt"), page.t("Warum? Klicken", "Why? Click")]
                 enabled: !conv.finished
                 onTalkStarted: conv.startTalk()
                 onTalkEnded: conv.stopTalk()
@@ -493,6 +510,13 @@ Kirigami.ScrollablePage {
                 grabber.start()
             }
         }
+    }
+    // /LL012/: the models go after the idle time set in the profile and come back when needed.
+    Timer {
+        interval: 60000
+        repeat: true
+        running: true
+        onTriggered: conv.idle()
     }
     Timer {
         id: grabber

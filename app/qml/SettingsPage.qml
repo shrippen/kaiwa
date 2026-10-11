@@ -98,9 +98,20 @@ QQC2.ScrollView {
                 onActivated: function (i) { page.kaiwa.setSetting("script", String(i)) }
             }
         }
+        // /LF100/: hold the key, or hands-free with the pause below as the end of a turn.
+        Row {
+            title: page.t("Sprechen", "Speaking")
+            hint: page.t("Freisprechen: Kaiwa hört nach jeder Antwort der Figur von selbst zu, eine Pause beendet deinen Satz",
+                         "Hands-free: Kaiwa listens by itself after each reply of the character, a pause ends your sentence")
+            KanteSegmented {
+                model: [page.t("Taste halten", "Hold the key"), page.t("Freisprechen", "Hands-free")]
+                currentIndex: page.p.handsFree === true ? 1 : 0
+                onActivated: function (i) { page.kaiwa.setSetting("handsFree", i === 1 ? "true" : "false") }
+            }
+        }
         Row {
             title: page.t("Ende eines Zugs", "End of a turn")
-            hint: page.t("So lange Stille, bis Kaiwa annimmt, dass du fertig bist", "Silence until Kaiwa takes it you are done")
+            hint: page.t("Beim Freisprechen: so lange Stille, bis Kaiwa annimmt, dass du fertig bist", "Hands-free: silence until Kaiwa takes it you are done")
             KanteSegmented {
                 readonly property var values: [1.2, 2, 3, 5]
                 model: ["1,2 s", "2 s", "3 s", "5 s"]
@@ -123,6 +134,18 @@ QQC2.ScrollView {
                 text: checked ? page.t("An", "On") : page.t("Aus", "Off")
                 onToggled: page.kaiwa.setSetting("moraHints", checked ? "true" : "false")
                 KanteCheckSkin { control: parent; shape: KanteCheckSkin.Shape.Switch }
+            }
+        }
+        // /LL012/: the speech models leave the memory after this idle time.
+        Row {
+            title: page.t("Modelle entladen", "Unload models")
+            hint: page.t("Nach so langer Pause gibt Kaiwa den Speicher der Sprachmodelle frei; beim nächsten Sprechen lädt es sie wieder (ein paar Sekunden)",
+                         "After a pause this long Kaiwa frees the memory of the speech models; the next time you speak it loads them again (a few seconds)")
+            KanteSegmented {
+                readonly property var values: [5, 10, 30, null]
+                model: ["5 min", "10 min", "30 min", page.t("Nie", "Never")]
+                currentIndex: Math.max(0, values.indexOf(page.p.unloadAfter === undefined ? 10 : page.p.unloadAfter))
+                onActivated: function (i) { page.kaiwa.setSetting("unloadAfter", values[i] === null ? "" : String(values[i])) }
             }
         }
         Row {
@@ -159,6 +182,17 @@ QQC2.ScrollView {
 
         Row {
             section: page.t("Aussehen", "Look")
+            title: page.t("Textgröße", "Text size")
+            hint: page.t("Vergrößert die ganze Oberfläche mit den Lesehilfen, zusätzlich zur Systemeinstellung; gilt ab dem nächsten Start",
+                         "Enlarges the whole interface with the readings, on top of the system setting; from the next start")
+            KanteSegmented {
+                readonly property var values: [1.0, 1.25, 1.5, 1.75, 2.0]
+                model: ["100 %", "125 %", "150 %", "175 %", "200 %"]
+                currentIndex: Math.max(0, values.indexOf(page.p.textScale === undefined ? 1.0 : page.p.textScale))
+                onActivated: function (i) { page.kaiwa.setSetting("textScale", String(values[i])) }
+            }
+        }
+        Row {
             title: page.t("Stil", "Style")
             KanteSegmented {
                 model: ["System", "Kante", "Kante Light"]

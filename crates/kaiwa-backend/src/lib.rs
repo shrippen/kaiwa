@@ -45,6 +45,11 @@ const SCENARIOS: &[&str] = &[
     include_str!("../../../data/scenarios/n5-10-kaimono.json"),
     include_str!("../../../data/scenarios/n5-11-kazoku.json"),
     include_str!("../../../data/scenarios/n5-12-kinou.json"),
+    // Free talk on a topic, outside the path (/LF116/).
+    include_str!("../../../data/scenarios/frei-shumi.json"),
+    include_str!("../../../data/scenarios/frei-tabemono.json"),
+    include_str!("../../../data/scenarios/frei-ryokou.json"),
+    include_str!("../../../data/scenarios/frei-mainichi.json"),
 ];
 
 const FIXTURES: &[(&str, &str)] = &[

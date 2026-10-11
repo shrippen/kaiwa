@@ -8,8 +8,8 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 42 | 20 | 14 | 3 | 0 |
-| Soll | 7 | 9 | 7 | 0 | 0 |
+| Muss | 43 | 23 | 10 | 3 | 0 |
+| Soll | 7 | 11 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
 | ID | Prio | Anforderung | Code | Stand | Prüfregeln |
@@ -20,9 +20,9 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LD040/ | M | Curriculum | core | Code | – |
 | /LD050/ | M | Sprachdaten | – | offen | – |
 | /LD060/ | S | Widersprüche | core, store | Code | – |
-| /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | speech | Code | 0 von 1 automatisch grün: `mara_ptt` |
-| /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
-| /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
+| /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | app, speech, store | geprüft | 1 von 1 automatisch grün: `mara_ptt` |
+| /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, speech, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
+| /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core, speech | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
 | /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, store | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
@@ -30,7 +30,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF113/ | M | Das Transkript der eigenen Äußerung wird angezeigt (was die KI … | app, core | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LF114/ | M | Wer feststeckt, bekommt eine Hilfe in drei Stufen: Stichwort → … | core | geprüft | 1 von 1 automatisch grün: `mara_hint_offered` |
 | /LF115/ | M | Es gibt Szenarien mit Rolle, Ort, Ziel und Erfolgsbedingung (z. B. … | core | Code | 0 von 1 automatisch grün: `jonas_follow_up` |
-| /LF116/ | S | Freies Gespräch zu einem gewählten Thema auf dem eigenen Niveau. | – | offen | – |
+| /LF116/ | S | Freies Gespräch zu einem gewählten Thema auf dem eigenen Niveau. | app, backend | Code | – |
 | /LF117/ | S | KI-Figuren mit festem Charakter, Sprechstil und Stimme (z. B. … | core | geprüft | 1 von 1 automatisch grün: `selin_register_flag` |
 | /LF120/ | M | Tippen statt Sprechen (Kana-IME oder Rōmaji mit Umwandlung). | app, core | geprüft | 1 von 1 automatisch grün: `jonas_typed_marked` |
 | /LF121/ | M | Ein Gespräch lässt sich unterbrechen und später an derselben Stelle … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_resume` |
@@ -90,7 +90,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. | app, backend, store | Code | – |
 | /LL010/ | M | Antwortlatenz (Sprechende → erster Ton der KI): p50 ≤ 1,5 s und p95 ≤ … | – | offen | 0 von 3 automatisch grün: `lena_responsive`, `lena_suggest_smaller`, `theo_latency` |
 | /LL011/ | M | Das Plasmoid öffnet in ≤ 300 ms (Dienst läuft) und ist ≤ 2 s nach … | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_fast` |
-| /LL012/ | S | Speicher im Leerlauf ≤ 150 MB (ohne geladene Modelle). | – | offen | 0 von 1 automatisch grün: `lena_idle_memory` |
+| /LL012/ | S | Speicher im Leerlauf ≤ 150 MB (ohne geladene Modelle). | app, store | Code | 0 von 1 automatisch grün: `lena_idle_memory` |
 | /LL020/ | M | Profil-Ansicht, Lernpfad und Statistik laden in ≤ 500 ms bei der … | store | geprüft | 1 von 1 automatisch grün: `lena_stats_fast` |
 | /LL100/ | M | Die STT-Zeichenfehlerrate (CER) für Lernendensprache auf dem … | speech | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LL110/ | M | Fehlalarmrate der Verbesserungsvorschläge (Vorschlag bei korrekter … | core | Code | 0 von 1 automatisch grün: `theo_fp` |
@@ -98,11 +98,11 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL112/ | M | Erklärungen stehen immer in der UI-Sprache und sind im Niveau der … | ai | geprüft | 1 von 4 automatisch grün: `emi_explain_examples`, `hinnerk_plain_words`, `mara_explain_de`, `theo_ui_en` |
 | /LL200/ | M | Vollständig per Tastatur bedienbar, mit sichtbarem Fokus (Kante … | – | geprüft | 1 von 1 automatisch grün: `theo_keyboard` |
 | /LL201/ | M | Screenreader: Alle Bedienelemente haben Accessible-Namen und -Rollen … | – | geprüft | 1 von 1 automatisch grün: `hinnerk_a11y_names` |
-| /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App … | – | offen | 0 von 2 automatisch grün: `hinnerk_font`, `hinnerk_targets` |
+| /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App … | app, store | Code | 0 von 2 automatisch grün: `hinnerk_font`, `hinnerk_targets` |
 | /LL203/ | M | Kontraste erreichen WCAG AA in System, Kante und Kante Light. | – | offen | 0 von 1 automatisch grün: `hinnerk_targets` |
 | /LL204/ | S | Untertitel für alles Gesprochene. | app, speech, store | geprüft | 1 von 1 automatisch grün: `hinnerk_tts_slow` |
 | /LL300/ | M | Keine Dark Patterns: keine künstliche Verknappung, keine Schuld- oder … | backend, core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
-| /LL301/ | M | Die GUI wird aus Kante erzeugt (siehe Kap. 8). | – | offen | 0 von 1 automatisch grün: `selin_win_style` |
+| /LL301/ | M | Die GUI wird aus Kante erzeugt (siehe Kap. 8). | app | Code | 0 von 1 automatisch grün: `selin_win_style` |
 | /LL302/ | M | Die KI-Figuren bleiben im Lernkontext. | core | Code | 0 von 1 automatisch grün: `jonas_inappropriate` |
 | /LL400/ | M | Lokal zuerst: Alle Muss-Funktionen sind mit lokalen Bausteinen … | ai | Code | 0 von 1 automatisch grün: `lena_zero_egress` |
 | /LL401/ | M | Im Nur-lokal-Modus gibt es keine ausgehenden Verbindungen außer zu … | app, speech | geprüft | 1 von 2 automatisch grün: `lena_download_announced`, `lena_zero_egress` |
@@ -111,11 +111,11 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL501/ | S | Windows 10/11 und macOS (aktuelle und vorige Version): App ohne … | – | offen | 0 von 1 automatisch grün: `selin_win_style` |
 | /LL502/ | K | Android (Kirigami), Mindestversion nach ADR. | – | Vorgabe | – |
 | /LL503/ | M | Eine Codebasis: Rust-Kern und Qt-6-QML-Oberfläche. | – | Vorgabe | – |
-| /LL504/ | M | Anbieter für STT, LLM und TTS sind austauschbar (Trait). | – | offen | 0 von 1 automatisch grün: `jonas_local_switch` |
+| /LL504/ | M | Anbieter für STT, LLM und TTS sind austauschbar (Trait). | app, speech | Code | 0 von 1 automatisch grün: `jonas_local_switch` |
 | /LL505/ | M | Der Kern ist ohne GUI testbar (Headless-API, `kaiwa-sim`). | core | Vorgabe | – |
 | /LL506/ | M | Mehrsprachigkeit der UI über die KDE-Infrastruktur (ki18n/gettext). | store | geprüft | 1 von 1 automatisch grün: `theo_ui_en` |
 | /LL600/ | M | Jede Persona hat ein Startprofil, ein Lernverhalten, typische Fehler … | sim | Code | – |
 | /LL601/ | M | `kaiwa-sim` simuliert Lernende in drei Stufen: Text (Headless-API) … | sim | Code | – |
 | /LL602/ | M | Langzeitläufe mit beschleunigter Uhr (30 simulierte Tage) prüfen … | core, sim | Code | – |
 | /LL603/ | M | Die Läufe sind reproduzierbar (fester Seed, aufgezeichnete Antworten … | sim | Code | – |
-| /LL604/ | M | Der Bericht pro Lauf enthält: bestandene und gescheiterte Prüfregeln … | – | offen | – |
+| /LL604/ | M | Der Bericht pro Lauf enthält: bestandene und gescheiterte Prüfregeln … | sim | Code | – |

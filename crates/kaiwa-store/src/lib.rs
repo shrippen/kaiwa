@@ -92,6 +92,23 @@ pub struct Profile {
     pub louder: bool,
     #[serde(default)]
     pub clear: bool,
+    /// Unload the speech models after this many idle minutes; `None` keeps them (/LL012/).
+    #[serde(default = "ten_minutes")]
+    pub unload_after_min: Option<u32>,
+    /// Hands-free: the turn ends after the pause, listening starts again by itself (/LF100/).
+    #[serde(default)]
+    pub hands_free: bool,
+    /// The whole interface, text and readings included, 1.0 to 2.0 (/LL202/); from the next start.
+    #[serde(default = "one")]
+    pub text_scale: f32,
+}
+
+fn one() -> f32 {
+    1.0
+}
+
+fn ten_minutes() -> Option<u32> {
+    Some(10)
 }
 
 impl Default for Profile {
@@ -112,6 +129,9 @@ impl Default for Profile {
             mora_hints: false,
             louder: false,
             clear: false,
+            unload_after_min: ten_minutes(),
+            hands_free: false,
+            text_scale: 1.0,
         }
     }
 }

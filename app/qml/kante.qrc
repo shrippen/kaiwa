@@ -87,6 +87,7 @@
   <file>Kante/KanteTabStaff.qml</file>
   <file>Kante/KanteTagPicker.qml</file>
   <file>Kante/KanteTalkButton.qml</file>
+  <file>Kante/KanteTechniqueMark.qml</file>
   <file>Kante/KanteTextField.qml</file>
   <file>Kante/KanteTick.qml</file>
   <file>Kante/KanteTile.qml</file>

@@ -140,6 +140,29 @@ QQC2.ScrollView {
             }
         }
 
+        // Free talk on a topic (/LF116/), outside the path, at the learner's difficulty.
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            visible: (page.today.free || []).length > 0
+            spacing: KanteStyle.unit(8)
+            KanteSectionLabel { text: page.t("Freies Gespräch", "Free talk") }
+            Flow {
+                Layout.fillWidth: true
+                spacing: KanteStyle.unit(8)
+                Repeater {
+                    model: page.today.free || []
+                    delegate: KanteButton {
+                        required property var modelData
+                        text: modelData.topic
+                        Accessible.description: page.t("Freies Gespräch über ", "Free talk about ") + modelData.topic
+                        onClicked: page.talk(modelData.id, false)
+                    }
+                }
+            }
+        }
+
         // Reviews (/LF230/); after a break a short refresher (/LF231/).
         KanteCallout {
             Layout.fillWidth: true

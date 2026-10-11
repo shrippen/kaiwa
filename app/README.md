@@ -36,17 +36,21 @@ Einstufung per Gespräch (/LF200/): erster Start, eine Stufe, Ergebnis (deutsch 
 cargo run -p kaiwa-app                    # Demo: aufgezeichnete Antworten (qa/fixtures)
 ```
 
+## Modelle
+
+Spracherkennung, Stimme und Moren-Prüfung laufen lokal mit Modellen, die nicht mit der App kommen. Die Einstellungen laden sie unter „Modelle“, jedes erst nach einem Klick, mit Zweck, Lizenz, Quelle und Größe vorher (F-08, /LL401/). Jede Datei wird über ihre SHA-256 geprüft, bevor die App sie benutzt; ein abgebrochener Download hinterlässt nur eine `.part`-Datei.
+
+| Modell | Wofür | Lizenz | Download | auf der Platte |
+|---|---|---|---|---|
+| ReazonSpeech (sherpa-onnx) | Spracherkennung | Apache-2.0 | 713 MB (Archiv, nur die int8-Dateien bleiben) | 160 MB |
+| Kokoro-82M (kokoro-onnx, int8) | Übergangsstimme der Figur | Apache-2.0 | 121 MB | 121 MB |
+| kaiwa-kana-ctc (huggingface.co/shrippen) | Moren-Hinweise | Apache-2.0 | 356 MB | 356 MB |
+
+Ohne Oberfläche: `cargo run -p kaiwa-speech --example fetch_models` (alle fehlenden, oder Namen als Argumente). Die Modelle liegen in `~/.local/share/kaiwa/models`, ein anderer Ort geht über `KAIWA_MODELS=/pfad`.
+
 ## Sprechen
 
-Die Spracherkennung (ReazonSpeech über sherpa-onnx, ADR-002) läuft lokal. Das Modell kommt nicht mit der App:
-
-```sh
-mkdir -p ~/.local/share/kaiwa/models && cd ~/.local/share/kaiwa/models
-curl -LO https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01.tar.bz2
-tar xf sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01.tar.bz2   # Apache-2.0, etwa 150 MB
-```
-
-Ein anderer Ort geht über `KAIWA_MODELS=/pfad`. Fehlt das Modell, zeigt der Sprechknopf den Fehlerzustand und auf Klick, was zu tun ist; Tippen geht weiter. Sprechen: Leertaste oder Knopf halten, loslassen schickt den Satz.
+Die Spracherkennung (ReazonSpeech über sherpa-onnx, ADR-002) läuft lokal. Fehlt das Modell, zeigt der Sprechknopf den Fehlerzustand und auf Klick, was zu tun ist; Tippen geht weiter. Sprechen: Leertaste oder Knopf halten, loslassen schickt den Satz.
 
 | Gesprochen (Demo) | Ohne Modell |
 |---|---|
@@ -54,15 +58,13 @@ Ein anderer Ort geht über `KAIWA_MODELS=/pfad`. Fehlt das Modell, zeigt der Spr
 
 Bauen braucht ALSA (`alsa-lib`, Debian/Ubuntu `libasound2-dev`). Der Build lädt die statischen sherpa-onnx-Bibliotheken; ohne Netz `SHERPA_ONNX_ARCHIVE_DIR` auf das vorher geladene Archiv setzen.
 
+Freisprechen (Einstellungen, „Sprechen“): Kaiwa hört nach jeder Antwort der Figur von selbst zu, und die Pause aus „Ende eines Zugs“ (1,2–5 s) beendet den Satz; Füllwörter wie えーと zählen als Sprechen (/LF100/–/LF102/). Klingen zwei Sätze abgeschnitten, bietet das Gespräch eine längere Pause an. Ohne Sprechen lädt Kaiwa die Modelle nach der eingestellten Zeit aus dem Speicher (Voreinstellung 10 min, /LL012/).
+
 ## Stimme der Figur (Übergangsstimme)
 
 Die Figur spricht ihre Antworten mit Kokoro-82M (Apache-2.0), Satz für Satz: Der erste Satz läuft, während der nächste entsteht. Kokoro kennt den Tonhöhenakzent nicht (Spike 0.4). Deshalb sagt die Seite „Übergangsstimme“, und Korrekturen, Beispiele zum Nachsprechen und Shadowing bleiben stumm, bis VOICEVOX geprüft ist (H-01).
 
-```sh
-mkdir -p ~/.local/share/kaiwa/models/kokoro-v1.0 && cd ~/.local/share/kaiwa/models/kokoro-v1.0
-curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.int8.onnx   # 88 MB
-curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin          # 27 MB
-```
+Die Stimme spricht im Tempo, das die Schwierigkeit gerade vorgibt (0,7–1,1×, /LF211/). Unter jeder Zeile der Figur stehen „Nochmal“, „Langsamer“ (0,7 davon) und „Übersetzen“ (/LF111/); jede Nutzung zählt als Hilfe. Die Übersetzung liefert der Tutor, die der Eröffnung steht im Szenario. „Lauter“ und „Klar“ oben machen die Stimme lauter und heben die Konsonanten an (/LL204/); beides merkt sich das Profil.
 
 `kokoro-v1.0.onnx` (310 MB, volle Genauigkeit) geht auch und hat Vorrang. Die Stimme wählt das Szenario (`voice`, z. B. `jf_tebukuro`). „Laut/Stumm“ oben schaltet sie ab; Sprechen oder ein Tipp auf den Sprechknopf unterbricht die Figur. Ohne Modell steht oben „Ohne Stimme“, der Tooltip sagt, was fehlt.
 
@@ -99,3 +101,11 @@ cargo run -p kaiwa-app -- --shot out.png --view talk --scenario n5-03-konbini --
 cargo run -p kaiwa-app -- --shot out.png --view talk --resume           # die unterbrochene Sitzung
 cargo run -p kaiwa-app -- --shot out.png --view place --say '…|read:21'  # Einstufung; "read:KK" beantwortet die Lesefragen
 ```
+
+## Moren-Hinweise (Vorschau)
+
+Nach einem gesprochenen Satz prüft die App im Hintergrund die Moren-Längen mit dem eigenen Modell `kaiwa-kana-ctc` (ADR-005). Gemeldet wird höchstens eine Kürzung je Satz, ein zu kurzer langer Vokal oder ein fehlendes っ, als Hinweis ohne Schweregrad („どーして → どして?“), nie als Fehler. Auf echten Stimmen findet das etwa jede zweite Kürzung und irrt sich bei etwa jedem zwanzigsten richtigen Satz (55,8 % bei 4,8 %). Die Freigabegrenze K-02 sind 60 %, darum ist es eine Vorschau und in den Einstellungen („Aussprache-Hinweise“) standardmäßig aus.
+
+## Freies Gespräch und Textgröße
+
+Unter „Freies Gespräch“ auf der Startseite liegen vier Themen (Hobbys, Essen, Reisen, Alltag) außerhalb des Lernpfads, auf dem eigenen Niveau (/LF116/). Die Textgröße in den Einstellungen (100–200 %) vergrößert die ganze Oberfläche samt Lesehilfen, ab dem nächsten Start (/LL202/).

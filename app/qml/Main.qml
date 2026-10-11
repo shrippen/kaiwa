@@ -6,8 +6,9 @@ import Kante
 import org.shrippen.kaiwa
 
 // Kaiwa's window (Lastenheft Kap. 7): tabs for today, the learning path, review, profile and
-// settings; a conversation opens as its own page on top. Style follows the Kante rule:
-// System by default, Kante and Kante Light from the settings.
+// settings; a conversation opens as its own page on top. The GUI comes from Kante (/LL301/;
+// the CI checks that the copy matches Kante main). Style follows the Kante rule: System by
+// default, Kante and Kante Light from the settings.
 //
 // Screenshot mode: --shot out.png [--view start|path|review|profile|settings|talk|place]
 // [--scenario id] [--resume] [--say "a|b|wav:file|?|!|~|read:KK|translate:N"] [--kind 0|1|2]

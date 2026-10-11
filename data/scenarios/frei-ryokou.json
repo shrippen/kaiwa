@@ -1,0 +1,58 @@
+{
+  "id": "frei-ryokou",
+  "unit": "FREI",
+  "name": "中村 · Nakamura",
+  "title": {
+    "de": "Freies Gespräch: Reisen",
+    "en": "Free talk: travel"
+  },
+  "character": {
+    "de": "Nakamura Aki, eine Bekannte aus dem Sprachcafé. Spricht frei über das Thema, auf dem Niveau des Gegenübers, in der です/ます-Form, stellt Nachfragen und erzählt auch von sich.",
+    "en": "Nakamura Aki, an acquaintance from the language café. Talks freely about the topic at the learner's level, in the です/ます form, asks follow-up questions and also talks about themself."
+  },
+  "register": "polite",
+  "voice": "jf_nezumi",
+  "opening": "{旅行|りょこう}は{好|す}きですか。",
+  "opening_translation": {
+    "de": "Reisen Sie gern?",
+    "en": "Do you like travelling?"
+  },
+  "goals": [
+    {
+      "id": "tell",
+      "text": {
+        "de": "Erzähl von einer Reise.",
+        "en": "Tell about a trip."
+      },
+      "help": {
+        "keyword": "行きました",
+        "start": "去年（きょねん）…",
+        "example": "去年、京都に行きました。"
+      }
+    },
+    {
+      "id": "ask",
+      "text": {
+        "de": "Stell eine Frage zurück.",
+        "en": "Ask a question back."
+      },
+      "help": {
+        "keyword": "どこ",
+        "start": "中村さんは…",
+        "example": "中村さんはどこに行きましたか。"
+      }
+    },
+    {
+      "id": "how",
+      "text": {
+        "de": "Sag, wie es war.",
+        "en": "Say how it was."
+      },
+      "help": {
+        "keyword": "楽しかった（たのしかった）",
+        "start": "とても…",
+        "example": "とても楽しかったです。"
+      }
+    }
+  ]
+}
