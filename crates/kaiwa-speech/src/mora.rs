@@ -368,8 +368,9 @@ pub const MIN_MORAS: usize = 6;
 
 /// What a finding must beat its threshold by before the app shows it. The thresholds come from
 /// spike 0.6 with OpenJTalk's reading; the app reads with its own G2P, which differs in about one
-/// sentence of ten. 0.3 keeps the false alarms at 4.8 % on the 500 real voices of the spike
-/// (`examples/mora_hints.rs`: 55.6 % of shortened long vowels and 56.1 % of left-out っ found).
+/// sentence of ten. With 0.3 the 500 real voices of the spike give 4.4 % false alarms and find
+/// 55.3 % of shortened long vowels and 62.0 % of left-out っ (`examples/mora_hints.rs`); without
+/// it 4.8 % and 59.7 % overall.
 pub const APP_MARGIN: f32 = 0.3;
 
 /// A hint for the learner (K-01, K-02): in `surface` (as written), the word `meant` (pronounced

@@ -84,7 +84,7 @@ pub struct Profile {
     #[serde(default)]
     pub cost_limit_cents: Option<u32>,
     /// Hints on mora lengths after a spoken turn (/LF320/). Off until they reach the release
-    /// mark of K-02 in the app (55.8 % of 60 %); a preview to switch on until then.
+    /// mark of K-02 in the app (58.1 % of 60 %); a preview to switch on until then.
     #[serde(default)]
     pub mora_hints: bool,
     /// Easier listening (/LL204/): the character's voice louder, and clearer (more highs).
