@@ -162,6 +162,7 @@ use kaiwa_speech::mora::{self, Checker, Hint, Kind};
 use kaiwa_speech::playback::{self, Player};
 use kaiwa_speech::stt::Recognizer;
 use kaiwa_speech::tts::{self, Voice};
+use kaiwa_speech::{Synthesizer, Transcriber};
 use serde_json::{Value, json};
 
 use crate::state::{now, provider, state};
@@ -206,7 +207,8 @@ pub struct ConversationRust {
     started: Option<kaiwa_core::Moment>,
     session: Option<Arc<Mutex<Session>>>,
     log: Vec<Value>,
-    recognizer: Option<Arc<Recognizer>>,
+    /// Any engine behind the traits (/LL504/); ReazonSpeech and Kokoro today.
+    recognizer: Option<Arc<dyn Transcriber>>,
     capture: Option<Capture>,
     speaker: Option<Speaker>,
     /// The mora check (/LF320/); `None` without its model.
@@ -227,7 +229,7 @@ struct MoraCheck {
 /// The interim voice and the speaker it plays through.
 #[derive(Clone)]
 struct Speaker {
-    voice: Arc<Mutex<Voice>>,
+    voice: Arc<Mutex<dyn Synthesizer>>,
     player: Arc<Player>,
 }
 
@@ -691,11 +693,14 @@ impl qobject::Conversation {
                 if !still() {
                     return;
                 }
-                let audio = speaker.voice.lock().map(|mut v| v.speak(&sentence, speed));
+                let audio = speaker
+                    .voice
+                    .lock()
+                    .map(|mut v| v.speak(&sentence, speed).map(|s| (s, v.sample_rate())));
                 match audio {
-                    Ok(Ok(mut samples)) if still() => {
-                        playback::enhance(&mut samples, tts::SAMPLE_RATE, louder, clear);
-                        speaker.player.play(&samples, tts::SAMPLE_RATE)
+                    Ok(Ok((mut samples, rate))) if still() => {
+                        playback::enhance(&mut samples, rate, louder, clear);
+                        speaker.player.play(&samples, rate)
                     }
                     Ok(Err(e)) => eprintln!("kaiwa: {e}"),
                     _ => {}

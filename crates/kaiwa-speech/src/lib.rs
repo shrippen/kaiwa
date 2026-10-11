@@ -32,6 +32,35 @@ pub enum SpeechError {
     Voice(String),
 }
 
+/// Speech recognition behind a trait (/LL504/): another engine (whisper.cpp, a cloud service)
+/// implements it, and the app does not change.
+pub trait Transcriber: Send + Sync {
+    /// The text of one utterance (mono, any sample rate).
+    fn transcribe(&self, samples: &[f32], sample_rate: u32) -> String;
+}
+
+/// A voice behind a trait (/LL504/): another engine (VOICEVOX, a cloud voice) implements it.
+pub trait Synthesizer: Send {
+    /// One sentence as mono samples at [`Synthesizer::sample_rate`]; `speed` 1.0 is normal.
+    fn speak(&mut self, text: &str, speed: f32) -> Result<Vec<f32>, SpeechError>;
+    fn sample_rate(&self) -> u32;
+}
+
+impl Transcriber for stt::Recognizer {
+    fn transcribe(&self, samples: &[f32], sample_rate: u32) -> String {
+        stt::Recognizer::transcribe(self, samples, sample_rate)
+    }
+}
+
+impl Synthesizer for tts::Voice {
+    fn speak(&mut self, text: &str, speed: f32) -> Result<Vec<f32>, SpeechError> {
+        tts::Voice::speak(self, text, speed)
+    }
+    fn sample_rate(&self) -> u32 {
+        tts::SAMPLE_RATE
+    }
+}
+
 static ONNX: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 /// ONNX Runtime work (loading, recognising, synthesising) holds this lock, one call at a time;

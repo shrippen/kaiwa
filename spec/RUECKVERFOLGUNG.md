@@ -8,7 +8,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 43 | 20 | 13 | 3 | 0 |
+| Muss | 43 | 21 | 12 | 3 | 0 |
 | Soll | 7 | 11 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
@@ -111,7 +111,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL501/ | S | Windows 10/11 und macOS (aktuelle und vorige Version): App ohne … | – | offen | 0 von 1 automatisch grün: `selin_win_style` |
 | /LL502/ | K | Android (Kirigami), Mindestversion nach ADR. | – | Vorgabe | – |
 | /LL503/ | M | Eine Codebasis: Rust-Kern und Qt-6-QML-Oberfläche. | – | Vorgabe | – |
-| /LL504/ | M | Anbieter für STT, LLM und TTS sind austauschbar (Trait). | – | offen | 0 von 1 automatisch grün: `jonas_local_switch` |
+| /LL504/ | M | Anbieter für STT, LLM und TTS sind austauschbar (Trait). | app, speech | Code | 0 von 1 automatisch grün: `jonas_local_switch` |
 | /LL505/ | M | Der Kern ist ohne GUI testbar (Headless-API, `kaiwa-sim`). | core | Vorgabe | – |
 | /LL506/ | M | Mehrsprachigkeit der UI über die KDE-Infrastruktur (ki18n/gettext). | store | geprüft | 1 von 1 automatisch grün: `theo_ui_en` |
 | /LL600/ | M | Jede Persona hat ein Startprofil, ein Lernverhalten, typische Fehler … | sim | Code | – |
