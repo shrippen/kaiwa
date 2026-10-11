@@ -30,3 +30,13 @@ Bewertet werden sollen Moren-Struktur (Langvokale, っ, ん, Entstimmung, Rhythm
 ## Entschieden (Fragenpaket 4)
 
 - **I-01:** Die Moren-Längen misst ein eigener Aligner mit einem Kana-CTC-Modell (wav2vec2, Ausgabe Hiragana) über ONNX Runtime: Zeiten pro Kana aus den CTC-Wahrscheinlichkeiten. Julius (Segmentation-Kit) und der Montreal Forced Aligner laufen im Spike als automatische Gegenprobe mit: Wo sie sich um mehr als eine Toleranz unterscheiden, meldet der Spike den Satz. Die Lizenz des CTC-Modells wird vor der Wahl geprüft.
+
+## Befund Spike 0.6, Moren-Längen (2026-10-11)
+
+Messung und Zahlen in [`spikes/s06-moren`](../../spikes/s06-moren/README.md). Kurz:
+
+- **Ziel nicht erreicht.** Bestes Verfahren: Erkennung 76 % bei 4,3 % Fehlalarmen im Satzrahmen, 58 % über alle Versuche (synthetisch, Kokoro und OpenJTalk).
+- **Punkt 3 (Dauerverhältnisse) trägt nicht**, weder aus der CTC-Ausrichtung noch aus MFA: Die natürliche Streuung der Längen ist größer als der Fehler.
+- **Was trägt, ist der Varianten-Vergleich:** die CTC-Wahrscheinlichkeit der gemeinten Kana gegen die Formen, die ein Moren-Fehler ergäbe (おばあさん/おばさん), mit einer Schwelle je Fehlerart. Er nennt die Stelle gleich mit (88 %).
+- **Modell:** Nur `vumichien/wav2vec2-large-xlsr-japanese-hiragana` gibt Kana je Zeichen. Es hört ん vor Vokal grundsätzlich als n-Reihe (Schreibungs-Vorwissen) und wurde auch auf JSUT trainiert (Audio nur nicht-kommerziell frei). Die ReazonSpeech-Modelle schreiben Kanji und helfen nicht.
+- **Vorschlag (offen, Fragenpaket 5):** Punkt 3 durch den Varianten-Vergleich ersetzen; ein eigenes Kana-CTC-Modell feinjustieren (ReazonSpeech-wav2vec2-base, Common Voice CC0, Aussprache-Kana aus OpenJTalk); Abnahme an den eigenen Aufnahmen (F-04). Bis dahin gilt F-09.
