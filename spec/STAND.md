@@ -1,12 +1,12 @@
-# Stand und Übergabe (2026-10-10)
+# Stand und Übergabe (2026-10-11)
 
-Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die nächste Session zuerst lesen, dann `ROADMAP.md`. Starten und prüfen: `./start.sh` (`demo`, `sim`, `check`).
+Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die nächste Session zuerst lesen, dann `ROADMAP.md`. Welche Anforderung wo umgesetzt und geprüft ist, zeigt [`RUECKVERFOLGUNG.md`](RUECKVERFOLGUNG.md) (erzeugt mit `cargo run -p kaiwa-sim -- trace --write`). Starten und prüfen: `./start.sh` (`demo`, `sim`, `check`).
 
 ## Was da ist
 
 | Bereich | Stand | PRs |
 |---|---|---|
-| Planung | Lastenheft, Roadmap, 7 QA-Personas mit 82 Prüfregeln, ADR-001 bis -008 | #1, #3 |
+| Planung | Lastenheft 0.2 (mit den Entscheidungen der Fragenpakete), Roadmap, 7 QA-Personas mit 82 Prüfregeln, ADR-001 bis -008 | #1, #3 |
 | Kern (`kaiwa-core`) | Gesprächslogik, Hilfe in drei Stufen, Korrekturen mit Schweregrad, Lernermodell, Schwierigkeitsregler (8 Stellgrößen, Ziel 80 %), FSRS-5, Tagesziel, Serie mit Freeze und Pause, XP gegen Ausnutzen, Curriculum N5 (12 Einheiten), Einstufung per Gespräch, Rōmaji-Eingabe | #6, #14, #16 |
 | Profil (`kaiwa-store`) | SQLite, Fortsetzen, Export nach `spec/export.schema.json`, Import, vollständiges Löschen | #15 |
 | Backend (`kaiwa-backend`) | Ansichten als JSON, Tutor-Wahl, Kostenbremse, mehrere Profile, Aufnahmen mit Opt-in, Statistik, Erinnerungsregel | #17 |
@@ -33,7 +33,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 ## Offen
 
-1. **Moren-Prüfung** (ADR-005, Fragenpakete 5 und 6 entschieden): eigenes Kana-CTC-Modell trainiert (`spikes/s06-moren/finetune.py`, v1 base, v2 large), Test mit echten Stimmen (`real.py`, Common Voice mit hineingeschnittenen Fehlern): nur Kürzungen geprüft erkennt v2 61 % bei 4,8 % Fehlalarmen (v1 62 % bei 6,0 %; v3 mit ReazonSpeech dazu nicht besser, 59 % bei 5,1 %), alle Fehlerarten zusammen unter 25 %. Daten und Modelle liegen unter `target/` (Common Voice 8 GB, `kana-ctc-v1`, `kana-ctc-v2`), nicht im Repository. Rust: `kaiwa-speech::mora` (Varianten, CTC, `Checker` über ONNX Runtime, `G2p::pronounced`). Als Nächstes: v2 auf Hugging Face unter `shrippen` veröffentlichen (Apache-2.0, `NOTICE`, K-04/K-05), dann die Hinweise in der App (nur in Sätzen, nur Kürzungen, J-05/K-01/K-02).
+1. **Moren-Prüfung** (ADR-005, Fragenpakete 5 und 6 entschieden): eigenes Kana-CTC-Modell trainiert (`spikes/s06-moren/finetune.py`, v1 base, v2 large), Test mit echten Stimmen (`real.py`, Common Voice mit hineingeschnittenen Fehlern): nur Kürzungen geprüft erkennt v2 61 % bei 4,8 % Fehlalarmen (v1 62 % bei 6,0 %; v3 mit ReazonSpeech dazu nicht besser, 59 % bei 5,1 %), alle Fehlerarten zusammen unter 25 %. Daten und Modelle liegen unter `target/` (Common Voice 8 GB, `kana-ctc-v1`, `kana-ctc-v2`), nicht im Repository. Rust: `kaiwa-speech::mora` (Varianten, CTC, `Checker` über ONNX Runtime, `G2p::pronounced`). v2 ist auf Hugging Face veröffentlicht ([`shrippen/kaiwa-kana-ctc`](https://huggingface.co/shrippen/kaiwa-kana-ctc), Apache-2.0, in `NOTICE`; Download-Adresse `kaiwa_speech::models::KANA_CTC_URL`, feste Revision). Als Nächstes: die Hinweise in der App (Download anbieten, nur in Sätzen, nur Kürzungen, J-05/K-01/K-02).
 2. **Lokaler Test** (`spec/LOKALER-TEST.md`): KI-Anbindung (Spike 0.5), VOICEVOX (H-01), Messwerte auf dem Framework 13, eigene Aufnahmen. Ergebnisse als PR nach `qa/local/<datum>/` (H-05).
 3. **40 Prüfregeln** sind noch nicht automatisch, meist Audio, GUI (AT-SPI, Tastatur) oder Verhalten des echten Tutors. Sie brauchen den gui- und audio-Modus von `kaiwa-sim` oder den lokalen Test.
 4. **Stimme:** H-01 (VOICEVOX) entscheidet die endgültige Stimme; bis dahin Kokoro als Übergang.

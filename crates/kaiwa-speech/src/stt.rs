@@ -1,6 +1,6 @@
-//! Speech recognition with ReazonSpeech (zipformer transducer, sherpa-onnx). The utterance
-//! gets 0.3 s of silence before and after: without it the model drops the first words
-//! (spike 0.3).
+//! Speech recognition with ReazonSpeech (zipformer transducer, sherpa-onnx; /LL100/). The
+//! utterance gets 0.3 s of silence before and after: without it the model drops the first
+//! words (spike 0.3).
 
 use std::path::Path;
 

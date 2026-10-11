@@ -2,12 +2,14 @@
 //!
 //! `validate` checks the personas; `run` plays their journeys in text mode against the engine
 //! with recorded tutor answers, and the long journeys over simulated days against the learning
-//! model (`days`). Audio and GUI modes follow with the app.
+//! model (`days`); `trace` writes the traceability table. Audio and GUI modes follow with the
+//! app.
 
 mod days;
 mod engine;
 mod profile;
 mod run;
+mod trace;
 mod ui;
 mod validate;
 
@@ -49,6 +51,12 @@ enum Command {
         #[arg(long)]
         journey: String,
     },
+    /// Print the traceability table (requirement → code → checks).
+    Trace {
+        /// Write it to spec/RUECKVERFOLGUNG.md instead.
+        #[arg(long)]
+        write: bool,
+    },
 }
 
 fn main() -> ExitCode {
@@ -82,6 +90,23 @@ fn main() -> ExitCode {
         },
         Command::Days { persona, journey } => match print_days(&cli.root, &persona, &journey) {
             Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("error: {error:#}");
+                ExitCode::FAILURE
+            }
+        },
+        Command::Trace { write } => match trace::table(&cli.root) {
+            Ok(table) if write => match std::fs::write(cli.root.join(trace::FILE), table) {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(error) => {
+                    eprintln!("error: {error}");
+                    ExitCode::FAILURE
+                }
+            },
+            Ok(table) => {
+                print!("{table}");
+                ExitCode::SUCCESS
+            }
             Err(error) => {
                 eprintln!("error: {error:#}");
                 ExitCode::FAILURE

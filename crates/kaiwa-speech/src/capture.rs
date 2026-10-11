@@ -1,6 +1,6 @@
-//! Microphone capture while the talk button is held. The audio stream lives on its own
-//! thread (cpal streams are not `Send` on every platform); the caller holds a handle with
-//! the live level and gets the recording back when it stops.
+//! Microphone capture while the talk button is held (push-to-talk, /LF100/). The audio stream
+//! lives on its own thread (cpal streams are not `Send` on every platform); the caller holds a
+//! handle with the live level and gets the recording back when it stops.
 
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::mpsc;
