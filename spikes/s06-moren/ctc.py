@@ -114,10 +114,12 @@ def log_softmax(x):
     return x - np.log(np.exp(x).sum(axis=-1, keepdims=True))
 
 
-def blank_merged(logp, blank, delim):
-    """The model writes '|' between words; for alignment it counts as silence like the blank."""
+def blank_merged(logp, blank, delims):
+    """The model writes '|' between words (or pau, sil); for alignment that counts as silence like
+    the blank. `delims`: one token id or several."""
     out = logp.copy()
-    out[:, blank] = np.logaddexp(logp[:, blank], logp[:, delim])
+    for d in np.atleast_1d(np.asarray(delims, dtype=int)):
+        out[:, blank] = np.logaddexp(out[:, blank], logp[:, d])
     return out
 
 

@@ -27,7 +27,8 @@ from pathlib import Path
 import librosa
 import numpy as np
 import torch
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
+from huggingface_hub import hf_hub_download
+from transformers import AutoFeatureExtractor, AutoModelForCTC
 
 sys.path.insert(0, str(Path(__file__).parent))  # -I leaves the script's directory out
 import ctc  # noqa: E402
@@ -43,6 +44,13 @@ MODELS = {
     "reazon-large": ("reazon-research/japanese-wav2vec2-large-rs35kh", "2162c9edb97f362f7623d6b3a2e417458e879bca",
                      "▁", "read"),
     "reazon-base": ("reazon-research/japanese-wav2vec2-base-rs35kh", None, "▁", "read"),
+    # OpenJTalk phonemes (cl for っ, N for ん, long vowels doubled), HuBERT on ReazonSpeech.
+    "beatrice-v4": ("prj-beatrice/japanese-hubert-base-phoneme-ctc-v4", "f5fe07043bcb0b77a86faf72ac6d8fc1ae558f99",
+                    ("pau", "sil"), "phoneme"),
+    # Pronounced hiragana as SentencePiece pieces (ばー, って), CTC head of a NeMo Parakeet hybrid
+    # (CC-BY-4.0 base by NVIDIA, trained on ReazonSpeech). Needs NVIDIA NeMo.
+    "parakeet-hira": ("kizuna-intelligence/hiragana-parakeet-tdt-ctc-0.6b-ja-beta",
+                      "c4f57da3b4c970de70d371b9f6f87b47b7509d1f", (), "nemo"),
 }
 SR = 16000
 PAD = 0.5  # s of silence around the utterance (spike 0.3: without it the start gets lost)
@@ -71,18 +79,41 @@ class Model:
     def __init__(self, key, device):
         name, revision, delim, writes = MODELS.get(key, (key, None, "|", "pron"))
         self.name, self.revision = name, revision
-        self.pron = writes == "pron"
-        self.proc = Wav2Vec2Processor.from_pretrained(name, revision=revision)
-        # float32 whatever the checkpoint holds (the large base is stored in bfloat16)
-        self.model = Wav2Vec2ForCTC.from_pretrained(name, revision=revision, torch_dtype=torch.float32).eval().to(device)
+        self.pron = writes in ("pron", "phoneme", "nemo")
+        self.phoneme = writes == "phoneme"
+        # Tokens are not one per kana: no mora durations from the alignment
+        self.no_durations = writes in ("phoneme", "nemo")
+        self.nemo = None
         self.device = device
-        vocab = self.proc.tokenizer.get_vocab()
-        self.vocab = vocab
-        self.blank = self.proc.tokenizer.pad_token_id
-        self.delim = vocab[delim]
+        self._ids = {}
+        if writes == "nemo":
+            import nemo.collections.asr as nemo_asr
+            path = hf_hub_download(name, Path(name).name.replace("-beta", "") + ".nemo", revision=revision)
+            self.nemo = nemo_asr.models.ASRModel.restore_from(path, map_location=device).eval()
+            pieces = self.nemo.tokenizer.ids_to_tokens(list(range(self.nemo.tokenizer.vocab_size)))
+            self.vocab = {t: i for i, t in enumerate(pieces)}
+            self.blank = self.nemo.tokenizer.vocab_size  # NeMo puts the CTC blank last
+            self.delim = []
+            return
+        self.fe = AutoFeatureExtractor.from_pretrained(name, revision=revision)
+        # float32 whatever the checkpoint holds (the large base is stored in bfloat16)
+        self.model = AutoModelForCTC.from_pretrained(name, revision=revision, torch_dtype=torch.float32).eval().to(device)
+        vocab_file = Path(name) / "vocab.json" if Path(name).is_dir() else Path(
+            hf_hub_download(name, "vocab.json", revision=revision))
+        self.vocab = json.loads(vocab_file.read_text())
+        self.blank = next(self.vocab[t] for t in ("[PAD]", "<pad>", "PAD") if t in self.vocab)
+        self.delim = [self.vocab[d] for d in ((delim,) if isinstance(delim, str) else delim)]
 
     def logp(self, audio):
-        x = self.proc(audio, sampling_rate=SR, return_tensors="pt").input_values.to(self.device)
+        if self.nemo is not None:
+            x = torch.tensor(audio, dtype=torch.float32, device=self.device)[None]
+            n = torch.tensor([x.shape[1]], device=self.device)
+            with torch.no_grad():
+                feats, flen = self.nemo.preprocessor(input_signal=x, length=n)
+                enc, _ = self.nemo.encoder(audio_signal=feats, length=flen)
+                lp = self.nemo.ctc_decoder(encoder_output=enc)[0].float().cpu().numpy()
+            return ctc.log_softmax(lp)
+        x = self.fe(audio, sampling_rate=SR, return_tensors="pt").input_values.to(self.device)
         with torch.no_grad():
             lg = self.model(x).logits[0].float().cpu().numpy()
         return ctc.blank_merged(ctc.log_softmax(lg), self.blank, self.delim)
@@ -91,11 +122,26 @@ class Model:
         return ctc.pron(text) if self.pron else ctc.reading(text)
 
     def ids(self, kana):
-        return [self.vocab[c] for c in kana]
+        """Token ids of kana, or None when the model has no token for some of it."""
+        if kana not in self._ids:
+            if self.nemo is not None:  # kana -> SentencePiece pieces (おばーさん -> ▁お ばー さん)
+                ids = self.nemo.tokenizer.text_to_ids(kana)
+                self._ids[kana] = None if self.vocab.get("<unk>") in ids else ids
+                return self._ids[kana]
+            if self.phoneme:  # kana -> OpenJTalk phonemes (おばーさん -> o b a a s a N)
+                import pyopenjtalk
+                kata = "".join(chr(ord(c) + 0x60) if "ぁ" <= c <= "ゖ" else c for c in kana)
+                toks = pyopenjtalk.g2p(kata).split()
+            else:
+                toks = list(kana)
+            self._ids[kana] = [self.vocab[t] for t in toks] if all(t in self.vocab for t in toks) else None
+        return self._ids[kana]
 
 
 def duration_features(logp, kana, model):
     """Mora lengths relative to the median mora; the shortest long element and the longest short mora."""
+    if model.no_durations:
+        return {"rate_s": None, "spans": [], "min_long": None, "max_short": None}
     ids = model.ids(kana)
     starts, ends = ctc.align(logp, ids, model.blank)
     m = ctc.moras(kana)
@@ -132,7 +178,7 @@ def variant_features(logp, kana, model):
     base = ctc.log_likelihood(logp, model.ids(kana), model.blank)
     every = {}
     for kind, i, var in ctc.variants(kana, "ー" if model.pron else None):
-        if any(c not in model.vocab for c in var):
+        if model.ids(var) is None:
             continue
         every[var] = (kind, i, ctc.log_likelihood(logp, model.ids(var), model.blank) - base)
     out = {"base": base, "every": every}

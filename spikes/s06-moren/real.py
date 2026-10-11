@@ -54,10 +54,11 @@ def cer(a, b):
     return edit(a, b) / max(len(b), 1)
 
 
-def greedy(logp, token, model):
+def greedy(logp, model):
+    """The free transcription as token ids (kana or phonemes, whatever the model writes)."""
     ids = logp.argmax(-1)
-    return "".join(token[i] for i, prev in zip(ids, np.concatenate(([-1], ids[:-1])))
-                   if i != prev and i != model.blank and i != model.delim)
+    return [int(i) for i, prev in zip(ids, np.concatenate(([-1], ids[:-1])))
+            if i != prev and i != model.blank and i not in model.delim]
 
 
 def select(cv, n, seed=0):
@@ -173,7 +174,6 @@ def main():
     clips_dir = work / "clips"
     clips_dir.mkdir(parents=True, exist_ok=True)
     model = Model(args.model, "cuda" if torch.cuda.is_available() else "cpu")
-    token = {v: k for k, v in model.vocab.items()}
 
     # 1. Clips whose reading the model hears (the meant text must match what was said). The first
     # run chooses them (with the hiragana model) and keeps the choice in clips.json, so every model
@@ -190,10 +190,10 @@ def main():
             a, _ = librosa.effects.trim(a, top_db=35)
             sf.write(wav, a, SR)
         kana = model.kana(r["sentence"])
-        if not kana or any(c not in model.vocab for c in kana):
+        if not kana or model.ids(kana) is None:
             continue
-        heard = greedy(model.logp(load(wav, None, 0)), token, model)
-        if cer(heard, kana) > 0.2:
+        heard = greedy(model.logp(load(wav, None, 0)), model)
+        if cer(heard, model.ids(kana)) > 0.2:
             continue
         clips.append({"uid": uid, "speaker": r["client_id"][:12], "sentence": r["sentence"], "kana": kana,
                       "pron": ctc.pron(r["sentence"])})
@@ -244,9 +244,10 @@ def main():
             feats = variant_features(logp, c["kana"], model)
             normed = best_by_kind({v: (k, j, d - ref[v][2]) for v, (k, j, d) in feats["every"].items() if v in ref})
             # Supported: the free transcription is closer to the variant than to the meant kana
-            heard = greedy(logp, token, model)
-            base = edit(heard, c["kana"])
-            supported = best_by_kind({v: kjd for v, kjd in feats["every"].items() if edit(heard, v) < base})
+            heard = greedy(logp, model)
+            base = edit(heard, model.ids(c["kana"]))
+            supported = best_by_kind({v: kjd for v, kjd in feats["every"].items()
+                                      if edit(heard, model.ids(v)) < base})
             rows.append({"uid": c["uid"], "speaker": c["speaker"], "kana": c["kana"], "edit": kind,
                          "phone": ph[i][2] if i is not None else None,
                          "error": kind in GEM_KINDS, "variants": feats, "ref": normed,

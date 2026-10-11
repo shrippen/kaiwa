@@ -131,3 +131,22 @@ Eigene Modelle (`finetune.py`): `reazon-research/japanese-wav2vec2-base` bzw. `-
 - **Synthetisch** sind die eigenen Modelle viel besser als das Hiragana-Modell: im Satzrahmen v1 83 % bei 3,8 %, v2 je Fehlerart 87 % bei 4,8 % (Hiragana 62 %); alle Versuche v1 65 % bei 5,1 %, v2 je Fehlerart 74 % bei 7,4 % (Hiragana 47 %). Auf echten Stimmen liegen v0, v1 und v2 dicht beieinander; Common Voice ist mit Laptop- und Handymikrofonen aufgenommen und schwerer als jede Synthese.
 
 **App:** `kaiwa-speech::mora` (Rust) rechnet dasselbe über ONNX Runtime. `export_onnx.py` exportiert das Modell (v1: fp32 378 MB, exakt wie PyTorch; int8 nur für MatMul 122 MB, v2 356 MB; Varianten-Werte im Median 0,04 daneben, auf der CPU dieses Rechners mit 24 Kernen 25-mal schneller als Echtzeit). Welche Fehlerarten geprüft werden, steht in `thresholds.json` neben dem Modell.
+
+## Fertige Modelle zum Vergleich
+
+Eine Suche auf Hugging Face nach japanischen Modellen mit Kana- oder Phonem-Ausgabe fand zwei, die wie das eigene auf *Aussprache* trainiert sind, beide auf ReazonSpeech:
+
+- `prj-beatrice/japanese-hubert-base-phoneme-ctc-v4` (Apache-2.0): OpenJTalk-Phoneme (`cl` für っ, `N` für ん, Langvokale als doppelte Vokale). `measure.py` übersetzt die Kana-Varianten mit pyopenjtalk in Phoneme.
+- `kizuna-intelligence/hiragana-parakeet-tdt-ctc-0.6b-ja-beta` (Apache-2.0 auf NVIDIAs Parakeet, CC-BY-4.0): Aussprache-Hiragana als Teilwörter, 5,7 % Zeichenfehler auf Common Voice. Gemessen wird der CTC-Kopf; braucht NVIDIA NeMo (eigene Umgebung mit Python 3.11).
+
+Echte Stimmen, nur Kürzungen:
+
+| Modell | einfach | mit Referenz |
+|---|---|---|
+| eigenes v2 | **61,2 % bei 4,8 %** | 58,8 % bei 4,8 % |
+| prj-beatrice v4 | 34,1 % bei 4,9 % | 52,0 % bei 5,7 % |
+| Parakeet-Hiragana | 26,1 % bei 4,6 % | 39,1 % bei 5,1 % |
+
+- **Ein besserer Erkenner ist kein besserer Prüfer.** Parakeet erkennt Sprache viermal genauer als v2, findet aber weniger Kürzungen: 80-ms-Frames, Teilwörter (`ばー`, `って`) und ein starkes Sprachvorwissen lassen es das gemeinte Wort hören, auch wenn eine More fehlt. Dasselbe glättete die Spracherkennung in Spike 0.3.
+- prj-beatrice schreibt Langvokale als zwei gleiche Phoneme; CTC braucht dazwischen eine Lücke, und das Modell lässt sie oft weg.
+- Synthetisch (alle Versuche, mit Referenz): prj-beatrice 76 % bei 9,2 %, Parakeet 60 % bei 6,2 %, v2 je Fehlerart 74 % bei 7,4 %.
