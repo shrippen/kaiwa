@@ -13,6 +13,7 @@
   "register": "casual",
   "voice": "jf_alpha",
   "opening": "ひさしぶり！{最近|さいきん}、なにしてる？",
+  "opening_translation": { "de": "Lange nicht gesehen! Was machst du so?", "en": "Long time no see! What have you been up to?" },
   "goals": [
     {
       "id": "hobby",

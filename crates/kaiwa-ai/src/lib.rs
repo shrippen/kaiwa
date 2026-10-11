@@ -42,6 +42,20 @@ pub trait ChatProvider: Send + Sync {
     fn reply(&self, request: &TurnRequest) -> Result<String, AiError>;
     /// The analysis of the learner's last turn in `request.messages`.
     fn analyse(&self, request: &TurnRequest) -> Result<Analysis, AiError>;
+    /// The character's `line` in the UI language `lang` ("de", "en") for the listening aid
+    /// (/LF111/): a reply call with a translation prompt.
+    fn translate(&self, line: &str, lang: &str) -> Result<String, AiError> {
+        let language = if lang == "en" { "English" } else { "German" };
+        let text = self.reply(&TurnRequest {
+            system: format!(
+                "Translate the Japanese line the user sends into {language}. Answer with the \
+                 translation only: no Japanese, no romaji, no notes."
+            ),
+            messages: vec![ChatMessage::user(line)],
+            max_tokens: 200,
+        })?;
+        Ok(text.trim().to_string())
+    }
 }
 
 /// The JSON schema an analysis must match (structured output for both providers).

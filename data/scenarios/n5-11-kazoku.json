@@ -13,6 +13,7 @@
   "register": "polite",
   "voice": "jf_gongitsune",
   "opening": "ご{家族|かぞく}は{何人|なんにん}ですか。",
+  "opening_translation": { "de": "Wie viele Personen sind in Ihrer Familie?", "en": "How many people are in your family?" },
   "goals": [
     {
       "id": "number",

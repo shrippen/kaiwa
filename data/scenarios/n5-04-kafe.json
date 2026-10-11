@@ -13,6 +13,7 @@
   "register": "polite",
   "voice": "jf_alpha",
   "opening": "いらっしゃいませ。ご{注文|ちゅうもん}は？",
+  "opening_translation": { "de": "Willkommen. Was darf es sein?", "en": "Welcome. What would you like to order?" },
   "goals": [
     {
       "id": "drink",

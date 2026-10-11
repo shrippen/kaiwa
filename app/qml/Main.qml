@@ -10,7 +10,8 @@ import org.shrippen.kaiwa
 // System by default, Kante and Kante Light from the settings.
 //
 // Screenshot mode: --shot out.png [--view start|path|review|profile|settings|talk|place]
-// [--scenario id] [--resume] [--say "a|b|wav:file|?|!|~|read:KK"] [--kind 0|1|2] [--light 0|1].
+// [--scenario id] [--resume] [--say "a|b|wav:file|?|!|~|read:KK|translate:N"] [--kind 0|1|2]
+// [--light 0|1].
 Kirigami.ApplicationWindow {
     id: root
     width: Number(arg("--width", "900"))

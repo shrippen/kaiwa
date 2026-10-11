@@ -26,6 +26,10 @@ pub mod qobject {
         #[qproperty(QString, answer)]
         /// A short message after an action (export, deletion).
         #[qproperty(QString, notice)]
+        /// The speech models: what, how big, which licence, from where, there or not (F-08).
+        #[qproperty(QString, models)]
+        /// The running download: {"dir", "done", "total"}; empty when none runs.
+        #[qproperty(QString, download)]
         type KaiwaApp = super::KaiwaAppRust;
 
         /// Reads everything again from the profile.
@@ -33,7 +37,7 @@ pub mod qobject {
         fn refresh(self: Pin<&mut KaiwaApp>);
 
         /// Changes one setting: goal, gamification, feedback, script, endPause, style, uiLang,
-        /// reminder, name.
+        /// reminder, costLimit, moraHints, keepRecordings, name.
         #[qinvokable]
         #[cxx_name = "setSetting"]
         fn set_setting(self: Pin<&mut KaiwaApp>, key: &QString, value: &QString);
@@ -85,10 +89,27 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "skipPlacement"]
         fn skip_placement(self: Pin<&mut KaiwaApp>);
+
+        /// Downloads the model in directory `dir`, after the learner asked for it (F-08,
+        /// /LL401/).
+        #[qinvokable]
+        #[cxx_name = "downloadModel"]
+        fn download_model(self: Pin<&mut KaiwaApp>, dir: &QString);
+
+        /// Stops the running download.
+        #[qinvokable]
+        #[cxx_name = "stopDownload"]
+        fn stop_download(self: Pin<&mut KaiwaApp>);
     }
+
+    impl cxx_qt::Threading for KaiwaApp {}
 }
 
 use core::pin::Pin;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use cxx_qt::Threading;
 
 use cxx_qt_lib::QString;
 use kaiwa_core::learner::Skill;
@@ -112,6 +133,40 @@ pub struct KaiwaAppRust {
     gamification: bool,
     answer: QString,
     notice: QString,
+    models: QString,
+    download: QString,
+    stop: Arc<AtomicBool>,
+}
+
+/// The speech models for the settings (F-08: source, size and licence before the download).
+fn models_json(lang: &str) -> serde_json::Value {
+    use kaiwa_speech::download::MODELS;
+    let de = lang == "de";
+    let mb = |b: u64| (b as f64 / 1e6).round() as u64;
+    let rows: Vec<serde_json::Value> = MODELS
+        .iter()
+        .map(|m| {
+            let purpose = match (m.name, de) {
+                ("ReazonSpeech", true) => "Spracherkennung: versteht, was du sagst",
+                ("ReazonSpeech", false) => "Speech recognition: understands what you say",
+                ("Kokoro", true) => "Übergangsstimme der Figur",
+                ("Kokoro", false) => "The character's interim voice",
+                (_, true) => "Aussprache-Hinweise zu langen Vokalen und っ",
+                (_, false) => "Pronunciation hints on long vowels and っ",
+            };
+            json!({
+                "dir": m.dir,
+                "name": m.name,
+                "purpose": purpose,
+                "licence": m.licence,
+                "origin": m.origin,
+                "downloadMB": mb(m.download_bytes()),
+                "diskMB": mb(m.disk_bytes),
+                "present": m.present(),
+            })
+        })
+        .collect();
+    json!(rows)
 }
 
 fn q(v: &serde_json::Value) -> QString {
@@ -147,10 +202,76 @@ impl qobject::KaiwaApp {
         self.as_mut().set_review(ok(review));
         self.as_mut().set_learner(ok(learner));
         self.as_mut().set_stats(ok(stats));
+        // Where the mora check's model belongs and whether it is there (/LF320/, F-08).
+        let profile = profile.map(|mut v| {
+            v["moraModel"] = crate::conversation::mora_model_json();
+            v
+        });
         self.as_mut().set_profile(ok(profile));
         self.as_mut().set_privacy(q(&views::privacy(&lang)));
+        self.as_mut().set_models(q(&models_json(&lang)));
         self.as_mut().set_lang(QString::from(&lang));
         self.as_mut().set_gamification(gam);
+    }
+
+    fn download_model(mut self: Pin<&mut Self>, dir: &QString) {
+        let dir = dir.to_string();
+        let Some(model) = kaiwa_speech::download::MODELS
+            .iter()
+            .find(|m| m.dir == dir)
+            .copied()
+        else {
+            return;
+        };
+        if !self.download().is_empty() {
+            return;
+        }
+        let total = model.download_bytes();
+        self.as_mut()
+            .set_download(q(&json!({ "dir": dir, "done": 0, "total": total })));
+        self.stop.store(false, Ordering::Relaxed);
+        let stop = self.stop.clone();
+        let thread = self.qt_thread();
+        std::thread::spawn(move || {
+            // At most one progress update per megabyte, so the UI thread keeps up.
+            let last = std::sync::atomic::AtomicU64::new(0);
+            let progress = |done: u64| {
+                if done / 1_000_000 == last.load(Ordering::Relaxed) / 1_000_000 && done < total {
+                    return;
+                }
+                last.store(done, Ordering::Relaxed);
+                let dir = dir.clone();
+                let _ = thread.queue(move |mut app| {
+                    if !app.download().is_empty() {
+                        app.as_mut()
+                            .set_download(q(&json!({ "dir": dir, "done": done, "total": total })));
+                    }
+                });
+            };
+            let result = kaiwa_speech::download::download(&model, &progress, &stop);
+            let _ = thread.queue(move |mut app| {
+                app.as_mut().set_download(QString::default());
+                let de = app.lang().to_string() == "de";
+                let notice = match (result, de) {
+                    (Ok(()), true) => format!("{} ist geladen.", model.name),
+                    (Ok(()), false) => format!("{} is downloaded.", model.name),
+                    (Err(kaiwa_speech::download::DownloadError::Stopped), true) => {
+                        "Download abgebrochen.".to_string()
+                    }
+                    (Err(kaiwa_speech::download::DownloadError::Stopped), false) => {
+                        "Download stopped.".to_string()
+                    }
+                    (Err(e), true) => format!("{} ließ sich nicht laden: {e}", model.name),
+                    (Err(e), false) => format!("{} could not be downloaded: {e}", model.name),
+                };
+                app.as_mut().set_notice(QString::from(&notice));
+                app.as_mut().refresh();
+            });
+        });
+    }
+
+    fn stop_download(self: Pin<&mut Self>) {
+        self.stop.store(true, Ordering::Relaxed);
     }
 
     fn set_setting(mut self: Pin<&mut Self>, key: &QString, value: &QString) {
@@ -192,6 +313,7 @@ impl qobject::KaiwaApp {
                 }
                 "reminder" => p.reminder = value.parse().ok(),
                 "costLimit" => p.cost_limit_cents = value.parse().ok(),
+                "moraHints" => p.mora_hints = value == "true",
                 "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
                 "name" => p.name = value,
                 _ => return,

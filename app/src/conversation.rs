@@ -33,6 +33,9 @@ pub mod qobject {
         #[qproperty(QString, voice)]
         /// Whether the character speaks its replies (the learner can mute it).
         #[qproperty(bool, voice_on, cxx_name = "voiceOn")]
+        /// Easier listening (/LL204/), from the profile.
+        #[qproperty(bool, louder)]
+        #[qproperty(bool, clear)]
         /// Why there is no voice, with what to do about it.
         #[qproperty(QString, voice_note, cxx_name = "voiceNote")]
         /// Both speech models are loaded or known to be missing.
@@ -110,6 +113,16 @@ pub mod qobject {
         /// Stop the character speaking (talk button tapped while it speaks).
         #[qinvokable]
         fn interrupt(self: Pin<&mut Conversation>);
+
+        /// Louder and clearer voice (/LL204/), kept in the profile.
+        #[qinvokable]
+        #[cxx_name = "setSound"]
+        fn set_sound(self: Pin<&mut Conversation>, louder: bool, clear: bool);
+
+        /// A listening aid on the character's line at `log_index` (/LF111/): 0 says it again,
+        /// 1 says it at 0.7×, 2 translates it into the UI language. Each counts as help.
+        #[qinvokable]
+        fn listen(self: Pin<&mut Conversation>, log_index: i32, aid: i32);
     }
 
     impl cxx_qt::Threading for Conversation {}
@@ -125,12 +138,14 @@ use cxx_qt_lib::QString;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::learner::Skill;
 use kaiwa_core::placement::{self, Placement, Reading, STAGES, StageResult, TURNS_PER_STAGE};
-use kaiwa_core::session::SessionState;
+use kaiwa_core::session::{Aid, SessionState};
 use kaiwa_core::{Input, Scenario, Session, Summary, TurnOutcome};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
-use kaiwa_speech::models::{KOKORO_URL, REAZONSPEECH_URL, kokoro_dir, reazonspeech_dir};
-use kaiwa_speech::playback::Player;
+use kaiwa_speech::g2p::G2p;
+use kaiwa_speech::models::{KANA_CTC_URL, kokoro_dir, models_dir, reazonspeech_dir};
+use kaiwa_speech::mora::{self, Checker, Hint, Kind};
+use kaiwa_speech::playback::{self, Player};
 use kaiwa_speech::stt::Recognizer;
 use kaiwa_speech::tts::{self, Voice};
 use serde_json::{Value, json};
@@ -154,6 +169,8 @@ pub struct ConversationRust {
     speech_error: QString,
     voice: QString,
     voice_on: bool,
+    louder: bool,
+    clear: bool,
     voice_note: QString,
     speech_ready: bool,
     scenario: QString,
@@ -171,8 +188,16 @@ pub struct ConversationRust {
     recognizer: Option<Arc<Recognizer>>,
     capture: Option<Capture>,
     speaker: Option<Speaker>,
+    /// The mora check (/LF320/); `None` without its model.
+    mora: Option<Arc<Mutex<MoraCheck>>>,
     /// Counts what the character said; speaking stops when it moves on.
     utterance: Arc<AtomicU64>,
+}
+
+/// The mora check's model and the reading of what the learner meant.
+struct MoraCheck {
+    checker: Checker,
+    g2p: G2p,
 }
 
 /// The interim voice and the speaker it plays through.
@@ -188,7 +213,7 @@ const THINKING: i32 = 2;
 const SPEAKING: i32 = 3;
 const ERROR: i32 = 4;
 
-/// Tanaka speaks slowly (the scenario says so), so a little below Kokoro's normal pace.
+/// The voice's pace without a session: a little below Kokoro's normal one.
 const SPEED: f32 = 0.9;
 
 fn shown_json(s: &Shown, lang: &str) -> Value {
@@ -408,6 +433,13 @@ impl qobject::Conversation {
             .clone()
             .unwrap_or_else(|| "jf_tebukuro".into());
         let opening = (log.len() == 1).then(|| session.opening().to_string());
+        let sound = state()
+            .store
+            .profile()
+            .map(|p| (p.louder, p.clear))
+            .unwrap_or_default();
+        self.as_mut().set_louder(sound.0);
+        self.as_mut().set_clear(sound.1);
         {
             let mut rust = self.as_mut().rust_mut();
             rust.session = Some(Arc::new(Mutex::new(session)));
@@ -429,7 +461,28 @@ impl qobject::Conversation {
         self.as_mut().publish_turns();
         self.as_mut().publish_goals();
         if *self.speech_ready() {
-            // Speech is loaded already: speak the opening of the new scenario.
+            // Load what was missing and may have been downloaded since (settings, F-08).
+            let missing = (
+                self.recognizer.is_none(),
+                self.speaker.is_none(),
+                self.mora.is_none(),
+            );
+            if missing != (false, false, false) {
+                let thread = self.qt_thread();
+                let lang = self.lang.clone();
+                std::thread::spawn(move || {
+                    if missing.0 {
+                        load_recognizer(&thread, &lang);
+                    }
+                    if missing.1 {
+                        load_voice(&thread, &voice, &lang);
+                    }
+                    if missing.2 {
+                        load_mora(&thread);
+                    }
+                });
+            }
+            // Speak the opening of the new scenario.
             if let Some(o) = opening {
                 self.as_mut().speak(&o);
             }
@@ -443,6 +496,7 @@ impl qobject::Conversation {
         std::thread::spawn(move || {
             load_recognizer(&thread, &lang);
             load_voice(&thread, &voice, &lang);
+            load_mora(&thread);
         });
     }
 
@@ -574,7 +628,21 @@ impl qobject::Conversation {
 
     /// Says a line of the character (furigana markup) sentence by sentence; the first plays
     /// while the next is made. The talk button shows "speaks" until the speaker is quiet.
-    fn speak(mut self: Pin<&mut Self>, markup: &str) {
+    fn speak(self: Pin<&mut Self>, markup: &str) {
+        let speed = self.speed();
+        self.speak_at(markup, speed);
+    }
+
+    /// The pace the difficulty sets, 0.7 to 1.1 (/LF211/); eased within the session after
+    /// two misses.
+    fn speed(&self) -> f32 {
+        self.session
+            .as_ref()
+            .and_then(|s| s.lock().ok().map(|s| s.difficulty.speed() as f32))
+            .unwrap_or(SPEED)
+    }
+
+    fn speak_at(mut self: Pin<&mut Self>, markup: &str, speed: f32) {
         let Some(speaker) = self.speaker.clone() else {
             return;
         };
@@ -587,6 +655,7 @@ impl qobject::Conversation {
             self.as_mut().set_talk_state(SPEAKING);
         }
         let text = kaiwa_core::spoken(markup);
+        let (louder, clear) = (*self.louder(), *self.clear());
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let still = || current.load(Ordering::SeqCst) == id;
@@ -594,9 +663,12 @@ impl qobject::Conversation {
                 if !still() {
                     return;
                 }
-                let audio = speaker.voice.lock().map(|mut v| v.speak(&sentence, SPEED));
+                let audio = speaker.voice.lock().map(|mut v| v.speak(&sentence, speed));
                 match audio {
-                    Ok(Ok(samples)) if still() => speaker.player.play(&samples, tts::SAMPLE_RATE),
+                    Ok(Ok(mut samples)) if still() => {
+                        playback::enhance(&mut samples, tts::SAMPLE_RATE, louder, clear);
+                        speaker.player.play(&samples, tts::SAMPLE_RATE)
+                    }
                     Ok(Err(e)) => eprintln!("kaiwa: {e}"),
                     _ => {}
                 }
@@ -612,6 +684,81 @@ impl qobject::Conversation {
         });
     }
 
+    fn set_sound(mut self: Pin<&mut Self>, louder: bool, clear: bool) {
+        {
+            let st = state();
+            if let Ok(mut p) = st.store.profile() {
+                p.louder = louder;
+                p.clear = clear;
+                if let Err(e) = st.store.set_profile(&p) {
+                    eprintln!("kaiwa: {e}");
+                }
+            }
+        }
+        self.as_mut().set_louder(louder);
+        self.as_mut().set_clear(clear);
+    }
+
+    fn listen(mut self: Pin<&mut Self>, log_index: i32, aid: i32) {
+        let Some(i) = usize::try_from(log_index).ok() else {
+            return;
+        };
+        let Some(entry) = self.log.get(i).filter(|e| e["who"] == "character") else {
+            return;
+        };
+        let markup = entry["markup"].as_str().unwrap_or_default().to_string();
+        let translated = entry.get("translation").is_some();
+        let Some(session) = self.session.clone() else {
+            return;
+        };
+        match aid {
+            0 | 1 => {
+                if let Ok(mut s) = session.lock() {
+                    s.aid(if aid == 0 { Aid::Repeat } else { Aid::Slow });
+                }
+                self.as_mut().interrupt();
+                let speed = self.speed() * if aid == 0 { 1.0 } else { 0.7 };
+                self.speak_at(&markup, speed);
+            }
+            2 if !translated => {
+                let lang = self.lang.clone();
+                let thread = self.qt_thread();
+                std::thread::spawn(move || {
+                    let line = kaiwa_core::plain(&markup);
+                    let result = session.lock().ok().map(|mut s| s.translate(&line));
+                    let _ = thread.queue(move |mut q| {
+                        match result {
+                            Some(Ok(text)) => {
+                                if let Some(e) = q.as_mut().rust_mut().log.get_mut(i) {
+                                    e["translation"] = json!(text);
+                                }
+                                q.as_mut().publish_turns();
+                            }
+                            Some(Err(kaiwa_ai::AiError::NoFixture)) => {
+                                let msg = if lang == "en" {
+                                    "The recorded answers have no translation for this line."
+                                } else {
+                                    "Für diese Zeile haben die aufgezeichneten Antworten keine Übersetzung."
+                                };
+                                q.as_mut().set_error(QString::from(msg));
+                            }
+                            Some(Err(e)) => {
+                                let msg = if lang == "en" {
+                                    format!("No translation right now: {e}")
+                                } else {
+                                    format!("Gerade keine Übersetzung: {e}")
+                                };
+                                q.as_mut().set_error(QString::from(&msg));
+                            }
+                            None => {}
+                        }
+                    });
+                });
+            }
+            _ => {}
+        }
+    }
+
     fn interrupt(mut self: Pin<&mut Self>) {
         self.utterance.fetch_add(1, Ordering::SeqCst);
         if let Some(speaker) = &self.speaker {
@@ -623,6 +770,7 @@ impl qobject::Conversation {
     }
 
     fn start_talk(mut self: Pin<&mut Self>) {
+        // Speaking over the character silences it and starts the new turn (/LF103/).
         if *self.talk_state() == SPEAKING {
             self.as_mut().interrupt();
         }
@@ -709,22 +857,72 @@ impl qobject::Conversation {
             let text = recognizer.transcribe(&rec.samples, rec.sample_rate);
             let _ = thread.queue(move |mut q| {
                 q.as_mut().set_talk_state(READY);
-                if text.is_empty() {
-                    let msg = if q.lang == "en" {
-                        "Nothing understood. Once more, a little louder or closer to the microphone."
-                    } else {
-                        "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon."
-                    };
-                    q.as_mut().set_error(QString::from(msg));
-                } else {
-                    q.as_mut().say(&QString::from(&text), false);
+                if !text.is_empty() {
+                    if let Some(index) = q.as_mut().submit(&text, false) {
+                        q.check_moras(index, text, rec);
+                    }
+                    return;
                 }
+                let msg = if q.lang == "en" {
+                    "Nothing understood. Once more, a little louder or closer to the microphone."
+                } else {
+                    "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon."
+                };
+                q.as_mut().set_error(QString::from(msg));
             });
         });
     }
 
-    fn say(mut self: Pin<&mut Self>, text: &QString, typed: bool) {
-        let text = text.to_string().trim().to_string();
+    /// Checks the mora lengths of a spoken turn beside the tutor's answer and adds the hint to
+    /// the turn when it comes (/LF320/: only shortenings, only in sentences, at most one, never
+    /// a mistake; K-01, K-02, J-05). The recording stays in memory (/LF712/).
+    fn check_moras(&self, index: usize, text: String, rec: Recording) {
+        let Some(check) = self.mora.clone() else {
+            return;
+        };
+        if !state().store.profile().is_ok_and(|p| p.mora_hints) {
+            return;
+        }
+        let lang = self.lang.clone();
+        let thread = self.qt_thread();
+        std::thread::spawn(move || {
+            let hints = {
+                let Ok(mut c) = check.lock() else {
+                    return;
+                };
+                let Some(words) = c.g2p.pronounced_words(&text) else {
+                    return;
+                };
+                match c.checker.hints(&rec.samples, rec.sample_rate, &words) {
+                    Ok(h) => h,
+                    Err(e) => {
+                        eprintln!("kaiwa: {e}");
+                        return;
+                    }
+                }
+            };
+            if hints.is_empty() {
+                return;
+            }
+            let _ = thread.queue(move |mut q| {
+                if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index)
+                    && turn["text"] == text.trim()
+                {
+                    turn["mora"] =
+                        Value::Array(hints.iter().map(|h| hint_json(h, &lang)).collect());
+                }
+                q.as_mut().publish_turns();
+            });
+        });
+    }
+
+    fn say(self: Pin<&mut Self>, text: &QString, typed: bool) {
+        self.submit(&text.to_string(), typed);
+    }
+
+    /// Sends a turn to the tutor; returns its index in the log.
+    fn submit(mut self: Pin<&mut Self>, text: &str, typed: bool) -> Option<usize> {
+        let text = text.trim().to_string();
         // Typed rōmaji becomes kana, shown as such (/LF120/).
         let text = if typed && kaiwa_core::romaji::has_romaji(&text) {
             kaiwa_core::romaji::to_kana(&text)
@@ -732,11 +930,9 @@ impl qobject::Conversation {
             text
         };
         if text.is_empty() || *self.busy() || *self.finished() {
-            return;
+            return None;
         }
-        let Some(session) = self.session.clone() else {
-            return;
-        };
+        let session = self.session.clone()?;
         let index = self.log.len();
         self.as_mut().rust_mut().log.push(json!({ "who": "learner", "text": text, "typed": typed, "corrections": [], "pending": true }));
         self.as_mut().set_busy(true);
@@ -794,6 +990,7 @@ impl qobject::Conversation {
                 q.placement_step();
             });
         });
+        Some(index)
     }
 
     fn help(mut self: Pin<&mut Self>) {
@@ -823,14 +1020,8 @@ fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>, lang: &str) {
         }
         Err(e) => {
             let text = match e {
-                SpeechError::ModelMissing(_) if lang == "de" => format!(
-                    "Das Modell für die Spracherkennung fehlt. ReazonSpeech (Apache-2.0, etwa 150 MB) von {REAZONSPEECH_URL} laden und nach {} entpacken. Bis dahin geht Tippen.",
-                    dir.display()
-                ),
-                SpeechError::ModelMissing(_) => format!(
-                    "The speech recognition model is missing. Download ReazonSpeech (Apache-2.0, about 150 MB) from {REAZONSPEECH_URL} and unpack it to {}. You can type meanwhile.",
-                    dir.display()
-                ),
+                SpeechError::ModelMissing(_) if lang == "de" => "Das Modell für die Spracherkennung fehlt. ReazonSpeech lässt sich in den Einstellungen unter „Modelle“ laden. Bis dahin geht Tippen.".to_string(),
+                SpeechError::ModelMissing(_) => "The speech recognition model is missing. Download ReazonSpeech in the settings under “Models”. You can type meanwhile.".to_string(),
                 e => speech_text(&e, &lang),
             };
             q.as_mut().set_speech_error(QString::from(&text));
@@ -863,14 +1054,8 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
         }
         Err(e) => {
             let text = match (e, lang == "de") {
-                (SpeechError::ModelMissing(_), true) => format!(
-                    "Die Figur antwortet ohne Stimme. Für die Übergangsstimme Kokoro (Apache-2.0) kokoro-v1.0.int8.onnx (88 MB) und voices-v1.0.bin (27 MB) von {KOKORO_URL} nach {} laden.",
-                    dir.display()
-                ),
-                (SpeechError::ModelMissing(_), false) => format!(
-                    "The character answers without a voice. For the interim voice, download Kokoro (Apache-2.0) kokoro-v1.0.int8.onnx (88 MB) and voices-v1.0.bin (27 MB) from {KOKORO_URL} to {}.",
-                    dir.display()
-                ),
+                (SpeechError::ModelMissing(_), true) => "Die Figur antwortet ohne Stimme. Die Übergangsstimme Kokoro lässt sich in den Einstellungen unter „Modelle“ laden.".to_string(),
+                (SpeechError::ModelMissing(_), false) => "The character answers without a voice. Download the interim voice Kokoro in the settings under “Models”.".to_string(),
                 (e, true) => format!("Die Figur antwortet ohne Stimme: {}", speech_text(&e, "de")),
                 (e, false) => format!("The character answers without a voice: {}", speech_text(&e, "en")),
             };
@@ -878,6 +1063,68 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
         }
         }
     });
+}
+
+/// Loads the mora check (/LF320/). Without its model there are no hints; the settings say where
+/// it comes from (`mora_model_json`).
+fn load_mora(thread: &CxxQtThread<qobject::Conversation>) {
+    let loaded = Checker::from_dir(&models_dir().join(mora::MODEL), 2)
+        .and_then(|checker| Ok((checker, G2p::new()?)));
+    match loaded {
+        Ok((checker, g2p)) => {
+            let check = Arc::new(Mutex::new(MoraCheck { checker, g2p }));
+            let _ = thread.queue(move |mut q| q.as_mut().rust_mut().mora = Some(check));
+        }
+        Err(SpeechError::ModelMissing(_)) => {}
+        Err(e) => eprintln!("kaiwa: mora check: {e}"),
+    }
+}
+
+/// The mora check's model for the settings: whether it is there, where it goes and where it
+/// comes from (F-08: source, size and licence before any download).
+pub fn mora_model_json() -> Value {
+    let dir = models_dir().join(mora::MODEL);
+    json!({
+        "present": dir.join("model.int8.onnx").exists() || dir.join("model.onnx").exists(),
+        "dir": dir.display().to_string(),
+        "url": KANA_CTC_URL,
+        "size": "356 MB",
+        "licence": "Apache-2.0",
+    })
+}
+
+/// A mora hint as the page shows it: cautious, in the UI language, no severity (K-02).
+fn hint_json(h: &Hint, lang: &str) -> Value {
+    let de = lang == "de";
+    let word = if h.surface == h.meant {
+        h.meant.clone()
+    } else {
+        format!("{} ({})", h.surface, h.meant)
+    };
+    let text = match (h.kind, de) {
+        (Kind::GeminateLeftOut, true) => format!(
+            "Das っ in {word} war kaum zu hören, es klang eher wie {}. Vor dem nächsten Laut eine kurze Pause halten, so lang wie eine Silbe. Die Prüfung irrt sich manchmal; das zählt nicht als Fehler.",
+            h.heard
+        ),
+        (Kind::GeminateLeftOut, false) => format!(
+            "The っ in {word} was hard to hear; it sounded more like {}. Pause briefly before the next sound, as long as one syllable. The check is sometimes wrong; this does not count as a mistake.",
+            h.heard
+        ),
+        (_, true) => format!(
+            "Der lange Vokal in {word} klang eher kurz, wie {}. Ihn etwa doppelt so lang halten. Die Prüfung irrt sich manchmal; das zählt nicht als Fehler.",
+            h.heard
+        ),
+        (_, false) => format!(
+            "The long vowel in {word} sounded short, like {}. Hold it about twice as long. The check is sometimes wrong; this does not count as a mistake.",
+            h.heard
+        ),
+    };
+    json!({
+        "title": format!("{} → {}?", h.meant, h.heard),
+        "tierText": if de { "Aussprache · Hinweis" } else { "Pronunciation · hint" },
+        "meta": if de { "Moren-Länge" } else { "Mora length" },
+        "text": text,
+    })
 }
 
 /// What the learner reads when speaking does not work, in the UI language.

@@ -58,6 +58,9 @@ pub struct Scenario {
     pub voice: Option<String>,
     /// The character's first line (furigana markup as in KanteRubyText).
     pub opening: String,
+    /// The first line in the UI languages, for the listening aid without a tutor call (/LF111/).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opening_translation: Option<Text>,
     pub goals: Vec<Goal>,
 }
 

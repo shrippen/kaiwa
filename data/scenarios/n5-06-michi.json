@@ -13,6 +13,7 @@
   "register": "polite",
   "voice": "jf_nezumi",
   "opening": "はい、どうしましたか。",
+  "opening_translation": { "de": "Ja, was ist los?", "en": "Yes, what's the matter?" },
   "goals": [
     {
       "id": "ask",

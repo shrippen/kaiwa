@@ -27,7 +27,10 @@
         "script": { "enum": ["furigana", "kana", "hidden"] },
         "gamification": { "type": "boolean" },
         "keep_recordings_days": { "type": ["integer", "null"], "minimum": 1 },
-        "cost_limit_cents": { "type": ["integer", "null"], "minimum": 0 }
+        "cost_limit_cents": { "type": ["integer", "null"], "minimum": 0 },
+        "mora_hints": { "type": "boolean" },
+        "louder": { "type": "boolean" },
+        "clear": { "type": "boolean" }
       }
     },
     "learning": {

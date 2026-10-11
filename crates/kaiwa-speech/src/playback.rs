@@ -156,6 +156,26 @@ impl Drop for Player {
     }
 }
 
+/// Easier listening (/LL204/): `clear` lifts the consonants with a high shelf (about +6 dB
+/// above 1.5 kHz), `louder` doubles the level and limits softly instead of clipping.
+pub fn enhance(samples: &mut [f32], rate: u32, louder: bool, clear: bool) {
+    if clear {
+        // One-pole low-pass at 1.5 kHz; adding what lies above it once more doubles the highs.
+        let a = (-2.0 * std::f32::consts::PI * 1500.0 / rate as f32).exp();
+        let mut low = 0.0f32;
+        for x in samples.iter_mut() {
+            low = (1.0 - a) * *x + a * low;
+            *x += *x - low;
+        }
+    }
+    if louder || clear {
+        let gain = if louder { 2.0 } else { 1.0 };
+        for x in samples.iter_mut() {
+            *x = (*x * gain).tanh();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -167,6 +187,37 @@ mod tests {
         assert_eq!(out.len(), 48_000);
         assert!(out.iter().all(|s| (s - 0.25).abs() < 1e-6));
         assert_eq!(resample(&one_second, 24_000, 16_000).len(), 16_000);
+    }
+
+    fn tone(hz: f32, amp: f32) -> Vec<f32> {
+        (0..24_000)
+            .map(|i| amp * (2.0 * std::f32::consts::PI * hz * i as f32 / 24_000.0).sin())
+            .collect()
+    }
+
+    fn rms(x: &[f32]) -> f32 {
+        (x[1000..].iter().map(|v| v * v).sum::<f32>() / (x.len() - 1000) as f32).sqrt()
+    }
+
+    #[test]
+    fn louder_doubles_quiet_speech_and_never_clips() {
+        let mut quiet = tone(300.0, 0.1);
+        enhance(&mut quiet, 24_000, true, false);
+        let ratio = rms(&quiet) / rms(&tone(300.0, 0.1));
+        assert!((1.9..2.01).contains(&ratio), "{ratio}");
+        let mut loud = tone(300.0, 0.9);
+        enhance(&mut loud, 24_000, true, true);
+        assert!(loud.iter().all(|v| v.abs() < 1.0));
+    }
+
+    #[test]
+    fn clear_lifts_the_highs_not_the_lows() {
+        let (mut low, mut high) = (tone(200.0, 0.1), tone(4000.0, 0.1));
+        enhance(&mut low, 24_000, false, true);
+        enhance(&mut high, 24_000, false, true);
+        let gain = |x: &[f32]| rms(x) / rms(&tone(200.0, 0.1));
+        assert!(gain(&low) < 1.2, "{}", gain(&low));
+        assert!(gain(&high) > 1.6, "{}", gain(&high));
     }
 
     #[test]

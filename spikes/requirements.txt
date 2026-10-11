@@ -1,4 +1,4 @@
-# Python tools for the speech spikes (0.3, 0.4, 0.6); measurement only, never shipped.
+# Python tools for the speech spikes (0.3, 0.4, 0.6, pitch pre-study); measurement only, never shipped.
 # python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt
 kokoro-onnx
 misaki[ja]
@@ -10,3 +10,8 @@ numpy
 # Spike 0.6: CTC models
 torch
 transformers
+# Pitch pre-study (s07): F0 and WORLD resynthesis; pyworld still imports pkg_resources
+pyworld
+praat-parselmouth
+scipy
+setuptools<81

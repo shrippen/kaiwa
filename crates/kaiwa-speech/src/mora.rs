@@ -112,6 +112,11 @@ impl Kind {
         }
     }
 
+    /// A mora too few: the only kinds the app reports (K-01).
+    pub fn is_shortening(self) -> bool {
+        matches!(self, Kind::LongShort | Kind::GeminateLeftOut)
+    }
+
     pub fn from_name(name: &str) -> Option<Self> {
         [
             Kind::LongShort,
@@ -357,6 +362,119 @@ pub fn align(logp: &[f32], vocab: usize, ids: &[usize], blank: usize) -> Vec<(us
     spans
 }
 
+/// Fewest moras of an utterance that gets hints (J-05: only in sentences). Single words are hard
+/// for every method (spike 0.6: at most 42 %), the frame これは＿です has six moras.
+pub const MIN_MORAS: usize = 6;
+
+/// What a finding must beat its threshold by before the app shows it. The thresholds come from
+/// spike 0.6 with OpenJTalk's reading; the app reads with its own G2P, which differs in about one
+/// sentence of ten. 0.3 keeps the false alarms at 4.8 % on the 500 real voices of the spike
+/// (`examples/mora_hints.rs`: 55.6 % of shortened long vowels and 56.1 % of left-out っ found).
+pub const APP_MARGIN: f32 = 0.3;
+
+/// A hint for the learner (K-01, K-02): in `surface` (as written), the word `meant` (pronounced
+/// kana) sounded like `heard`, one mora shorter.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Hint {
+    pub kind: Kind,
+    pub surface: String,
+    pub meant: String,
+    pub heard: String,
+    /// How far the variant beat the meant kana over the threshold (see [`Finding`]).
+    pub margin: f32,
+}
+
+/// The hints of a check on the words of an utterance ([`crate::g2p::G2p::pronounced_words`]):
+/// only shortenings, only in sentences of [`MIN_MORAS`] or more, only past [`APP_MARGIN`], at
+/// most the strongest one per turn, so a doubtful check never piles up. Each hint is the word with the mora left out; a
+/// finding that does not match its word exactly is dropped.
+pub fn hints(findings: &[Finding], words: &[(String, String)]) -> Vec<Hint> {
+    let total: usize = words.iter().map(|(_, k)| moras(k).len()).sum();
+    if total < MIN_MORAS {
+        return Vec::new();
+    }
+    let joined: String = words.iter().map(|(_, k)| k.as_str()).collect();
+    if moras(&joined).len() != total {
+        return Vec::new();
+    }
+    let strongest = findings
+        .iter()
+        .filter(|f| f.kind.is_shortening() && f.margin > APP_MARGIN)
+        .max_by(|a, b| a.margin.total_cmp(&b.margin));
+    let Some(f) = strongest else {
+        return Vec::new();
+    };
+    let mut start = 0;
+    for (surface, kana) in words {
+        let ms = moras(kana);
+        if f.mora < start + ms.len() {
+            let local = f.mora - start;
+            let mut all = moras(&joined);
+            all.remove(f.mora);
+            if all.concat() != f.variant {
+                return Vec::new();
+            }
+            let heard: String = ms
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| *i != local)
+                .map(|(_, m)| m.as_str())
+                .collect();
+            return vec![Hint {
+                kind: f.kind,
+                surface: surface.clone(),
+                meant: kana.clone(),
+                heard,
+                margin: f.margin,
+            }];
+        }
+        start += ms.len();
+    }
+    Vec::new()
+}
+
+/// `samples` at `from` Hz as [`SAMPLE_RATE`]: windowed-sinc interpolation, low-passed below the
+/// lower Nyquist frequency (the microphone gives 44.1 or 48 kHz).
+pub fn resample(samples: &[f32], from: u32) -> Vec<f32> {
+    if from == SAMPLE_RATE || samples.is_empty() {
+        return samples.to_vec();
+    }
+    let ratio = f64::from(from) / f64::from(SAMPLE_RATE);
+    let cutoff = (1.0 / ratio).min(1.0) * 0.95;
+    const HALF: i64 = 16;
+    let width = (HALF as f64 * ratio.max(1.0)).ceil() as i64;
+    let n_out = (samples.len() as f64 / ratio).floor() as usize;
+    let sinc = |x: f64| {
+        if x.abs() < 1e-9 {
+            1.0
+        } else {
+            (std::f64::consts::PI * x).sin() / (std::f64::consts::PI * x)
+        }
+    };
+    (0..n_out)
+        .map(|i| {
+            let t = i as f64 * ratio;
+            let centre = t.floor() as i64;
+            let (mut sum, mut weight) = (0.0f64, 0.0f64);
+            for j in centre - width..=centre + width {
+                let Some(&x) = usize::try_from(j).ok().and_then(|j| samples.get(j)) else {
+                    continue;
+                };
+                let d = t - j as f64;
+                let window = 0.5 + 0.5 * (std::f64::consts::PI * d / (width as f64 + 1.0)).cos();
+                let w = cutoff * sinc(cutoff * d) * window;
+                sum += f64::from(x) * w;
+                weight += w;
+            }
+            if weight.abs() > 1e-9 {
+                (sum / weight) as f32
+            } else {
+                0.0
+            }
+        })
+        .collect()
+}
+
 /// The model's directory under [`crate::models::models_dir`].
 pub const MODEL: &str = "kaiwa-kana-ctc";
 /// Silence around the utterance, as in training and in the spike.
@@ -479,6 +597,21 @@ impl Checker {
         Ok(self.findings(&logp, kana))
     }
 
+    /// The hints for an utterance at `rate` Hz whose words the learner meant (see [`hints`]).
+    pub fn hints(
+        &mut self,
+        samples: &[f32],
+        rate: u32,
+        words: &[(String, String)],
+    ) -> Result<Vec<Hint>, SpeechError> {
+        let kana: String = words.iter().map(|(_, k)| k.as_str()).collect();
+        if moras(&kana).len() < MIN_MORAS {
+            return Ok(Vec::new());
+        }
+        let findings = self.check(&resample(samples, rate), &kana)?;
+        Ok(hints(&findings, words))
+    }
+
     fn findings(&self, logp: &[f32], kana: &str) -> Vec<Finding> {
         let Some(ids) = self.ids(kana) else {
             return Vec::new();
@@ -519,6 +652,89 @@ mod tests {
         v.iter()
             .map(|v| (v.kind, v.mora, v.kana.as_str()))
             .collect()
+    }
+
+    fn words(list: &[(&str, &str)]) -> Vec<(String, String)> {
+        list.iter()
+            .map(|(s, k)| (s.to_string(), k.to_string()))
+            .collect()
+    }
+
+    fn finding(kind: Kind, mora: usize, variant: &str, margin: f32) -> Finding {
+        Finding {
+            kind,
+            mora,
+            variant: variant.into(),
+            margin,
+        }
+    }
+
+    #[test]
+    fn hints_name_the_word_and_only_shortenings() {
+        let w = words(&[
+            ("東京", "とーきょー"),
+            ("から", "から"),
+            ("来ました", "きました"),
+        ]);
+        let f = [
+            finding(Kind::ShortLong, 5, "とーきょーからあきました", 3.0),
+            finding(Kind::LongShort, 1, "ときょーからきました", 1.0),
+        ];
+        assert_eq!(
+            hints(&f, &w),
+            [Hint {
+                kind: Kind::LongShort,
+                surface: "東京".into(),
+                meant: "とーきょー".into(),
+                heard: "ときょー".into(),
+                margin: 1.0,
+            }]
+        );
+        let w = words(&[("切手", "きって"), ("を", "を"), ("ください", "ください")]);
+        let f = [finding(Kind::GeminateLeftOut, 1, "きてをください", 0.5)];
+        assert_eq!(hints(&f, &w)[0].heard, "きて");
+    }
+
+    #[test]
+    fn no_hints_for_single_words_or_mismatches() {
+        let w = words(&[("切手", "きって")]);
+        let f = [finding(Kind::GeminateLeftOut, 1, "きて", 2.0)];
+        assert!(
+            hints(&f, &w).is_empty(),
+            "a single word is no sentence (J-05)"
+        );
+        let w = words(&[("切手", "きって"), ("を", "を"), ("ください", "ください")]);
+        let f = [finding(Kind::GeminateLeftOut, 1, "きってをくださ", 2.0)];
+        assert!(hints(&f, &w).is_empty(), "variant does not match the mora");
+    }
+
+    #[test]
+    fn resampling_keeps_a_tone_and_the_length() {
+        let tone = |rate: u32, n: usize| -> Vec<f32> {
+            (0..n)
+                .map(|i| (2.0 * std::f32::consts::PI * 440.0 * i as f32 / rate as f32).sin())
+                .collect()
+        };
+        let out = resample(&tone(48_000, 48_000), 48_000);
+        assert_eq!(out.len(), 16_000);
+        let want = tone(16_000, 16_000);
+        let err = out[100..15_900]
+            .iter()
+            .zip(&want[100..15_900])
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0f32, f32::max);
+        assert!(err < 0.02, "max error {err}");
+        // Above the new Nyquist frequency nothing gets through (no aliasing).
+        let high = resample(
+            &tone(48_000, 48_000)
+                .iter()
+                .enumerate()
+                .map(|(i, _)| (2.0 * std::f32::consts::PI * 12_000.0 * i as f32 / 48_000.0).sin())
+                .collect::<Vec<_>>(),
+            48_000,
+        );
+        let rms = (high[100..15_900].iter().map(|v| v * v).sum::<f32>() / 15_800.0).sqrt();
+        assert!(rms < 0.05, "rms {rms}");
     }
 
     #[test]

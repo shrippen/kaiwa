@@ -8,8 +8,8 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 38 | 20 | 18 | 3 | 0 |
-| Soll | 6 | 6 | 11 | 0 | 0 |
+| Muss | 42 | 20 | 14 | 3 | 0 |
+| Soll | 7 | 9 | 7 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
 | ID | Prio | Anforderung | Code | Stand | Prüfregeln |
@@ -22,10 +22,10 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LD060/ | S | Widersprüche | core, store | Code | – |
 | /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | speech | Code | 0 von 1 automatisch grün: `mara_ptt` |
 | /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
-| /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | – | offen | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
-| /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | – | offen | – |
-| /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, store | Code | 0 von 1 automatisch grün: `mara_listen_tools` |
-| /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | core | Code | 0 von 1 automatisch grün: `mara_listen_tools` |
+| /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
+| /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
+| /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, store | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
+| /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF112/ | M | Ein Klick auf ein Wort zeigt Lesung, Bedeutung und Wortart und spielt … | core, store | Code | 0 von 1 automatisch grün: `mara_word_lookup` |
 | /LF113/ | M | Das Transkript der eigenen Äußerung wird angezeigt (was die KI … | app, core | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LF114/ | M | Wer feststeckt, bekommt eine Hilfe in drei Stufen: Stichwort → … | core | geprüft | 1 von 1 automatisch grün: `mara_hint_offered` |
@@ -34,13 +34,13 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF117/ | S | KI-Figuren mit festem Charakter, Sprechstil und Stimme (z. B. … | core | geprüft | 1 von 1 automatisch grün: `selin_register_flag` |
 | /LF120/ | M | Tippen statt Sprechen (Kana-IME oder Rōmaji mit Umwandlung). | app, core | geprüft | 1 von 1 automatisch grün: `jonas_typed_marked` |
 | /LF121/ | M | Ein Gespräch lässt sich unterbrechen und später an derselben Stelle … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_resume` |
-| /LF122/ | S | Lernende dürfen in die UI-Sprache wechseln („Wie sagt man …?“). | – | offen | 0 von 2 automatisch grün: `hinnerk_german_word_help`, `mara_codeswitch` |
+| /LF122/ | S | Lernende dürfen in die UI-Sprache wechseln („Wie sagt man …?“). | core | Code | 0 von 2 automatisch grün: `hinnerk_german_word_help`, `mara_codeswitch` |
 | /LF200/ | M | Einstufung per Gespräch (5–8 min) mit steigender Schwierigkeit. | app, core, store | geprüft | 2 von 2 automatisch grün: `emi_ceiling`, `selin_profile_split` |
 | /LF201/ | M | Das Lernermodell führt getrennte Fähigkeiten: Hörverstehen (Tempo … | app, core, store | geprüft | 2 von 2 automatisch grün: `emi_ceiling`, `selin_profile_split` |
 | /LF202/ | M | Das Lernermodell ist für Lernende einsehbar (Profil-Ansicht in … | app, backend, core | geprüft | 1 von 1 automatisch grün: `selin_profile_visible` |
 | /LF210/ | M | Der Schwierigkeitsregler zielt auf eine Erfolgsquote von etwa 80 % … | core, store | geprüft | 3 von 3 automatisch grün: `emi_no_baby_talk`, `hinnerk_pace`, `mara_success_band` |
-| /LF211/ | M | Stellgrößen: Anteil unbekannter Wörter (≤ 5 %), Satzlänge … | app, core | geprüft | 1 von 2 automatisch grün: `hinnerk_tts_slow`, `selin_settings_split` |
-| /LF212/ | M | Hilfen (Wiederholung, Zeitlupe, Übersetzung, Hilfe-Stufen) fließen in … | core | geprüft | 1 von 1 automatisch grün: `mara_hints_silent` |
+| /LF211/ | M | Stellgrößen: Anteil unbekannter Wörter (≤ 5 %), Satzlänge … | app, core | geprüft | 2 von 2 automatisch grün: `hinnerk_tts_slow`, `selin_settings_split` |
+| /LF212/ | M | Hilfen (Wiederholung, Zeitlupe, Übersetzung, Hilfe-Stufen) fließen in … | app, core | geprüft | 1 von 1 automatisch grün: `mara_hints_silent` |
 | /LF213/ | M | Die Anpassung wirkt innerhalb einer Sitzung (sofort leichter nach … | core | geprüft | 1 von 1 automatisch grün: `jonas_scenario_stuck` |
 | /LF214/ | M | Die Schwierigkeit steigt schrittweise: Pro Sitzung ändert sich … | core | geprüft | 2 von 2 automatisch grün: `hinnerk_pace`, `mara_gradual` |
 | /LF215/ | S | Starke Unterforderung (z. B. Erfolg ≥ 95 % über drei Sitzungen) führt … | app, core | geprüft | 1 von 1 automatisch grün: `emi_skip` |
@@ -57,7 +57,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF306/ | M | Nur Fehler mit dem Schweregrad *verhindert Verständnis* unterbrechen … | core | geprüft | 1 von 1 automatisch grün: `mara_little_feedback` |
 | /LF307/ | S | Lernende können einem Vorschlag widersprechen („Das ist korrekt“). | app, core, store | geprüft | 1 von 1 automatisch grün: `theo_dispute` |
 | /LF310/ | M | Sitzungsbilanz: erreichte Ziele, die drei wichtigsten Verbesserungen … | app, core | geprüft | 1 von 1 automatisch grün: `mara_summary` |
-| /LF320/ | S | Aussprache-Feedback für die Moren-Struktur: Langvokale (おばさん/おばあさん) … | speech | Code | – |
+| /LF320/ | S | Aussprache-Feedback für die Moren-Struktur: Langvokale (おばさん/おばあさん) … | app, speech, store | Code | 0 von 1 automatisch grün: `mara_mora_hint` |
 | /LF321/ | S | Pitch-Akzent: Soll- und Ist-Kontur eines Wortes oder Satzes als Kurve. | – | offen | 0 von 2 automatisch grün: `theo_pitch_detect`, `theo_pitch_no_nitpick` |
 | /LF330/ | S | Nachsprechen und Shadowing: Satz hören, nachsprechen, eigene Aufnahme … | – | offen | 0 von 1 automatisch grün: `theo_compare` |
 | /LF500/ | M | Plasmoid für Panel und Desktop. | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_compact` |
@@ -76,7 +76,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF601/ | M | Tagesziel in Minuten Sprechzeit oder Szenarien, selbst wählbar … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_daily_goal` |
 | /LF602/ | M | Serie (Tage mit erreichtem Tagesziel), mit Freeze (zwei pro Monat … | app, core, store | geprüft | 4 von 4 automatisch grün: `jonas_freeze`, `jonas_midnight`, `jonas_timezone`, `mara_comeback` |
 | /LF603/ | S | XP für Sprechzeit, erreichte Ziele und Wiederholungen. | app, core | geprüft | 1 von 1 automatisch grün: `jonas_xp_fair` |
-| /LF604/ | S | Wochenrückblick: Sprechzeit, neue Wörter, Fortschritt pro Fähigkeit. | – | offen | – |
+| /LF604/ | S | Wochenrückblick: Sprechzeit, neue Wörter, Fortschritt pro Fähigkeit. | app, backend | Code | – |
 | /LF605/ | M | Gamification lässt sich ganz abschalten (keine XP, keine Serie, nur … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_gamification_off` |
 | /LF606/ | M | Es gibt keine Herzen, Leben oder Sperren nach Fehlern. | core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_hearts` |
 | /LF610/ | S | Statistik: Heatmap der Übungstage, Wortschatz pro Niveau, Sprechzeit … | app, backend | Code | – |
@@ -96,16 +96,16 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL110/ | M | Fehlalarmrate der Verbesserungsvorschläge (Vorschlag bei korrekter … | core | Code | 0 von 1 automatisch grün: `theo_fp` |
 | /LL111/ | M | Trefferquote für eingebaute Fehler der Personas (Kap. 9) ≥ 85 % bei … | – | geprüft | 1 von 3 automatisch grün: `emi_keigo_detect`, `mara_recall`, `theo_tp` |
 | /LL112/ | M | Erklärungen stehen immer in der UI-Sprache und sind im Niveau der … | ai | geprüft | 1 von 4 automatisch grün: `emi_explain_examples`, `hinnerk_plain_words`, `mara_explain_de`, `theo_ui_en` |
-| /LL200/ | M | Vollständig per Tastatur bedienbar, mit sichtbarem Fokus (Kante … | – | offen | 0 von 1 automatisch grün: `theo_keyboard` |
+| /LL200/ | M | Vollständig per Tastatur bedienbar, mit sichtbarem Fokus (Kante … | – | geprüft | 1 von 1 automatisch grün: `theo_keyboard` |
 | /LL201/ | M | Screenreader: Alle Bedienelemente haben Accessible-Namen und -Rollen … | – | geprüft | 1 von 1 automatisch grün: `hinnerk_a11y_names` |
 | /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App … | – | offen | 0 von 2 automatisch grün: `hinnerk_font`, `hinnerk_targets` |
 | /LL203/ | M | Kontraste erreichen WCAG AA in System, Kante und Kante Light. | – | offen | 0 von 1 automatisch grün: `hinnerk_targets` |
-| /LL204/ | S | Untertitel für alles Gesprochene. | – | offen | 0 von 1 automatisch grün: `hinnerk_tts_slow` |
+| /LL204/ | S | Untertitel für alles Gesprochene. | app, speech, store | geprüft | 1 von 1 automatisch grün: `hinnerk_tts_slow` |
 | /LL300/ | M | Keine Dark Patterns: keine künstliche Verknappung, keine Schuld- oder … | backend, core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
 | /LL301/ | M | Die GUI wird aus Kante erzeugt (siehe Kap. 8). | – | offen | 0 von 1 automatisch grün: `selin_win_style` |
-| /LL302/ | M | Die KI-Figuren bleiben im Lernkontext. | – | offen | 0 von 1 automatisch grün: `jonas_inappropriate` |
+| /LL302/ | M | Die KI-Figuren bleiben im Lernkontext. | core | Code | 0 von 1 automatisch grün: `jonas_inappropriate` |
 | /LL400/ | M | Lokal zuerst: Alle Muss-Funktionen sind mit lokalen Bausteinen … | ai | Code | 0 von 1 automatisch grün: `lena_zero_egress` |
-| /LL401/ | M | Im Nur-lokal-Modus gibt es keine ausgehenden Verbindungen außer zu … | – | offen | 0 von 2 automatisch grün: `lena_download_announced`, `lena_zero_egress` |
+| /LL401/ | M | Im Nur-lokal-Modus gibt es keine ausgehenden Verbindungen außer zu … | app, speech | geprüft | 1 von 2 automatisch grün: `lena_download_announced`, `lena_zero_egress` |
 | /LL402/ | M | DSGVO-Konformität: Zweckbindung, Löschung, Export und Auskunft über … | store | geprüft | 1 von 1 automatisch grün: `lena_delete` |
 | /LL500/ | M | Hauptplattform: KDE Plasma 6 (aktuelle und vorige Minor-Version) … | – | Vorgabe | – |
 | /LL501/ | S | Windows 10/11 und macOS (aktuelle und vorige Version): App ohne … | – | offen | 0 von 1 automatisch grün: `selin_win_style` |

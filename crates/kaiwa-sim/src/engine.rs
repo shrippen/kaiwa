@@ -96,6 +96,7 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
         "jonas_typed_marked" => typed(root),
         "hinnerk_no_hearts" => no_hearts(root),
         "selin_settings_split" => settings_split(p),
+        "hinnerk_tts_slow" => tts_slow(root, p),
         "selin_profile_visible" => profile_visible(p),
         "theo_dispute" => dispute(root),
         "emi_misrecognition" => misrecognition(root),
@@ -210,6 +211,30 @@ fn settings_split(p: &Value) -> Result<Option<String>> {
     }
     if !Difficulty::kana_aid(&m) {
         why.push("no kana aid".to_string());
+    }
+    Ok((!why.is_empty()).then(|| why.join(", ")))
+}
+
+/// /LF211/, /LL204/: a beginner like Hinnerk starts at 0.8 or slower, the app speaks at the
+/// difficulty's pace, and "louder" and "clear" sit on the conversation page itself.
+fn tts_slow(root: &Path, p: &Value) -> Result<Option<String>> {
+    let d = Difficulty::for_learner(&placed(p));
+    let mut why = Vec::new();
+    if d.speed() > 0.8 {
+        why.push(format!("starts at {}", d.speed()));
+    }
+    let app = std::fs::read_to_string(root.join("app/src/conversation.rs"))?;
+    if !app.contains("difficulty.speed()") {
+        why.push("the voice ignores the difficulty's pace".into());
+    }
+    let page = std::fs::read_to_string(root.join("app/qml/ConversationPage.qml"))?;
+    for (word, call) in [
+        ("Lauter", "conv.setSound(checked, conv.clear)"),
+        ("Klar", "conv.setSound(conv.louder, checked)"),
+    ] {
+        if !page.contains(&format!("page.t(\"{word}\"")) || !page.contains(call) {
+            why.push(format!("no '{word}' on the conversation page"));
+        }
     }
     Ok((!why.is_empty()).then(|| why.join(", ")))
 }

@@ -13,6 +13,7 @@
   "register": "polite",
   "voice": "jm_kumo",
   "opening": "{週末|しゅうまつ}は{何|なに}をしますか。",
+  "opening_translation": { "de": "Was machen Sie am Wochenende?", "en": "What are you doing at the weekend?" },
   "goals": [
     {
       "id": "plan",

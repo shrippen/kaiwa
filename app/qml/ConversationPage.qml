@@ -7,7 +7,9 @@ import org.shrippen.kaiwa
 
 // One scenario as a conversation (M1): the character speaks with furigana, the learner
 // types (speech follows with spike 0.3), help comes in three steps, corrections sit under
-// the learner's turn as hint cards with a diff, and the summary closes the scenario.
+// the learner's turn as hint cards with a diff, and the summary closes the scenario. Each
+// line of the character can be heard again, slower or translated (/LF111/); a spoken turn
+// may get a mora hint (/LF320/, a preview).
 Kirigami.ScrollablePage {
     id: page
 
@@ -83,6 +85,23 @@ Kirigami.ScrollablePage {
                     if (i === 1) conv.interrupt()
                 }
             }
+            // /LL204/: easier listening in one step, kept in the profile.
+            KanteChip {
+                visible: conv.voice.length > 0
+                text: page.t("Lauter", "Louder")
+                checkable: true
+                checked: conv.louder
+                toolTip: page.t("Die Figur spricht lauter", "The character speaks louder")
+                onClicked: conv.setSound(checked, conv.clear)
+            }
+            KanteChip {
+                visible: conv.voice.length > 0
+                text: page.t("Klar", "Clear")
+                checkable: true
+                checked: conv.clear
+                toolTip: page.t("Hebt die Konsonanten an, für leichteres Verstehen", "Lifts the consonants, for easier understanding")
+                onClicked: conv.setSound(conv.louder, checked)
+            }
             KanteButton {
                 visible: !conv.finished && !conv.placing
                 text: page.t("Später weiter", "Continue later")
@@ -126,6 +145,43 @@ Kirigami.ScrollablePage {
                     markup: modelData.who === "character" ? modelData.markup : ""
                     density: KanteRubyText.Density.All
                 }
+                // /LF111/: again, slower, translated; each counts as help (/LF212/).
+                RowLayout {
+                    visible: msg.modelData.who === "character"
+                    spacing: KanteStyle.unit(6)
+                    KanteButton {
+                        size: KanteButton.Size.Small
+                        emphasis: KanteButton.Emphasis.Quiet
+                        text: page.t("Nochmal", "Again")
+                        enabled: conv.voice.length > 0 && conv.voiceOn
+                        Accessible.description: page.t("Die Figur sagt den Satz noch einmal.", "The character says the line again.")
+                        onClicked: conv.listen(msg.index, 0)
+                    }
+                    KanteButton {
+                        size: KanteButton.Size.Small
+                        emphasis: KanteButton.Emphasis.Quiet
+                        text: page.t("Langsamer", "Slower")
+                        enabled: conv.voice.length > 0 && conv.voiceOn
+                        Accessible.description: page.t("Die Figur sagt den Satz langsamer, mit 0,7-facher Geschwindigkeit.", "The character says the line slower, at 0.7 times the speed.")
+                        onClicked: conv.listen(msg.index, 1)
+                    }
+                    KanteButton {
+                        size: KanteButton.Size.Small
+                        emphasis: KanteButton.Emphasis.Quiet
+                        text: page.t("Übersetzen", "Translate")
+                        enabled: msg.modelData.translation === undefined
+                        Accessible.description: page.t("Zeigt den Satz auf Deutsch.", "Shows the line in English.")
+                        onClicked: conv.listen(msg.index, 2)
+                    }
+                }
+                Text {
+                    visible: msg.modelData.who === "character" && msg.modelData.translation !== undefined
+                    Layout.fillWidth: true
+                    text: msg.modelData.translation || ""
+                    wrapMode: Text.Wrap
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.defaultFont
+                }
                 KanteLoader { visible: modelData.pending === true }
                 Repeater {
                     model: modelData.who === "learner" ? modelData.corrections : []
@@ -149,6 +205,19 @@ Kirigami.ScrollablePage {
                             Accessible.description: page.t("Der Satz war richtig: Kaiwa merkt sich den Widerspruch und zählt es nicht als Fehler.", "The sentence was right: Kaiwa keeps the dispute and does not count it as a mistake.")
                             onClicked: conv.dispute(msg.index, modelData.better)
                         }
+                    }
+                }
+                // /LF320/: a mora hint, cautious and without a severity; it is no mistake (K-02).
+                Repeater {
+                    model: modelData.who === "learner" && !modelData.misrecognized && modelData.mora ? modelData.mora : []
+                    delegate: KanteHintCard {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        tier: KanteHintCard.Tier.None
+                        tierText: modelData.tierText
+                        titleText: modelData.title
+                        text: modelData.text
+                        meta: modelData.meta
                     }
                 }
                 // /LF113/: what Kaiwa heard; a misrecognition is no learning mistake.
@@ -417,6 +486,7 @@ Kirigami.ScrollablePage {
                 else if (next === "!") page.showSpeechHelp = true
                 else if (next === "~") {}
                 else if (next.indexOf("read:") === 0) conv.finishPlacement(Number(next.charAt(5)), Number(next.charAt(6)))
+                else if (next.indexOf("translate:") === 0) conv.listen(Number(next.substring(10)), 2)
                 else conv.say(next, true)
             } else {
                 stop()

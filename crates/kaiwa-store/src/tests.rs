@@ -47,11 +47,23 @@ fn a_new_profile_has_defaults_and_the_schema() {
     assert_eq!(p.daily_goal, DailyGoal::Minutes(5));
     assert_eq!(p.feedback, Amount::Little);
     assert_eq!(p.keep_recordings_days, None, "no recordings without opt-in");
+    assert!(
+        !p.mora_hints,
+        "mora hints are a preview until K-02 holds in the app"
+    );
     let mut p = p;
     p.name = "Mara".into();
     p.gamification = false;
     s.set_profile(&p).unwrap();
     assert_eq!(s.profile().unwrap(), p);
+}
+
+#[test]
+fn a_profile_from_before_the_mora_hints_reads() {
+    let mut old = serde_json::to_value(Profile::default()).unwrap();
+    old.as_object_mut().unwrap().remove("mora_hints");
+    let p: Profile = serde_json::from_value(old).unwrap();
+    assert!(!p.mora_hints);
 }
 
 #[test]
