@@ -285,8 +285,10 @@ def main():
         hits = [r for r in err if r["alarm"][key]]
         sm["kind_right"] = sum(r["alarm"][key] == r["edit"] for r in hits) / max(1, len(hits))
         summary[key] = sm
+    # For the app (thresholds.json next to the model): calibrated on every speaker
+    thresholds = {key: kind_thresholds(ok, key) for key in keys}
     report = {"source": "Common Voice 19.0 ja, test split (CC0)", "clips": len(clips), "fa_max": FA_MAX,
-              "summary": summary,
+              "summary": summary, "thresholds": thresholds,
               "trials": [{k: r[k] for k in ("uid", "edit", "phone", "kana", "error", "alarm")}
                          | {f"{c}_by_kind": r[c]["by_kind"] for c in CHECKS}
                          for r in rows]}
