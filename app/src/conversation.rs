@@ -33,6 +33,9 @@ pub mod qobject {
         #[qproperty(QString, voice)]
         /// Whether the character speaks its replies (the learner can mute it).
         #[qproperty(bool, voice_on, cxx_name = "voiceOn")]
+        /// Easier listening (/LL204/), from the profile.
+        #[qproperty(bool, louder)]
+        #[qproperty(bool, clear)]
         /// Why there is no voice, with what to do about it.
         #[qproperty(QString, voice_note, cxx_name = "voiceNote")]
         /// Both speech models are loaded or known to be missing.
@@ -111,6 +114,11 @@ pub mod qobject {
         #[qinvokable]
         fn interrupt(self: Pin<&mut Conversation>);
 
+        /// Louder and clearer voice (/LL204/), kept in the profile.
+        #[qinvokable]
+        #[cxx_name = "setSound"]
+        fn set_sound(self: Pin<&mut Conversation>, louder: bool, clear: bool);
+
         /// A listening aid on the character's line at `log_index` (/LF111/): 0 says it again,
         /// 1 says it at 0.7×, 2 translates it into the UI language. Each counts as help.
         #[qinvokable]
@@ -137,7 +145,7 @@ use kaiwa_speech::capture::{Capture, Recording};
 use kaiwa_speech::g2p::G2p;
 use kaiwa_speech::models::{KANA_CTC_URL, kokoro_dir, models_dir, reazonspeech_dir};
 use kaiwa_speech::mora::{self, Checker, Hint, Kind};
-use kaiwa_speech::playback::Player;
+use kaiwa_speech::playback::{self, Player};
 use kaiwa_speech::stt::Recognizer;
 use kaiwa_speech::tts::{self, Voice};
 use serde_json::{Value, json};
@@ -161,6 +169,8 @@ pub struct ConversationRust {
     speech_error: QString,
     voice: QString,
     voice_on: bool,
+    louder: bool,
+    clear: bool,
     voice_note: QString,
     speech_ready: bool,
     scenario: QString,
@@ -423,6 +433,13 @@ impl qobject::Conversation {
             .clone()
             .unwrap_or_else(|| "jf_tebukuro".into());
         let opening = (log.len() == 1).then(|| session.opening().to_string());
+        let sound = state()
+            .store
+            .profile()
+            .map(|p| (p.louder, p.clear))
+            .unwrap_or_default();
+        self.as_mut().set_louder(sound.0);
+        self.as_mut().set_clear(sound.1);
         {
             let mut rust = self.as_mut().rust_mut();
             rust.session = Some(Arc::new(Mutex::new(session)));
@@ -638,6 +655,7 @@ impl qobject::Conversation {
             self.as_mut().set_talk_state(SPEAKING);
         }
         let text = kaiwa_core::spoken(markup);
+        let (louder, clear) = (*self.louder(), *self.clear());
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let still = || current.load(Ordering::SeqCst) == id;
@@ -647,7 +665,10 @@ impl qobject::Conversation {
                 }
                 let audio = speaker.voice.lock().map(|mut v| v.speak(&sentence, speed));
                 match audio {
-                    Ok(Ok(samples)) if still() => speaker.player.play(&samples, tts::SAMPLE_RATE),
+                    Ok(Ok(mut samples)) if still() => {
+                        playback::enhance(&mut samples, tts::SAMPLE_RATE, louder, clear);
+                        speaker.player.play(&samples, tts::SAMPLE_RATE)
+                    }
                     Ok(Err(e)) => eprintln!("kaiwa: {e}"),
                     _ => {}
                 }
@@ -661,6 +682,21 @@ impl qobject::Conversation {
                 }
             });
         });
+    }
+
+    fn set_sound(mut self: Pin<&mut Self>, louder: bool, clear: bool) {
+        {
+            let st = state();
+            if let Ok(mut p) = st.store.profile() {
+                p.louder = louder;
+                p.clear = clear;
+                if let Err(e) = st.store.set_profile(&p) {
+                    eprintln!("kaiwa: {e}");
+                }
+            }
+        }
+        self.as_mut().set_louder(louder);
+        self.as_mut().set_clear(clear);
     }
 
     fn listen(mut self: Pin<&mut Self>, log_index: i32, aid: i32) {

@@ -85,6 +85,23 @@ Kirigami.ScrollablePage {
                     if (i === 1) conv.interrupt()
                 }
             }
+            // /LL204/: easier listening in one step, kept in the profile.
+            KanteChip {
+                visible: conv.voice.length > 0
+                text: page.t("Lauter", "Louder")
+                checkable: true
+                checked: conv.louder
+                toolTip: page.t("Die Figur spricht lauter", "The character speaks louder")
+                onClicked: conv.setSound(checked, conv.clear)
+            }
+            KanteChip {
+                visible: conv.voice.length > 0
+                text: page.t("Klar", "Clear")
+                checkable: true
+                checked: conv.clear
+                toolTip: page.t("Hebt die Konsonanten an, für leichteres Verstehen", "Lifts the consonants, for easier understanding")
+                onClicked: conv.setSound(conv.louder, checked)
+            }
             KanteButton {
                 visible: !conv.finished && !conv.placing
                 text: page.t("Später weiter", "Continue later")

@@ -9,7 +9,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
 | Muss | 42 | 18 | 16 | 3 | 0 |
-| Soll | 6 | 8 | 9 | 0 | 0 |
+| Soll | 7 | 8 | 8 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
 | ID | Prio | Anforderung | Code | Stand | Prüfregeln |
@@ -39,7 +39,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF201/ | M | Das Lernermodell führt getrennte Fähigkeiten: Hörverstehen (Tempo … | app, core, store | geprüft | 2 von 2 automatisch grün: `emi_ceiling`, `selin_profile_split` |
 | /LF202/ | M | Das Lernermodell ist für Lernende einsehbar (Profil-Ansicht in … | app, backend, core | geprüft | 1 von 1 automatisch grün: `selin_profile_visible` |
 | /LF210/ | M | Der Schwierigkeitsregler zielt auf eine Erfolgsquote von etwa 80 % … | core, store | geprüft | 3 von 3 automatisch grün: `emi_no_baby_talk`, `hinnerk_pace`, `mara_success_band` |
-| /LF211/ | M | Stellgrößen: Anteil unbekannter Wörter (≤ 5 %), Satzlänge … | app, core | geprüft | 1 von 2 automatisch grün: `hinnerk_tts_slow`, `selin_settings_split` |
+| /LF211/ | M | Stellgrößen: Anteil unbekannter Wörter (≤ 5 %), Satzlänge … | app, core | geprüft | 2 von 2 automatisch grün: `hinnerk_tts_slow`, `selin_settings_split` |
 | /LF212/ | M | Hilfen (Wiederholung, Zeitlupe, Übersetzung, Hilfe-Stufen) fließen in … | app, core | geprüft | 1 von 1 automatisch grün: `mara_hints_silent` |
 | /LF213/ | M | Die Anpassung wirkt innerhalb einer Sitzung (sofort leichter nach … | core | geprüft | 1 von 1 automatisch grün: `jonas_scenario_stuck` |
 | /LF214/ | M | Die Schwierigkeit steigt schrittweise: Pro Sitzung ändert sich … | core | geprüft | 2 von 2 automatisch grün: `hinnerk_pace`, `mara_gradual` |
@@ -100,7 +100,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL201/ | M | Screenreader: Alle Bedienelemente haben Accessible-Namen und -Rollen … | – | geprüft | 1 von 1 automatisch grün: `hinnerk_a11y_names` |
 | /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App … | – | offen | 0 von 2 automatisch grün: `hinnerk_font`, `hinnerk_targets` |
 | /LL203/ | M | Kontraste erreichen WCAG AA in System, Kante und Kante Light. | – | offen | 0 von 1 automatisch grün: `hinnerk_targets` |
-| /LL204/ | S | Untertitel für alles Gesprochene. | – | offen | 0 von 1 automatisch grün: `hinnerk_tts_slow` |
+| /LL204/ | S | Untertitel für alles Gesprochene. | app, speech, store | geprüft | 1 von 1 automatisch grün: `hinnerk_tts_slow` |
 | /LL300/ | M | Keine Dark Patterns: keine künstliche Verknappung, keine Schuld- oder … | backend, core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
 | /LL301/ | M | Die GUI wird aus Kante erzeugt (siehe Kap. 8). | – | offen | 0 von 1 automatisch grün: `selin_win_style` |
 | /LL302/ | M | Die KI-Figuren bleiben im Lernkontext. | – | offen | 0 von 1 automatisch grün: `jonas_inappropriate` |

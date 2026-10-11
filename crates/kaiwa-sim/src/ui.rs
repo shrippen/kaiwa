@@ -395,6 +395,7 @@ fn keyboard(root: &Path) -> Result<Option<String>> {
         "KanteTabBar",
         "KantePath",
         "KanteCheckSkin",
+        "KanteChip",
     ];
     let mut found = Vec::new();
     let mut used = std::collections::BTreeSet::new();
