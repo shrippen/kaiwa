@@ -114,6 +114,7 @@ Eigene Modelle (`finetune.py`): `reazon-research/japanese-wav2vec2-base` bzw. `-
 | v0 | base, `train` + `dev`, 16 h, 3000 Schritte | 32 % |
 | v1 | base, dazu `other` mit Zustimmung, 49 h, 12 000 Schritte | 24,7 % |
 | v2 | large (24 Schichten), dieselben 49 h, 7000 Schritte | 22,1 % |
+| v3 | ab v2 weiter, dazu ReazonSpeech `small` (K-03), 110 h, 8000 Schritte | 22,0 % |
 
 **Echte Stimmen**, Erkennung bei Fehlalarmen (Varianten-Vergleich):
 
@@ -123,11 +124,13 @@ Eigene Modelle (`finetune.py`): `reazon-research/japanese-wav2vec2-base` bzw. `-
 | v0 | 15,4 % bei 4,5 % | **63,8 % bei 5,5 %** | 68 / 59 % |
 | v1 | 16,2 % bei 5,1 % | **62,3 % bei 6,0 %** | 64 / 60 % |
 | v2 | 22,9 % bei 5,7 % | **61,2 % bei 4,8 %** | 59 / 64 % |
+| v3 | 22,5 % bei 5,7 % | 59,3 % bei 5,1 % | 57 / 62 % |
 
 - **Dehnungen und eingefügte っ erkennt der Varianten-Vergleich kaum** (long+, q+ unter 18 % bei jedem Modell). Sie teilen sich aber das Fehlalarm-Budget mit den Kürzungen. Prüft man nur die Kürzungen, steigt deren Erkennung auf etwa das Doppelte.
 - **Referenz-Normierung** (OpenJTalk spricht den gemeinten Satz) hilft dem Hiragana-Modell (alle Arten 31 % statt 19 %), den eigenen Modellen kaum: Sie haben das Schreibungs-Vorwissen nicht, das die Referenz abzieht.
 - **„Gestützt“** (nur Varianten, denen auch die freie Erkennung näher ist) senkt die Fehlalarme auf 1,6–3,7 %, kostet aber mehr Erkennung, als es spart.
 - **v2 hält als einziges Modell die 5-%-Grenze auf echten Stimmen** und benennt bei einem Treffer die Fehlerart in 97 % der Fälle richtig. Es ist dreimal so groß (int8 356 MB, v1 122 MB).
+- **ReazonSpeech bringt nichts Messbares** (v3): 60 h Fernsehsprache mehr, aber auf den zurückgehaltenen Sprechern dieselben Zeichenfehler und auf echten Stimmen 59,3 % bei 5,1 % statt 61,2 % bei 4,8 %. Mit Referenz-Normierung 61,6 % bei 4,9 % (v2 58,8 %). Die Unterschiede liegen im Rauschen des Tests (500 Sprecher); v2 bleibt, weil es ohne die Nutzungsbedingungen von ReazonSpeech auskommt.
 - **Synthetisch** sind die eigenen Modelle viel besser als das Hiragana-Modell: im Satzrahmen v1 83 % bei 3,8 %, v2 je Fehlerart 87 % bei 4,8 % (Hiragana 62 %); alle Versuche v1 65 % bei 5,1 %, v2 je Fehlerart 74 % bei 7,4 % (Hiragana 47 %). Auf echten Stimmen liegen v0, v1 und v2 dicht beieinander; Common Voice ist mit Laptop- und Handymikrofonen aufgenommen und schwerer als jede Synthese.
 
 **App:** `kaiwa-speech::mora` (Rust) rechnet dasselbe über ONNX Runtime. `export_onnx.py` exportiert das Modell (v1: fp32 378 MB, exakt wie PyTorch; int8 nur für MatMul 122 MB, v2 356 MB; Varianten-Werte im Median 0,04 daneben, auf der CPU dieses Rechners mit 24 Kernen 25-mal schneller als Echtzeit). Welche Fehlerarten geprüft werden, steht in `thresholds.json` neben dem Modell.
