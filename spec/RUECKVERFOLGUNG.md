@@ -8,7 +8,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 43 | 23 | 10 | 3 | 0 |
+| Muss | 44 | 23 | 9 | 3 | 0 |
 | Soll | 7 | 11 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
@@ -88,7 +88,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF713/ | M | API-Schlüssel liegen im System-Schlüsselbund (KWallet, Secret … | ai, app, backend | Code | 0 von 1 automatisch grün: `selin_win_keys` |
 | /LF714/ | S | Kostenbremse für Cloud-Anbieter: geschätzte Kosten pro Sitzung und … | ai, app, backend, store | Code | – |
 | /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. | app, backend, store | Code | – |
-| /LL010/ | M | Antwortlatenz (Sprechende → erster Ton der KI): p50 ≤ 1,5 s und p95 ≤ … | – | offen | 0 von 3 automatisch grün: `lena_responsive`, `lena_suggest_smaller`, `theo_latency` |
+| /LL010/ | M | Antwortlatenz (Sprechende → erster Ton der KI): p50 ≤ 1,5 s und p95 ≤ … | app, backend | geprüft | 1 von 3 automatisch grün: `lena_responsive`, `lena_suggest_smaller`, `theo_latency` |
 | /LL011/ | M | Das Plasmoid öffnet in ≤ 300 ms (Dienst läuft) und ist ≤ 2 s nach … | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_fast` |
 | /LL012/ | S | Speicher im Leerlauf ≤ 150 MB (ohne geladene Modelle). | app, store | Code | 0 von 1 automatisch grün: `lena_idle_memory` |
 | /LL020/ | M | Profil-Ansicht, Lernpfad und Statistik laden in ≤ 500 ms bei der … | store | geprüft | 1 von 1 automatisch grün: `lena_stats_fast` |

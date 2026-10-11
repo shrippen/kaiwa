@@ -21,6 +21,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "theo_keyboard" => keyboard(root),
         "lena_download_announced" => download_announced(root),
         "mara_ptt" => push_to_talk(root),
+        "lena_suggest_smaller" => suggest_smaller(root),
         _ => return None,
     };
     Some(match r {
@@ -339,6 +340,30 @@ fn talk_titles(root: &Path) -> Result<Option<String>> {
     };
     let n = line.matches("page.t(").count();
     Ok((n != 5).then(|| format!("the talk button names {n} of 5 states")))
+}
+
+/// /LL010/ for Lena: response times over 3 s in the median bring a suggestion (a smaller
+/// model or a cloud tutor) in the settings, and nothing in the profile changes by itself.
+/// Measuring the times needs the audio mode.
+fn suggest_smaller(root: &Path) -> Result<Option<String>> {
+    let b = demo("latency", "de")?;
+    let before = b.store.profile()?;
+    for ms in [3400, 3900, 4200, 3600, 5100, 3300] {
+        b.add_latency(ms)?;
+    }
+    let v = b.latency_view("de")?;
+    let mut found = Vec::new();
+    if v["slow"] != true || v["suggestion"].as_str().is_none_or(str::is_empty) {
+        found.push(format!("no suggestion at a median of {}", v["p50"]));
+    }
+    if b.store.profile()? != before {
+        found.push("the profile changed by itself".into());
+    }
+    let page = std::fs::read_to_string(root.join("app/qml/SettingsPage.qml"))?;
+    if !page.contains("lat.suggestion") {
+        found.push("the settings do not show the suggestion".into());
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
 /// /LF100/ from the source: the talk button starts and ends a recording by click and by the

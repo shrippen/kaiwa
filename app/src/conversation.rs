@@ -191,6 +191,9 @@ pub struct ConversationRust {
     /// The pause ended the last recording, and how many turns sounded cut off by it.
     ended_by_pause: bool,
     cut_short: u32,
+    /// When the learner stopped speaking, for the response time (/LL010/); handed on to the
+    /// reply, which books it at its first sound.
+    speech_end: Option<std::time::Instant>,
     /// While listening hands-free: when the turn ends, and when the level was last read.
     turn_end: Option<(kaiwa_speech::vad::EndOfTurn, std::time::Instant)>,
     voice_note: QString,
@@ -686,6 +689,7 @@ impl qobject::Conversation {
         }
         let text = kaiwa_core::spoken(markup);
         let (louder, clear) = (*self.louder(), *self.clear());
+        let mut speech_end = self.as_mut().rust_mut().speech_end.take();
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let still = || current.load(Ordering::SeqCst) == id;
@@ -700,7 +704,11 @@ impl qobject::Conversation {
                 match audio {
                     Ok(Ok((mut samples, rate))) if still() => {
                         playback::enhance(&mut samples, rate, louder, clear);
-                        speaker.player.play(&samples, rate)
+                        speaker.player.play(&samples, rate);
+                        // The first sound of the reply: the response time (/LL010/).
+                        if let Some(t) = speech_end.take() {
+                            book_latency(t);
+                        }
                     }
                     Ok(Err(e)) => eprintln!("kaiwa: {e}"),
                     _ => {}
@@ -938,8 +946,14 @@ impl qobject::Conversation {
                 e.update(level as f32, dt)
             });
         if ended {
+            // The speech ended a pause ago, not now.
+            let quiet = self.turn_end.as_ref().map_or(0.0, |(e, _)| e.quiet_secs());
             self.as_mut().rust_mut().ended_by_pause = true;
             self.as_mut().stop_talk();
+            let end = std::time::Instant::now()
+                .checked_sub(Duration::from_secs_f64(quiet))
+                .unwrap_or_else(std::time::Instant::now);
+            self.as_mut().rust_mut().speech_end = Some(end);
         }
     }
 
@@ -958,6 +972,7 @@ impl qobject::Conversation {
         let Some(capture) = self.as_mut().rust_mut().capture.take() else {
             return;
         };
+        self.as_mut().rust_mut().speech_end = Some(std::time::Instant::now());
         self.as_mut().set_level(0.0);
         match capture.stop() {
             Ok(rec) => self.recognize(rec),
@@ -1090,6 +1105,10 @@ impl qobject::Conversation {
         if text.is_empty() || *self.busy() || *self.finished() {
             return None;
         }
+        if typed {
+            // Only spoken turns have a response time.
+            self.as_mut().rust_mut().speech_end = None;
+        }
         self.as_mut().wake();
         let session = self.session.clone()?;
         let index = self.log.len();
@@ -1124,6 +1143,10 @@ impl qobject::Conversation {
                         }
                         q.as_mut().set_error(QString::default());
                         q.as_mut().speak(&outcome.reply);
+                        // Without a voice the reply's text is the answer.
+                        if let Some(t) = q.as_mut().rust_mut().speech_end.take() {
+                            book_latency(t);
+                        }
                     }
                     Err(e) => {
                         if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index) {
@@ -1227,6 +1250,14 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
         }
         }
     });
+}
+
+/// Keeps a response time on the device (/LL010/).
+fn book_latency(since: std::time::Instant) {
+    let ms = u32::try_from(since.elapsed().as_millis()).unwrap_or(u32::MAX);
+    if let Err(e) = state().add_latency(ms) {
+        eprintln!("kaiwa: {e:#}");
+    }
 }
 
 /// Loads the mora check (/LF320/). Without its model there are no hints; the settings say where

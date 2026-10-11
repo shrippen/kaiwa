@@ -9,6 +9,7 @@
 //!   system time in the local time zone.
 
 pub mod cost;
+pub mod latency;
 pub mod profiles;
 pub mod recordings;
 pub mod reminder;

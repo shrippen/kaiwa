@@ -48,6 +48,11 @@ impl EndOfTurn {
         }
     }
 
+    /// How long it has been quiet since the last speech, in seconds.
+    pub fn quiet_secs(&self) -> f64 {
+        self.quiet
+    }
+
     /// Whether the learner has said anything yet.
     pub fn heard(&self) -> bool {
         self.spoken >= MIN_SPEECH_SECS

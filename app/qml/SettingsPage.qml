@@ -321,6 +321,19 @@ QQC2.ScrollView {
                 }
             }
         }
+        // Response time (/LL010/): measured on this device; when slow, a suggestion, no switch.
+        Row {
+            id: latencyRow
+            readonly property var lat: page.p.latency || null
+            visible: lat !== null
+            title: page.t("Antwortzeit", "Response time")
+            hint: lat ? (lat.text + (lat.slow ? " " + lat.suggestion : "")) : ""
+            Text {
+                text: latencyRow.lat ? (latencyRow.lat.p50 / 1000).toFixed(1).replace(".", page.t(",", ".")) + " s" : ""
+                color: latencyRow.lat && latencyRow.lat.slow ? KanteStyle.warningColor : KanteStyle.textColor
+                font: KanteStyle.defaultFont
+            }
+        }
         // The cost brake (/LF714/): only with a cloud tutor.
         Row {
             visible: page.privacy.some(function (f) { return f.cloud })
