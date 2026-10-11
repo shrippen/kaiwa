@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Shapes
-import org.kde.kirigami as Kirigami
 import "."
 
 /**
