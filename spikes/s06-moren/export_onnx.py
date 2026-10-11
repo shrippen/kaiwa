@@ -54,6 +54,8 @@ def main():
     import onnxruntime as ort
     from transformers import Wav2Vec2FeatureExtractor
     fe = Wav2Vec2FeatureExtractor.from_pretrained(args.model)
+    # The export changes the traced model in place; compare against a fresh copy.
+    model = Wav2Vec2ForCTC.from_pretrained(args.model).eval()
     for f in ("model.onnx", "model.int8.onnx"):
         sess = ort.InferenceSession(str(out / f))
         worst = []

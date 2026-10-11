@@ -92,3 +92,39 @@ Trifft der Varianten-Vergleich, nennt er in 88 % der Fälle die richtige Stelle 
 3. **Eigene Aufnahmen (F-04)** vor der Abnahme: erst sie zeigen, ob die Zahlen mit einer echten Stimme halten.
 4. Bis dahin gilt F-09: Moren-Hinweise nur dort, wo die Fehlalarm-Grenze hält, also im Satz und mit den Schwellen je Fehlerart.
 5. Julius als zweite Gegenprobe ist nach dem MFA-Befund verzichtbar: Beide HMM-Aligner messen Dauern, und die Dauern sind das Problem, nicht ihre Messung.
+
+## Echte Stimmen und eigenes Modell (Fragenpaket 5: J-02, J-04)
+
+Nach J-04 gibt es keine eigenen Aufnahmen. Frei lizenzierte Aufnahmen von *Lernenden* mit Moren-Fehlern gibt es nicht; NHK-Nachrichten sind geschützt. `real.py` nimmt deshalb echte Muttersprachler aus Common Voice (Testteil, CC0) und schneidet die Fehler hinein:
+
+- 500 Sprecher, je ein Satz. Nur Sätze, deren Lesung das Hiragana-Modell hört (Zeichenfehler ≤ 20 %); die Auswahl steht in `clips.json` und gilt für alle Modelle.
+- MFA richtet die Laute aus. Dann wird je Satz eine Stelle geändert:
+  - **long-:** Langvokal auf den mittleren kurzen Vokal des Satzes gekürzt.
+  - **q-:** っ auf den mittleren kurzen Konsonanten gekürzt.
+  - **long+:** kurzer Vokal auf das Doppelte gedehnt (ganze Grundperioden wiederholt).
+  - **q+:** Verschlusspause vor k, t, p um eine More verlängert.
+- **Kontrolle:** jede Aufnahme unverändert und mit einem Schein-Schnitt (eine Grundperiode aus einem kurzen Vokal). Der Schein-Schnitt löst nicht öfter Alarm aus als die unveränderte Aufnahme; die Prüfung reagiert also nicht auf Schnittspuren.
+- ん vor Vokal ändert einen Laut, keine Länge, und bleibt hier draußen.
+- Schwellen auf der einen Hälfte der Sprecher kalibriert, auf der anderen gezählt (und umgekehrt).
+
+Eigene Modelle (`finetune.py`): `reazon-research/japanese-wav2vec2-base` bzw. `-large` (Apache-2.0), feinjustiert auf Common Voice Japanisch (CC0, ohne die Test-Sprecher) mit Aussprache-Kana aus OpenJTalk.
+
+| Modell | Training | Zeichenfehler (40 zurückgehaltene Sprecher) |
+|---|---|---|
+| v0 | base, `train` + `dev`, 16 h, 3000 Schritte | 32 % |
+| v1 | base, dazu `other` mit Zustimmung, 49 h, 12 000 Schritte | 24,7 % |
+
+**Echte Stimmen**, Erkennung bei Fehlalarmen (Varianten-Vergleich):
+
+| Modell | alle Fehlerarten | nur Kürzungen (long-, q-) | davon long- / q- |
+|---|---|---|---|
+| Hiragana (vumichien) | 18,5 % bei 5,1 % | 44,7 % bei 4,8 % | 42 / 48 % |
+| v0 | 15,4 % bei 4,5 % | **63,8 % bei 5,5 %** | 68 / 59 % |
+| v1 | 16,2 % bei 5,1 % | **62,3 % bei 6,0 %** | 64 / 60 % |
+
+- **Dehnungen und eingefügte っ erkennt der Varianten-Vergleich kaum** (long+, q+ unter 18 % bei jedem Modell). Sie teilen sich aber das Fehlalarm-Budget mit den Kürzungen. Prüft man nur die Kürzungen, steigt deren Erkennung auf etwa das Doppelte.
+- **Referenz-Normierung** (OpenJTalk spricht den gemeinten Satz) hilft dem Hiragana-Modell (alle Arten 31 % statt 19 %), den eigenen Modellen kaum: Sie haben das Schreibungs-Vorwissen nicht, das die Referenz abzieht.
+- **„Gestützt“** (nur Varianten, denen auch die freie Erkennung näher ist) senkt die Fehlalarme auf 1,6–3,7 %, kostet aber mehr Erkennung, als es spart.
+- **Synthetisch** ist v1 viel besser als das Hiragana-Modell: im Satzrahmen 83 % bei 3,8 % (Hiragana 62 %), alle Versuche 65 % bei 5,1 % (Hiragana 47 %). Auf echten Stimmen ist v1 nicht besser als v0; Common Voice ist mit Laptop- und Handymikrofonen aufgenommen und schwerer als jede Synthese.
+
+**App:** `kaiwa-speech::mora` (Rust) rechnet dasselbe über ONNX Runtime. `export_onnx.py` exportiert das Modell (fp32 378 MB, exakt wie PyTorch; int8 nur für MatMul 122 MB, Varianten-Werte im Median 0,04 daneben, auf der CPU dieses Rechners mit 24 Kernen 25-mal schneller als Echtzeit). Welche Fehlerarten geprüft werden, steht in `thresholds.json` neben dem Modell.

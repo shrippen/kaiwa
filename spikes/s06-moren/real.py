@@ -46,6 +46,8 @@ GEM_KINDS = ("long-", "q-", "long+", "q+")
 # variants: the variant comparison as in measure.py; ref: with the reference taken off;
 # supported: only variants the free transcription agrees with (closer to it than the meant kana)
 CHECKS = ("variants", "ref", "supported")
+# all: every kind is checked; shortened: only a long vowel or っ spoken short, the errors learners make
+KIND_SETS = {"all": None, "shortened": ("long-", "q-")}
 
 
 def cer(a, b):
@@ -250,30 +252,39 @@ def main():
                          "error": kind in GEM_KINDS, "variants": feats, "ref": normed,
                          "supported": supported})
 
+    # Which kinds are checked at all: every kind, or only the shortenings learners make (H-04)
+    for r in rows:
+        for check in CHECKS:
+            for name, kinds in KIND_SETS.items():
+                r[f"{check}/{name}"] = {"by_kind": {k: v for k, v in r[check]["by_kind"].items()
+                                                    if kinds is None or k in kinds}}
+    keys = [f"{c}/{n}" for c in CHECKS for n in KIND_SETS]
+
     # Two folds by speaker
     speakers = sorted({r["speaker"] for r in rows})
     half = set(speakers[::2])
     for fold in (True, False):
         cal = [r for r in rows if (r["speaker"] in half) != fold and not r["error"]]
-        for check in CHECKS:
-            th = kind_thresholds(cal, check)
+        for key in keys:
+            th = kind_thresholds(cal, key)
             for r in rows:
                 if (r["speaker"] in half) == fold:
-                    r.setdefault("alarm", {})[check] = kind_alarm(r, th, check)
+                    r.setdefault("alarm", {})[key] = kind_alarm(r, th, key)
 
-    def rate(sel, check):
-        return (sum(r["alarm"][check] is not None for r in sel) / len(sel), len(sel)) if sel else (None, 0)
+    def rate(sel, key):
+        return (sum(r["alarm"][key] is not None for r in sel) / len(sel), len(sel)) if sel else (None, 0)
 
     summary = {}
     ok = [r for r in rows if not r["error"]]
-    err = [r for r in rows if r["error"]]
-    for check in CHECKS:
-        sm = {k: rate([r for r in rows if r["edit"] == k], check) for k in ("original", "sham") + GEM_KINDS}
-        sm["false_alarms"] = rate(ok, check)
-        sm["detection"] = rate(err, check)
-        hits = [r for r in err if r["alarm"][check]]
-        sm["kind_right"] = sum(r["alarm"][check] == r["edit"] for r in hits) / max(1, len(hits))
-        summary[check] = sm
+    for key in keys:
+        kinds = KIND_SETS[key.split("/")[1]] or GEM_KINDS
+        err = [r for r in rows if r["error"] and r["edit"] in kinds]
+        sm = {k: rate([r for r in rows if r["edit"] == k], key) for k in ("original", "sham") + GEM_KINDS}
+        sm["false_alarms"] = rate(ok, key)
+        sm["detection"] = rate(err, key)
+        hits = [r for r in err if r["alarm"][key]]
+        sm["kind_right"] = sum(r["alarm"][key] == r["edit"] for r in hits) / max(1, len(hits))
+        summary[key] = sm
     report = {"source": "Common Voice 19.0 ja, test split (CC0)", "clips": len(clips), "fa_max": FA_MAX,
               "summary": summary,
               "trials": [{k: r[k] for k in ("uid", "edit", "phone", "kana", "error", "alarm")}

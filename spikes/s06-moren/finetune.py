@@ -1,6 +1,7 @@
 """J-02: an own kana CTC model for the mora check.
 
-Base: reazon-research/japanese-wav2vec2-base (wav2vec 2.0, pre-trained on ReazonSpeech, Apache-2.0).
+Base: reazon-research/japanese-wav2vec2-base or -large (wav2vec 2.0, pre-trained on ReazonSpeech,
+Apache-2.0). The prepared data (data.json, audio.npy) can be linked into another --work directory.
 Data: Common Voice 19.0 Japanese (CC0): train, dev and the clips of `other` that at least one person
 voted for and nobody against. Speakers of the test split are left out completely (real.py tests on
 them), and so are 40 dev speakers, whose clips measure the error rate while training.
@@ -29,8 +30,11 @@ import torch
 sys.path.insert(0, str(Path(__file__).parent))  # -I leaves the script's directory out
 import ctc  # noqa: E402
 
-BASE = "reazon-research/japanese-wav2vec2-base"
-BASE_REVISION = "021e23f88a4fe70548049063d172ad2ba0c636f7"
+# Pre-trained on ReazonSpeech, Apache-2.0 each: name -> revision
+BASES = {
+    "reazon-research/japanese-wav2vec2-base": "021e23f88a4fe70548049063d172ad2ba0c636f7",
+    "reazon-research/japanese-wav2vec2-large": "55969d3700533972fcc4ff0e3747f0bc3c21e4c1",
+}
 SR = 16000
 MAX_S = 12.0
 HELD_OUT_SPEAKERS = 40
@@ -143,6 +147,7 @@ def main():
     ap.add_argument("--batch-seconds", type=float, default=200)
     ap.add_argument("--lr", type=float, default=1e-4)
     ap.add_argument("--splits", default="train,dev,other")
+    ap.add_argument("--base", choices=BASES, default="reazon-research/japanese-wav2vec2-base")
     args = ap.parse_args()
     from transformers import (Wav2Vec2CTCTokenizer, Wav2Vec2FeatureExtractor, Wav2Vec2ForCTC,
                               Wav2Vec2Processor)
@@ -155,10 +160,10 @@ def main():
     (work / "vocab.json").write_text(json.dumps(vocab, ensure_ascii=False))
     tok = Wav2Vec2CTCTokenizer(str(work / "vocab.json"), pad_token="[PAD]", unk_token="[UNK]",
                                word_delimiter_token="|")
-    fe = Wav2Vec2FeatureExtractor.from_pretrained(BASE, revision=BASE_REVISION)
+    fe = Wav2Vec2FeatureExtractor.from_pretrained(args.base, revision=BASES[args.base])
     proc = Wav2Vec2Processor(feature_extractor=fe, tokenizer=tok)
     model = Wav2Vec2ForCTC.from_pretrained(
-        BASE, revision=BASE_REVISION, vocab_size=len(vocab), pad_token_id=vocab["[PAD]"],
+        args.base, revision=BASES[args.base], vocab_size=len(vocab), pad_token_id=vocab["[PAD]"],
         ctc_loss_reduction="mean", ctc_zero_infinity=True, mask_time_prob=0.05, layerdrop=0.05,
         attention_dropout=0.0, hidden_dropout=0.0, feat_proj_dropout=0.0).cuda()
     model.freeze_feature_encoder()

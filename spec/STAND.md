@@ -33,7 +33,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 ## Offen
 
-1. **Moren-Prüfung** (ADR-005, Fragenpaket 5): Spike 0.6 gemessen und entschieden (Varianten-Vergleich, Dauer als Zusatz, eigenes Kana-CTC-Modell, J-01 bis J-05). In Arbeit: Test mit echten Stimmen (`real.py`, Common Voice) und das eigene Modell (`finetune.py`). Danach Aligner in Rust (`ctc.py` als Vorlage) und Hinweise in der App (nur in Sätzen).
+1. **Moren-Prüfung** (ADR-005, Fragenpaket 5 entschieden, Fragenpaket 6 offen): eigenes Kana-CTC-Modell trainiert (`spikes/s06-moren/finetune.py`, v1 base, v2 large), Test mit echten Stimmen (`real.py`, Common Voice mit hineingeschnittenen Fehlern): nur Kürzungen geprüft etwa 62 % Erkennung bei 5,5–6 % Fehlalarmen, alle Fehlerarten unter 20 %. Rust: `kaiwa-speech::mora` (Varianten, CTC, `Checker` über ONNX Runtime, `G2p::pronounced`). Offen: Freigabe-Kriterium, nur Kürzungen, Modell-Hosting und -Lizenz, ReazonSpeech als weitere Daten; danach die Hinweise in der App (nur in Sätzen, J-05).
 2. **Lokaler Test** (`spec/LOKALER-TEST.md`): KI-Anbindung (Spike 0.5), VOICEVOX (H-01), Messwerte auf dem Framework 13, eigene Aufnahmen. Ergebnisse als PR nach `qa/local/<datum>/` (H-05).
 3. **40 Prüfregeln** sind noch nicht automatisch, meist Audio, GUI (AT-SPI, Tastatur) oder Verhalten des echten Tutors. Sie brauchen den gui- und audio-Modus von `kaiwa-sim` oder den lokalen Test.
 4. **Stimme:** H-01 (VOICEVOX) entscheidet die endgültige Stimme; bis dahin Kokoro als Übergang.
