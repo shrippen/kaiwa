@@ -114,7 +114,7 @@ QQC2.ScrollView {
             hint: page.t("Beim Freisprechen: so lange Stille, bis Kaiwa annimmt, dass du fertig bist", "Hands-free: silence until Kaiwa takes it you are done")
             KanteSegmented {
                 readonly property var values: [1.2, 2, 3, 5]
-                model: ["1,2 s", "2 s", "3 s", "5 s"]
+                model: [page.t("1,2 s", "1.2 s"), "2 s", "3 s", "5 s"]
                 currentIndex: Math.max(0, values.indexOf(page.p.endPause))
                 onActivated: function (i) { page.kaiwa.setSetting("endPause", String(values[i])) }
             }
