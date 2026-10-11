@@ -8,7 +8,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 40 | 18 | 18 | 3 | 0 |
+| Muss | 41 | 18 | 17 | 3 | 0 |
 | Soll | 6 | 6 | 11 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
@@ -96,7 +96,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL110/ | M | Fehlalarmrate der Verbesserungsvorschläge (Vorschlag bei korrekter … | core | Code | 0 von 1 automatisch grün: `theo_fp` |
 | /LL111/ | M | Trefferquote für eingebaute Fehler der Personas (Kap. 9) ≥ 85 % bei … | – | geprüft | 1 von 3 automatisch grün: `emi_keigo_detect`, `mara_recall`, `theo_tp` |
 | /LL112/ | M | Erklärungen stehen immer in der UI-Sprache und sind im Niveau der … | ai | geprüft | 1 von 4 automatisch grün: `emi_explain_examples`, `hinnerk_plain_words`, `mara_explain_de`, `theo_ui_en` |
-| /LL200/ | M | Vollständig per Tastatur bedienbar, mit sichtbarem Fokus (Kante … | – | offen | 0 von 1 automatisch grün: `theo_keyboard` |
+| /LL200/ | M | Vollständig per Tastatur bedienbar, mit sichtbarem Fokus (Kante … | – | geprüft | 1 von 1 automatisch grün: `theo_keyboard` |
 | /LL201/ | M | Screenreader: Alle Bedienelemente haben Accessible-Namen und -Rollen … | – | geprüft | 1 von 1 automatisch grün: `hinnerk_a11y_names` |
 | /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App … | – | offen | 0 von 2 automatisch grün: `hinnerk_font`, `hinnerk_targets` |
 | /LL203/ | M | Kontraste erreichen WCAG AA in System, Kante und Kante Light. | – | offen | 0 von 1 automatisch grün: `hinnerk_targets` |

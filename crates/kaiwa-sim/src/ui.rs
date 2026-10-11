@@ -18,6 +18,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "lena_retention" => retention(),
         "hinnerk_gamification_off" => gamification_off(root),
         "hinnerk_a11y_names" => a11y_names(root),
+        "theo_keyboard" => keyboard(root),
         _ => return None,
     };
     Some(match r {
@@ -327,6 +328,62 @@ fn blocks<'a>(src: &'a str, types: &[&str]) -> Vec<(usize, String, &'a str)> {
 /// app has a name for assistive technology:
 /// a visible text, or an Accessible.name (text fields always need the latter). The Kante
 /// controls give the role; KanteSegmented names each segment from its model.
+/// /LL200/ from the source: the app's pages have no mouse-only handlers and no control taken out
+/// of the tab order, and every interactive Kante control they use draws its focus. Walking a
+/// journey by keyboard needs the GUI mode.
+fn keyboard(root: &Path) -> Result<Option<String>> {
+    const MOUSE_ONLY: &[&str] = &[
+        "MouseArea",
+        "TapHandler",
+        "focusPolicy: Qt.NoFocus",
+        "activeFocusOnTab: false",
+    ];
+    const INTERACTIVE: &[&str] = &[
+        "KanteButton",
+        "KanteSegmented",
+        "KanteTalkButton",
+        "KanteTextField",
+        "KanteComboBox",
+        "KanteTabBar",
+        "KantePath",
+        "KanteCheckSkin",
+    ];
+    let mut found = Vec::new();
+    let mut used = std::collections::BTreeSet::new();
+    for e in std::fs::read_dir(root.join("app/qml"))? {
+        let path = e?.path();
+        if path.extension().is_none_or(|x| x != "qml") {
+            continue;
+        }
+        let src = std::fs::read_to_string(&path)?;
+        let name = path.file_name().unwrap_or_default().to_string_lossy();
+        for (i, line) in src.lines().enumerate() {
+            if let Some(m) = MOUSE_ONLY.iter().find(|m| line.contains(*m)) {
+                found.push(format!("{name}:{} {m}", i + 1));
+            }
+        }
+        for t in INTERACTIVE {
+            if src.contains(&format!("{t} {{")) {
+                used.insert(*t);
+            }
+        }
+    }
+    // A control draws its focus itself or through a Kante skin it uses (KanteFieldSkin).
+    let kante = |t: &str| std::fs::read_to_string(root.join(format!("app/qml/Kante/{t}.qml")));
+    let draws = |src: &str| src.contains("visualFocus") || src.contains("activeFocus");
+    for t in used {
+        let src = kante(t)?;
+        let skins = src
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|w| w.starts_with("Kante") && w.ends_with("Skin"));
+        let by_skin = skins.filter_map(|w| kante(w).ok()).any(|skin| draws(&skin));
+        if !draws(&src) && !by_skin {
+            found.push(format!("{t} draws no focus"));
+        }
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
+}
+
 fn a11y_names(root: &Path) -> Result<Option<String>> {
     const NAMED_BY_TEXT: &[&str] = &[
         "KanteButton",
