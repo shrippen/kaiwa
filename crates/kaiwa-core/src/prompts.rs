@@ -37,7 +37,9 @@ fn level_words(d: &Difficulty) -> String {
     )
 }
 
-/// The character's reply: in role, at the learner's level, recasting mistakes (/LF305/).
+/// The character's reply: in role, back to the scene after something inappropriate (/LL302/),
+/// at the learner's level, recasting mistakes (/LF305/), giving the Japanese word when the
+/// learner asks in their own language (/LF122/).
 pub fn reply_system(s: &Scenario, lang: &str, d: &Difficulty) -> String {
     format!(
         "You are a character in a Japanese speaking exercise. {character}\n\
@@ -55,7 +57,8 @@ pub fn reply_system(s: &Scenario, lang: &str, d: &Difficulty) -> String {
     )
 }
 
-/// The analysis of the learner's last turn: structured, strict about false alarms (/LL110/).
+/// The analysis of the learner's last turn: structured, strict about false alarms (/LL110/),
+/// fillers are no mistakes (/LF102/).
 pub fn analysis_system(s: &Scenario, lang: &str) -> String {
     format!(
         "You analyse the learner's last turn in a Japanese speaking exercise. The scene: {character} \

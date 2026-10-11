@@ -8,8 +8,8 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 42 | 18 | 16 | 3 | 0 |
-| Soll | 7 | 8 | 8 | 0 | 0 |
+| Muss | 42 | 20 | 14 | 3 | 0 |
+| Soll | 7 | 9 | 7 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
 | ID | Prio | Anforderung | Code | Stand | Prüfregeln |
@@ -22,7 +22,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LD060/ | S | Widersprüche | core, store | Code | – |
 | /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | speech | Code | 0 von 1 automatisch grün: `mara_ptt` |
 | /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
-| /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | – | offen | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
+| /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
 | /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, store | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
@@ -34,7 +34,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF117/ | S | KI-Figuren mit festem Charakter, Sprechstil und Stimme (z. B. … | core | geprüft | 1 von 1 automatisch grün: `selin_register_flag` |
 | /LF120/ | M | Tippen statt Sprechen (Kana-IME oder Rōmaji mit Umwandlung). | app, core | geprüft | 1 von 1 automatisch grün: `jonas_typed_marked` |
 | /LF121/ | M | Ein Gespräch lässt sich unterbrechen und später an derselben Stelle … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_resume` |
-| /LF122/ | S | Lernende dürfen in die UI-Sprache wechseln („Wie sagt man …?“). | – | offen | 0 von 2 automatisch grün: `hinnerk_german_word_help`, `mara_codeswitch` |
+| /LF122/ | S | Lernende dürfen in die UI-Sprache wechseln („Wie sagt man …?“). | core | Code | 0 von 2 automatisch grün: `hinnerk_german_word_help`, `mara_codeswitch` |
 | /LF200/ | M | Einstufung per Gespräch (5–8 min) mit steigender Schwierigkeit. | app, core, store | geprüft | 2 von 2 automatisch grün: `emi_ceiling`, `selin_profile_split` |
 | /LF201/ | M | Das Lernermodell führt getrennte Fähigkeiten: Hörverstehen (Tempo … | app, core, store | geprüft | 2 von 2 automatisch grün: `emi_ceiling`, `selin_profile_split` |
 | /LF202/ | M | Das Lernermodell ist für Lernende einsehbar (Profil-Ansicht in … | app, backend, core | geprüft | 1 von 1 automatisch grün: `selin_profile_visible` |
@@ -103,7 +103,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL204/ | S | Untertitel für alles Gesprochene. | app, speech, store | geprüft | 1 von 1 automatisch grün: `hinnerk_tts_slow` |
 | /LL300/ | M | Keine Dark Patterns: keine künstliche Verknappung, keine Schuld- oder … | backend, core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
 | /LL301/ | M | Die GUI wird aus Kante erzeugt (siehe Kap. 8). | – | offen | 0 von 1 automatisch grün: `selin_win_style` |
-| /LL302/ | M | Die KI-Figuren bleiben im Lernkontext. | – | offen | 0 von 1 automatisch grün: `jonas_inappropriate` |
+| /LL302/ | M | Die KI-Figuren bleiben im Lernkontext. | core | Code | 0 von 1 automatisch grün: `jonas_inappropriate` |
 | /LL400/ | M | Lokal zuerst: Alle Muss-Funktionen sind mit lokalen Bausteinen … | ai | Code | 0 von 1 automatisch grün: `lena_zero_egress` |
 | /LL401/ | M | Im Nur-lokal-Modus gibt es keine ausgehenden Verbindungen außer zu … | app, speech | geprüft | 1 von 2 automatisch grün: `lena_download_announced`, `lena_zero_egress` |
 | /LL402/ | M | DSGVO-Konformität: Zweckbindung, Löschung, Export und Auskunft über … | store | geprüft | 1 von 1 automatisch grün: `lena_delete` |
