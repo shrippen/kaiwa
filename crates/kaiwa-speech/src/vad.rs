@@ -54,6 +54,21 @@ impl EndOfTurn {
     }
 }
 
+/// Whether a recognised turn looks cut off: it ends on a particle or a connecting form that
+/// leaves the sentence open (〜て, 〜が, 〜けど, 〜から, は, を …). A hint that the pause may be
+/// too short (/LF101/), never a judgement on the turn.
+pub fn sounds_unfinished(text: &str) -> bool {
+    let t = text.trim_end_matches(|c: char| c.is_whitespace() || "、,…".contains(c));
+    if t.is_empty() || t.ends_with(['。', '？', '?', '！', '!']) {
+        return false;
+    }
+    [
+        "けど", "から", "ので", "て", "で", "が", "と", "は", "を", "に", "も", "し",
+    ]
+    .iter()
+    .any(|e| t.ends_with(e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -127,6 +142,28 @@ mod tests {
         feed(&mut e, 0.75, 1.0, &mut t);
         assert!(e.heard());
         assert!(feed(&mut e, 0.45, 2.0, &mut t).is_some());
+    }
+
+    #[test]
+    fn open_endings_sound_unfinished() {
+        for t in [
+            "ドイツから来て",
+            "日本語が",
+            "行きたいけど",
+            "週末は",
+            "コーヒーを",
+        ] {
+            assert!(sounds_unfinished(t), "{t}");
+        }
+        for t in [
+            "マラです",
+            "コーヒーが好きです。",
+            "行きましたか？",
+            "",
+            "そうですね",
+        ] {
+            assert!(!sounds_unfinished(t), "{t}");
+        }
     }
 
     #[test]

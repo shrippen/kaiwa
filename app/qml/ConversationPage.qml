@@ -238,6 +238,19 @@ Kirigami.ScrollablePage {
             }
         }
 
+        // /LF101/: two turns sounded cut off by the pause; offer the next longer one.
+        KanteCallout {
+            Layout.fillWidth: true
+            visible: conv.longerPause > 0
+            kind: KanteCallout.Kind.Info
+            title: page.t("Zu früh unterbrochen?", "Cut off too early?")
+            text: page.t("Zweimal klang dein Satz, als wäre er noch nicht fertig. Mit einer längeren Pause hast du mehr Zeit zum Nachdenken.",
+                         "Twice your sentence sounded unfinished. A longer pause gives you more time to think.")
+            KanteButton {
+                text: page.t("Pause auf ", "Pause to ") + String(conv.longerPause).replace(".", page.t(",", ".")) + " s"
+                onClicked: conv.takeLongerPause()
+            }
+        }
         KanteCallout {
             Layout.fillWidth: true
             visible: conv.helpLevel > 0

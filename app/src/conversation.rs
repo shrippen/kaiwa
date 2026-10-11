@@ -38,6 +38,8 @@ pub mod qobject {
         #[qproperty(bool, clear)]
         /// Hands-free (/LF100/): no button to hold; the pause ends the turn.
         #[qproperty(bool, hands_free, cxx_name = "handsFree")]
+        /// Two turns sounded cut off by the pause: offer a longer one (/LF101/), in seconds.
+        #[qproperty(f64, longer_pause, cxx_name = "longerPause")]
         /// Why there is no voice, with what to do about it.
         #[qproperty(QString, voice_note, cxx_name = "voiceNote")]
         /// Both speech models are loaded or known to be missing.
@@ -121,6 +123,11 @@ pub mod qobject {
         #[qinvokable]
         fn idle(self: Pin<&mut Conversation>);
 
+        /// Takes the offered longer pause into the profile.
+        #[qinvokable]
+        #[cxx_name = "takeLongerPause"]
+        fn take_longer_pause(self: Pin<&mut Conversation>);
+
         /// Louder and clearer voice (/LL204/), kept in the profile.
         #[qinvokable]
         #[cxx_name = "setSound"]
@@ -179,6 +186,10 @@ pub struct ConversationRust {
     louder: bool,
     clear: bool,
     hands_free: bool,
+    longer_pause: f64,
+    /// The pause ended the last recording, and how many turns sounded cut off by it.
+    ended_by_pause: bool,
+    cut_short: u32,
     /// While listening hands-free: when the turn ends, and when the level was last read.
     turn_end: Option<(kaiwa_speech::vad::EndOfTurn, std::time::Instant)>,
     voice_note: QString,
@@ -746,6 +757,37 @@ impl qobject::Conversation {
         });
     }
 
+    /// A turn the pause seems to have cut off; after the second, offer the next longer pause.
+    fn cut_off(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().cut_short += 1;
+        let now = state()
+            .store
+            .profile()
+            .map(|p| p.end_pause_secs)
+            .unwrap_or(1.2);
+        let next = [2.0f32, 3.0, 5.0].into_iter().find(|s| *s > now + 0.01);
+        if self.cut_short >= 2
+            && let Some(next) = next
+        {
+            self.as_mut().set_longer_pause(f64::from(next));
+        }
+    }
+
+    fn take_longer_pause(mut self: Pin<&mut Self>) {
+        let secs = *self.longer_pause() as f32;
+        if secs > 0.0 {
+            let st = state();
+            if let Ok(mut p) = st.store.profile() {
+                p.end_pause_secs = secs;
+                if let Err(e) = st.store.set_profile(&p) {
+                    eprintln!("kaiwa: {e}");
+                }
+            }
+        }
+        self.as_mut().rust_mut().cut_short = 0;
+        self.as_mut().set_longer_pause(0.0);
+    }
+
     fn set_sound(mut self: Pin<&mut Self>, louder: bool, clear: bool) {
         {
             let st = state();
@@ -891,6 +933,7 @@ impl qobject::Conversation {
                 e.update(level as f32, dt)
             });
         if ended {
+            self.as_mut().rust_mut().ended_by_pause = true;
             self.as_mut().stop_talk();
         }
     }
@@ -958,11 +1001,15 @@ impl qobject::Conversation {
             }
         }
         self.as_mut().set_talk_state(THINKING);
+        let by_pause = std::mem::take(&mut self.as_mut().rust_mut().ended_by_pause);
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let text = recognizer.transcribe(&rec.samples, rec.sample_rate);
             let _ = thread.queue(move |mut q| {
                 q.as_mut().set_talk_state(READY);
+                if by_pause && kaiwa_speech::vad::sounds_unfinished(&text) {
+                    q.as_mut().cut_off();
+                }
                 if !text.is_empty() {
                     if let Some(index) = q.as_mut().submit(&text, false) {
                         q.check_moras(index, text, rec);
