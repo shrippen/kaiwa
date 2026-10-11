@@ -83,6 +83,10 @@ pub struct Profile {
     /// Cost limit for a cloud tutor per month in euro cents; `None` without a limit (/LF714/).
     #[serde(default)]
     pub cost_limit_cents: Option<u32>,
+    /// Hints on mora lengths after a spoken turn (/LF320/). Off until they reach the release
+    /// mark of K-02 in the app (55.8 % of 60 %); a preview to switch on until then.
+    #[serde(default)]
+    pub mora_hints: bool,
 }
 
 impl Default for Profile {
@@ -100,6 +104,7 @@ impl Default for Profile {
             placed: false,
             reminder: None,
             cost_limit_cents: None,
+            mora_hints: false,
         }
     }
 }

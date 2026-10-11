@@ -4,7 +4,8 @@ import QtQuick.Controls as QQC2
 import Kante
 
 // Settings (Lastenheft Kap. 7): daily goal (/LF601/), feedback amount (/LF304/), script
-// (/LF110/), end of a spoken turn (/LF101/), gamification (/LF605/), pause mode (/LF602/),
+// (/LF110/), end of a spoken turn (/LF101/), mora hints (/LF320/), gamification (/LF605/),
+// pause mode (/LF602/),
 // reminder (/LF620/: at most one a day, off by default), style and language; what leaves the
 // device (/LF711/); export and deletion of all data (/LF710/).
 QQC2.ScrollView {
@@ -103,6 +104,23 @@ QQC2.ScrollView {
                 model: ["1,2 s", "2 s", "3 s", "5 s"]
                 currentIndex: Math.max(0, values.indexOf(page.p.endPause))
                 onActivated: function (i) { page.kaiwa.setSetting("endPause", String(values[i])) }
+            }
+        }
+        // /LF320/: a preview, off by default until the hints reach K-02 in the app; without the
+        // model it says where to get it (F-08).
+        Row {
+            readonly property var mora: page.p.moraModel || ({})
+            title: page.t("Aussprache-Hinweise", "Pronunciation hints")
+            hint: mora.present === false
+                ? page.t("Dafür fehlt das Modell kaiwa-kana-ctc (" + mora.licence + ", " + mora.size + "): model.int8.onnx, vocab.json und thresholds.json von " + mora.url + " nach " + mora.dir + " laden.",
+                         "This needs the model kaiwa-kana-ctc (" + mora.licence + ", " + mora.size + "): download model.int8.onnx, vocab.json and thresholds.json from " + mora.url + " to " + mora.dir + ".")
+                : page.t("Vorschau: nach einem gesprochenen Satz ein Hinweis, wenn ein langer Vokal oder ein っ zu kurz klang. Findet etwa jeden zweiten solchen Fehler und irrt sich bei etwa jedem zwanzigsten richtigen Satz.",
+                         "Preview: after a spoken sentence, a hint when a long vowel or a っ sounded too short. Finds about every second such mistake and is wrong for about one correct sentence in twenty.")
+            QQC2.Switch {
+                checked: page.p.moraHints === true
+                text: checked ? page.t("An", "On") : page.t("Aus", "Off")
+                onToggled: page.kaiwa.setSetting("moraHints", checked ? "true" : "false")
+                KanteCheckSkin { control: parent; shape: KanteCheckSkin.Shape.Switch }
             }
         }
         Row {

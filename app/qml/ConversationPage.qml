@@ -151,6 +151,19 @@ Kirigami.ScrollablePage {
                         }
                     }
                 }
+                // /LF320/: a mora hint, cautious and without a severity; it is no mistake (K-02).
+                Repeater {
+                    model: modelData.who === "learner" && !modelData.misrecognized && modelData.mora ? modelData.mora : []
+                    delegate: KanteHintCard {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        tier: KanteHintCard.Tier.None
+                        tierText: modelData.tierText
+                        titleText: modelData.title
+                        text: modelData.text
+                        meta: modelData.meta
+                    }
+                }
                 // /LF113/: what Kaiwa heard; a misrecognition is no learning mistake.
                 KanteButton {
                     visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized

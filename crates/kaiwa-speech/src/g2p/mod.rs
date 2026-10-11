@@ -57,6 +57,8 @@ fn joins(prev_pos: &str, prev_sub: &[String; 2], pos: &str, sub: &[String; 2], b
     match pos {
         // Auxiliaries chain (まし・た → maɕita), but です and だ start a word (ikʲi tai desɨ).
         "助動詞" if base == "です" || base == "だ" => false,
+        // The volitional う lengthens the verb before it (帰ろ・う → かえろー, 離れよ・う).
+        "助動詞" if base == "う" => true,
         "助動詞" => prev_pos == "助動詞" || prev_pos == "動詞" && prev_sub[0] == "非自立",
         // The connecting て/で belongs to the verb (待っ・て → maʔte).
         "助詞" => sub[0] == "接続助詞" && ["動詞", "形容詞", "助動詞"].contains(&prev_pos),
@@ -147,13 +149,29 @@ impl G2p {
         self.words(&normalize(text))
             .into_iter()
             .filter(|w| w.kind == Kind::Kana)
-            .flat_map(|w| {
-                lengthen(&w.kana, w.verb_end, true)
-                    .chars()
-                    .collect::<Vec<_>>()
-            })
-            .filter(|c| ('ぁ'..='ゖ').contains(c) || *c == 'ー')
+            .map(|w| pronounced_kana(&w))
             .collect()
+    }
+
+    /// The same word by word, with each word as written: 「東京から来ました。」 →
+    /// (東京, とーきょー), (から, から), (来ました, きました). `None` when a word has no reading
+    /// (unknown kanji, latin letters): the mora check must hear the whole sentence.
+    pub fn pronounced_words(&self, text: &str) -> Option<Vec<(String, String)>> {
+        let mut out = Vec::new();
+        for w in self.words(&normalize(text)) {
+            match w.kind {
+                Kind::Kana => {
+                    let kana = pronounced_kana(&w);
+                    if !kana.is_empty() {
+                        out.push((w.surface.clone(), kana));
+                    }
+                }
+                Kind::Symbol => {}
+                Kind::Ascii if w.surface.trim().is_empty() => {}
+                Kind::Ascii | Kind::Unknown => return None,
+            }
+        }
+        Some(out)
     }
 
     fn words(&self, text: &str) -> Vec<Word> {
@@ -168,7 +186,13 @@ impl G2p {
             let pos = field(0).unwrap_or_default();
             let sub = [field(1).unwrap_or_default(), field(2).unwrap_or_default()];
             let base = field(6).unwrap_or_default();
-            let reading = field(8).or_else(|| field(7));
+            // IPADIC pronounces 言う as ユウ; spoken and in OpenJTalk it stays いう (という).
+            let reading = match (field(7), field(8)) {
+                (Some(r), Some(p)) if r.contains("イウ") && r.replace("イウ", "ユウ") == p => {
+                    Some(r)
+                }
+                (r, p) => p.or(r),
+            };
             // A number reads as one word (さんびゃく, not さん・びゃく).
             let reading = if surface.bytes().all(|b| b.is_ascii_digit()) {
                 Some(numbers::kana(&surface))
@@ -323,11 +347,28 @@ fn hiragana(s: &str) -> String {
 fn normalize(text: &str) -> String {
     let mut wave = String::with_capacity(text.len());
     let chars: Vec<char> = text.chars().collect();
+    let numeral = |c: &char| {
+        c.is_ascii_digit()
+            || ('０'..='９').contains(c)
+            || "〇一二三四五六七八九十百千万".contains(*c)
+    };
+    let mut skip = false;
     for (i, &c) in chars.iter().enumerate() {
+        if std::mem::take(&mut skip) {
+            continue;
+        }
         let before_digit = chars
             .get(i + 1)
             .is_some_and(|n| n.is_ascii_digit() || ('０'..='９').contains(n));
-        if (c == '〜' || c == '～') && before_digit {
+        // 一人 and 二人 read ひとり and ふたり, not as counters (十二人 stays じゅーににん).
+        let alone = i
+            .checked_sub(1)
+            .and_then(|j| chars.get(j))
+            .is_none_or(|p| !numeral(p));
+        if (c == '一' || c == '二') && chars.get(i + 1) == Some(&'人') && alone {
+            wave.push_str(if c == '一' { "ひとり" } else { "ふたり" });
+            skip = true;
+        } else if (c == '〜' || c == '～') && before_digit {
             wave.push_str("から");
         } else {
             wave.push(c);
@@ -402,6 +443,20 @@ fn tidy(s: &str) -> String {
     out
 }
 
+/// A word's kana as the mora check's model writes them: long vowels as ー, only hiragana.
+fn pronounced_kana(w: &Word) -> String {
+    // ゔ as OpenJTalk says it: ヴィ → び, ヴ → ぶ.
+    let kana = lengthen(&w.kana, w.verb_end, true)
+        .replace("ゔぁ", "ば")
+        .replace("ゔぃ", "び")
+        .replace("ゔぇ", "べ")
+        .replace("ゔぉ", "ぼ")
+        .replace('ゔ', "ぶ");
+    kana.chars()
+        .filter(|c| ('ぁ'..='ゖ').contains(c) || *c == 'ー')
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -462,10 +517,29 @@ mod tests {
             ("切手を三枚ください。", "きってをさんまいください"),
             ("下がったら買えばいい", "さがったらかえばいい"),
             ("先生の空気", "せんせーのくーき"),
+            ("スキップをしながら帰ろう", "すきっぷをしながらかえろー"),
+            ("離れようとしなかった", "はなれよーとしなかった"),
+            ("という世の中", "というよのなか"),
+            ("二人ともそこに座って", "ふたりともそこにすわって"),
+            ("一人で十二人", "ひとりでじゅーににん"),
+            (
+                "ガボンの首都はリーブルヴィルである",
+                "がぼんのしゅとわりーぶるびるである",
+            ),
             ("アンドレア・デル・サルト", "あんどれあでるさると"),
         ] {
             assert_eq!(g.pronounced(text), want, "{text}");
         }
+    }
+
+    #[test]
+    fn pronounced_words_keep_the_surface() {
+        let g = g2p();
+        let words = g.pronounced_words("東京から来ました。").unwrap();
+        assert_eq!(words[0], ("東京".to_string(), "とーきょー".to_string()));
+        let joined: String = words.iter().map(|(_, k)| k.as_str()).collect();
+        assert_eq!(joined, g.pronounced("東京から来ました。"));
+        assert_eq!(g.pronounced_words("Wi-Fiはどこですか"), None);
     }
 
     #[test]

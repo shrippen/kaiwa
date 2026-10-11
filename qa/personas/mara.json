@@ -289,6 +289,13 @@
             "/LF301/"
           ],
           "assert": "Jeder Vorschlag zeigt eigene und bessere Form als Diff, eine Erklärung auf Deutsch und die bessere Form als Audio."
+        },
+        {
+          "id": "mara_mora_hint",
+          "requirements": [
+            "/LF320/"
+          ],
+          "assert": "Mit eingeschalteten Aussprache-Hinweisen bekommt ein gesprochener Satz mit mara_long_vowel oder mara_geminate höchstens einen Hinweis zur Moren-Länge (Wort, gemeint und gehört), ohne Schweregrad und nicht als Fehler gezählt; ein einzelnes Wort und getippte Züge bekommen keinen."
         }
       ]
     },

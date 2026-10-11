@@ -33,7 +33,7 @@ pub mod qobject {
         fn refresh(self: Pin<&mut KaiwaApp>);
 
         /// Changes one setting: goal, gamification, feedback, script, endPause, style, uiLang,
-        /// reminder, name.
+        /// reminder, costLimit, moraHints, keepRecordings, name.
         #[qinvokable]
         #[cxx_name = "setSetting"]
         fn set_setting(self: Pin<&mut KaiwaApp>, key: &QString, value: &QString);
@@ -147,6 +147,11 @@ impl qobject::KaiwaApp {
         self.as_mut().set_review(ok(review));
         self.as_mut().set_learner(ok(learner));
         self.as_mut().set_stats(ok(stats));
+        // Where the mora check's model belongs and whether it is there (/LF320/, F-08).
+        let profile = profile.map(|mut v| {
+            v["moraModel"] = crate::conversation::mora_model_json();
+            v
+        });
         self.as_mut().set_profile(ok(profile));
         self.as_mut().set_privacy(q(&views::privacy(&lang)));
         self.as_mut().set_lang(QString::from(&lang));
@@ -192,6 +197,7 @@ impl qobject::KaiwaApp {
                 }
                 "reminder" => p.reminder = value.parse().ok(),
                 "costLimit" => p.cost_limit_cents = value.parse().ok(),
+                "moraHints" => p.mora_hints = value == "true",
                 "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
                 "name" => p.name = value,
                 _ => return,

@@ -57,7 +57,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF306/ | M | Nur Fehler mit dem Schweregrad *verhindert Verständnis* unterbrechen … | core | geprüft | 1 von 1 automatisch grün: `mara_little_feedback` |
 | /LF307/ | S | Lernende können einem Vorschlag widersprechen („Das ist korrekt“). | app, core, store | geprüft | 1 von 1 automatisch grün: `theo_dispute` |
 | /LF310/ | M | Sitzungsbilanz: erreichte Ziele, die drei wichtigsten Verbesserungen … | app, core | geprüft | 1 von 1 automatisch grün: `mara_summary` |
-| /LF320/ | S | Aussprache-Feedback für die Moren-Struktur: Langvokale (おばさん/おばあさん) … | speech | Code | – |
+| /LF320/ | S | Aussprache-Feedback für die Moren-Struktur: Langvokale (おばさん/おばあさん) … | app, speech, store | Code | 0 von 1 automatisch grün: `mara_mora_hint` |
 | /LF321/ | S | Pitch-Akzent: Soll- und Ist-Kontur eines Wortes oder Satzes als Kurve. | – | offen | 0 von 2 automatisch grün: `theo_pitch_detect`, `theo_pitch_no_nitpick` |
 | /LF330/ | S | Nachsprechen und Shadowing: Satz hören, nachsprechen, eigene Aufnahme … | – | offen | 0 von 1 automatisch grün: `theo_compare` |
 | /LF500/ | M | Plasmoid für Panel und Desktop. | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_compact` |
