@@ -612,6 +612,27 @@ impl Checker {
         Ok(hints(&findings, words))
     }
 
+    /// Per kind, how far its strongest variant beats the meant kana, without a threshold: for
+    /// calibrating thresholds and comparing models (`examples/mora_scores.rs`).
+    pub fn raw_scores(&self, logp: &[f32], kana: &str) -> Vec<(Kind, f32)> {
+        let Some(ids) = self.ids(kana) else {
+            return Vec::new();
+        };
+        let base = log_likelihood(logp, self.vocab_size, &ids, self.blank);
+        let mut best: HashMap<Kind, f32> = HashMap::new();
+        for v in variants(kana, Some('ー')) {
+            let Some(ids) = self.ids(&v.kana) else {
+                continue;
+            };
+            let diff = log_likelihood(logp, self.vocab_size, &ids, self.blank) - base;
+            let e = best.entry(v.kind).or_insert(f32::NEG_INFINITY);
+            *e = e.max(diff);
+        }
+        let mut out: Vec<(Kind, f32)> = best.into_iter().collect();
+        out.sort_by_key(|(k, _)| *k);
+        out
+    }
+
     fn findings(&self, logp: &[f32], kana: &str) -> Vec<Finding> {
         let Some(ids) = self.ids(kana) else {
             return Vec::new();
