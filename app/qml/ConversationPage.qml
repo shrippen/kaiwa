@@ -425,7 +425,11 @@ Kirigami.ScrollablePage {
                 talkState: conv.busy && conv.talkState === KanteTalkButton.State.Ready ? KanteTalkButton.State.Thinking : conv.talkState
                 level: conv.level
                 titles: [page.t("Sprechen", "Speak"), page.t("Hört zu", "Listening"), page.t("Denkt nach", "Thinking"), page.t("Spricht", "Speaking"), page.t("Kein Sprechen", "No speech")]
-                hints: [page.t("Leertaste halten", "Hold space"), page.t("Loslassen zum Senden", "Release to send"), "", page.t("Tippen zum Unterbrechen", "Tap to interrupt"), page.t("Warum? Klicken", "Why? Click")]
+                // Hands-free (/LF100/): a click starts and ends, the pause ends the turn too.
+                mode: conv.handsFree ? KanteTalkButton.Mode.Toggle : KanteTalkButton.Mode.Hold
+                hints: conv.handsFree
+                    ? [page.t("Klicken oder Leertaste", "Click or space"), page.t("Eine Pause beendet den Satz", "A pause ends the sentence"), "", page.t("Klicken zum Unterbrechen", "Click to interrupt"), page.t("Warum? Klicken", "Why? Click")]
+                    : [page.t("Leertaste halten", "Hold space"), page.t("Loslassen zum Senden", "Release to send"), "", page.t("Tippen zum Unterbrechen", "Tap to interrupt"), page.t("Warum? Klicken", "Why? Click")]
                 enabled: !conv.finished
                 onTalkStarted: conv.startTalk()
                 onTalkEnded: conv.stopTalk()

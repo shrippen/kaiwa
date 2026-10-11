@@ -95,6 +95,9 @@ pub struct Profile {
     /// Unload the speech models after this many idle minutes; `None` keeps them (/LL012/).
     #[serde(default = "ten_minutes")]
     pub unload_after_min: Option<u32>,
+    /// Hands-free: the turn ends after the pause, listening starts again by itself (/LF100/).
+    #[serde(default)]
+    pub hands_free: bool,
 }
 
 fn ten_minutes() -> Option<u32> {
@@ -120,6 +123,7 @@ impl Default for Profile {
             louder: false,
             clear: false,
             unload_after_min: ten_minutes(),
+            hands_free: false,
         }
     }
 }

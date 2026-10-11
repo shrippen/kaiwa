@@ -12,6 +12,7 @@ pub mod mora;
 pub mod playback;
 pub mod stt;
 pub mod tts;
+pub mod vad;
 
 #[derive(Debug, thiserror::Error)]
 pub enum SpeechError {

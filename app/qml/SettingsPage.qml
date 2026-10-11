@@ -98,9 +98,20 @@ QQC2.ScrollView {
                 onActivated: function (i) { page.kaiwa.setSetting("script", String(i)) }
             }
         }
+        // /LF100/: hold the key, or hands-free with the pause below as the end of a turn.
+        Row {
+            title: page.t("Sprechen", "Speaking")
+            hint: page.t("Freisprechen: Kaiwa hört nach jeder Antwort der Figur von selbst zu, eine Pause beendet deinen Satz",
+                         "Hands-free: Kaiwa listens by itself after each reply of the character, a pause ends your sentence")
+            KanteSegmented {
+                model: [page.t("Taste halten", "Hold the key"), page.t("Freisprechen", "Hands-free")]
+                currentIndex: page.p.handsFree === true ? 1 : 0
+                onActivated: function (i) { page.kaiwa.setSetting("handsFree", i === 1 ? "true" : "false") }
+            }
+        }
         Row {
             title: page.t("Ende eines Zugs", "End of a turn")
-            hint: page.t("So lange Stille, bis Kaiwa annimmt, dass du fertig bist", "Silence until Kaiwa takes it you are done")
+            hint: page.t("Beim Freisprechen: so lange Stille, bis Kaiwa annimmt, dass du fertig bist", "Hands-free: silence until Kaiwa takes it you are done")
             KanteSegmented {
                 readonly property var values: [1.2, 2, 3, 5]
                 model: ["1,2 s", "2 s", "3 s", "5 s"]

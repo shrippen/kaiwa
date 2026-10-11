@@ -20,9 +20,9 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LD040/ | M | Curriculum | core | Code | – |
 | /LD050/ | M | Sprachdaten | – | offen | – |
 | /LD060/ | S | Widersprüche | core, store | Code | – |
-| /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | speech | geprüft | 1 von 1 automatisch grün: `mara_ptt` |
-| /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
-| /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
+| /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | app, speech, store | geprüft | 1 von 1 automatisch grün: `mara_ptt` |
+| /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, speech, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
+| /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core, speech | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
 | /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, store | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |

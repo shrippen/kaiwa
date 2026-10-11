@@ -36,6 +36,8 @@ pub mod qobject {
         /// Easier listening (/LL204/), from the profile.
         #[qproperty(bool, louder)]
         #[qproperty(bool, clear)]
+        /// Hands-free (/LF100/): no button to hold; the pause ends the turn.
+        #[qproperty(bool, hands_free, cxx_name = "handsFree")]
         /// Why there is no voice, with what to do about it.
         #[qproperty(QString, voice_note, cxx_name = "voiceNote")]
         /// Both speech models are loaded or known to be missing.
@@ -176,6 +178,9 @@ pub struct ConversationRust {
     voice_on: bool,
     louder: bool,
     clear: bool,
+    hands_free: bool,
+    /// While listening hands-free: when the turn ends, and when the level was last read.
+    turn_end: Option<(kaiwa_speech::vad::EndOfTurn, std::time::Instant)>,
     voice_note: QString,
     speech_ready: bool,
     scenario: QString,
@@ -444,10 +449,11 @@ impl qobject::Conversation {
         let sound = state()
             .store
             .profile()
-            .map(|p| (p.louder, p.clear))
+            .map(|p| (p.louder, p.clear, p.hands_free))
             .unwrap_or_default();
         self.as_mut().set_louder(sound.0);
         self.as_mut().set_clear(sound.1);
+        self.as_mut().set_hands_free(sound.2);
         {
             let mut rust = self.as_mut().rust_mut();
             rust.session = Some(Arc::new(Mutex::new(session)));
@@ -690,6 +696,7 @@ impl qobject::Conversation {
             let _ = thread.queue(move |mut q| {
                 if q.utterance.load(Ordering::SeqCst) == id && *q.talk_state() == SPEAKING {
                     q.as_mut().set_talk_state(READY);
+                    q.as_mut().listen_again();
                 }
             });
         });
@@ -841,6 +848,18 @@ impl qobject::Conversation {
         }
         match Capture::start() {
             Ok(c) => {
+                let turn_end = self.hands_free.then(|| {
+                    let pause = state()
+                        .store
+                        .profile()
+                        .map(|p| p.end_pause_secs)
+                        .unwrap_or(1.2);
+                    (
+                        kaiwa_speech::vad::EndOfTurn::new(pause),
+                        std::time::Instant::now(),
+                    )
+                });
+                self.as_mut().rust_mut().turn_end = turn_end;
                 self.as_mut().rust_mut().capture = Some(c);
                 self.as_mut().set_level(0.0);
                 self.as_mut().set_talk_state(LISTENING);
@@ -860,9 +879,34 @@ impl qobject::Conversation {
             .map(|c| f64::from(c.level()))
             .unwrap_or(0.0);
         self.as_mut().set_level(level);
+        // Hands-free: the set pause after speaking ends the turn (/LF101/).
+        let ended = self
+            .as_mut()
+            .rust_mut()
+            .turn_end
+            .as_mut()
+            .is_some_and(|(e, last)| {
+                let dt = last.elapsed().as_secs_f64();
+                *last = std::time::Instant::now();
+                e.update(level as f32, dt)
+            });
+        if ended {
+            self.as_mut().stop_talk();
+        }
+    }
+
+    /// Hands-free: listen again once the character is done (/LF100/).
+    fn listen_again(mut self: Pin<&mut Self>) {
+        let ready = *self.talk_state() == READY && !*self.busy() && !*self.finished();
+        // Not in the placement: its stages change the scene between turns.
+        let talk = ready && self.recognizer.is_some() && self.placement.is_none();
+        if *self.hands_free() && talk {
+            self.as_mut().start_talk();
+        }
     }
 
     fn stop_talk(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().turn_end = None;
         let Some(capture) = self.as_mut().rust_mut().capture.take() else {
             return;
         };
@@ -1050,6 +1094,8 @@ impl qobject::Conversation {
                 if let Err(e) = state().book_costs(now(), *q.finished()) {
                     eprintln!("kaiwa: {e}");
                 }
+                // Without a voice nothing is spoken: listen again right away.
+                q.as_mut().listen_again();
                 q.placement_step();
             });
         });
@@ -1123,6 +1169,9 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
                 (e, false) => format!("The character answers without a voice: {}", speech_text(&e, "en")),
             };
             q.as_mut().set_voice_note(QString::from(&text));
+            if q.log.len() == 1 {
+                q.as_mut().listen_again();
+            }
         }
         }
     });
