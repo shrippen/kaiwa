@@ -1,7 +1,7 @@
-//! The mora check (ADR-005, J-01, J-02): does the learner keep long vowels, っ and ん? A kana CTC
-//! model scores the meant kana against the variants a mora error would give (おばあさん against
-//! おばさん, きって against きて, げんいん against げにん); a variant that wins by more than the
-//! threshold of its kind is an error, and names the place. Port of `spikes/s06-moren/ctc.py`.
+//! The mora check (/LF320/, ADR-005, J-01, J-02): does the learner keep long vowels, っ and ん?
+//! A kana CTC model scores the meant kana against the variants a mora error would give
+//! (おばあさん against おばさん, きって against きて, げんいん against げにん); a variant that
+//! wins by more than the threshold of its kind is an error, and names the place. Port of `spikes/s06-moren/ctc.py`.
 //!
 //! Kana here are pronounced hiragana as the own model writes them: ー for long vowels (とーきょー),
 //! わ for the particle は.

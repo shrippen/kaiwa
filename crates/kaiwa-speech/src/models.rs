@@ -29,6 +29,11 @@ pub const KOKORO: &str = "kokoro-v1.0";
 pub const KOKORO_URL: &str =
     "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/";
 
+/// Kaiwa's own kana CTC model for the mora check (ADR-005, K-04 to K-06; Apache-2.0), on
+/// Hugging Face at a fixed revision: `model.int8.onnx` (356 MB), `vocab.json` and
+/// `thresholds.json`, into the directory [`crate::mora::MODEL`].
+pub const KANA_CTC_URL: &str = "https://huggingface.co/shrippen/kaiwa-kana-ctc/resolve/99dd836ea672ee18abc88c7d6bb54fbbd187835b/";
+
 pub fn kokoro_dir() -> PathBuf {
     models_dir().join(KOKORO)
 }

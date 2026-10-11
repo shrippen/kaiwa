@@ -1,7 +1,7 @@
 //! `kaiwa-sim validate`: personas against their schema and against the Lastenheft.
 //!
 //! Rules (qa/README.md):
-//! - every persona matches `qa/personas/schema.json`;
+//! - every persona matches `qa/personas/schema.json` (/LL600/);
 //! - persona, journey and check ids are unique across all personas;
 //! - every requirement a check names is defined in `spec/LASTENHEFT.md`;
 //! - every must requirement (priority M) of chapters 4 and 6.1–6.5 is named by at least one

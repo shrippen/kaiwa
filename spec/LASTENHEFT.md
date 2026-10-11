@@ -4,8 +4,8 @@
 |---|---|
 | Produkt | Kaiwa (会話), Arbeitstitel |
 | Auftraggeber | shrippen |
-| Stand | 2026-10-09, Version 0.1 (Entwurf) |
-| Bezug | [Roadmap](../ROADMAP.md), [QA-Personas](../qa/personas/) |
+| Stand | 2026-10-11, Version 0.2 (Entwurf, Entscheidungen der Fragenpakete eingearbeitet) |
+| Bezug | [Roadmap](../ROADMAP.md), [QA-Personas](../qa/personas/), [Rückverfolgung](RUECKVERFOLGUNG.md), [Stand](STAND.md) |
 
 Das Lastenheft beschreibt, **was** das Produkt leisten soll und **warum**. Das **Wie** steht im Pflichtenheft und in den ADRs (`spec/adr/`). Die Nummerierung folgt Balzert:
 
@@ -20,6 +20,8 @@ Jede Anforderung hat eine Priorität:
 - **M** = Muss (1.0)
 - **S** = Soll (1.0, verschiebbar)
 - **K** = Kann (nach 1.0)
+
+Entscheidungen des Auftraggebers aus den Fragenpaketen (IDs wie `K-01`) stehen in den ADRs. Wo eine Entscheidung eine Anforderung einschränkt oder genauer fasst, steht sie hier kursiv bei der Anforderung. Wie weit jede Anforderung umgesetzt und geprüft ist, zeigt die erzeugte Tabelle [`RUECKVERFOLGUNG.md`](RUECKVERFOLGUNG.md).
 
 ---
 
@@ -119,7 +121,7 @@ Oberflächen:
 | /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar (Standard 1,2 s, bis 5 s). Ohne Zeitlimit für den ganzen Zug. | Langsames Sprechen und Nachdenken dürfen nicht bestraft werden (Persona Hinnerk). |
 | /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden nicht als Fehler gewertet. | Füllwörter gehören zum natürlichen Japanisch. |
 | /LF103/ | S | **Unterbrechen**: Fällt man der KI ins Wort, verstummt die TTS, und der neue Zug beginnt. | Natürliche Gesprächsführung. |
-| /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. Die Schrift ist wählbar: Kana und Kanji mit Furigana, nur Kana oder ausgeblendet (reines Hören). | Hörverstehen gezielt trainieren, Lesen nur als Stütze. |
+| /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. Die Schrift ist wählbar: Kana und Kanji mit Furigana, nur Kana oder ausgeblendet (reines Hören). *Bis eine Stimme den Pitch-Akzent trifft (VOICEVOX im lokalen Test, H-01), spricht Kokoro als Übergangsstimme nur die Antworten der Figur, mit Hinweis in der App (H-02, ADR-003).* | Hörverstehen gezielt trainieren, Lesen nur als Stütze. |
 | /LF111/ | M | Jede KI-Äußerung lässt sich **wiederholen**, **langsamer abspielen** (0,7×) und **übersetzen** (UI-Sprache). Jede Nutzung wird als Hilfe gezählt (/LF212/). | Verstehen sichern, ohne das Gespräch zu verlassen. |
 | /LF112/ | M | Ein Klick auf ein Wort zeigt Lesung, Bedeutung und Wortart und spielt die Aussprache ab. Das Wort lässt sich in die Wiederholung übernehmen. | Wortschatz im Kontext. |
 | /LF113/ | M | Das **Transkript** der eigenen Äußerung wird angezeigt (was die KI verstanden hat). Liegt die Erkennung daneben, kann man den Zug wiederholen oder ihn als „falsch erkannt“ markieren. | Transparenz, Erkennungsfehler sind keine Lernfehler. |
@@ -154,7 +156,7 @@ Oberflächen:
 | ID | Prio | Anforderung | Begründung |
 |---|---|---|---|
 | /LF300/ | M | Nach jedem eigenen Zug bewertet das System Grammatik, Wortwahl, Partikeln, Konjugation, Register und Natürlichkeit. | Kernnutzen. |
-| /LF301/ | M | Jeder Vorschlag zeigt: eigene Form → bessere Form (als Diff), eine kurze Erklärung in der UI-Sprache und die bessere Form als Audio. | Verständlich und zum Nachsprechen. |
+| /LF301/ | M | Jeder Vorschlag zeigt: eigene Form → bessere Form (als Diff), eine kurze Erklärung in der UI-Sprache und die bessere Form als Audio. *Das Audio kommt erst mit einer Stimme, die den Akzent trifft (H-02).* | Verständlich und zum Nachsprechen. |
 | /LF302/ | M | Vorschläge haben einen **Schweregrad**: *verhindert Verständnis*, *falsch*, *unnatürlich*, *Stil*. | Gewichtung statt Rotstift. |
 | /LF303/ | M | Bei korrekten Äußerungen gibt es **keinen** Verbesserungsvorschlag. Alternativen, die nur anders wären, erscheinen höchstens als „Auch möglich“. | Fehlalarme zerstören das Vertrauen (/LL110/). |
 | /LF304/ | M | Wie viel Feedback angezeigt wird, ist einstellbar: *wenig* (nur Verständnis und Fehler), *normal*, *viel* (inklusive Stil). Der Standard richtet sich nach dem Niveau. | Anfänger nicht erschlagen, Fortgeschrittene fordern. |
@@ -162,9 +164,9 @@ Oberflächen:
 | /LF306/ | M | Nur Fehler mit dem Schweregrad *verhindert Verständnis* unterbrechen das Gespräch mit einer Rückfrage. Alle anderen stehen in der Seitenleiste und in der Bilanz. | Flüssigkeit vor Genauigkeit. |
 | /LF307/ | S | Lernende können einem Vorschlag **widersprechen** („Das ist korrekt“). Widersprüche werden gesammelt und fließen in die QA ein. | Fehlkorrekturen finden. |
 | /LF310/ | M | **Sitzungsbilanz**: erreichte Ziele, die drei wichtigsten Verbesserungen, neue Wörter, Sprechzeit, Vergleich mit der letzten Sitzung. Neue Lerninhalte gehen in die Wiederholung. | Abschluss und Lernerfolg sichtbar machen. |
-| /LF320/ | S | **Aussprache-Feedback** für die Moren-Struktur: Langvokale (おばさん/おばあさん), Doppelkonsonanten (きて/きって), ん, Vokalentstimmung (です, した), Silbenrhythmus. | Typische Fehler deutschsprachiger Lernender. |
-| /LF321/ | S | **Pitch-Akzent**: Soll- und Ist-Kontur eines Wortes oder Satzes als Kurve. Bewertet werden nur Akzente, die Bedeutung unterscheiden oder die Verständlichkeit stören. | Feinschliff ohne Überforderung (Theo). |
-| /LF330/ | S | **Nachsprechen und Shadowing**: Satz hören, nachsprechen, eigene Aufnahme und Vorbild vergleichen (Wiedergabe, Kurve, Moren). | Aussprache gezielt üben. |
+| /LF320/ | S | **Aussprache-Feedback** für die Moren-Struktur: Langvokale (おばさん/おばあさん), Doppelkonsonanten (きて/きって), ん, Vokalentstimmung (です, した), Silbenrhythmus. *Für 1.0 (ADR-005): Hinweise nur in Sätzen (J-05) und nur für Kürzungen, also Langvokal zu kurz und っ weggelassen (K-01); sie erscheinen ab 60 % Erkennung insgesamt und 55 % je Art bei höchstens 5 % Fehlalarmen auf echten Stimmen (K-02). Das eigene Modell `kaiwa-kana-ctc` wird heruntergeladen (K-04 bis K-06).* | Typische Fehler deutschsprachiger Lernender. |
+| /LF321/ | S | **Pitch-Akzent**: Soll- und Ist-Kontur eines Wortes oder Satzes als Kurve. Bewertet werden nur Akzente, die Bedeutung unterscheiden oder die Verständlichkeit stören. *Scheitert der Spike, erscheint 1.0 ohne Pitch-Bewertung (F-09); Vorbilder braucht eine akzenttreue Stimme (H-02).* | Feinschliff ohne Überforderung (Theo). |
+| /LF330/ | S | **Nachsprechen und Shadowing**: Satz hören, nachsprechen, eigene Aufnahme und Vorbild vergleichen (Wiedergabe, Kurve, Moren). *Erst mit einer akzenttreuen Stimme (H-02).* | Aussprache gezielt üben. |
 
 ### 4.4 Plasmoid und Plasma-Integration
 
@@ -179,7 +181,7 @@ Oberflächen:
 | /LF506/ | M | Das Plasmoid funktioniert ohne geöffnete App. | Eigenständig nutzbar. |
 | /LF507/ | S | Eine Plasmoid-Sitzung lässt sich in der App **fortsetzen** und umgekehrt. | Nahtloser Wechsel. |
 | /LF510/ | S | App und Plasmoid teilen Modelle, Profil und Mikrofon (ein Dienst, kein doppeltes Laden). | Speicher und Konsistenz. |
-| /LF520/ | S | Erinnerungen über das Benachrichtigungssystem (KNotification), zur selbst gewählten Uhrzeit, mit Aktionen „Jetzt 5 min“ und „Später“. | Gewohnheit aufbauen. |
+| /LF520/ | S | Erinnerungen über das Benachrichtigungssystem (KNotification), zur selbst gewählten Uhrzeit, mit Aktionen „Jetzt 5 min“ und „Später“. *Freie Uhrzeit (I-07), kommt mit dem Plasmoid (Roadmap M4).* | Gewohnheit aufbauen. |
 | /LF521/ | S | Globales Tastenkürzel für Push-to-Talk und „Kurzsitzung starten“ (KGlobalAccel). | Plasma-Integration. |
 | /LF522/ | K | KRunner-Plugin: Wort nachschlagen, vorsprechen lassen, in die Wiederholung übernehmen. | Plasma-Integration. |
 
@@ -206,8 +208,8 @@ Oberflächen:
 | /LF711/ | M | Die Ansicht **„Was verlässt das Gerät?“** zeigt je Baustein (STT, LLM, TTS) den Anbieter, ob er lokal oder in der Cloud läuft, und welche Daten (Audio, Text) übertragen werden. | Transparenz (Lena). |
 | /LF712/ | M | Aufnahmen werden standardmäßig **nicht** gespeichert. Speichern ist ein Opt-in für Vergleich und Fortschritt, mit eigener Aufbewahrungsdauer. | Datensparsamkeit. |
 | /LF713/ | M | API-Schlüssel liegen im System-Schlüsselbund (KWallet, Secret Service, Windows Credential Manager, macOS Keychain), nie im Klartext. | Sicherheit. |
-| /LF714/ | S | **Kostenbremse** für Cloud-Anbieter: geschätzte Kosten pro Sitzung und Monat, mit einem Limit, das man selbst setzt. | Keine Überraschungen. |
-| /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. | Gemeinsamer Rechner. |
+| /LF714/ | S | **Kostenbremse** für Cloud-Anbieter: geschätzte Kosten pro Sitzung und Monat, mit einem Limit, das man selbst setzt. *Kein Limit voreingestellt (I-06); die Preise prüft Claude zu jedem Release (I-05).* | Keine Überraschungen. |
+| /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. *Ohne Schutz der Profile gegeneinander (I-08).* | Gemeinsamer Rechner. |
 
 ---
 
@@ -241,7 +243,7 @@ Mengengerüst: bis 10 000 Sitzungen und 20 000 Lernobjekte pro Profil ohne spür
 
 | ID | Prio | Anforderung |
 |---|---|---|
-| /LL100/ | M | Die STT-Zeichenfehlerrate (CER) für Lernendensprache auf dem Testkorpus liegt ≤ 12 % (lokal) und ≤ 8 % (Cloud). Erkennungsfehler werden nicht als Lernfehler gewertet, wenn das System unsicher ist (Konfidenz). |
+| /LL100/ | M | Die STT-Zeichenfehlerrate (CER) für Lernendensprache auf dem Testkorpus liegt ≤ 12 % (lokal) und ≤ 8 % (Cloud). Erkennungsfehler werden nicht als Lernfehler gewertet, wenn das System unsicher ist (Konfidenz). *Lokal ist ReazonSpeech Standard (H-03, ADR-002); Cloud-STT wird erst gemessen, wenn ein Konto dazukommt (F-03).* |
 | /LL110/ | M | **Fehlalarmrate** der Verbesserungsvorschläge (Vorschlag bei korrekter Äußerung, Schweregrad ≥ *falsch*) ≤ 5 % auf dem Referenzkorpus und in den Persona-Läufen. In M1 ist ein Zwischenziel von ≤ 10 % zulässig. |
 | /LL111/ | M | **Trefferquote** für eingebaute Fehler der Personas (Kap. 9) ≥ 85 % bei *falsch* und *verhindert Verständnis*. |
 | /LL112/ | M | Erklärungen stehen immer in der UI-Sprache und sind im Niveau der Lernenden formuliert. Japanische Beispiele stehen mit Lesung dabei. |
@@ -276,7 +278,7 @@ Mengengerüst: bis 10 000 Sitzungen und 20 000 Lernobjekte pro Profil ohne spür
 
 | ID | Prio | Anforderung |
 |---|---|---|
-| /LL500/ | M | **Hauptplattform:** KDE Plasma 6 (aktuelle und vorige Minor-Version), Wayland und X11. Pakete: Flatpak (App), AUR, openSUSE/Fedora/Debian-Pakete (App + Plasmoid). |
+| /LL500/ | M | **Hauptplattform:** KDE Plasma 6 (aktuelle und vorige Minor-Version), Wayland und X11. Pakete: Flatpak (App), AUR, openSUSE/Fedora/Debian-Pakete (App + Plasmoid). *App-ID `org.shrippen.kaiwa` (G-08); `kaiwa-git` kommt mit 1.0 ins AUR (I-09).* |
 | /LL501/ | S | Windows 10/11 und macOS (aktuelle und vorige Version): App ohne Plasmoid. |
 | /LL502/ | K | Android (Kirigami), Mindestversion nach ADR. |
 | /LL503/ | M | Eine Codebasis: Rust-Kern und Qt-6-QML-Oberfläche. Plattformspezifisches liegt hinter Schnittstellen (Audio, Schlüsselbund, Benachrichtigung, Dienst). |
@@ -309,7 +311,8 @@ Mengengerüst: bis 10 000 Sitzungen und 20 000 Lernobjekte pro Profil ohne spür
 | Sprache | **Rust** (stable, Edition 2024) für Kern, Sprachverarbeitung, Dienst und QA-Läufer |
 | GUI | **Qt 6 / QML** mit **Kirigami**, Brücke Rust ↔ QML über **cxx-qt** (Entscheidung in ADR-001) |
 | Designsystem | **Kante**: `qml/Kante` und `qml/KantePlasma` unverändert übernommen (Kopie oder qrc), keine eigenen Farben, Schriften, Größen oder Varianten. Fehlende Bausteine kommen zuerst nach Kante (GUI-Regel, `AGENT-RULE.md`). |
-| Plasma | Plasmoid als Plasma-6-Paket (QML), Backend über das QML-Modul `org.shrippen.kaiwa` oder den D-Bus-Dienst `kaiwad` (ADR-008) |
+| Plasma | Plasmoid als Plasma-6-Paket (QML), Backend über das QML-Modul `org.shrippen.kaiwa` oder den D-Bus-Dienst `kaiwad` (ADR-008). Zeitlich nach den anderen Plattformen, wenn die App nahe 1.0 ist (Roadmap M4) |
+| Sprache (Modelle) | Spracherkennung ReazonSpeech über sherpa-onnx (ADR-002), Übergangsstimme Kokoro (ADR-003), Moren-Prüfung mit dem eigenen Modell `kaiwa-kana-ctc` (ADR-005). Modelle werden heruntergeladen, wie das lokale Sprachmodell mit Quelle, Größe und Lizenz vorher angezeigt (F-08), nie im Repository oder Programm |
 | Daten | SQLite, ein Profil = eine Datei, Migrationen versioniert |
 | KI-Anbieter | Lokal: OpenAI-kompatible Schnittstelle (llama.cpp-Server, Ollama). Cloud: z. B. Anthropic Claude. Strukturierte Ausgabe per JSON-Schema. |
 | Lizenz | MIT (wie Kante) für den Code. Datenlizenzen in `NOTICE`, Daten als getrenntes Paket (ADR-007). Abhängigkeiten müssen mit MIT verträglich sein: keine (A)GPL-Bibliotheken im ausgelieferten Programm, LGPL nur dynamisch gelinkt (Qt, Kirigami). |
@@ -336,7 +339,7 @@ Die Personas in [`qa/personas/`](../qa/personas/) sind **ausführbare Spezifikat
 1. Alle Muss-Anforderungen sind umgesetzt und mindestens einer Persona-Reise zugeordnet.
 2. Alle Personas bestehen ihre Reisen im Text- und Audio-Modus und die GUI-Reisen der Hauptplattform, jeweils über 30 simulierte Tage.
 3. /LL010/, /LL100/, /LL110/ und /LL111/ sind auf Referenzhardware und mit einem Cloud-Anbieter erreicht.
-4. Muttersprachler-Review aller Einheiten N5 und N4 ist abgeschlossen (/LF221/).
+4. Muttersprachler-Review aller Einheiten N5 und N4 ist abgeschlossen (/LF221/). Wer es übernimmt, ist noch offen (F-05).
 5. Der Nur-lokal-Modus ist ohne ausgehende Verbindungen nachgewiesen (/LL401/).
 6. Die Landing Page zeigt das Release-Log 1.0 nach der Release-Regel.
 
@@ -356,3 +359,12 @@ Die Personas in [`qa/personas/`](../qa/personas/) sind **ausführbare Spezifikat
 | **Plasmoid** | Widget für KDE Plasma (Panel, Desktop). |
 | **Kante** | Designsystem der shrippen-Projekte (`shrippen/Kante`). |
 | **Persona-Reise** | Ablauf einer Persona mit Schritten und Prüfregeln, von `kaiwa-sim` ausgeführt. |
+
+---
+
+## 12. Änderungen
+
+| Version | Datum | Änderung |
+|---|---|---|
+| 0.1 | 2026-10-09 | Erster Entwurf, Lizenz MIT (F-02) |
+| 0.2 | 2026-10-11 | Entscheidungen der Fragenpakete bei den Anforderungen vermerkt (H-02, H-03, F-03, F-05, F-08, F-09, G-08, I-05 bis I-09, J-05, K-01 bis K-06); Modelle in Kap. 8; Rückverfolgung erzeugt |
