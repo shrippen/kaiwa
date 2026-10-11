@@ -18,6 +18,7 @@ pub struct EndOfTurn {
     floor: Option<f32>,
     spoken: f64,
     quiet: f64,
+    listened: f64,
 }
 
 impl EndOfTurn {
@@ -27,11 +28,13 @@ impl EndOfTurn {
             floor: None,
             spoken: 0.0,
             quiet: 0.0,
+            listened: 0.0,
         }
     }
 
     /// One level reading `dt` seconds after the last; true once the turn is over.
     pub fn update(&mut self, level: f32, dt: f64) -> bool {
+        self.listened += dt;
         let floor = match self.floor {
             Some(f) if level >= f => f + FLOOR_RISE * dt as f32,
             _ => level,
@@ -46,6 +49,11 @@ impl EndOfTurn {
             self.quiet += dt;
             self.spoken >= MIN_SPEECH_SECS && self.quiet >= self.pause
         }
+    }
+
+    /// How long it has listened so far, in seconds.
+    pub fn listened_secs(&self) -> f64 {
+        self.listened
     }
 
     /// How long it has been quiet since the last speech, in seconds.
@@ -104,6 +112,7 @@ mod tests {
             "no limit before speaking"
         );
         assert!(!e.heard());
+        assert!((e.listened_secs() - 30.0).abs() < 0.1);
     }
 
     #[test]

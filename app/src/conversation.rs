@@ -242,6 +242,9 @@ const THINKING: i32 = 2;
 const SPEAKING: i32 = 3;
 const ERROR: i32 = 4;
 
+/// Hands-free: listening stops after this long without any speech.
+const HANDS_FREE_WAIT_SECS: f64 = 30.0;
+
 /// The voice's pace without a session: a little below Kokoro's normal one.
 const SPEED: f32 = 0.9;
 
@@ -663,7 +666,13 @@ impl qobject::Conversation {
     /// while the next is made. The talk button shows "speaks" until the speaker is quiet.
     fn speak(self: Pin<&mut Self>, markup: &str) {
         let speed = self.speed();
-        self.speak_at(markup, speed);
+        self.speak_at(markup, speed, false);
+    }
+
+    /// The reply to a spoken turn: its first sound books the response time (/LL010/).
+    fn speak_reply(self: Pin<&mut Self>, markup: &str) {
+        let speed = self.speed();
+        self.speak_at(markup, speed, true);
     }
 
     /// The pace the difficulty sets, 0.7 to 1.1 (/LF211/); eased within the session after
@@ -675,7 +684,7 @@ impl qobject::Conversation {
             .unwrap_or(SPEED)
     }
 
-    fn speak_at(mut self: Pin<&mut Self>, markup: &str, speed: f32) {
+    fn speak_at(mut self: Pin<&mut Self>, markup: &str, speed: f32, reply: bool) {
         let Some(speaker) = self.speaker.clone() else {
             return;
         };
@@ -689,7 +698,11 @@ impl qobject::Conversation {
         }
         let text = kaiwa_core::spoken(markup);
         let (louder, clear) = (*self.louder(), *self.clear());
-        let mut speech_end = self.as_mut().rust_mut().speech_end.take();
+        let mut speech_end = if reply {
+            self.as_mut().rust_mut().speech_end.take()
+        } else {
+            None
+        };
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let still = || current.load(Ordering::SeqCst) == id;
@@ -836,7 +849,7 @@ impl qobject::Conversation {
                 }
                 self.as_mut().interrupt();
                 let speed = self.speed() * if aid == 0 { 1.0 } else { 0.7 };
-                self.speak_at(&markup, speed);
+                self.speak_at(&markup, speed, false);
             }
             2 if !translated => {
                 let lang = self.lang.clone();
@@ -934,6 +947,22 @@ impl qobject::Conversation {
             .map(|c| f64::from(c.level()))
             .unwrap_or(0.0);
         self.as_mut().set_level(level);
+        // Hands-free: nothing said for a while stops listening, without sending anything, so
+        // the microphone does not record an empty room for hours. The next click or reply
+        // starts it again.
+        let silent = self
+            .turn_end
+            .as_ref()
+            .is_some_and(|(e, _)| !e.heard() && e.listened_secs() >= HANDS_FREE_WAIT_SECS);
+        if silent {
+            self.as_mut().rust_mut().turn_end = None;
+            if let Some(c) = self.as_mut().rust_mut().capture.take() {
+                drop(c.stop());
+            }
+            self.as_mut().set_level(0.0);
+            self.as_mut().set_talk_state(READY);
+            return;
+        }
         // Hands-free: the set pause after speaking ends the turn (/LF101/).
         let ended = self
             .as_mut()
@@ -1142,7 +1171,7 @@ impl qobject::Conversation {
                             );
                         }
                         q.as_mut().set_error(QString::default());
-                        q.as_mut().speak(&outcome.reply);
+                        q.as_mut().speak_reply(&outcome.reply);
                         // Without a voice the reply's text is the answer.
                         if let Some(t) = q.as_mut().rust_mut().speech_end.take() {
                             book_latency(t);
