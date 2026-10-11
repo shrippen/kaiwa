@@ -5,6 +5,7 @@
 //! ([`models`]); the app tells the learner where, when one is missing.
 
 pub mod capture;
+pub mod download;
 pub mod g2p;
 pub mod models;
 pub mod mora;

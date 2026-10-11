@@ -135,9 +135,7 @@ use kaiwa_core::{Input, Scenario, Session, Summary, TurnOutcome};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
 use kaiwa_speech::g2p::G2p;
-use kaiwa_speech::models::{
-    KANA_CTC_URL, KOKORO_URL, REAZONSPEECH_URL, kokoro_dir, models_dir, reazonspeech_dir,
-};
+use kaiwa_speech::models::{KANA_CTC_URL, kokoro_dir, models_dir, reazonspeech_dir};
 use kaiwa_speech::mora::{self, Checker, Hint, Kind};
 use kaiwa_speech::playback::Player;
 use kaiwa_speech::stt::Recognizer;
@@ -446,7 +444,28 @@ impl qobject::Conversation {
         self.as_mut().publish_turns();
         self.as_mut().publish_goals();
         if *self.speech_ready() {
-            // Speech is loaded already: speak the opening of the new scenario.
+            // Load what was missing and may have been downloaded since (settings, F-08).
+            let missing = (
+                self.recognizer.is_none(),
+                self.speaker.is_none(),
+                self.mora.is_none(),
+            );
+            if missing != (false, false, false) {
+                let thread = self.qt_thread();
+                let lang = self.lang.clone();
+                std::thread::spawn(move || {
+                    if missing.0 {
+                        load_recognizer(&thread, &lang);
+                    }
+                    if missing.1 {
+                        load_voice(&thread, &voice, &lang);
+                    }
+                    if missing.2 {
+                        load_mora(&thread);
+                    }
+                });
+            }
+            // Speak the opening of the new scenario.
             if let Some(o) = opening {
                 self.as_mut().speak(&o);
             }
@@ -954,14 +973,8 @@ fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>, lang: &str) {
         }
         Err(e) => {
             let text = match e {
-                SpeechError::ModelMissing(_) if lang == "de" => format!(
-                    "Das Modell für die Spracherkennung fehlt. ReazonSpeech (Apache-2.0, etwa 150 MB) von {REAZONSPEECH_URL} laden und nach {} entpacken. Bis dahin geht Tippen.",
-                    dir.display()
-                ),
-                SpeechError::ModelMissing(_) => format!(
-                    "The speech recognition model is missing. Download ReazonSpeech (Apache-2.0, about 150 MB) from {REAZONSPEECH_URL} and unpack it to {}. You can type meanwhile.",
-                    dir.display()
-                ),
+                SpeechError::ModelMissing(_) if lang == "de" => "Das Modell für die Spracherkennung fehlt. ReazonSpeech lässt sich in den Einstellungen unter „Modelle“ laden. Bis dahin geht Tippen.".to_string(),
+                SpeechError::ModelMissing(_) => "The speech recognition model is missing. Download ReazonSpeech in the settings under “Models”. You can type meanwhile.".to_string(),
                 e => speech_text(&e, &lang),
             };
             q.as_mut().set_speech_error(QString::from(&text));
@@ -994,14 +1007,8 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
         }
         Err(e) => {
             let text = match (e, lang == "de") {
-                (SpeechError::ModelMissing(_), true) => format!(
-                    "Die Figur antwortet ohne Stimme. Für die Übergangsstimme Kokoro (Apache-2.0) kokoro-v1.0.int8.onnx (88 MB) und voices-v1.0.bin (27 MB) von {KOKORO_URL} nach {} laden.",
-                    dir.display()
-                ),
-                (SpeechError::ModelMissing(_), false) => format!(
-                    "The character answers without a voice. For the interim voice, download Kokoro (Apache-2.0) kokoro-v1.0.int8.onnx (88 MB) and voices-v1.0.bin (27 MB) from {KOKORO_URL} to {}.",
-                    dir.display()
-                ),
+                (SpeechError::ModelMissing(_), true) => "Die Figur antwortet ohne Stimme. Die Übergangsstimme Kokoro lässt sich in den Einstellungen unter „Modelle“ laden.".to_string(),
+                (SpeechError::ModelMissing(_), false) => "The character answers without a voice. Download the interim voice Kokoro in the settings under “Models”.".to_string(),
                 (e, true) => format!("Die Figur antwortet ohne Stimme: {}", speech_text(&e, "de")),
                 (e, false) => format!("The character answers without a voice: {}", speech_text(&e, "en")),
             };

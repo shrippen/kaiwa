@@ -19,6 +19,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "hinnerk_gamification_off" => gamification_off(root),
         "hinnerk_a11y_names" => a11y_names(root),
         "theo_keyboard" => keyboard(root),
+        "lena_download_announced" => download_announced(root),
         _ => return None,
     };
     Some(match r {
@@ -328,6 +329,53 @@ fn blocks<'a>(src: &'a str, types: &[&str]) -> Vec<(usize, String, &'a str)> {
 /// app has a name for assistive technology:
 /// a visible text, or an Accessible.name (text fields always need the latter). The Kante
 /// controls give the role; KanteSegmented names each segment from its model.
+/// /LL401/, F-08 from the source: the settings name source, licence and size of each model
+/// before its download button, the download starts only from that button, and no other code
+/// of the app downloads anything.
+fn download_announced(root: &Path) -> Result<Option<String>> {
+    let page = std::fs::read_to_string(root.join("app/qml/SettingsPage.qml"))?;
+    let mut found = Vec::new();
+    for field in [
+        "modelData.origin",
+        "modelData.licence",
+        "modelData.downloadMB",
+    ] {
+        if !page.contains(field) {
+            found.push(format!("the model row does not show {field}"));
+        }
+    }
+    let calls: Vec<&str> = page
+        .lines()
+        .filter(|l| l.contains("downloadModel("))
+        .collect();
+    if calls.is_empty()
+        || calls
+            .iter()
+            .any(|l| !l.trim_start().starts_with("onClicked:"))
+    {
+        found.push(format!("downloadModel outside a button: {calls:?}"));
+    }
+    let mut callers = Vec::new();
+    for dir in ["app/src", "app/qml"] {
+        for e in std::fs::read_dir(root.join(dir))? {
+            let path = e?.path();
+            let src = std::fs::read_to_string(&path).unwrap_or_default();
+            if src.contains("download::download(") || src.contains("ureq::") {
+                callers.push(
+                    path.file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string(),
+                );
+            }
+        }
+    }
+    if callers != ["app.rs"] {
+        found.push(format!("downloads from {callers:?}, expected only app.rs"));
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
+}
+
 /// /LL200/ from the source: the app's pages have no mouse-only handlers and no control taken out
 /// of the tab order, and every interactive Kante control they use draws its focus. Walking a
 /// journey by keyboard needs the GUI mode.

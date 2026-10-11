@@ -15,6 +15,8 @@ QQC2.ScrollView {
 
     readonly property var p: kaiwa.profile.length > 0 ? JSON.parse(kaiwa.profile) : ({ goal: {} })
     readonly property var privacy: kaiwa.privacy.length > 0 ? JSON.parse(kaiwa.privacy) : []
+    readonly property var models: kaiwa.models.length > 0 ? JSON.parse(kaiwa.models) : []
+    readonly property var download: kaiwa.download.length > 0 ? JSON.parse(kaiwa.download) : ({})
     readonly property real titleWidth: KanteStyle.unit(210)
     contentWidth: availableWidth
 
@@ -112,8 +114,8 @@ QQC2.ScrollView {
             readonly property var mora: page.p.moraModel || ({})
             title: page.t("Aussprache-Hinweise", "Pronunciation hints")
             hint: mora.present === false
-                ? page.t("Dafür fehlt das Modell kaiwa-kana-ctc (" + mora.licence + ", " + mora.size + "): model.int8.onnx, vocab.json und thresholds.json von " + mora.url + " nach " + mora.dir + " laden.",
-                         "This needs the model kaiwa-kana-ctc (" + mora.licence + ", " + mora.size + "): download model.int8.onnx, vocab.json and thresholds.json from " + mora.url + " to " + mora.dir + ".")
+                ? page.t("Dafür fehlt das Modell kaiwa-kana-ctc (" + mora.licence + ", " + mora.size + "); es lässt sich unten unter „Modelle“ laden.",
+                         "This needs the model kaiwa-kana-ctc (" + mora.licence + ", " + mora.size + "); download it below under “Models”.")
                 : page.t("Vorschau: nach einem gesprochenen Satz ein Hinweis, wenn ein langer Vokal oder ein っ zu kurz klang. Findet etwa jeden zweiten solchen Fehler und irrt sich bei etwa jedem zwanzigsten richtigen Satz.",
                          "Preview: after a spoken sentence, a hint when a long vowel or a っ sounded too short. Finds about every second such mistake and is wrong for about one correct sentence in twenty.")
             QQC2.Switch {
@@ -190,6 +192,71 @@ QQC2.ScrollView {
                 text: modelData.part + " · " + modelData.provider
                 subtitle: page.t("Übertragen: ", "Sent: ") + modelData.sends
                 meta: modelData.where
+            }
+        }
+        // The speech models (F-08, /LL401/): source, size and licence first; Kaiwa connects
+        // only when the learner asks for the download.
+        KanteSectionLabel {
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.topMargin: KanteStyle.unit(18)
+            text: page.t("Modelle", "Models")
+            rule: true
+        }
+        Text {
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            text: page.t("Kaiwa lädt ein Modell nur, wenn du hier auf „Herunterladen“ tippst. Dabei geht nur die Anfrage an die genannte Quelle hinaus, keine Daten von dir. Jede Datei wird vor der Benutzung geprüft.",
+                         "Kaiwa downloads a model only when you tap “Download” here. Only the request goes to the named source, none of your data. Every file is checked before it is used.")
+            wrapMode: Text.Wrap
+            color: KanteStyle.mutedTextColor
+            font: KanteStyle.smallFont
+        }
+        Repeater {
+            model: page.models
+            delegate: Row {
+                id: modelRow
+                required property var modelData
+                readonly property bool running: page.download.dir === modelData.dir
+                title: modelData.name
+                hint: modelData.purpose + " · " + modelData.licence + " · " + modelData.origin + " · "
+                    + page.t("Download " + modelData.downloadMB + " MB, danach " + modelData.diskMB + " MB auf der Platte",
+                             "download " + modelData.downloadMB + " MB, then " + modelData.diskMB + " MB on disk")
+                RowLayout {
+                    spacing: KanteStyle.unit(8)
+                    Text {
+                        visible: modelRow.modelData.present
+                        text: page.t("Vorhanden", "Present")
+                        color: KanteStyle.textColor
+                        font: KanteStyle.defaultFont
+                    }
+                    KanteButton {
+                        visible: !modelRow.modelData.present && !modelRow.running
+                        enabled: page.download.dir === undefined
+                        text: page.t("Herunterladen", "Download")
+                        Accessible.description: page.t("Lädt " + modelRow.modelData.name + " (" + modelRow.modelData.downloadMB + " MB) von " + modelRow.modelData.origin + ".",
+                                                        "Downloads " + modelRow.modelData.name + " (" + modelRow.modelData.downloadMB + " MB) from " + modelRow.modelData.origin + ".")
+                        onClicked: page.kaiwa.downloadModel(modelRow.modelData.dir)
+                    }
+                    KanteProgressBar {
+                        visible: modelRow.running
+                        Layout.preferredWidth: KanteStyle.unit(160)
+                        value: modelRow.running && page.download.total > 0 ? page.download.done / page.download.total : 0
+                        Accessible.name: page.t("Download von ", "Download of ") + modelRow.modelData.name
+                    }
+                    Text {
+                        visible: modelRow.running
+                        text: modelRow.running ? Math.round(page.download.done / 1e6) + " / " + Math.round(page.download.total / 1e6) + " MB" : ""
+                        color: KanteStyle.mutedTextColor
+                        font: KanteStyle.smallFont
+                    }
+                    KanteButton {
+                        visible: modelRow.running
+                        emphasis: KanteButton.Emphasis.Quiet
+                        text: page.t("Abbrechen", "Stop")
+                        onClicked: page.kaiwa.stopDownload()
+                    }
+                }
             }
         }
         // The API key, only in the system keyring (/LF713/).
