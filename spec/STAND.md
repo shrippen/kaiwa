@@ -1,4 +1,4 @@
-# Stand und Übergabe (2026-10-11)
+# Stand und Übergabe (2026-10-12)
 
 Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die nächste Session zuerst lesen, dann `ROADMAP.md`. Welche Anforderung wo umgesetzt und geprüft ist, zeigt [`RUECKVERFOLGUNG.md`](RUECKVERFOLGUNG.md) (erzeugt mit `cargo run -p kaiwa-sim -- trace --write`). Starten und prüfen: `./start.sh` (`demo`, `sim`, `check`).
 
@@ -11,8 +11,8 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | Profil (`kaiwa-store`) | SQLite, Fortsetzen, Export nach `spec/export.schema.json`, Import, vollständiges Löschen | #15 |
 | Backend (`kaiwa-backend`) | Ansichten als JSON, Tutor-Wahl, Kostenbremse, mehrere Profile, Aufnahmen mit Opt-in, Statistik, Erinnerungsregel | #17 |
 | KI (`kaiwa-ai`) | Anthropic und OpenAI-kompatibel, aufgezeichnete Antworten (Demo), Token-Zähler, Schlüsselbund, „Was verlässt das Gerät?“ | #6, #17 |
-| Sprache (`kaiwa-speech`) | Push-to-Talk, ReazonSpeech (sherpa-onnx), Übergangsstimme Kokoro ohne Pitch-Akzent | #11, #12 |
-| App | Heute, Lernpfad, Wiederholen, Profil mit Statistik, Einstellungen, Gespräch mit Bilanz, Widersprechen, „Falsch erkannt“, Hörhilfen (nochmal, langsamer, übersetzen), Moren-Hinweise (Vorschau), Einstufung; Deutsch und Englisch; Stile System, Kante, Kante Light | #7, #16, #17 |
+| Sprache (`kaiwa-speech`) | Push-to-Talk und Freisprechen (Ende per Pause), ReazonSpeech (sherpa-onnx), Übergangsstimme Kokoro ohne Pitch-Akzent, „Lauter“ und „Klar“, Moren-Prüfung, Modell-Download mit Prüfsumme; Erkennung und Stimme hinter Traits | #11, #12, #26, #27 |
+| App | Heute, Lernpfad, Freies Gespräch (4 Themen), Wiederholen, Profil mit Statistik und Wochenrückblick, Einstellungen (Modelle, Textgröße bis 200 %, Modelle entladen), Gespräch mit Bilanz, Widersprechen, „Falsch erkannt“, Hörhilfen (nochmal, langsamer, übersetzen), Moren-Hinweise (Vorschau), Einstufung; Deutsch und Englisch; Stile System, Kante, Kante Light | #7, #16, #17, #26, #27 |
 | Pakete | Symbol, Desktop-Datei, AppStream, PKGBUILD `kaiwa-git`, Flatpak-Manifest (App) | #17 |
 | QA | `kaiwa-sim`: 47 von 83 Prüfregeln automatisch (Textmodus, 30-Tage-Läufe, Profil, Engine, QML-Prüfungen) | laufend |
 
@@ -57,3 +57,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 - **Synthetische Erfolge halten auf echten Stimmen nicht.** Dasselbe Verfahren erkannte synthetisch 58–74 %, auf Common Voice mit allen Fehlerarten unter 25 %. Früh an echten Aufnahmen messen; wo es keine Lerner-Aufnahmen gibt, Fehler in echte Muttersprachler hineinschneiden und mit einem Schein-Schnitt kontrollieren.
 - **Wartende Shell-Schleifen mit `pgrep -f`** finden ihre eigene Befehlszeile, wenn das Muster darin steht, und warten ewig; `pkill -f` beendet so die eigene Shell.
 - **Fragen gebündelt** im Artifact mit Vorschlag und Datenübergabe funktionierten gut: Antworten kamen schnell und ließen sich direkt einarbeiten.
+- **Spike-Zahlen auf dem App-Weg nachmessen.** Die Moren-Prüfung hatte im Spike 4,8 % Fehlalarme mit OpenJTalks Lesung; mit der Lesung der App waren es 6,9 %. Erst `examples/mora_hints.rs` (derselbe Test, aber App-G2P, ein Hinweis je Zug, Resampling) zeigte das.
+- **Was ein Regler steuern soll, auch dort ankommen lassen.** Das Sprechtempo war ein Knopf der Schwierigkeit, die Stimme sprach trotzdem fest mit 0,9; die Einstellung „Ende eines Zugs“ wurde gespeichert, aber nirgends benutzt. Bei jeder Einstellung prüfen, wer sie liest.
+- **`io::copy` wiederholt `ErrorKind::Interrupted` endlos.** Ein Abbruch-Signal als `Interrupted` ließ den Download-Test mit 100 % CPU hängen; `io::Error::other` nehmen.
+- **Beim Umschreiben von Dateien per Skript nie im selben Ausdruck lesen und zum Schreiben öffnen** (`open(p, "w").write(open(p).read())` leert die Datei). Ungesicherte Änderungen wären verloren gewesen; vorher committen hilft.
