@@ -23,7 +23,7 @@ export KAIWA_PROVIDER=openai KAIWA_MODEL=qwen3:14b KAIWA_OPENAI_BASE=http://loca
 1. **Reisen automatisch:** `cargo run -p kaiwa-sim -- run --live --report qa/local/live.json`. Ergebnis: dieselben Prüfregeln wie in der CI, aber mit dem echten Tutor. Interessant sind `mara_recall` und `selin_register_flag` (Trefferquote, /LL111/), außerdem jede Korrektur bei korrekten Sätzen (Fehlalarm, /LL110/).
 2. **Von Hand:** `cargo run -p kaiwa-app`. Führ das Szenario „Sich vorstellen“ einmal richtig und einmal mit Fehlern (`qa/corpus/saetze.tsv` s01–s03). Notiere, was dir an Antworten, Korrekturen und Erklärungen auffällt.
 3. **Latenz:** Stopp die Zeit vom Senden bis zur Antwort, fünf Züge, notieren (Ziel /LL010/).
-4. **Sprechen und Stimme:** ReazonSpeech und Kokoro laden (`app/README.md`, „Sprechen“ und „Stimme der Figur“), dann mit Mikrofon und Lautsprecher spielen. Notiere: Wird verstanden, was du sagst? Klingt die Übergangsstimme verständlich, und stören falsche Lesarten oder Pausen? Die Zeit vom Loslassen des Knopfs bis zum ersten Ton der Figur gehört zur Latenz.
+4. **Sprechen und Stimme:** ReazonSpeech und Kokoro in den Einstellungen unter „Modelle“ laden (`app/README.md`, „Modelle“), dann mit Mikrofon und Lautsprecher spielen. Notiere: Wird verstanden, was du sagst? Klingt die Übergangsstimme verständlich, und stören falsche Lesarten oder Pausen? Die Zeit vom Loslassen des Knopfs bis zum ersten Ton der Figur gehört zur Latenz.
 
 ## 2. VOICEVOX (ADR-003, Spike 0.4 Teil 2)
 
