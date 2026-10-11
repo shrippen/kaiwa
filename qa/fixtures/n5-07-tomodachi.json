@@ -1,7 +1,12 @@
 [
-  {"learner": "さいきん、テニスしてるよ。", "reply": "へえ、いいね！", "analysis": {"understood": true, "goals_met": ["hobby"], "corrections": [], "new_words": []}},
-  {"learner": "アニメが好き。", "reply": "わたしもアニメ好き！", "analysis": {"understood": true, "goals_met": ["like"], "corrections": [], "new_words": []}},
-  {"learner": "アオイは？しゅみ、なに？", "reply": "わたしは写真かな。", "analysis": {"understood": true, "goals_met": ["ask_back"], "corrections": [], "new_words": []}},
-  {"learner": "こんど、いっしょに行かない？", "reply": "いいね、行こう！", "analysis": {"understood": true, "goals_met": ["plan"], "corrections": [], "new_words": []}},
-  {"learner": "うん、行く！", "reply": "やった、じゃあ土曜日ね！", "analysis": {"understood": true, "goals_met": [], "new_words": [], "corrections": [{"severity": "unnatural", "kind": "register", "original": "行く", "better": "行きます", "explanation": "Die です/ます-Form ist höflicher.", "also_possible": false}]}}
+  {"learner": "さいきん、テニスしてるよ。", "reply": "へえ、いいね！",
+    "translation": { "de": "Oh, wie schön!", "en": "Oh, nice!" }, "analysis": {"understood": true, "goals_met": ["hobby"], "corrections": [], "new_words": []}},
+  {"learner": "アニメが好き。", "reply": "わたしもアニメ好き！",
+    "translation": { "de": "Ich mag auch Anime!", "en": "I like anime too!" }, "analysis": {"understood": true, "goals_met": ["like"], "corrections": [], "new_words": []}},
+  {"learner": "アオイは？しゅみ、なに？", "reply": "わたしは写真かな。",
+    "translation": { "de": "Bei mir ist es wohl Fotografieren.", "en": "For me, photography, I guess." }, "analysis": {"understood": true, "goals_met": ["ask_back"], "corrections": [], "new_words": []}},
+  {"learner": "こんど、いっしょに行かない？", "reply": "いいね、行こう！",
+    "translation": { "de": "Gute Idee, lass uns gehen!", "en": "Great, let's go!" }, "analysis": {"understood": true, "goals_met": ["plan"], "corrections": [], "new_words": []}},
+  {"learner": "うん、行く！", "reply": "やった、じゃあ土曜日ね！",
+    "translation": { "de": "Super, dann am Samstag!", "en": "Great, Saturday then!" }, "analysis": {"understood": true, "goals_met": [], "new_words": [], "corrections": [{"severity": "unnatural", "kind": "register", "original": "行く", "better": "行きます", "explanation": "Die です/ます-Form ist höflicher.", "also_possible": false}]}}
 ]

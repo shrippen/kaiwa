@@ -1,6 +1,10 @@
 [
-  {"learner": "二人です。", "reply": "こちらへどうぞ。ご注文はお決まりですか。", "analysis": {"understood": true, "goals_met": ["people"], "corrections": [], "new_words": []}},
-  {"learner": "ラーメンを二つください。", "reply": "お飲み物はいかがですか。", "analysis": {"understood": true, "goals_met": ["order"], "corrections": [], "new_words": []}},
-  {"learner": "お水を二つおねがいします。", "reply": "かしこまりました。", "analysis": {"understood": true, "goals_met": ["drinks"], "corrections": [], "new_words": []}},
-  {"learner": "すみません、トイレはどこですか。", "reply": "あちらです。", "analysis": {"understood": true, "goals_met": ["toilet"], "corrections": [], "new_words": []}}
+  {"learner": "二人です。", "reply": "こちらへどうぞ。ご注文はお決まりですか。",
+    "translation": { "de": "Hier entlang, bitte. Haben Sie schon gewählt?", "en": "This way, please. Are you ready to order?" }, "analysis": {"understood": true, "goals_met": ["people"], "corrections": [], "new_words": []}},
+  {"learner": "ラーメンを二つください。", "reply": "お飲み物はいかがですか。",
+    "translation": { "de": "Möchten Sie etwas trinken?", "en": "Would you like something to drink?" }, "analysis": {"understood": true, "goals_met": ["order"], "corrections": [], "new_words": []}},
+  {"learner": "お水を二つおねがいします。", "reply": "かしこまりました。",
+    "translation": { "de": "Sehr gern.", "en": "Certainly." }, "analysis": {"understood": true, "goals_met": ["drinks"], "corrections": [], "new_words": []}},
+  {"learner": "すみません、トイレはどこですか。", "reply": "あちらです。",
+    "translation": { "de": "Dort drüben.", "en": "Over there." }, "analysis": {"understood": true, "goals_met": ["toilet"], "corrections": [], "new_words": []}}
 ]

@@ -1,6 +1,10 @@
 [
-  {"learner": "きのうは映画を見ました。", "reply": "何の映画を見ましたか。どこで見ましたか。", "analysis": {"understood": true, "goals_met": ["did"], "corrections": [], "new_words": []}},
-  {"learner": "新宿で見ました。", "reply": "そうですか。どうでしたか。", "analysis": {"understood": true, "goals_met": ["where"], "corrections": [], "new_words": []}},
-  {"learner": "とてもおもしろかったです。", "reply": "それはよかったですね。だれと行きましたか。", "analysis": {"understood": true, "goals_met": ["how"], "corrections": [], "new_words": []}},
-  {"learner": "ともだちと行きました。", "reply": "いいですね。", "analysis": {"understood": true, "goals_met": ["with"], "corrections": [], "new_words": []}}
+  {"learner": "きのうは映画を見ました。", "reply": "何の映画を見ましたか。どこで見ましたか。",
+    "translation": { "de": "Welchen Film haben Sie gesehen? Wo haben Sie ihn gesehen?", "en": "Which film did you see? Where did you see it?" }, "analysis": {"understood": true, "goals_met": ["did"], "corrections": [], "new_words": []}},
+  {"learner": "新宿で見ました。", "reply": "そうですか。どうでしたか。",
+    "translation": { "de": "Ach so. Wie war es?", "en": "I see. How was it?" }, "analysis": {"understood": true, "goals_met": ["where"], "corrections": [], "new_words": []}},
+  {"learner": "とてもおもしろかったです。", "reply": "それはよかったですね。だれと行きましたか。",
+    "translation": { "de": "Das ist schön. Mit wem sind Sie hingegangen?", "en": "That's nice. Who did you go with?" }, "analysis": {"understood": true, "goals_met": ["how"], "corrections": [], "new_words": []}},
+  {"learner": "ともだちと行きました。", "reply": "いいですね。",
+    "translation": { "de": "Schön.", "en": "Nice." }, "analysis": {"understood": true, "goals_met": ["with"], "corrections": [], "new_words": []}}
 ]

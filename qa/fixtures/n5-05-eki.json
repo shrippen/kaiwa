@@ -1,6 +1,10 @@
 [
-  {"learner": "京都までおねがいします。", "reply": "何枚ですか。", "analysis": {"understood": true, "goals_met": ["destination"], "corrections": [], "new_words": []}},
-  {"learner": "おとな二枚です。", "reply": "はい、二枚ですね。", "analysis": {"understood": true, "goals_met": ["tickets"], "corrections": [], "new_words": []}},
-  {"learner": "つぎの電車は何時ですか。", "reply": "十時十五分です。", "analysis": {"understood": true, "goals_met": ["time"], "corrections": [], "new_words": []}},
-  {"learner": "何番線ですか。", "reply": "三番線です。", "analysis": {"understood": true, "goals_met": ["platform"], "corrections": [], "new_words": []}}
+  {"learner": "京都までおねがいします。", "reply": "何枚ですか。",
+    "translation": { "de": "Wie viele Fahrkarten?", "en": "How many tickets?" }, "analysis": {"understood": true, "goals_met": ["destination"], "corrections": [], "new_words": []}},
+  {"learner": "おとな二枚です。", "reply": "はい、二枚ですね。",
+    "translation": { "de": "Ja, zwei Fahrkarten.", "en": "Yes, two tickets." }, "analysis": {"understood": true, "goals_met": ["tickets"], "corrections": [], "new_words": []}},
+  {"learner": "つぎの電車は何時ですか。", "reply": "十時十五分です。",
+    "translation": { "de": "Um zehn Uhr fünfzehn.", "en": "At a quarter past ten." }, "analysis": {"understood": true, "goals_met": ["time"], "corrections": [], "new_words": []}},
+  {"learner": "何番線ですか。", "reply": "三番線です。",
+    "translation": { "de": "Gleis drei.", "en": "Platform three." }, "analysis": {"understood": true, "goals_met": ["platform"], "corrections": [], "new_words": []}}
 ]
