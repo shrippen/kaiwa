@@ -30,7 +30,7 @@ def main():
     from transformers import Wav2Vec2ForCTC
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    model = Wav2Vec2ForCTC.from_pretrained(args.model).eval()
+    model = Wav2Vec2ForCTC.from_pretrained(args.model, torch_dtype=torch.float32).eval()
 
     class Logits(torch.nn.Module):
         def __init__(self, m):
@@ -55,7 +55,7 @@ def main():
     from transformers import Wav2Vec2FeatureExtractor
     fe = Wav2Vec2FeatureExtractor.from_pretrained(args.model)
     # The export changes the traced model in place; compare against a fresh copy.
-    model = Wav2Vec2ForCTC.from_pretrained(args.model).eval()
+    model = Wav2Vec2ForCTC.from_pretrained(args.model, torch_dtype=torch.float32).eval()
     for f in ("model.onnx", "model.int8.onnx"):
         sess = ort.InferenceSession(str(out / f))
         worst = []

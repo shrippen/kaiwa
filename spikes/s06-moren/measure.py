@@ -73,7 +73,8 @@ class Model:
         self.name, self.revision = name, revision
         self.pron = writes == "pron"
         self.proc = Wav2Vec2Processor.from_pretrained(name, revision=revision)
-        self.model = Wav2Vec2ForCTC.from_pretrained(name, revision=revision).eval().to(device)
+        # float32 whatever the checkpoint holds (the large base is stored in bfloat16)
+        self.model = Wav2Vec2ForCTC.from_pretrained(name, revision=revision, torch_dtype=torch.float32).eval().to(device)
         self.device = device
         vocab = self.proc.tokenizer.get_vocab()
         self.vocab = vocab
