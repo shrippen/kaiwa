@@ -32,13 +32,17 @@ from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 sys.path.insert(0, str(Path(__file__).parent))  # -I leaves the script's directory out
 import ctc  # noqa: E402
 
-# Kana CTC models (Apache-2.0 each): name, revision, the token the model writes between words.
+# Kana CTC models (Apache-2.0 each): name, revision, the token the model writes between words, and
+# which kana it writes: 'read' (orthographic, とう) or 'pron' (pronounced, とー). Any other value of
+# --model is a local directory of an own model (finetune.py), which writes pronounced kana.
 MODELS = {
     # Hiragana per character; Common Voice and JSUT.
-    "hiragana": ("vumichien/wav2vec2-large-xlsr-japanese-hiragana", "017225bb128a6b1c6de9d58391f891908d69bc7b", "|"),
+    "hiragana": ("vumichien/wav2vec2-large-xlsr-japanese-hiragana", "017225bb128a6b1c6de9d58391f891908d69bc7b",
+                 "|", "read"),
     # ReazonSpeech v2.0 (35,000 h); subwords with kanji, every hiragana also as a token of its own.
-    "reazon-large": ("reazon-research/japanese-wav2vec2-large-rs35kh", "2162c9edb97f362f7623d6b3a2e417458e879bca", "▁"),
-    "reazon-base": ("reazon-research/japanese-wav2vec2-base-rs35kh", None, "▁"),
+    "reazon-large": ("reazon-research/japanese-wav2vec2-large-rs35kh", "2162c9edb97f362f7623d6b3a2e417458e879bca",
+                     "▁", "read"),
+    "reazon-base": ("reazon-research/japanese-wav2vec2-base-rs35kh", None, "▁", "read"),
 }
 SR = 16000
 PAD = 0.5  # s of silence around the utterance (spike 0.3: without it the start gets lost)
@@ -65,8 +69,9 @@ def load(path, snr, seed):
 
 class Model:
     def __init__(self, key, device):
-        name, revision, delim = MODELS[key]
+        name, revision, delim, writes = MODELS.get(key, (key, None, "|", "pron"))
         self.name, self.revision = name, revision
+        self.pron = writes == "pron"
         self.proc = Wav2Vec2Processor.from_pretrained(name, revision=revision)
         self.model = Wav2Vec2ForCTC.from_pretrained(name, revision=revision).eval().to(device)
         self.device = device
@@ -80,6 +85,9 @@ class Model:
         with torch.no_grad():
             lg = self.model(x).logits[0].float().cpu().numpy()
         return ctc.blank_merged(ctc.log_softmax(lg), self.blank, self.delim)
+
+    def kana(self, text):
+        return ctc.pron(text) if self.pron else ctc.reading(text)
 
     def ids(self, kana):
         return [self.vocab[c] for c in kana]
@@ -122,7 +130,7 @@ def duration_features(logp, kana, model):
 def variant_features(logp, kana, model):
     base = ctc.log_likelihood(logp, model.ids(kana), model.blank)
     every = {}
-    for kind, i, var in ctc.variants(kana):
+    for kind, i, var in ctc.variants(kana, "ー" if model.pron else None):
         if any(c not in model.vocab for c in var):
             continue
         every[var] = (kind, i, ctc.log_likelihood(logp, model.ids(var), model.blank) - base)
@@ -240,6 +248,12 @@ def calibrate(rows):
     return th
 
 
+def model_tag(path):
+    """Name of an own model for result files: its directory, or the one above a plain 'model'."""
+    p = Path(path)
+    return p.parent.name if p.name == "model" else p.name
+
+
 def fold_of(voice):
     return "ojt" if voice.startswith("ojt") else voice
 
@@ -253,7 +267,7 @@ def main():
     ap.add_argument("--corpus-audio", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--noise", type=float, default=None, help="pink noise at this SNR in dB")
-    ap.add_argument("--model", choices=MODELS, default="hiragana")
+    ap.add_argument("--model", default="hiragana", help=f"one of {', '.join(MODELS)} or a model directory")
     args = ap.parse_args()
     root = Path(args.corpus_audio)
     manifest = json.loads((root / "manifest.json").read_text())
@@ -262,7 +276,7 @@ def main():
 
     def kana(text):
         if text not in readings:
-            readings[text] = ctc.reading(text)
+            readings[text] = model.kana(text)
         return readings[text]
 
     rows = []
@@ -332,7 +346,7 @@ def main():
                     for c in ("duration", "variants")} for v in manifest["voices"]}
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    name = args.model + ("" if args.noise is None else f"-snr{args.noise:g}")
+    name = (args.model if args.model in MODELS else model_tag(args.model)) + ("" if args.noise is None else f"-snr{args.noise:g}")
     report = {"model": model.name, "revision": model.revision, "noise_snr_db": args.noise, "fa_max": FA_MAX,
               "summary": summary, "by_kind": by_kind, "by_voice": by_voice,
               "thresholds": {fold_of(v): next(r["thresholds"] for r in rows if r["voice"] == v)

@@ -23,7 +23,6 @@ from pathlib import Path
 
 import librosa
 import numpy as np
-import pyopenjtalk
 import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).parent))  # -I leaves the script's directory out
@@ -52,12 +51,6 @@ _BASE = {
 }
 _SMALL = {"ゃ": "a", "ゅ": "ɨ", "ょ": "o", "ぁ": "a", "ぃ": "i", "ぅ": "ɯ", "ぇ": "e", "ぉ": "o", "ゎ": "a"}
 _AFTER_N = {"z": "dz", "ʑ": "dʑ"}  # affricate after ん and at the start
-
-
-def pron(text):
-    """Pronounced hiragana (pyopenjtalk 'pron': は as わ, long vowels as ー)."""
-    p = "".join(n["pron"] for n in pyopenjtalk.run_frontend(text))
-    return "".join(c for c in ctc.kata_to_hira(p) if c in ctc.VOWEL or c in "んっー")
 
 
 def phones(kana):
@@ -214,7 +207,7 @@ def main():
                 sf.write(wav, np.pad(a, int(PAD * SR)), SR)
             for text in (t["intended"], t["spoken"]):
                 if text not in prons:
-                    prons[text] = pron(text)
+                    prons[text] = ctc.pron(text)
             k = prons[t["intended"]]
             word = f"w{n:04d}"
             (corpus / voice / f"{uid}.lab").write_text(word)

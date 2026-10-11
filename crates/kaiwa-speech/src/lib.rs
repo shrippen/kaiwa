@@ -1,11 +1,13 @@
 //! Speech for Kaiwa: the microphone ([`capture`]), speech recognition ([`stt`],
 //! ReazonSpeech through sherpa-onnx, ADR-002 / H-03) and the character's interim voice
-//! ([`tts`], Kokoro with [`g2p`], H-02) through the speaker ([`playback`]). Models live outside the binary
+//! ([`tts`], Kokoro with [`g2p`], H-02) through the speaker ([`playback`]); the mora check
+//! ([`mora`], ADR-005). Models live outside the binary
 //! ([`models`]); the app tells the learner where, when one is missing.
 
 pub mod capture;
 pub mod g2p;
 pub mod models;
+pub mod mora;
 pub mod playback;
 pub mod stt;
 pub mod tts;

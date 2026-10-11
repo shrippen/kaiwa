@@ -38,6 +38,13 @@ def reading(text):
     return "".join(c for c in kata_to_hira(read) if c in VOWEL or c in "んっー")
 
 
+def pron(text):
+    """Pronounced hiragana (pyopenjtalk 'pron': は as わ, long vowels as ー); what an own model hears."""
+    import pyopenjtalk
+    p = "".join(n["pron"] for n in pyopenjtalk.run_frontend(text))
+    return "".join(c for c in kata_to_hira(p) if c in VOWEL or c in "んっー")
+
+
 def moras(kana):
     """Splits into moras: a small kana (ゃゅょ, ぁぃぅぇぉ) joins the kana before it."""
     out = []
@@ -62,12 +69,13 @@ def is_extension(prev, mora):
     return mora in ("ー", same) or (v, mora) in (("o", "う"), ("e", "い"))
 
 
-def variants(kana):
+def variants(kana, long_mark=None):
     """Mora-length errors a learner can make in `kana`: list of (kind, mora index, variant kana).
 
     kind: 'long-' (long vowel spoken short), 'long+' (short vowel spoken long), 'q-' (っ left out),
     'q+' (っ added), 'n-' (ん before a vowel merged: げんいん -> げにん), 'n+' (the reverse),
     'y' (small and large ゃゅょ swapped: びょういん / びよういん).
+    long_mark: what lengthens a vowel in `kana` ('ー' for pronounced kana); default the vowel kana.
     """
     m = moras(kana)
     out = []
@@ -81,7 +89,8 @@ def variants(kana):
             out.append(("long-", i, join(m[:i] + m[i + 1:])))
         elif vowel_of(mo) and not (i + 1 < len(m) and is_extension(mo, m[i + 1])):
             v = vowel_of(mo)
-            for ext in {"a": "あ", "i": "い", "u": "う", "e": "え", "o": "う"}[v] + ("お" if v == "o" else ""):
+            exts = long_mark or {"a": "あ", "i": "い", "u": "う", "e": "え", "o": "う"}[v] + ("お" if v == "o" else "")
+            for ext in exts:
                 out.append(("long+", i, join(m[:i + 1] + [ext] + m[i + 1:])))
         if mo == "っ":
             out.append(("q-", i, join(m[:i] + m[i + 1:])))

@@ -39,4 +39,12 @@ Messung und Zahlen in [`spikes/s06-moren`](../../spikes/s06-moren/README.md). Ku
 - **Punkt 3 (Dauerverhältnisse) trägt nicht**, weder aus der CTC-Ausrichtung noch aus MFA: Die natürliche Streuung der Längen ist größer als der Fehler.
 - **Was trägt, ist der Varianten-Vergleich:** die CTC-Wahrscheinlichkeit der gemeinten Kana gegen die Formen, die ein Moren-Fehler ergäbe (おばあさん/おばさん), mit einer Schwelle je Fehlerart. Er nennt die Stelle gleich mit (88 %).
 - **Modell:** Nur `vumichien/wav2vec2-large-xlsr-japanese-hiragana` gibt Kana je Zeichen. Es hört ん vor Vokal grundsätzlich als n-Reihe (Schreibungs-Vorwissen) und wurde auch auf JSUT trainiert (Audio nur nicht-kommerziell frei). Die ReazonSpeech-Modelle schreiben Kanji und helfen nicht.
-- **Vorschlag (offen, Fragenpaket 5):** Punkt 3 durch den Varianten-Vergleich ersetzen; ein eigenes Kana-CTC-Modell feinjustieren (ReazonSpeech-wav2vec2-base, Common Voice CC0, Aussprache-Kana aus OpenJTalk); Abnahme an den eigenen Aufnahmen (F-04). Bis dahin gilt F-09.
+- Vorschläge gingen als Fragenpaket 5 an den Eigentümer, Antworten unten.
+
+## Entschieden (Fragenpaket 5)
+
+- **J-01:** Die Moren prüft der **Varianten-Vergleich** (Schwelle je Fehlerart). Die **Dauer bleibt als Zusatzsignal**; sie entscheidet nicht allein, weil sie im Spike nichts trennte. Ihre Quelle in der App ist die Ausrichtung des eigenen Modells (J-02), MFA wird nicht ausgeliefert.
+- **J-02:** **Eigenes Kana-CTC-Modell:** `reazon-research/japanese-wav2vec2-base` (Apache-2.0), feinjustiert auf Common Voice Japanisch (CC0) mit Aussprache-Kana aus OpenJTalk (ー, っ, ん wie gesprochen). Das gemessene Hiragana-Modell (JSUT im Training) wird nicht ausgeliefert.
+- **J-03:** Julius entfällt; MFA war die Gegenprobe.
+- **J-04:** Der Eigentümer hat keine richtige Aussprache als Referenz. Statt eigener Aufnahmen: **echte Stimmen aus frei lizenzierten Korpora**, die Fehler hineingeschnitten (Common Voice Test, CC0; `spikes/s06-moren/real.py`). Nachrichtensendungen (NHK) sind geschützt und kommen nicht in Frage; ReazonSpeech (Fernsehen, nur nach Art. 30-4 des japanischen Urheberrechts) erst nach Annahme der Bedingungen durch den Eigentümer.
+- **J-05:** Moren-Hinweise sind **an, nur in Sätzen**, mit den Schwellen je Fehlerart (F-09), sobald das eigene Modell (J-02) in der App ist.
