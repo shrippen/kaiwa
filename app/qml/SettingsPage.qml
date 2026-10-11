@@ -182,6 +182,17 @@ QQC2.ScrollView {
 
         Row {
             section: page.t("Aussehen", "Look")
+            title: page.t("Textgröße", "Text size")
+            hint: page.t("Vergrößert die ganze Oberfläche mit den Lesehilfen, zusätzlich zur Systemeinstellung; gilt ab dem nächsten Start",
+                         "Enlarges the whole interface with the readings, on top of the system setting; from the next start")
+            KanteSegmented {
+                readonly property var values: [1.0, 1.25, 1.5, 1.75, 2.0]
+                model: ["100 %", "125 %", "150 %", "175 %", "200 %"]
+                currentIndex: Math.max(0, values.indexOf(page.p.textScale === undefined ? 1.0 : page.p.textScale))
+                onActivated: function (i) { page.kaiwa.setSetting("textScale", String(values[i])) }
+            }
+        }
+        Row {
             title: page.t("Stil", "Style")
             KanteSegmented {
                 model: ["System", "Kante", "Kante Light"]

@@ -98,6 +98,13 @@ pub struct Profile {
     /// Hands-free: the turn ends after the pause, listening starts again by itself (/LF100/).
     #[serde(default)]
     pub hands_free: bool,
+    /// The whole interface, text and readings included, 1.0 to 2.0 (/LL202/); from the next start.
+    #[serde(default = "one")]
+    pub text_scale: f32,
+}
+
+fn one() -> f32 {
+    1.0
 }
 
 fn ten_minutes() -> Option<u32> {
@@ -124,6 +131,7 @@ impl Default for Profile {
             clear: false,
             unload_after_min: ten_minutes(),
             hands_free: false,
+            text_scale: 1.0,
         }
     }
 }

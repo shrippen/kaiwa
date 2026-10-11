@@ -366,6 +366,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "moraHints": p.mora_hints,
         "unloadAfter": p.unload_after_min,
         "handsFree": p.hands_free,
+        "textScale": p.text_scale,
         "cost": st.cost_view(crate::now())?,
         "path": st.path.display().to_string(),
         "profiles": st.profiles(),

@@ -316,6 +316,11 @@ impl qobject::KaiwaApp {
                 "moraHints" => p.mora_hints = value == "true",
                 "unloadAfter" => p.unload_after_min = value.parse().ok(),
                 "handsFree" => p.hands_free = value == "true",
+                "textScale" => {
+                    if let Ok(s) = value.parse::<f32>() {
+                        p.text_scale = s.clamp(1.0, 2.0);
+                    }
+                }
                 "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
                 "name" => p.name = value,
                 _ => return,

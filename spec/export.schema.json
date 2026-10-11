@@ -32,7 +32,8 @@
         "louder": { "type": "boolean" },
         "clear": { "type": "boolean" },
         "unload_after_min": { "type": ["integer", "null"], "minimum": 1 },
-        "hands_free": { "type": "boolean" }
+        "hands_free": { "type": "boolean" },
+        "text_scale": { "type": "number", "minimum": 1, "maximum": 2 }
       }
     },
     "learning": {
