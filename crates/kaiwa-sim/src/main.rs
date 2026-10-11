@@ -37,7 +37,8 @@ enum Command {
         /// Persona id; all personas when left out.
         #[arg(long)]
         persona: Option<String>,
-        /// Write the report as JSON into this file.
+        /// Write the report as JSON into this file: every check with its outcome and
+        /// requirements, the curves of the long journeys (/LL604/).
         #[arg(long)]
         report: Option<PathBuf>,
         /// A real tutor from KAIWA_PROVIDER instead of the recorded answers (local test).

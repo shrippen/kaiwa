@@ -83,11 +83,41 @@ pub enum Outcome {
     NotAutomated,
 }
 
+/// One journey in the report (/LL604/): every check with its outcome and the requirements it
+/// tests; for journeys over simulated days the course of success and difficulty.
 #[derive(Debug, Serialize)]
 pub struct JourneyReport {
     pub persona: String,
     pub journey: String,
     pub checks: BTreeMap<String, Outcome>,
+    pub requirements: BTreeMap<String, Vec<String>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub curve: Vec<CurvePoint>,
+}
+
+/// A session of a long journey: its day, its success and the sum of the difficulty's steps.
+#[derive(Debug, Serialize)]
+pub struct CurvePoint {
+    pub day: u32,
+    pub success: f64,
+    pub level: u32,
+}
+
+fn requirements_of(journey: &Value) -> BTreeMap<String, Vec<String>> {
+    journey["checks"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|c| {
+            let ids = c["requirements"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|r| r.as_str().map(String::from))
+                .collect();
+            (c["id"].as_str().unwrap_or_default().to_string(), ids)
+        })
+        .collect()
 }
 
 fn amount_of(persona: &Value) -> Amount {
@@ -420,10 +450,21 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
                     .unwrap_or(Outcome::NotAutomated);
                 checks.insert(cid.to_string(), outcome);
             }
+            let curve = run
+                .sessions
+                .iter()
+                .map(|s| CurvePoint {
+                    day: s.sim_day,
+                    success: s.success,
+                    level: s.level,
+                })
+                .collect();
             reports.push(JourneyReport {
                 persona: persona_id.into(),
                 journey: jid,
                 checks,
+                requirements: requirements_of(journey),
+                curve,
             });
             continue;
         }
@@ -453,6 +494,8 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
             persona: persona_id.into(),
             journey: jid,
             checks,
+            requirements: requirements_of(journey),
+            curve: Vec::new(),
         });
     }
     Ok(reports)
@@ -483,6 +526,15 @@ mod tests {
             assert_eq!(first.checks[id], Outcome::Pass, "{id}");
         }
         assert_eq!(first.checks["mara_listen_tools"], Outcome::Pass);
+        assert_eq!(
+            first.requirements["mara_recall"],
+            vec!["/LL111/".to_string()]
+        );
+        let days = reports
+            .iter()
+            .find(|r| r.journey == "mara_30_days")
+            .unwrap();
+        assert!(!days.curve.is_empty(), "the long journey has its curve");
         assert_eq!(first.checks["mara_codeswitch"], Outcome::NotAutomated);
     }
 

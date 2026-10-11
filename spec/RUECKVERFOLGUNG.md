@@ -8,7 +8,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 43 | 21 | 12 | 3 | 0 |
+| Muss | 43 | 23 | 10 | 3 | 0 |
 | Soll | 7 | 11 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
@@ -102,7 +102,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL203/ | M | Kontraste erreichen WCAG AA in System, Kante und Kante Light. | – | offen | 0 von 1 automatisch grün: `hinnerk_targets` |
 | /LL204/ | S | Untertitel für alles Gesprochene. | app, speech, store | geprüft | 1 von 1 automatisch grün: `hinnerk_tts_slow` |
 | /LL300/ | M | Keine Dark Patterns: keine künstliche Verknappung, keine Schuld- oder … | backend, core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
-| /LL301/ | M | Die GUI wird aus Kante erzeugt (siehe Kap. 8). | – | offen | 0 von 1 automatisch grün: `selin_win_style` |
+| /LL301/ | M | Die GUI wird aus Kante erzeugt (siehe Kap. 8). | app | Code | 0 von 1 automatisch grün: `selin_win_style` |
 | /LL302/ | M | Die KI-Figuren bleiben im Lernkontext. | core | Code | 0 von 1 automatisch grün: `jonas_inappropriate` |
 | /LL400/ | M | Lokal zuerst: Alle Muss-Funktionen sind mit lokalen Bausteinen … | ai | Code | 0 von 1 automatisch grün: `lena_zero_egress` |
 | /LL401/ | M | Im Nur-lokal-Modus gibt es keine ausgehenden Verbindungen außer zu … | app, speech | geprüft | 1 von 2 automatisch grün: `lena_download_announced`, `lena_zero_egress` |
@@ -118,4 +118,4 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL601/ | M | `kaiwa-sim` simuliert Lernende in drei Stufen: Text (Headless-API) … | sim | Code | – |
 | /LL602/ | M | Langzeitläufe mit beschleunigter Uhr (30 simulierte Tage) prüfen … | core, sim | Code | – |
 | /LL603/ | M | Die Läufe sind reproduzierbar (fester Seed, aufgezeichnete Antworten … | sim | Code | – |
-| /LL604/ | M | Der Bericht pro Lauf enthält: bestandene und gescheiterte Prüfregeln … | – | offen | – |
+| /LL604/ | M | Der Bericht pro Lauf enthält: bestandene und gescheiterte Prüfregeln … | sim | Code | – |
