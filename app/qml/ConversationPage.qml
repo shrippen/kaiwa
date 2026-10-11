@@ -494,6 +494,13 @@ Kirigami.ScrollablePage {
             }
         }
     }
+    // /LL012/: the models go after the idle time set in the profile and come back when needed.
+    Timer {
+        interval: 60000
+        repeat: true
+        running: true
+        onTriggered: conv.idle()
+    }
     Timer {
         id: grabber
         interval: 600

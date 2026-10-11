@@ -114,6 +114,11 @@ pub mod qobject {
         #[qinvokable]
         fn interrupt(self: Pin<&mut Conversation>);
 
+        /// Called every minute: unloads the speech models after the idle time of the profile
+        /// (/LL012/); they load again when needed.
+        #[qinvokable]
+        fn idle(self: Pin<&mut Conversation>);
+
         /// Louder and clearer voice (/LL204/), kept in the profile.
         #[qinvokable]
         #[cxx_name = "setSound"]
@@ -190,6 +195,9 @@ pub struct ConversationRust {
     speaker: Option<Speaker>,
     /// The mora check (/LF320/); `None` without its model.
     mora: Option<Arc<Mutex<MoraCheck>>>,
+    /// The last time speech was used; the models were unloaded since when `unloaded`.
+    last_use: Option<std::time::Instant>,
+    unloaded: bool,
     /// Counts what the character said; speaking stops when it moves on.
     utterance: Arc<AtomicU64>,
 }
@@ -447,6 +455,9 @@ impl qobject::Conversation {
             rust.lang = lang;
             rust.session_id = id;
             rust.started = Some(now());
+            rust.last_use = Some(std::time::Instant::now());
+            // A new conversation loads what is missing itself (below).
+            rust.unloaded = false;
         }
         self.as_mut().set_title(QString::from(&title));
         self.as_mut().set_scenario(QString::from(&scenario));
@@ -684,6 +695,50 @@ impl qobject::Conversation {
         });
     }
 
+    fn idle(mut self: Pin<&mut Self>) {
+        let Some(minutes) = state()
+            .store
+            .profile()
+            .ok()
+            .and_then(|p| p.unload_after_min)
+        else {
+            return;
+        };
+        let quiet = *self.talk_state() == READY && !*self.busy() && self.capture.is_none();
+        let long = self
+            .last_use
+            .is_some_and(|t| t.elapsed() >= Duration::from_secs(u64::from(minutes) * 60));
+        let loaded = self.recognizer.is_some() || self.speaker.is_some() || self.mora.is_some();
+        if quiet && long && loaded {
+            let mut rust = self.as_mut().rust_mut();
+            rust.recognizer = None;
+            rust.speaker = None;
+            rust.mora = None;
+            rust.unloaded = true;
+        }
+    }
+
+    /// Notes a use of speech and loads the models again after `idle` unloaded them.
+    fn wake(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().last_use = Some(std::time::Instant::now());
+        if !std::mem::take(&mut self.as_mut().rust_mut().unloaded) {
+            return;
+        }
+        let voice = self
+            .session
+            .as_ref()
+            .and_then(|s| s.lock().ok().and_then(|s| s.scenario.voice.clone()))
+            .unwrap_or_else(|| "jf_tebukuro".into());
+        let thread = self.qt_thread();
+        let lang = self.lang.clone();
+        self.as_mut().set_talk_state(THINKING);
+        std::thread::spawn(move || {
+            load_recognizer(&thread, &lang);
+            load_voice(&thread, &voice, &lang);
+            load_mora(&thread);
+        });
+    }
+
     fn set_sound(mut self: Pin<&mut Self>, louder: bool, clear: bool) {
         {
             let st = state();
@@ -711,6 +766,7 @@ impl qobject::Conversation {
         let Some(session) = self.session.clone() else {
             return;
         };
+        self.as_mut().wake();
         match aid {
             0 | 1 => {
                 if let Ok(mut s) = session.lock() {
@@ -770,6 +826,12 @@ impl qobject::Conversation {
     }
 
     fn start_talk(mut self: Pin<&mut Self>) {
+        if self.unloaded {
+            // The models load again; the next press talks.
+            self.as_mut().wake();
+            return;
+        }
+        self.as_mut().wake();
         // Speaking over the character silences it and starts the new turn (/LF103/).
         if *self.talk_state() == SPEAKING {
             self.as_mut().interrupt();
@@ -932,6 +994,7 @@ impl qobject::Conversation {
         if text.is_empty() || *self.busy() || *self.finished() {
             return None;
         }
+        self.as_mut().wake();
         let session = self.session.clone()?;
         let index = self.log.len();
         self.as_mut().rust_mut().log.push(json!({ "who": "learner", "text": text, "typed": typed, "corrections": [], "pending": true }));

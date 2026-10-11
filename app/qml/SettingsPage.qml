@@ -125,6 +125,18 @@ QQC2.ScrollView {
                 KanteCheckSkin { control: parent; shape: KanteCheckSkin.Shape.Switch }
             }
         }
+        // /LL012/: the speech models leave the memory after this idle time.
+        Row {
+            title: page.t("Modelle entladen", "Unload models")
+            hint: page.t("Nach so langer Pause gibt Kaiwa den Speicher der Sprachmodelle frei; beim nächsten Sprechen lädt es sie wieder (ein paar Sekunden)",
+                         "After a pause this long Kaiwa frees the memory of the speech models; the next time you speak it loads them again (a few seconds)")
+            KanteSegmented {
+                readonly property var values: [5, 10, 30, null]
+                model: ["5 min", "10 min", "30 min", page.t("Nie", "Never")]
+                currentIndex: Math.max(0, values.indexOf(page.p.unloadAfter === undefined ? 10 : page.p.unloadAfter))
+                onActivated: function (i) { page.kaiwa.setSetting("unloadAfter", values[i] === null ? "" : String(values[i])) }
+            }
+        }
         Row {
             title: page.t("Punkte und Serie", "Points and streak")
             hint: page.t("Aus: nur der Lernpfad, keine XP, keine Serie", "Off: only the path, no XP, no streak")

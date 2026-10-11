@@ -92,6 +92,13 @@ pub struct Profile {
     pub louder: bool,
     #[serde(default)]
     pub clear: bool,
+    /// Unload the speech models after this many idle minutes; `None` keeps them (/LL012/).
+    #[serde(default = "ten_minutes")]
+    pub unload_after_min: Option<u32>,
+}
+
+fn ten_minutes() -> Option<u32> {
+    Some(10)
 }
 
 impl Default for Profile {
@@ -112,6 +119,7 @@ impl Default for Profile {
             mora_hints: false,
             louder: false,
             clear: false,
+            unload_after_min: ten_minutes(),
         }
     }
 }

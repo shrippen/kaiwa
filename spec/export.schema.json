@@ -30,7 +30,8 @@
         "cost_limit_cents": { "type": ["integer", "null"], "minimum": 0 },
         "mora_hints": { "type": "boolean" },
         "louder": { "type": "boolean" },
-        "clear": { "type": "boolean" }
+        "clear": { "type": "boolean" },
+        "unload_after_min": { "type": ["integer", "null"], "minimum": 1 }
       }
     },
     "learning": {
