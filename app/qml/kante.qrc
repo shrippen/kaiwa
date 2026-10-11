@@ -2,6 +2,7 @@
 <qresource prefix="/qt/qml">
   <file>Kante/KanteAgenda.qml</file>
   <file>Kante/KanteAppear.qml</file>
+  <file>Kante/KanteAudioMeter.qml</file>
   <file>Kante/KanteBandEditor.qml</file>
   <file>Kante/KanteBanner.qml</file>
   <file>Kante/KanteBarChart.qml</file>
@@ -35,6 +36,10 @@
   <file>Kante/KanteHeatmap.qml</file>
   <file>Kante/KanteHintCard.qml</file>
   <file>Kante/KanteHud.qml</file>
+  <file>Kante/KanteInfoTip.qml</file>
+  <file>Kante/KanteKeyLane.qml</file>
+  <file>Kante/KanteKeyLayout.qml</file>
+  <file>Kante/KanteKeyboard.qml</file>
   <file>Kante/KanteKpi.qml</file>
   <file>Kante/KanteLamp.qml</file>
   <file>Kante/KanteLevelMeter.qml</file>
@@ -70,6 +75,7 @@
   <file>Kante/KanteSkeleton.qml</file>
   <file>Kante/KanteSliderSkin.qml</file>
   <file>Kante/KanteSparkline.qml</file>
+  <file>Kante/KanteSpinBox.qml</file>
   <file>Kante/KanteStatusLight.qml</file>
   <file>Kante/KanteSteps.qml</file>
   <file>Kante/KanteSticker.qml</file>
