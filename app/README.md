@@ -58,6 +58,8 @@ Die Spracherkennung (ReazonSpeech über sherpa-onnx, ADR-002) läuft lokal. Fehl
 
 Bauen braucht ALSA (`alsa-lib`, Debian/Ubuntu `libasound2-dev`). Der Build lädt die statischen sherpa-onnx-Bibliotheken; ohne Netz `SHERPA_ONNX_ARCHIVE_DIR` auf das vorher geladene Archiv setzen.
 
+Freisprechen (Einstellungen, „Sprechen“): Kaiwa hört nach jeder Antwort der Figur von selbst zu, und die Pause aus „Ende eines Zugs“ (1,2–5 s) beendet den Satz; Füllwörter wie えーと zählen als Sprechen (/LF100/–/LF102/). Klingen zwei Sätze abgeschnitten, bietet das Gespräch eine längere Pause an. Ohne Sprechen lädt Kaiwa die Modelle nach der eingestellten Zeit aus dem Speicher (Voreinstellung 10 min, /LL012/).
+
 ## Stimme der Figur (Übergangsstimme)
 
 Die Figur spricht ihre Antworten mit Kokoro-82M (Apache-2.0), Satz für Satz: Der erste Satz läuft, während der nächste entsteht. Kokoro kennt den Tonhöhenakzent nicht (Spike 0.4). Deshalb sagt die Seite „Übergangsstimme“, und Korrekturen, Beispiele zum Nachsprechen und Shadowing bleiben stumm, bis VOICEVOX geprüft ist (H-01).
@@ -103,3 +105,7 @@ cargo run -p kaiwa-app -- --shot out.png --view place --say '…|read:21'  # Ein
 ## Moren-Hinweise (Vorschau)
 
 Nach einem gesprochenen Satz prüft die App im Hintergrund die Moren-Längen mit dem eigenen Modell `kaiwa-kana-ctc` (ADR-005). Gemeldet wird höchstens eine Kürzung je Satz, ein zu kurzer langer Vokal oder ein fehlendes っ, als Hinweis ohne Schweregrad („どーして → どして?“), nie als Fehler. Auf echten Stimmen findet das etwa jede zweite Kürzung und irrt sich bei etwa jedem zwanzigsten richtigen Satz (55,8 % bei 4,8 %). Die Freigabegrenze K-02 sind 60 %, darum ist es eine Vorschau und in den Einstellungen („Aussprache-Hinweise“) standardmäßig aus.
+
+## Freies Gespräch und Textgröße
+
+Unter „Freies Gespräch“ auf der Startseite liegen vier Themen (Hobbys, Essen, Reisen, Alltag) außerhalb des Lernpfads, auf dem eigenen Niveau (/LF116/). Die Textgröße in den Einstellungen (100–200 %) vergrößert die ganze Oberfläche samt Lesehilfen, ab dem nächsten Start (/LL202/).
