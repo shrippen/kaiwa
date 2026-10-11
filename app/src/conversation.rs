@@ -203,7 +203,7 @@ const THINKING: i32 = 2;
 const SPEAKING: i32 = 3;
 const ERROR: i32 = 4;
 
-/// Tanaka speaks slowly (the scenario says so), so a little below Kokoro's normal pace.
+/// The voice's pace without a session: a little below Kokoro's normal one.
 const SPEED: f32 = 0.9;
 
 fn shown_json(s: &Shown, lang: &str) -> Value {
@@ -612,7 +612,17 @@ impl qobject::Conversation {
     /// Says a line of the character (furigana markup) sentence by sentence; the first plays
     /// while the next is made. The talk button shows "speaks" until the speaker is quiet.
     fn speak(self: Pin<&mut Self>, markup: &str) {
-        self.speak_at(markup, SPEED);
+        let speed = self.speed();
+        self.speak_at(markup, speed);
+    }
+
+    /// The pace the difficulty sets, 0.7 to 1.1 (/LF211/); eased within the session after
+    /// two misses.
+    fn speed(&self) -> f32 {
+        self.session
+            .as_ref()
+            .and_then(|s| s.lock().ok().map(|s| s.difficulty.speed() as f32))
+            .unwrap_or(SPEED)
     }
 
     fn speak_at(mut self: Pin<&mut Self>, markup: &str, speed: f32) {
@@ -671,7 +681,7 @@ impl qobject::Conversation {
                     s.aid(if aid == 0 { Aid::Repeat } else { Aid::Slow });
                 }
                 self.as_mut().interrupt();
-                let speed = if aid == 0 { SPEED } else { SPEED * 0.7 };
+                let speed = self.speed() * if aid == 0 { 1.0 } else { 0.7 };
                 self.speak_at(&markup, speed);
             }
             2 if !translated => {
