@@ -20,6 +20,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "hinnerk_a11y_names" => a11y_names(root),
         "theo_keyboard" => keyboard(root),
         "lena_download_announced" => download_announced(root),
+        "mara_ptt" => push_to_talk(root),
         _ => return None,
     };
     Some(match r {
@@ -329,6 +330,49 @@ fn blocks<'a>(src: &'a str, types: &[&str]) -> Vec<(usize, String, &'a str)> {
 /// app has a name for assistive technology:
 /// a visible text, or an Accessible.name (text fields always need the latter). The Kante
 /// controls give the role; KanteSegmented names each segment from its model.
+/// The talk button on the conversation page names all five states in words (ready,
+/// listening, thinking, speaking, error), never only by colour.
+fn talk_titles(root: &Path) -> Result<Option<String>> {
+    let page = std::fs::read_to_string(root.join("app/qml/ConversationPage.qml"))?;
+    let Some(line) = page.lines().find(|l| l.trim_start().starts_with("titles:")) else {
+        return Ok(Some("the talk button has no titles".into()));
+    };
+    let n = line.matches("page.t(").count();
+    Ok((n != 5).then(|| format!("the talk button names {n} of 5 states")))
+}
+
+/// /LF100/ from the source: the talk button starts and ends a recording by click and by the
+/// space bar (pressed and released), the page wires both to the conversation, and every state
+/// has a name. Recording itself needs the audio mode.
+fn push_to_talk(root: &Path) -> Result<Option<String>> {
+    let talk = std::fs::read_to_string(root.join("app/qml/Kante/KanteTalkButton.qml"))?;
+    let page = std::fs::read_to_string(root.join("app/qml/ConversationPage.qml"))?;
+    let mut found = Vec::new();
+    for (what, needle) in [
+        ("space pressed", "Keys.onPressed"),
+        ("space released", "Keys.onReleased"),
+        ("space key", "Qt.Key_Space"),
+        ("talk started", "talkStarted()"),
+        ("talk ended", "talkEnded()"),
+    ] {
+        if !talk.contains(needle) {
+            found.push(format!("the talk button lacks {what}"));
+        }
+    }
+    for needle in [
+        "onTalkStarted: conv.startTalk()",
+        "onTalkEnded: conv.stopTalk()",
+    ] {
+        if !page.contains(needle) {
+            found.push(format!("the page lacks {needle}"));
+        }
+    }
+    if let Some(why) = talk_titles(root)? {
+        found.push(why);
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
+}
+
 /// /LL401/, F-08 from the source: the settings name source, licence and size of each model
 /// before its download button, the download starts only from that button, and no other code
 /// of the app downloads anything.

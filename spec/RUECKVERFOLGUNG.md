@@ -8,7 +8,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 42 | 20 | 14 | 3 | 0 |
+| Muss | 43 | 19 | 14 | 3 | 0 |
 | Soll | 7 | 10 | 6 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
@@ -20,7 +20,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LD040/ | M | Curriculum | core | Code | – |
 | /LD050/ | M | Sprachdaten | – | offen | – |
 | /LD060/ | S | Widersprüche | core, store | Code | – |
-| /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | speech | Code | 0 von 1 automatisch grün: `mara_ptt` |
+| /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | speech | geprüft | 1 von 1 automatisch grün: `mara_ptt` |
 | /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
