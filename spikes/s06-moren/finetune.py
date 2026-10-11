@@ -3,8 +3,10 @@
 Base: reazon-research/japanese-wav2vec2-base or -large (wav2vec 2.0, pre-trained on ReazonSpeech,
 Apache-2.0). The prepared data (data.json, audio.npy) can be linked into another --work directory.
 Data: Common Voice 19.0 Japanese (CC0): train, dev and the clips of `other` that at least one person
-voted for and nobody against. Speakers of the test split are left out completely (real.py tests on
-them), and so are 40 dev speakers, whose clips measure the error rate while training.
+voted for and nobody against; optionally ReazonSpeech `small` (100 h of TV speech, K-03; usable for
+training under Art. 30-4 of the Japanese copyright act). Speakers of the Common Voice test split are
+left out completely (real.py tests on them), and so are 40 dev speakers, whose clips measure the
+error rate while training.
 
 Targets are the pronounced kana from OpenJTalk (pyopenjtalk 'pron'): ー for long vowels (とうきょう ->
 とーきょー), は as わ, っ and ん as spoken. So the model learns what is said, not how it is written:
@@ -70,8 +72,9 @@ def decode(args):
     return (np.clip(a, -1, 1) * 32767).astype(np.int16)
 
 
-def prepare(cv, work, splits):
-    """Labels and 16 kHz audio of every usable clip, cached as one int16 array with offsets."""
+def prepare(cv, work, splits, reazon=None):
+    """Labels and 16 kHz audio of every usable clip, cached as one int16 array with offsets.
+    `reazon`: a ReazonSpeech download (small.tsv and audio/<nnn>/<name>.flac), added to training."""
     if (work / "data.json").exists():
         return json.loads((work / "data.json").read_text())
     test_speakers = {r["client_id"] for r in rows_of(cv / "test.tsv")}
@@ -98,6 +101,13 @@ def prepare(cv, work, splits):
         mp3 = where.get(r["path"])
         if lab and mp3:
             items.append({"path": str(mp3), "label": lab, "held_out": r["client_id"] in held})
+    if reazon:
+        for line in open(reazon / "small.tsv", encoding="utf-8"):
+            name, text = line.rstrip("\n").split("\t")
+            flac = reazon / "audio" / name
+            lab = label(text)
+            if lab and flac.exists():
+                items.append({"path": str(flac), "label": lab, "held_out": False})
     print(len(items), "clips with labels", flush=True)
     chunks, offsets, keep, pos = [], [], [], 0
     with ProcessPoolExecutor(20) as ex:
@@ -148,12 +158,14 @@ def main():
     ap.add_argument("--lr", type=float, default=1e-4)
     ap.add_argument("--splits", default="train,dev,other")
     ap.add_argument("--base", choices=BASES, default="reazon-research/japanese-wav2vec2-base")
+    ap.add_argument("--reazon", help="ReazonSpeech download to add (K-03)")
+    ap.add_argument("--init", help="continue from this model directory (same vocabulary)")
     args = ap.parse_args()
     from transformers import (Wav2Vec2CTCTokenizer, Wav2Vec2FeatureExtractor, Wav2Vec2ForCTC,
                               Wav2Vec2Processor)
     cv, work = Path(args.cv), Path(args.work)
     work.mkdir(parents=True, exist_ok=True)
-    data = prepare(cv, work, args.splits.split(","))
+    data = prepare(cv, work, args.splits.split(","), Path(args.reazon) if args.reazon else None)
     audio = np.load(work / "audio.npy", mmap_mode="r")
     items, offsets = data["items"], data["offsets"]
     vocab = {t: i for i, t in enumerate(SPECIAL + KANA)}
@@ -163,7 +175,7 @@ def main():
     fe = Wav2Vec2FeatureExtractor.from_pretrained(args.base, revision=BASES[args.base])
     proc = Wav2Vec2Processor(feature_extractor=fe, tokenizer=tok)
     model = Wav2Vec2ForCTC.from_pretrained(
-        args.base, revision=BASES[args.base], vocab_size=len(vocab), pad_token_id=vocab["[PAD]"],
+        args.init or args.base, revision=None if args.init else BASES[args.base], vocab_size=len(vocab), pad_token_id=vocab["[PAD]"],
         ctc_loss_reduction="mean", ctc_zero_infinity=True, mask_time_prob=0.05, layerdrop=0.05,
         attention_dropout=0.0, hidden_dropout=0.0, feat_proj_dropout=0.0).cuda()
     model.freeze_feature_encoder()
