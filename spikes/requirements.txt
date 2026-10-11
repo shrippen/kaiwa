@@ -1,4 +1,4 @@
-# Python tools for the speech spikes (0.3, 0.4); measurement only, never shipped.
+# Python tools for the speech spikes (0.3, 0.4, 0.6); measurement only, never shipped.
 # python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt
 kokoro-onnx
 misaki[ja]
@@ -7,3 +7,6 @@ librosa
 soundfile
 sherpa-onnx
 numpy
+# Spike 0.6: CTC models
+torch
+transformers

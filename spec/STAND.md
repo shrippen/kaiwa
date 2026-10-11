@@ -33,7 +33,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 ## Offen
 
-1. **Spike 0.6** (Moren-Längen, ADR-005) nach I-01: CTC-Modell wählen (Lizenz), Aligner in Rust, Gegenprobe gegen Julius und MFA an den synthetischen Fehlern aus `qa/corpus`.
+1. **Spike 0.6** (Moren-Längen, ADR-005): gemessen, Ziel nicht erreicht (76 % Erkennung bei 4,3 % Fehlalarmen im Satzrahmen; `spikes/s06-moren`). Der Varianten-Vergleich trägt, Dauerschwellen nicht. Offen in Fragenpaket 5: eigenes Kana-CTC-Modell feinjustieren (Lizenz, Schreibungs-Vorwissen), dann Aligner in Rust (`ctc.py` ist die Vorlage) und Abnahme an den eigenen Aufnahmen.
 2. **Lokaler Test** (`spec/LOKALER-TEST.md`): KI-Anbindung (Spike 0.5), VOICEVOX (H-01), Messwerte auf dem Framework 13, eigene Aufnahmen. Ergebnisse als PR nach `qa/local/<datum>/` (H-05).
 3. **40 Prüfregeln** sind noch nicht automatisch, meist Audio, GUI (AT-SPI, Tastatur) oder Verhalten des echten Tutors. Sie brauchen den gui- und audio-Modus von `kaiwa-sim` oder den lokalen Test.
 4. **Stimme:** H-01 (VOICEVOX) entscheidet die endgültige Stimme; bis dahin Kokoro als Übergang.
@@ -51,4 +51,6 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 - **Platz in der Session.** `target/` wächst auf über 20 GB; bei „No space left“ `target/debug` löschen und neu bauen.
 - **Branch-Wechsel mit neuen Dateien:** `git stash -u`, sonst bleiben unversionierte Dateien liegen und stören den Build.
 - **`tea pr edit` kann keinen Titel ändern;** dafür die API (`PATCH /repos/…/pulls/{n}`).
+- **Synthetische Stimmen sind keine Wahrheit für Aussprache.** Kokoro spricht げんいん als げにん und ありがと als ありがとう; ein Teil der „Fehlalarme“ war die Stimme. Für Moren-Fehler OpenJTalk nehmen (spricht wie geschrieben), für die Abnahme eigene Aufnahmen.
+- **Rohwerte ansehen, bevor ein Verfahren verworfen wird.** Die MFA-Dauern trennten einzelne Paare deutlich (`aː` 69 gegen 139 ms), die erste Auswertung zeigte trotzdem fast nichts. Erst der Blick auf die Einzelwerte zeigte, warum: Die Streuung über Sätze ist größer als der Fehler.
 - **Fragen gebündelt** im Artifact mit Vorschlag und Datenübergabe funktionierten gut: Antworten kamen schnell und ließen sich direkt einarbeiten.
