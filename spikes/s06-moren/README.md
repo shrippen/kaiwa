@@ -8,13 +8,19 @@ Findet ein Kana-CTC-Modell Fehler bei Langvokal, っ und ん? Die Spracherkennun
 | `ctc.py` | CTC-Teile in numpy, als Vorlage für Rust: Wahrscheinlichkeit einer Kana-Folge (Vorwärts), Ausrichtung (Viterbi), Fehlervarianten einer Lesung. |
 | `measure.py` | Prüfungen mit einem Kana-CTC-Modell, Schwellen per Kreuzvalidierung über die Stimmen. |
 | `mfa_check.py` | Gegenprobe mit dem Montreal Forced Aligner (HMM, `japanese_mfa`). |
+| `real.py` | Echte Stimmen (J-04): Common Voice Japanisch, Testteil (CC0), 500 Sprecher; Moren-Fehler hineingeschnitten. |
+| `finetune.py` | Eigenes Kana-CTC-Modell (J-02) auf Common Voice mit Aussprache-Kana. |
 | `results/` | Messwerte je Modell, jeder Versuch einzeln. |
 
 ```sh
 python -I synth.py --models <kokoro-dir> --corpus ../../qa/corpus --out ../../target/s06
 python -I measure.py --corpus-audio ../../target/s06 --out results --model hiragana [--noise 10]
 python -I mfa_check.py --corpus-audio ../../target/s06 --mfa <env>/bin/mfa --work ../../target/s06/mfa --out results
+python -I finetune.py --cv <common-voice-19-ja> --work ../../target/kana-ctc-v1 --steps 12000
+python -I real.py --cv <common-voice-19-ja> --mfa <env>/bin/mfa --work ../../target/s06-real --out results --model hiragana|<model-dir>
 ```
+
+Common Voice 19.0 Japanisch kommt aus dem CC0-Spiegel `fsicoli/common_voice_19_0` auf Hugging Face (`transcript/ja/*.tsv`, `audio/ja/<split>/*.tar`). Daten und Modelle liegen unter `target/`, nicht im Repository.
 
 MFA kommt aus conda-forge (`montreal-forced-aligner` 3.4.3, ohne root über micromamba), dazu `mfa model download acoustic|dictionary japanese_mfa`.
 

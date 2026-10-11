@@ -13,6 +13,7 @@ ort = { version = "2.0.0-rc.13", default-features = false, features = ["std", "a
 # Links nothing itself: ONNX Runtime 1.28 comes with sherpa-onnx.
 ort-sys = { version = "2.0.0-rc.13", default-features = false, features = ["disable-linking"] }
 lindera = { version = "6.2.0", features = ["embed-ipadic"] }
+serde_json = "1.0.151"
 sherpa-onnx = "1.13.8"
 thiserror = "2.0.21"
 unicode-normalization = "0.1.25"

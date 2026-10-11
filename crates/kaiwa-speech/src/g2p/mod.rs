@@ -136,6 +136,16 @@ impl G2p {
         tidy(&joined)
     }
 
+    /// The pronounced hiragana of a text, as the mora check's model writes them: 「東京から来ました。」
+    /// → とーきょーからきました, は as わ. Punctuation, latin letters and unknown kanji drop out.
+    pub fn pronounced(&self, text: &str) -> String {
+        self.words(&normalize(text))
+            .into_iter()
+            .filter(|w| w.kind == Kind::Kana)
+            .map(|w| w.kana)
+            .collect()
+    }
+
     fn words(&self, text: &str) -> Vec<Word> {
         let Ok(tokens) = self.segmenter.segment(Cow::Borrowed(text)) else {
             return Vec::new();
@@ -431,6 +441,21 @@ mod tests {
             "{}",
             g.phonemes("1万円")
         );
+    }
+
+    #[test]
+    fn pronounced_kana_as_openjtalk_gives_them() {
+        // Expected: pyopenjtalk 'pron' (spikes/s06-moren, ctc.pron)
+        let g = g2p();
+        for (text, want) in [
+            ("東京から来ました。", "とーきょーからきました"),
+            ("原因はわかりません。", "げんいんわわかりません"),
+            ("ちょっと待ってください。", "ちょっとまってください"),
+            ("おばあさんは元気です。", "おばーさんわげんきです"),
+            ("切手を三枚ください。", "きってをさんまいください"),
+        ] {
+            assert_eq!(g.pronounced(text), want, "{text}");
+        }
     }
 
     #[test]

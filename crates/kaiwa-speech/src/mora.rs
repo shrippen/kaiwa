@@ -6,6 +6,14 @@
 //! Kana here are pronounced hiragana as the own model writes them: ー for long vowels (とーきょー),
 //! わ for the particle は.
 
+use std::collections::HashMap;
+use std::path::Path;
+
+use ort::session::Session;
+use ort::value::Tensor;
+
+use crate::SpeechError;
+
 /// The vowel of each hiragana that carries one (the last letter of its rōmaji).
 fn vowel(c: char) -> Option<char> {
     const ROWS: [(char, &str); 5] = [
@@ -88,6 +96,35 @@ pub enum Kind {
     NSplit,
     /// Small and large ゃゅょ swapped (びょういん ↔ びよういん).
     SmallY,
+}
+
+impl Kind {
+    /// The name in the spike's results and in `thresholds.json`.
+    pub fn name(self) -> &'static str {
+        match self {
+            Kind::LongShort => "long-",
+            Kind::ShortLong => "long+",
+            Kind::GeminateLeftOut => "q-",
+            Kind::GeminateAdded => "q+",
+            Kind::NMerged => "n-",
+            Kind::NSplit => "n+",
+            Kind::SmallY => "y",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        [
+            Kind::LongShort,
+            Kind::ShortLong,
+            Kind::GeminateLeftOut,
+            Kind::GeminateAdded,
+            Kind::NMerged,
+            Kind::NSplit,
+            Kind::SmallY,
+        ]
+        .into_iter()
+        .find(|k| k.name() == name)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -320,6 +357,160 @@ pub fn align(logp: &[f32], vocab: usize, ids: &[usize], blank: usize) -> Vec<(us
     spans
 }
 
+/// The model's directory under [`crate::models::models_dir`].
+pub const MODEL: &str = "kaiwa-kana-ctc";
+/// Silence around the utterance, as in training and in the spike.
+const PAD_SECONDS: f32 = 0.5;
+pub const SAMPLE_RATE: u32 = 16_000;
+
+/// A mora error the check reports: the variant beat the meant kana by `margin` over the
+/// threshold of its kind.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Finding {
+    pub kind: Kind,
+    pub mora: usize,
+    pub variant: String,
+    pub margin: f32,
+}
+
+/// The own kana CTC model (J-02) with its thresholds. `thresholds.json` names the kinds that are
+/// checked at all (J-05: only where the false-alarm limit holds).
+pub struct Checker {
+    session: Session,
+    vocab: HashMap<char, usize>,
+    vocab_size: usize,
+    blank: usize,
+    delim: Option<usize>,
+    thresholds: HashMap<Kind, f32>,
+}
+
+impl Checker {
+    /// Loads `model.int8.onnx` (or `model.onnx`), `vocab.json` and `thresholds.json` from `dir`.
+    pub fn from_dir(dir: &Path, threads: usize) -> Result<Self, SpeechError> {
+        let missing = || SpeechError::ModelMissing(dir.display().to_string());
+        let model = ["model.int8.onnx", "model.onnx"]
+            .iter()
+            .map(|f| dir.join(f))
+            .find(|p| p.exists())
+            .ok_or_else(missing)?;
+        let read = |name: &str| -> Result<serde_json::Map<String, serde_json::Value>, SpeechError> {
+            let text = std::fs::read_to_string(dir.join(name)).map_err(|_| missing())?;
+            serde_json::from_str(&text).map_err(|e| SpeechError::ModelLoad(format!("{name}: {e}")))
+        };
+        let tokens = read("vocab.json")?;
+        let mut vocab = HashMap::new();
+        let (mut blank, mut delim, mut vocab_size) = (None, None, 0);
+        for (token, id) in &tokens {
+            let Some(id) = id.as_u64().map(|i| i as usize) else {
+                continue;
+            };
+            vocab_size = vocab_size.max(id + 1);
+            match token.as_str() {
+                "[PAD]" => blank = Some(id),
+                "|" => delim = Some(id),
+                t => {
+                    let mut cs = t.chars();
+                    if let (Some(c), None) = (cs.next(), cs.next()) {
+                        vocab.insert(c, id);
+                    }
+                }
+            }
+        }
+        let blank = blank.ok_or_else(|| SpeechError::ModelLoad("vocab.json: no [PAD]".into()))?;
+        let thresholds = read("thresholds.json")?
+            .iter()
+            .filter_map(|(k, v)| Some((Kind::from_name(k)?, v.as_f64()? as f32)))
+            .collect();
+        let load = |e: ort::Error| SpeechError::ModelLoad(format!("{} ({e})", model.display()));
+        let onnx = crate::onnx();
+        let session = Session::builder()
+            .map_err(load)?
+            .with_intra_threads(threads)
+            .map_err(|e| load(e.into()))?
+            .with_memory_pattern(false)
+            .map_err(|e| load(e.into()))?
+            .commit_from_file(&model)
+            .map_err(load)?;
+        drop(onnx);
+        Ok(Self {
+            session,
+            vocab,
+            vocab_size,
+            blank,
+            delim,
+            thresholds,
+        })
+    }
+
+    /// Frame-wise log probabilities of 16 kHz mono `samples` (frames × vocab, see [`log_probs`]).
+    pub fn log_probs(&mut self, samples: &[f32]) -> Result<Vec<f32>, SpeechError> {
+        let pad = (PAD_SECONDS * SAMPLE_RATE as f32) as usize;
+        let mut x = vec![0.0f32; pad];
+        x.extend_from_slice(samples);
+        x.resize(x.len() + pad, 0.0);
+        // As the feature extractor does: zero mean, unit variance
+        let n = x.len() as f32;
+        let mean = x.iter().sum::<f32>() / n;
+        let var = x.iter().map(|v| (v - mean) * (v - mean)).sum::<f32>() / n;
+        let scale = 1.0 / (var + 1e-7).sqrt();
+        x.iter_mut().for_each(|v| *v = (*v - mean) * scale);
+        let fail = |e: ort::Error| SpeechError::Voice(format!("mora check: {e}"));
+        let len = x.len() as i64;
+        let _onnx = crate::onnx();
+        let outputs = self
+            .session
+            .run(ort::inputs!["samples" => Tensor::from_array((vec![1i64, len], x)).map_err(fail)?])
+            .map_err(fail)?;
+        let (_, logits) = outputs["logits"]
+            .try_extract_tensor::<f32>()
+            .map_err(fail)?;
+        Ok(log_probs(logits, self.vocab_size, self.blank, self.delim))
+    }
+
+    fn ids(&self, kana: &str) -> Option<Vec<usize>> {
+        kana.chars().map(|c| self.vocab.get(&c).copied()).collect()
+    }
+
+    /// The mora errors in `samples` when the learner meant `kana` (pronounced hiragana, see
+    /// [`crate::g2p::G2p::pronounced`]): per checked kind the strongest variant over its
+    /// threshold, strongest first.
+    pub fn check(&mut self, samples: &[f32], kana: &str) -> Result<Vec<Finding>, SpeechError> {
+        let logp = self.log_probs(samples)?;
+        Ok(self.findings(&logp, kana))
+    }
+
+    fn findings(&self, logp: &[f32], kana: &str) -> Vec<Finding> {
+        let Some(ids) = self.ids(kana) else {
+            return Vec::new();
+        };
+        let base = log_likelihood(logp, self.vocab_size, &ids, self.blank);
+        let mut best: HashMap<Kind, Finding> = HashMap::new();
+        for v in variants(kana, Some('ー')) {
+            let Some(&threshold) = self.thresholds.get(&v.kind) else {
+                continue;
+            };
+            let Some(ids) = self.ids(&v.kana) else {
+                continue;
+            };
+            let margin = log_likelihood(logp, self.vocab_size, &ids, self.blank) - base - threshold;
+            if margin > 0.0 && best.get(&v.kind).is_none_or(|f| margin > f.margin) {
+                best.insert(
+                    v.kind,
+                    Finding {
+                        kind: v.kind,
+                        mora: v.mora,
+                        variant: v.kana,
+                        margin,
+                    },
+                );
+            }
+        }
+        let mut out: Vec<Finding> = best.into_values().collect();
+        out.sort_by(|a, b| b.margin.total_cmp(&a.margin));
+        out
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -400,6 +591,33 @@ mod tests {
         0.4898, 0.3569, 0.1054, -0.9305, -0.0293, 0.6953, -1.3442, -0.4576, -1.9012, -1.2895,
         -1.8417, -0.2351, -1.2674, 0.2713, 0.1568, -0.1869, -2.5168, -0.5387, -0.0485, 0.1133,
     ];
+
+    /// Needs the model (`KAIWA_MODELS`/kaiwa-kana-ctc).
+    #[test]
+    fn the_model_runs_on_silence() {
+        let dir = crate::models::models_dir().join(MODEL);
+        let Ok(mut checker) = Checker::from_dir(&dir, 2) else {
+            eprintln!("skipped: no mora model in {}", dir.display());
+            return;
+        };
+        let logp = checker.log_probs(&vec![0.0; SAMPLE_RATE as usize]).unwrap();
+        assert_eq!(logp.len() % checker.vocab_size, 0);
+        assert!(
+            logp.len() / checker.vocab_size > 50,
+            "about 50 frames per second"
+        );
+        checker
+            .check(&vec![0.0; SAMPLE_RATE as usize], "きって")
+            .unwrap();
+    }
+
+    #[test]
+    fn kind_names_round_trip() {
+        for k in ["long-", "long+", "q-", "q+", "n-", "n+", "y"] {
+            assert_eq!(Kind::from_name(k).map(Kind::name), Some(k));
+        }
+        assert_eq!(Kind::from_name("x"), None);
+    }
 
     #[test]
     fn forward_and_viterbi_match_the_spike() {
