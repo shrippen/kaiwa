@@ -9,6 +9,11 @@ publish_output_progress = false
 # The repository rules go along as context.
 repo_context_files = ["agent.md"]
 
+[ignore]
+# Measurement results of the spikes (one line per trial, hundreds of thousands of lines) are data,
+# not code; with them a PR outgrows the model's context and the review fails.
+glob = ["spikes/**/results/*.json"]
+
 [pr_reviewer]
 num_max_findings = 5
 require_can_be_split_review = true
