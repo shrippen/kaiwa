@@ -48,3 +48,10 @@ Messung und Zahlen in [`spikes/s06-moren`](../../spikes/s06-moren/README.md). Ku
 - **J-03:** Julius entfällt; MFA war die Gegenprobe.
 - **J-04:** Der Eigentümer hat keine richtige Aussprache als Referenz. Statt eigener Aufnahmen: **echte Stimmen aus frei lizenzierten Korpora**, die Fehler hineingeschnitten (Common Voice Test, CC0; `spikes/s06-moren/real.py`). Nachrichtensendungen (NHK) sind geschützt und kommen nicht in Frage; ReazonSpeech (Fernsehen, nur nach Art. 30-4 des japanischen Urheberrechts) erst nach Annahme der Bedingungen durch den Eigentümer.
 - **J-05:** Moren-Hinweise sind **an, nur in Sätzen**, mit den Schwellen je Fehlerart (F-09), sobald das eigene Modell (J-02) in der App ist.
+
+## Entschieden (Fragenpaket 6)
+
+- **K-01:** Gemeldet werden nur **Kürzungen**: Langvokal zu kurz, っ weggelassen. Dehnungen und eingefügte っ erkennt kein Verfahren brauchbar (Echt-Stimmen-Test unter 18 %).
+- **K-02:** Die Hinweise erscheinen, sobald im Echt-Stimmen-Test (`spikes/s06-moren/real.py`) insgesamt mindestens 60 % und je gemeldeter Art mindestens 55 % erkannt werden, bei höchstens 5 % Fehlalarmen. Die 80 % oben bleiben Ziel für 1.0. Der Hinweis ist vorsichtig formuliert und zählt nicht als Fehler.
+- **K-03:** ReazonSpeech kommt als Trainingsdaten dazu; der Eigentümer nimmt die Bedingungen an (Art. 30-4) und hinterlegt ein Hugging-Face-Token.
+- **K-04 bis K-06** gelten für ein eigenes Modell: Hosting auf Hugging Face unter `shrippen`, Lizenz Apache-2.0 mit Eintrag in `NOTICE`, auf dem Desktop v2 (large), für Android später ein base-Modell. Nach der Antwort wurden zwei fertige, auf Aussprache trainierte Modelle gefunden (`prj-beatrice/japanese-hubert-base-phoneme-ctc-v4`, `kizuna-intelligence/hiragana-parakeet-tdt-ctc-0.6b-ja-beta`); sie werden gleich gemessen, und das bessere Modell entscheidet.
