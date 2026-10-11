@@ -36,11 +36,11 @@
     "mfa_duration": {
      "false_alarms": 0.038461538461538464,
      "n_ok": 130,
-     "detection": 0.023076923076923078,
+     "detection": 0.038461538461538464,
      "n_err": 130
     },
     "mfa_class": {
-     "false_alarms": 0.03076923076923077,
+     "false_alarms": 0.038461538461538464,
      "n_ok": 130,
      "detection": 0.12307692307692308,
      "n_err": 130
@@ -61,7 +61,7 @@
      "n_err": 45
     },
     "mfa_class": {
-     "false_alarms": 0.1,
+     "false_alarms": 0.104,
      "n_ok": 250,
      "detection": 0.15555555555555556,
      "n_err": 45
@@ -78,11 +78,11 @@
     "mfa_duration": {
      "false_alarms": 0.052941176470588235,
      "n_ok": 510,
-     "detection": 0.013114754098360656,
+     "detection": 0.019672131147540985,
      "n_err": 305
     },
     "mfa_class": {
-     "false_alarms": 0.06274509803921569,
+     "false_alarms": 0.06666666666666667,
      "n_ok": 510,
      "detection": 0.13114754098360656,
      "n_err": 305
@@ -122,7 +122,7 @@
     "mfa_duration": {
      "false_alarms": 0.0,
      "n_ok": 78,
-     "detection": 0.038461538461538464,
+     "detection": 0.02564102564102564,
      "n_err": 78
     },
     "mfa_class": {
@@ -164,7 +164,7 @@
     "mfa_duration": {
      "false_alarms": 0.032679738562091505,
      "n_ok": 306,
-     "detection": 0.0273224043715847,
+     "detection": 0.02185792349726776,
      "n_err": 183
     },
     "mfa_class": {
@@ -208,11 +208,11 @@
     "mfa_duration": {
      "false_alarms": 0.02403846153846154,
      "n_ok": 208,
-     "detection": 0.028846153846153848,
+     "detection": 0.03365384615384615,
      "n_err": 208
     },
     "mfa_class": {
-     "false_alarms": 0.019230769230769232,
+     "false_alarms": 0.02403846153846154,
      "n_ok": 208,
      "detection": 0.10096153846153846,
      "n_err": 208
@@ -233,7 +233,7 @@
      "n_err": 72
     },
     "mfa_class": {
-     "false_alarms": 0.0925,
+     "false_alarms": 0.095,
      "n_ok": 400,
      "detection": 0.125,
      "n_err": 72
@@ -250,11 +250,11 @@
     "mfa_duration": {
      "false_alarms": 0.04534313725490196,
      "n_ok": 816,
-     "detection": 0.018442622950819672,
+     "detection": 0.020491803278688523,
      "n_err": 488
     },
     "mfa_class": {
-     "false_alarms": 0.05392156862745098,
+     "false_alarms": 0.056372549019607844,
      "n_ok": 816,
      "detection": 0.10450819672131148,
      "n_err": 488
@@ -272,7 +272,7 @@
  "by_kind": {
   "kokoro": {
    "laenge": {
-    "mfa_duration": 0.025,
+    "mfa_duration": 0.041666666666666664,
     "mfa_class": 0.025,
     "mfa_choice": 0.11666666666666667
    },
@@ -294,7 +294,7 @@
   },
   "openjtalk": {
    "laenge": {
-    "mfa_duration": 0.06944444444444445,
+    "mfa_duration": 0.05555555555555555,
     "mfa_class": 0.041666666666666664,
     "mfa_choice": 0.16666666666666666
    },
@@ -316,7 +316,7 @@
   },
   "all": {
    "laenge": {
-    "mfa_duration": 0.041666666666666664,
+    "mfa_duration": 0.046875,
     "mfa_class": 0.03125,
     "mfa_choice": 0.13541666666666666
    },
@@ -340,72 +340,72 @@
  "thresholds": {
   "jf_alpha": {
    "min_long": 0.16242086724375604,
-   "max_short": 1.7142860488015883,
+   "max_short": 1.766870802214894,
    "prior": 0.03,
    "cls": {
-    "C long": 3.4179738165936273,
+    "C long": 3.4729050063976192,
     "Cː short": -0.5184035709471162,
-    "V long": 1.8666673982046638,
-    "Vː short": -0.27856307401165603,
+    "V long": 1.9047622794009436,
+    "Vː short": -0.2899590959095287,
     "ɰ̃ short": -0.17125487329432632
    }
   },
   "jf_gongitsune": {
    "min_long": 0.17180600499733747,
-   "max_short": 1.5315318769395,
+   "max_short": 1.5539569122735397,
    "prior": 0.03,
    "cls": {
-    "C long": 3.225625398725548,
+    "C long": 3.332939133407259,
     "Cː short": -0.5185184638344674,
-    "V long": 1.5702059771970984,
+    "V long": 1.6738960552006141,
     "Vː short": -0.32062737579591716,
     "ɰ̃ short": -0.17126407313929848
    }
   },
   "jf_nezumi": {
    "min_long": 0.19354848943565361,
-   "max_short": 1.6258062104652984,
+   "max_short": 1.7307695746421676,
    "prior": 0.03,
    "cls": {
-    "C long": 3.200598025627103,
+    "C long": 3.209938370497175,
     "Cː short": -0.5134085384982986,
-    "V long": 1.7142860494842478,
+    "V long": 1.7668708031272349,
     "Vː short": -0.32047280552714774,
     "ɰ̃ short": -0.1859824571223319
    }
   },
   "jf_tebukuro": {
    "min_long": 0.19354848943565361,
-   "max_short": 1.5829956541216348,
+   "max_short": 1.682593699674886,
    "prior": 0.03,
    "cls": {
-    "C long": 3.1780413679333206,
+    "C long": 3.1802121055555865,
     "Cː short": -0.5225749692440194,
-    "V long": 1.679446724042211,
+    "V long": 1.7331732184725592,
     "Vː short": -0.31527820283138386,
     "ɰ̃ short": -0.18500614935507062
    }
   },
   "jm_kumo": {
    "min_long": 0.16242086724375604,
-   "max_short": 1.5836175996940105,
+   "max_short": 1.7272734832248458,
    "prior": 0.03,
    "cls": {
-    "C long": 3.4179738165936273,
+    "C long": 3.4729050063976192,
     "Cː short": -0.5100342474125498,
-    "V long": 1.714286049249799,
-    "Vː short": -0.27856307401165603,
+    "V long": 1.7668708028139055,
+    "Vː short": -0.2899590959095287,
     "ɰ̃ short": -0.17125487329432632
    }
   },
   "ojt": {
    "min_long": 0.2047242076747783,
-   "max_short": 1.766870802214894,
+   "max_short": 1.8666673961868123,
    "prior": 0.1,
    "cls": {
     "C long": 3.2156251345856335,
     "Cː short": -0.4436245052736788,
-    "V long": 1.9655012070894091,
+    "V long": 2.0968759765374245,
     "Vː short": -0.32237083583628684,
     "ɰ̃ short": -0.19318633665613966
    }
@@ -517,14 +517,14 @@
    "error": false,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16124999523162842,
+    "rate_s": 0.1433333290947808,
     "min_long": null,
-    "max_short": 0.8062019142979441
+    "max_short": 0.9069771535851873
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8062019142979441,
-     "C long": 0.7441860980894724
+     "V long": 0.9069771535851873,
+     "C long": 0.8372093603506565
     }
    },
    "class_alarm": null,
@@ -563,15 +563,15 @@
    "error": true,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1433333290947808,
-    "min_long": 0.27906950955263804,
-    "max_short": 0.9069771535851873
+    "rate_s": 0.12899999618530272,
+    "min_long": 0.3100772328362645,
+    "max_short": 1.0077523928724303
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9069771535851873,
-     "Vː short": -0.5581390191052761,
-     "C long": 0.767441982962497
+     "V long": 1.0077523928724303,
+     "Vː short": -0.620154465672529,
+     "C long": 0.8527133144027744
     }
    },
    "class_alarm": null,
@@ -703,15 +703,15 @@
    "error": false,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1588888963063558,
-    "min_long": 0.5664337500656484,
-    "max_short": 0.9440557499306002
+    "rate_s": 0.14300000667572021,
+    "min_long": 0.6293708334062761,
+    "max_short": 1.0489508332562225
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9440557499306002,
-     "Vː short": -1.132867500131297,
-     "C long": 0.7552447499981243
+     "V long": 1.0489508332562225,
+     "Vː short": -1.2587416668125522,
+     "C long": 0.8391608333312492
     }
    },
    "class_alarm": null,
@@ -750,14 +750,14 @@
    "error": true,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17875000834465027,
+    "rate_s": 0.1588888963063558,
     "min_long": null,
-    "max_short": 1.0069933334500418
+    "max_short": 1.132867500131297
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.0069933334500418,
-     "C long": 0.6713286666649994
+     "V long": 1.132867500131297,
+     "C long": 0.7552447499981243
     }
    },
    "class_alarm": null,
@@ -889,14 +889,14 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16249999403953552,
+    "rate_s": 0.1444444391462538,
     "min_long": null,
-    "max_short": 0.6769231897839469
+    "max_short": 0.7615385885069403
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6769231897839469,
-     "C long": 0.7384615948919735
+     "V long": 0.7615385885069403,
+     "C long": 0.8307692942534701
     }
    },
    "class_alarm": null,
@@ -935,15 +935,15 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1444444391462538,
-    "min_long": 0.2423078827604104,
-    "max_short": 0.7615385885069403
+    "rate_s": 0.12999999523162842,
+    "min_long": 0.26923098084490044,
+    "max_short": 0.8461539872299336
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7615385885069403,
-     "Vː short": -0.4846157655208208,
-     "C long": 0.8307692942534701
+     "V long": 0.8461539872299336,
+     "Vː short": -0.5384619616898009,
+     "C long": 0.9230769936149669
     }
    },
    "class_alarm": null,
@@ -1075,15 +1075,15 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15000000264909533,
-    "min_long": 0.4999999116968241,
-    "max_short": 0.7999996202963436
+    "rate_s": 0.1350000023841858,
+    "min_long": 0.5555554574409156,
+    "max_short": 0.8888884669959374
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7999996202963436,
-     "Vː short": -0.9999998233936482,
-     "C long": 0.7333334157496308
+     "V long": 0.8888884669959374,
+     "Vː short": -1.1111109148818312,
+     "C long": 0.8148149063884786
     }
    },
    "class_alarm": null,
@@ -1122,14 +1122,14 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16750000417232513,
+    "rate_s": 0.14888889259762234,
     "min_long": null,
-    "max_short": 0.8955222234133267
+    "max_short": 1.0074625013399925
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8955222234133267,
-     "C long": 0.6567164869557017
+     "V long": 1.0074625013399925,
+     "C long": 0.7388060478251645
     }
    },
    "class_alarm": null,
@@ -1994,14 +1994,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17428571837288992,
+    "rate_s": 0.1525000035762787,
     "min_long": null,
-    "max_short": 0.6885246013768478
+    "max_short": 0.7868852587163974
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6885246013768478,
-     "C long": 0.6885246013768478
+     "V long": 0.7868852587163974,
+     "C long": 0.7868852587163974
     }
    },
    "class_alarm": null,
@@ -2040,15 +2040,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1525000035762787,
-    "min_long": 0.22950836331316612,
-    "max_short": 0.7868852587163974
+    "rate_s": 0.13555555873446995,
+    "min_long": 0.2581969087273119,
+    "max_short": 0.885245916055947
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7868852587163974,
-     "C long": 0.7868852587163974,
-     "Vː short": -0.45901672662633225
+     "V long": 0.885245916055947,
+     "C long": 0.885245916055947,
+     "Vː short": -0.5163938174546238
     }
    },
    "class_alarm": null,
@@ -2177,15 +2177,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1537500023841858,
-    "min_long": 0.48780479294994333,
-    "max_short": 0.5853660616779163
+    "rate_s": 0.1366666687859429,
+    "min_long": 0.5487803920686863,
+    "max_short": 0.6585368193876558
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.5853660616779163,
-     "C long": 0.7154472364185731,
-     "Vː short": -0.9756095858998867
+     "V long": 0.6585368193876558,
+     "C long": 0.8048781409708948,
+     "Vː short": -1.0975607841373727
     }
    },
    "class_alarm": null,
@@ -2224,14 +2224,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17571428843906947,
+    "rate_s": 0.1537500023841858,
     "min_long": null,
-    "max_short": 0.8536583876624009
+    "max_short": 0.9756095858998867
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8536583876624009,
-     "C long": 0.6260163318662515
+     "V long": 0.9756095858998867,
+     "C long": 0.7154472364185731
     }
    },
    "class_alarm": null,
@@ -2361,15 +2361,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15333333280351427,
-    "min_long": 0.45652169406075993,
-    "max_short": 0.9782607174550648
+    "rate_s": 0.13799999952316283,
+    "min_long": 0.5072463267341778,
+    "max_short": 1.0869563527278499
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9782607174550648,
-     "Vː short": -0.9130433881215199,
-     "C long": 0.8478260587879749
+     "V long": 1.0869563527278499,
+     "Vː short": -1.0144926534683556,
+     "C long": 0.9420289542088611
     }
    },
    "class_alarm": null,
@@ -2408,15 +2408,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17249999940395355,
-    "min_long": 0.4637680207949377,
-    "max_short": 0.6376812445518979
+    "rate_s": 0.15333333280351427,
+    "min_long": 0.5217390233943049,
+    "max_short": 0.7173914001208851
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6376812445518979,
-     "Vː short": -0.9275360415898753,
-     "C long": 0.7536231633670889
+     "V long": 0.7173914001208851,
+     "Vː short": -1.0434780467886098,
+     "C long": 0.8478260587879749
     }
    },
    "class_alarm": null,
@@ -2546,15 +2546,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1587499976158142,
-    "min_long": 0.472440876884774,
-    "max_short": 0.6929134863442471
+    "rate_s": 0.14111110899183485,
+    "min_long": 0.5314959864953708,
+    "max_short": 0.779527672137278
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6929134863442471,
-     "Vː short": -0.944881753769548,
-     "C long": 0.8188976200568976
+     "V long": 0.779527672137278,
+     "Vː short": -1.0629919729907416,
+     "C long": 0.9212598225640097
     }
    },
    "class_alarm": null,
@@ -2593,15 +2593,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14111110899183485,
-    "min_long": 0.4960629488886878,
-    "max_short": 0.779527672137278
+    "rate_s": 0.12699999809265136,
+    "min_long": 0.5511810543207643,
+    "max_short": 0.866141857930309
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.779527672137278,
-     "Vː short": -0.9921258977773756,
-     "C long": 0.9212598225640097
+     "V long": 0.866141857930309,
+     "Vː short": -1.1023621086415285,
+     "C long": 1.023622025071122
     }
    },
    "class_alarm": null,
@@ -4211,15 +4211,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1537500023841858,
-    "min_long": 0.9756095858998867,
-    "max_short": 0.6504062613757643
+    "rate_s": 0.1366666687859429,
+    "min_long": 1.0975607841373727,
+    "max_short": 0.7317070440477349
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6504062613757643,
-     "ɰ̃ short": -0.9756095858998867,
-     "C long": 0.8455284111592298
+     "V long": 0.7317070440477349,
+     "ɰ̃ short": -1.0975607841373727,
+     "C long": 0.9512194625541337
     }
    },
    "class_alarm": null,
@@ -4258,14 +4258,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17571428843906947,
+    "rate_s": 0.1537500023841858,
     "min_long": null,
-    "max_short": 0.8536590660892415
+    "max_short": 0.9756103612448473
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8536590660892415,
-     "C long": 0.7398373597643262
+     "V long": 0.9756103612448473,
+     "C long": 0.8455284111592298
     }
    },
    "class_alarm": null,
@@ -4395,14 +4395,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17428571837288992,
+    "rate_s": 0.1525000035762787,
     "min_long": null,
-    "max_short": 0.6885246013768478
+    "max_short": 0.7868852587163974
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6885246013768478,
-     "C long": 0.6885246013768478
+     "V long": 0.7868852587163974,
+     "C long": 0.7868852587163974
     }
    },
    "class_alarm": null,
@@ -4441,15 +4441,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1537500023841858,
-    "min_long": 0.1951217621109852,
-    "max_short": 1.1707313480108719
+    "rate_s": 0.1366666687859429,
+    "min_long": 0.21951198237485836,
+    "max_short": 1.317072766512231
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.1707313480108719,
-     "ɰ̃ short": -0.1951217621109852,
-     "C long": 0.7804878237889015
+     "V long": 1.317072766512231,
+     "ɰ̃ short": -0.21951198237485836,
+     "C long": 0.8780488017625142
     }
    },
    "class_alarm": null,
@@ -4579,15 +4579,15 @@
    "error": false,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1587499976158142,
-    "min_long": 0.3779531520626211,
-    "max_short": 0.8188976200568976
+    "rate_s": 0.14111110899183485,
+    "min_long": 0.42519729607044876,
+    "max_short": 0.9212598225640097
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8188976200568976,
-     "C long": 0.7559055532005724,
-     "ɰ̃ short": -0.3779531520626211
+     "V long": 0.9212598225640097,
+     "C long": 0.8503937473506439,
+     "ɰ̃ short": -0.42519729607044876
     }
    },
    "class_alarm": null,
@@ -4626,14 +4626,14 @@
    "error": true,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1828571387699672,
+    "rate_s": 0.1599999964237213,
     "min_long": null,
-    "max_short": 0.7656249388819547
+    "max_short": 0.8749999301508053
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7656249388819547,
-     "C long": 0.6562500407453636
+     "V long": 0.8749999301508053,
+     "C long": 0.7500000465661297
     }
    },
    "class_alarm": null,
@@ -4763,14 +4763,14 @@
    "error": false,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16857142107827322,
+    "rate_s": 0.14749999344348907,
     "min_long": null,
-    "max_short": 0.652542486748321
+    "max_short": 0.7457628419980812
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.652542486748321,
-     "C long": 0.7118644667096427
+     "V long": 0.7457628419980812,
+     "C long": 0.8135593905253059
     }
    },
    "class_alarm": null,
@@ -4809,15 +4809,15 @@
    "error": true,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14624999463558197,
-    "min_long": 0.34188002837792525,
-    "max_short": 0.7521368775377187
+    "rate_s": 0.12999999523162842,
+    "min_long": 0.3846150319251659,
+    "max_short": 0.8461539872299336
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7521368775377187,
-     "C long": 0.8205128832133038,
-     "ɰ̃ short": -0.34188002837792525
+     "V long": 0.8461539872299336,
+     "C long": 0.9230769936149669,
+     "ɰ̃ short": -0.3846150319251659
     }
    },
    "class_alarm": null,
@@ -5738,15 +5738,15 @@
    "error": false,
    "meant": "t a n a k a s a ɰ̃ w a o ŋ ɡ a k ɯ ɡ a o s ɨ c i d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.14374999701976776,
-    "min_long": 0.6260872017007745,
-    "max_short": 0.8347826591736889
+    "rate_s": 0.13529411484213436,
+    "min_long": 0.6652176518070729,
+    "max_short": 0.8869565753720445
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8347826591736889,
-     "C long": 0.6260867870597588,
-     "ɰ̃ short": -0.6260872017007745
+     "V long": 0.8869565753720445,
+     "C long": 0.6652172112509938,
+     "ɰ̃ short": -0.6652176518070729
     }
    },
    "class_alarm": null,
@@ -5878,15 +5878,15 @@
    "error": false,
    "meant": "s o n o k e ɰ̃ w a z o n dʑ i t e o ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1516666611035665,
-    "min_long": 0.5274728297784292,
-    "max_short": 0.7252748461970859
+    "rate_s": 0.1399999948648306,
+    "min_long": 0.5714288989266316,
+    "max_short": 0.7857144167135097
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7252748461970859,
-     "C long": 0.8571420711475125,
-     "ɰ̃ short": -0.5274728297784292
+     "V long": 0.7857144167135097,
+     "C long": 0.928570577076472,
+     "ɰ̃ short": -0.5714288989266316
     }
    },
    "class_alarm": null,
@@ -6114,15 +6114,15 @@
    "error": false,
    "meant": "t o ɕ o k a n d e b e ɲ c oː ɕ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16600000858306885,
-    "min_long": 0.39156658951575896,
-    "max_short": 0.7228915576129131
+    "rate_s": 0.13833334048589072,
+    "min_long": 0.4698799074189107,
+    "max_short": 0.8674698691354956
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7228915576129131,
-     "C long": 0.6626499361943082,
-     "Vː short": -0.7831331790315179
+     "V long": 0.8674698691354956,
+     "C long": 0.7951799234331699,
+     "Vː short": -0.9397598148378214
     }
    },
    "class_alarm": null,
@@ -6254,14 +6254,14 @@
    "error": false,
    "meant": "ɡ o ɕ ɨ mʲ i w a n a n d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.17750000953674316,
+    "rate_s": 0.1577777862548828,
     "min_long": null,
-    "max_short": 0.6197183571550419
+    "max_short": 0.6971831517994221
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6197183571550419,
-     "C long": 0.6197183571550419
+     "V long": 0.6971831517994221,
+     "C long": 0.6971831517994221
     }
    },
    "class_alarm": null,
@@ -6631,16 +6631,16 @@
    "error": false,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15,
-    "min_long": 0.39999961853027344,
-    "max_short": 1.066666841506958
+    "rate_s": 0.13636363636363635,
+    "min_long": 0.43999958038330084,
+    "max_short": 1.1733335256576538
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.066666841506958,
-     "Vː short": -1.2666666507720947,
-     "C long": 0.8000000317891439,
-     "ɰ̃ short": -0.39999961853027344
+     "V long": 1.1733335256576538,
+     "Vː short": -1.3933333158493042,
+     "C long": 0.8800000349680583,
+     "ɰ̃ short": -0.43999958038330084
     }
    },
    "class_alarm": null,
@@ -6679,16 +6679,16 @@
    "error": true,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13999999761581422,
-    "min_long": 0.3214284832380241,
-    "max_short": 1.0714288451233736
+    "rate_s": 0.12727272510528564,
+    "min_long": 0.3535713315618265,
+    "max_short": 1.1785717296357108
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.0714288451233736,
-     "Vː short": -0.6428569664760482,
-     "C long": 0.8571429057997108,
-     "ɰ̃ short": -0.5000003831727229
+     "V long": 1.1785717296357108,
+     "Vː short": -0.707142663123653,
+     "C long": 0.9428571963796819,
+     "ɰ̃ short": -0.5500004214899953
     }
    },
    "class_alarm": null,
@@ -7242,15 +7242,15 @@
    "error": false,
    "meant": "k o n o d e ɰ̃ ɕ a w a ɕ i n dʑ ɨ k ɯ ɲ i t o m a ɾʲ i m a s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.14874999225139618,
-    "min_long": 0.47058821172332266,
-    "max_short": 0.7394955323060698
+    "rate_s": 0.1399999927071964,
+    "min_long": 0.4999999749560303,
+    "max_short": 0.7857140030751991
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7394955323060698,
-     "ɰ̃ short": -0.47058821172332266,
-     "C long": 0.8739495933009584
+     "V long": 0.7857140030751991,
+     "ɰ̃ short": -0.4999999749560303,
+     "C long": 0.9285714428822684
     }
    },
    "class_alarm": null,
@@ -7338,16 +7338,16 @@
    "error": false,
    "meant": "ɲ i h o ŋ ɡ o o b e ɲ c oː ɕ i t e ɲ i n e ɲː i n a ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1411764761980842,
-    "min_long": 0.4604166314833708,
-    "max_short": 0.9208332629667416
+    "rate_s": 0.12631579449302272,
+    "min_long": 0.5145832940108263,
+    "max_short": 1.0291665880216525
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9208332629667416,
-     "C long": 0.9208324185676409,
-     "Vː short": -0.9208332629667416,
-     "Cː short": -0.7083326296674161
+     "V long": 1.0291665880216525,
+     "C long": 1.029165644281481,
+     "Vː short": -1.0291665880216525,
+     "Cː short": -0.7916658802165238
     }
    },
    "class_alarm": null,
@@ -7576,15 +7576,15 @@
    "error": false,
    "meant": "eː t o a n o e c i n o tɕ i k a k ɯ ɲ i s ɨ n d eː m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1452941193300135,
-    "min_long": 0.5506075764404222,
-    "max_short": 1.5829956541216348
+    "rate_s": 0.13722222381167942,
+    "min_long": 0.5829962574075058,
+    "max_short": 1.6761130455405542
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -1.1012151528808445,
-     "C long": 0.8259117748950259,
-     "V long": 1.5829956541216348
+     "Vː short": -1.1659925148150116,
+     "C long": 0.8744948204770862,
+     "V long": 1.6761130455405542
     }
    },
    "class_alarm": null,
@@ -7623,15 +7623,15 @@
    "error": false,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1590909090909091,
-    "min_long": 0.5028570379529681,
-    "max_short": 0.7542857442583357
+    "rate_s": 0.14583333333333334,
+    "min_long": 0.5485713141305105,
+    "max_short": 0.822857175554548
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -1.0057140759059362,
-     "V long": 0.7542857442583357,
-     "C long": 0.502856663295201
+     "Vː short": -1.097142628261021,
+     "V long": 0.822857175554548,
+     "C long": 0.5485709054129464
     }
    },
    "class_alarm": null,
@@ -7670,15 +7670,15 @@
    "error": true,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1545454588803378,
-    "min_long": 0.19411764932751238,
-    "max_short": 0.9058822349693569
+    "rate_s": 0.14166667064030966,
+    "min_long": 0.2117647083572862,
+    "max_short": 0.9882351654211166
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.38823529865502476,
-     "V long": 0.9058822349693569,
-     "C long": 0.5823531408210884
+     "Vː short": -0.4235294167145724,
+     "V long": 0.9882351654211166,
+     "C long": 0.6352943354411872
     }
    },
    "class_alarm": null,
@@ -8094,14 +8094,14 @@
    "error": false,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1887500137090683,
+    "rate_s": 0.16777778996361625,
     "min_long": null,
-    "max_short": 1.1125829027523055
+    "max_short": 1.2516557655963438
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.1125829027523055,
-     "C long": 0.8476818807971928
+     "V long": 1.2516557655963438,
+     "C long": 0.9536421158968419
     }
    },
    "class_alarm": null,
@@ -8140,15 +8140,15 @@
    "error": true,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16777778996361625,
-    "min_long": 0.20860905742642638,
-    "max_short": 1.2516557655963438
+    "rate_s": 0.15100001096725463,
+    "min_long": 0.2317878415849182,
+    "max_short": 1.390728628440382
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.2516557655963438,
-     "Vː short": -0.41721811485285276,
-     "C long": 0.9536421158968419
+     "V long": 1.390728628440382,
+     "Vː short": -0.4635756831698364,
+     "C long": 1.059602350996491
     }
    },
    "class_alarm": null,
@@ -8280,15 +8280,15 @@
    "error": false,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.20000000794728598,
-    "min_long": 0.450000149011606,
-    "max_short": 1.9999998013178586
+    "rate_s": 0.18000000715255737,
+    "min_long": 0.5000001655684512,
+    "max_short": 2.2222220014642873
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.9999998013178586,
-     "Vː short": -0.900000298023212,
-     "C long": 0.8499991556008992
+     "V long": 2.2222220014642873,
+     "Vː short": -1.0000003311369023,
+     "C long": 0.9444435062232214
     }
    },
    "class_alarm": "V long",
@@ -8327,14 +8327,14 @@
    "error": true,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.22500000894069672,
+    "rate_s": 0.20000000794728598,
     "min_long": null,
-    "max_short": 1.77777760117143
+    "max_short": 1.9999998013178586
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.77777760117143,
-     "C long": 0.7555548049785771
+     "V long": 1.9999998013178586,
+     "C long": 0.8499991556008992
     }
    },
    "class_alarm": "V long",
@@ -8466,21 +8466,21 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.19500000774860382,
+    "rate_s": 0.17333334022098118,
     "min_long": null,
-    "max_short": 1.5384618441263713
+    "max_short": 1.7307695746421676
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.5384618441263713,
-     "C long": 0.820513228065931
+     "V long": 1.7307695746421676,
+     "C long": 0.9230773815741723
     }
    },
-   "class_alarm": null,
+   "class_alarm": "V long",
    "flags": {
     "mfa_duration": true,
     "mfa_choice": false,
-    "mfa_class": false
+    "mfa_class": true
    },
    "picked": {
     "1.0": "long+",
@@ -8512,15 +8512,15 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17333334022098118,
-    "min_long": 0.23076934539354307,
-    "max_short": 1.7307695746421676
+    "rate_s": 0.15600000619888305,
+    "min_long": 0.25641038377060343,
+    "max_short": 1.9230773051579644
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.7307695746421676,
-     "Vː short": -0.46153869078708615,
-     "C long": 0.9230773815741723
+     "V long": 1.9230773051579644,
+     "Vː short": -0.5128207675412069,
+     "C long": 1.0256415350824137
     }
    },
    "class_alarm": "V long",
@@ -8652,15 +8652,15 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.18666666083865696,
-    "min_long": 0.455357042122249,
-    "max_short": 1.7142860488015883
+    "rate_s": 0.16799999475479127,
+    "min_long": 0.505952269024721,
+    "max_short": 1.904762276446209
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.7142860488015883,
-     "Vː short": -0.910714084244498,
-     "C long": 0.8571433437114011
+     "V long": 1.904762276446209,
+     "Vː short": -1.011904538049442,
+     "C long": 0.9523814930126678
     }
    },
    "class_alarm": "V long",
@@ -8699,21 +8699,21 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.20999999344348907,
+    "rate_s": 0.18666666083865696,
     "min_long": null,
-    "max_short": 1.5238098211569673
+    "max_short": 1.7142860488015883
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.5238098211569673,
-     "C long": 0.7619051944101343
+     "V long": 1.7142860488015883,
+     "C long": 0.8571433437114011
     }
    },
-   "class_alarm": null,
+   "class_alarm": "V long",
    "flags": {
-    "mfa_duration": false,
+    "mfa_duration": true,
     "mfa_choice": false,
-    "mfa_class": false
+    "mfa_class": true
    },
    "picked": {
     "1.0": "long+",
@@ -9571,14 +9571,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.19285714626312256,
+    "rate_s": 0.16875000298023224,
     "min_long": null,
-    "max_short": 0.6740740374446085
+    "max_short": 0.770370328508124
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6740740374446085,
-     "C long": 0.9333330448762921
+     "V long": 0.770370328508124,
+     "C long": 1.0666663370014766
     }
    },
    "class_alarm": null,
@@ -9617,22 +9617,22 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16875000298023224,
-    "min_long": 0.14814835745937988,
-    "max_short": 0.770370328508124
+    "rate_s": 0.15000000264909533,
+    "min_long": 0.16666690214180235,
+    "max_short": 0.8666666195716395
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.770370328508124,
-     "C long": 1.0666663370014766,
-     "Vː short": -0.29629671491875975
+     "V long": 0.8666666195716395,
+     "C long": 1.1999996291266612,
+     "Vː short": -0.3333338042836047
     }
    },
-   "class_alarm": "Vː short",
+   "class_alarm": null,
    "flags": {
     "mfa_duration": true,
     "mfa_choice": false,
-    "mfa_class": true
+    "mfa_class": false
    },
    "picked": {
     "1.0": "long-",
@@ -9754,15 +9754,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1849999874830246,
-    "min_long": 0.40540536839740576,
-    "max_short": 0.8648647429561602
+    "rate_s": 0.1644444333182441,
+    "min_long": 0.45608103944708145,
+    "max_short": 0.9729728358256802
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8648647429561602,
-     "C long": 1.027027405814788,
-     "Vː short": -0.8108107367948115
+     "V long": 0.9729728358256802,
+     "C long": 1.1554058315416362,
+     "Vː short": -0.9121620788941629
     }
    },
    "class_alarm": null,
@@ -9801,14 +9801,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.21142855712345668,
+    "rate_s": 0.1849999874830246,
     "min_long": null,
-    "max_short": 0.7567566500866402
+    "max_short": 0.8648647429561602
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7567566500866402,
-     "C long": 0.8986489800879395
+     "V long": 0.8648647429561602,
+     "C long": 1.027027405814788
     }
    },
    "class_alarm": null,
@@ -9938,15 +9938,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.18111111058129203,
-    "min_long": 0.4693253653746452,
-    "max_short": 0.9386507307492904
+    "rate_s": 0.16299999952316285,
+    "min_long": 0.5214726281940502,
+    "max_short": 1.0429452563881003
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9386507307492904,
-     "Vː short": -0.9386507307492904,
-     "C long": 0.8834360593182502
+     "V long": 1.0429452563881003,
+     "Vː short": -1.0429452563881003,
+     "C long": 0.9815956214647222
     }
    },
    "class_alarm": null,
@@ -9985,15 +9985,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.20374999940395355,
-    "min_long": 0.4171781025552402,
-    "max_short": 0.7852759120955084
+    "rate_s": 0.18111111058129203,
+    "min_long": 0.4693253653746452,
+    "max_short": 0.883435401107447
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7852759120955084,
-     "Vː short": -0.8343562051104804,
-     "C long": 0.8343562051104804
+     "V long": 0.883435401107447,
+     "Vː short": -0.9386507307492904,
+     "C long": 0.9386507307492904
     }
    },
    "class_alarm": null,
@@ -10123,15 +10123,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17624999582767487,
-    "min_long": 0.45390062527387487,
-    "max_short": 0.6808511070020072
+    "rate_s": 0.15666666295793322,
+    "min_long": 0.5106382034331093,
+    "max_short": 0.7659574953772581
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6808511070020072,
-     "Vː short": -0.9078012505477497,
-     "C long": 0.9645394627989649
+     "V long": 0.7659574953772581,
+     "Vː short": -1.0212764068662186,
+     "C long": 1.0851068956488354
     }
    },
    "class_alarm": null,
@@ -10170,15 +10170,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1577777730094062,
-    "min_long": 0.5070421630677353,
-    "max_short": 0.7605634334895675
+    "rate_s": 0.14199999570846558,
+    "min_long": 0.5633801811863726,
+    "max_short": 0.8450704816550749
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7605634334895675,
-     "Vː short": -1.0140843261354706,
-     "C long": 1.0774653048488043
+     "V long": 0.8450704816550749,
+     "Vː short": -1.1267603623727451,
+     "C long": 1.197183672054227
     }
    },
    "class_alarm": null,
@@ -11615,11 +11615,11 @@
      "C long": 1.0149258033393724
     }
    },
-   "class_alarm": "V long",
+   "class_alarm": null,
    "flags": {
     "mfa_duration": true,
     "mfa_choice": false,
-    "mfa_class": true
+    "mfa_class": false
    },
    "picked": {
     "1.0": "long+",
@@ -11788,15 +11788,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17499999701976776,
-    "min_long": 0.9714290239373109,
-    "max_short": 0.7999999318804049
+    "rate_s": 0.15555555290646023,
+    "min_long": 1.0928576519294748,
+    "max_short": 0.8999999233654554
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7999999318804049,
-     "ɰ̃ short": -0.9714290239373109,
-     "C long": 0.9714290239373109
+     "V long": 0.8999999233654554,
+     "ɰ̃ short": -1.0928576519294748,
+     "C long": 1.0928576519294748
     }
    },
    "class_alarm": null,
@@ -11835,14 +11835,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1999999965940203,
+    "rate_s": 0.17499999701976776,
     "min_long": null,
-    "max_short": 0.7999998467309108
+    "max_short": 0.9142855391210409
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7999998467309108,
-     "C long": 0.8500003959451471
+     "V long": 0.9142855391210409,
+     "C long": 0.9714290239373109
     }
    },
    "class_alarm": null,
@@ -11972,14 +11972,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.19285714626312256,
+    "rate_s": 0.16875000298023224,
     "min_long": null,
-    "max_short": 0.6740740374446085
+    "max_short": 0.770370328508124
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6740740374446085,
-     "C long": 0.8814812433899554
+     "V long": 0.770370328508124,
+     "C long": 1.0074071353028062
     }
    },
    "class_alarm": null,
@@ -12018,15 +12018,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16875000298023224,
-    "min_long": 0.1777776050960116,
-    "max_short": 1.1851854468242249
+    "rate_s": 0.15000000264909533,
+    "min_long": 0.19999980573301304,
+    "max_short": 1.333333627677253
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.1851854468242249,
-     "ɰ̃ short": -0.1777776050960116,
-     "C long": 1.0074071353028062
+     "V long": 1.333333627677253,
+     "ɰ̃ short": -0.19999980573301304,
+     "C long": 1.133333027215657
     }
    },
    "class_alarm": null,
@@ -12156,15 +12156,15 @@
    "error": false,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17624999582767487,
-    "min_long": 0.28368767943217826,
-    "max_short": 0.7943261787748785
+    "rate_s": 0.15666666295793322,
+    "min_long": 0.3191486393612005,
+    "max_short": 0.8936169511217383
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7943261787748785,
-     "C long": 1.1914896063447074,
-     "ɰ̃ short": -0.28368767943217826
+     "V long": 0.8936169511217383,
+     "C long": 1.340425807137796,
+     "ɰ̃ short": -0.3191486393612005
     }
    },
    "class_alarm": null,
@@ -12203,14 +12203,14 @@
    "error": true,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.20142856666019984,
+    "rate_s": 0.17624999582767487,
     "min_long": null,
-    "max_short": 0.6453900625273875
+    "max_short": 0.7375886428884428
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6453900625273875,
-     "C long": 1.042553405551619
+     "V long": 0.7375886428884428,
+     "C long": 1.1914896063447074
     }
    },
    "class_alarm": null,
@@ -12340,14 +12340,14 @@
    "error": false,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.19000000613076345,
+    "rate_s": 0.16625000536441803,
     "min_long": null,
-    "max_short": 0.7368420061972696
+    "max_short": 0.8421051499397366
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7368420061972696,
-     "C long": 0.8421050603086947
+     "V long": 0.8421051499397366,
+     "C long": 0.9624057832099367
     }
    },
    "class_alarm": null,
@@ -12386,15 +12386,15 @@
    "error": true,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16750000417232513,
-    "min_long": 0.2985071705720311,
-    "max_short": 0.8358207892989205
+    "rate_s": 0.14888889259762234,
+    "min_long": 0.335820566893535,
+    "max_short": 0.9402983879612855
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8358207892989205,
-     "C long": 0.9552236575277329,
-     "ɰ̃ short": -0.2985071705720311
+     "V long": 0.9402983879612855,
+     "C long": 1.0746266147186996,
+     "ɰ̃ short": -0.335820566893535
     }
    },
    "class_alarm": null,
@@ -13315,15 +13315,15 @@
    "error": false,
    "meant": "t a n a k a s a ɰ̃ w a o ŋ ɡ a k ɯ ɡ a o s ɨ c i d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1756250001490116,
-    "min_long": 0.7402134953527574,
-    "max_short": 3.245551218557569
+    "rate_s": 0.16529411778730504,
+    "min_long": 0.7864768388123047,
+    "max_short": 3.448398169717417
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 3.245551218557569,
-     "C long": 0.5124563844072807,
-     "ɰ̃ short": -0.7402134953527574
+     "V long": 3.448398169717417,
+     "C long": 0.5444849084327358,
+     "ɰ̃ short": -0.7864768388123047
     }
    },
    "class_alarm": "V long",
@@ -13455,15 +13455,15 @@
    "error": false,
    "meant": "s o n o k e ɰ̃ w a z o n dʑ i t e o ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.19583333532015482,
-    "min_long": 0.45957463386642544,
-    "max_short": 0.6638303648783261
+    "rate_s": 0.18076923260321984,
+    "min_long": 0.4978725200219609,
+    "max_short": 0.71914956195152
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6638303648783261,
-     "C long": 0.7148941454492311,
-     "ɰ̃ short": -0.45957463386642544
+     "V long": 0.71914956195152,
+     "C long": 0.7744686575700004,
+     "ɰ̃ short": -0.4978725200219609
     }
    },
    "class_alarm": null,
@@ -13691,15 +13691,15 @@
    "error": false,
    "meant": "t o ɕ o k a n d e b e ɲ c oː ɕ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.18299999833106995,
-    "min_long": 0.30054648991337946,
-    "max_short": 0.6010929798267589
+    "rate_s": 0.15249999860922495,
+    "min_long": 0.3606557878960554,
+    "max_short": 0.7213115757921108
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6010929798267589,
-     "C long": 0.710382494083099,
-     "Vː short": -0.6010929798267589
+     "V long": 0.7213115757921108,
+     "C long": 0.8524589928997188,
+     "Vː short": -0.7213115757921108
     }
    },
    "class_alarm": null,
@@ -13831,14 +13831,14 @@
    "error": false,
    "meant": "ɡ o ɕ ɨ mʲ i w a n a n d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.20250000804662704,
+    "rate_s": 0.18000000715255737,
     "min_long": null,
-    "max_short": 0.6913579265767203
+    "max_short": 0.7777776673988104
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6913579265767203,
-     "C long": 0.9382718502248659
+     "V long": 0.7777776673988104,
+     "C long": 1.055555831502974
     }
    },
    "class_alarm": null,
@@ -14208,16 +14208,16 @@
    "error": false,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16999999284744263,
-    "min_long": 0.5882352838054243,
-    "max_short": 1.117647091822642
+    "rate_s": 0.15454544804312967,
+    "min_long": 0.6470588121859667,
+    "max_short": 1.2294118010049062
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.117647091822642,
-     "Vː short": -1.1764705676108487,
-     "C long": 0.8823521368230989,
-     "ɰ̃ short": -0.6470582336702725
+     "V long": 1.2294118010049062,
+     "Vː short": -1.2941176243719335,
+     "C long": 0.9705873505054088,
+     "ɰ̃ short": -0.7117640570372998
     }
    },
    "class_alarm": null,
@@ -14256,16 +14256,16 @@
    "error": true,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16699999570846558,
-    "min_long": 0.4790420069990845,
-    "max_short": 0.8383232891771168
+    "rate_s": 0.1518181779167869,
+    "min_long": 0.5269462076989929,
+    "max_short": 0.9221556180948285
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8383232891771168,
-     "Vː short": -0.958084013998169,
-     "C long": 1.01796455486572,
-     "ɰ̃ short": -0.7185622074420148
+     "V long": 0.9221556180948285,
+     "Vː short": -1.0538924153979858,
+     "C long": 1.119761010352292,
+     "ɰ̃ short": -0.7904184281862163
     }
    },
    "class_alarm": null,
@@ -14819,15 +14819,15 @@
    "error": false,
    "meant": "k o n o d e ɰ̃ ɕ a w a ɕ i n dʑ ɨ k ɯ ɲ i t o m a ɾʲ i m a s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.18312499299645424,
-    "min_long": 0.5460752364031171,
-    "max_short": 1.5836175996940105
+    "rate_s": 0.17235293458489812,
+    "min_long": 0.5802049386783119,
+    "max_short": 1.682593699674886
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.5836175996940105,
-     "ɰ̃ short": -0.5460752364031171,
-     "C long": 2.129693487069382
+     "V long": 1.682593699674886,
+     "ɰ̃ short": -0.5802049386783119,
+     "C long": 2.2627993300112186
     }
    },
    "class_alarm": "V long",
@@ -14915,23 +14915,23 @@
    "error": false,
    "meant": "ɲ i h o ŋ ɡ o o b e ɲ c oː ɕ i t e ɲ i n e ɲː i n a ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1682352914529688,
-    "min_long": 0.3863639826048635,
-    "max_short": 1.5454552218327566
+    "rate_s": 0.15052631340528788,
+    "min_long": 0.431818568793671,
+    "max_short": 1.7272734832248458
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.5454552218327566,
-     "C long": 0.891608972599932,
-     "Vː short": -0.772727965209727,
-     "Cː short": -0.5944064541244196
+     "V long": 1.7272734832248458,
+     "C long": 0.9965041458469828,
+     "Vː short": -0.863637137587342,
+     "Cː short": -0.6643366251978807
     }
    },
-   "class_alarm": null,
+   "class_alarm": "V long",
    "flags": {
     "mfa_duration": true,
     "mfa_choice": false,
-    "mfa_class": false
+    "mfa_class": true
    },
    "picked": {
     "1.0": "long+",
@@ -15153,15 +15153,15 @@
    "error": false,
    "meant": "eː t o a n o e c i n o tɕ i k a k ɯ ɲ i s ɨ n d eː m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1964705831864301,
-    "min_long": 0.35628770127721693,
-    "max_short": 2.595808401399817
+    "rate_s": 0.18555555078718397,
+    "min_long": 0.37724580135234737,
+    "max_short": 2.748503013246865
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.7125754025544339,
-     "C long": 3.4101795099213184,
-     "V long": 2.595808401399817
+     "Vː short": -0.7544916027046947,
+     "C long": 3.6107783046225723,
+     "V long": 2.748503013246865
     }
    },
    "class_alarm": "V long",
@@ -15200,15 +15200,15 @@
    "error": false,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.17545455694198608,
-    "min_long": 0.45595859410749756,
-    "max_short": 0.5129535245320503
+    "rate_s": 0.16083334386348724,
+    "min_long": 0.49740937538999735,
+    "max_short": 0.5595856631258731
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.9119171882149951,
-     "V long": 0.5129535245320503,
-     "C long": 0.45595876396528245
+     "Vː short": -0.9948187507799947,
+     "V long": 0.5595856631258731,
+     "C long": 0.497409560689399
     }
    },
    "class_alarm": null,
@@ -15247,15 +15247,15 @@
    "error": true,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.17909091711044312,
-    "min_long": 0.30710662517094356,
-    "max_short": 0.949238296545318
+    "rate_s": 0.1641666740179062,
+    "min_long": 0.33502540927739294,
+    "max_short": 1.035532687140347
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.6142132503418871,
-     "V long": 0.949238296545318,
-     "C long": 0.8375639467797714
+     "Vː short": -0.6700508185547859,
+     "V long": 1.035532687140347,
+     "C long": 0.9137061237597507
     }
    },
    "class_alarm": null,
@@ -15671,14 +15671,14 @@
    "error": false,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1574999988079071,
+    "rate_s": 0.13999999894036186,
     "min_long": null,
-    "max_short": 0.6349207911031268
+    "max_short": 0.7142858899910177
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6349207911031268,
-     "C long": 1.0158728116343727
+     "V long": 0.7142858899910177,
+     "C long": 1.1428569130886692
     }
    },
    "class_alarm": null,
@@ -15717,15 +15717,15 @@
    "error": true,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13999999894036186,
-    "min_long": 0.2857140153984344,
-    "max_short": 0.7142858899910177
+    "rate_s": 0.1259999990463257,
+    "min_long": 0.3174600171093715,
+    "max_short": 0.7936509888789085
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7142858899910177,
-     "Vː short": -0.5714280307968688,
-     "C long": 1.1428569130886692
+     "V long": 0.7936509888789085,
+     "Vː short": -0.634920034218743,
+     "C long": 1.2698410145429657
     }
    },
    "class_alarm": null,
@@ -15857,15 +15857,15 @@
    "error": false,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15333333280351427,
-    "min_long": 0.5543476880610773,
-    "max_short": 0.78260872945443
+    "rate_s": 0.13799999952316283,
+    "min_long": 0.6159418756234193,
+    "max_short": 0.8695652549493668
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.78260872945443,
-     "Vː short": -1.1086953761221545,
-     "C long": 0.9782607174550648
+     "V long": 0.8695652549493668,
+     "Vː short": -1.2318837512468386,
+     "C long": 1.0869563527278499
     }
    },
    "class_alarm": null,
@@ -15904,14 +15904,14 @@
    "error": true,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17374999821186066,
+    "rate_s": 0.15444444285498726,
     "min_long": null,
-    "max_short": 0.9784170292615928
+    "max_short": 1.1007191579192919
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9784170292615928,
-     "C long": 0.8633092241833628
+     "V long": 1.1007191579192919,
+     "C long": 0.971222877206283
     }
    },
    "class_alarm": null,
@@ -16043,14 +16043,14 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16124999523162842,
+    "rate_s": 0.1433333290947808,
     "min_long": null,
-    "max_short": 0.8062015446567253
+    "max_short": 0.906976737738816
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8062015446567253,
-     "C long": 0.8062015446567253
+     "V long": 0.906976737738816,
+     "C long": 0.906976737738816
     }
    },
    "class_alarm": null,
@@ -16089,15 +16089,15 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1433333290947808,
-    "min_long": 0.2790699253990092,
-    "max_short": 0.906976737738816
+    "rate_s": 0.12899999618530272,
+    "min_long": 0.310077694887788,
+    "max_short": 1.0077519308209066
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.906976737738816,
-     "Vː short": -0.5581398507980184,
-     "C long": 0.906976737738816
+     "V long": 1.0077519308209066,
+     "Vː short": -0.620155389775576,
+     "C long": 1.0077519308209066
     }
    },
    "class_alarm": null,
@@ -16229,15 +16229,15 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15222222275204128,
-    "min_long": 0.4927006498994596,
-    "max_short": 0.7883211964644787
+    "rate_s": 0.13700000047683716,
+    "min_long": 0.5474451665549551,
+    "max_short": 0.8759124405160874
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7883211964644787,
-     "Vː short": -0.9854012997989192,
-     "C long": 0.9854020829256361
+     "V long": 0.8759124405160874,
+     "Vː short": -1.0948903331099102,
+     "C long": 1.0948912032507068
     }
    },
    "class_alarm": null,
@@ -16276,14 +16276,14 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17125000059604645,
+    "rate_s": 0.15222222275204128,
     "min_long": null,
-    "max_short": 0.8759122664879282
+    "max_short": 0.9854012997989192
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8759122664879282,
-     "C long": 0.8759129626005654
+     "V long": 0.9854012997989192,
+     "C long": 0.9854020829256361
     }
    },
    "class_alarm": null,
@@ -17148,14 +17148,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16714285101209367,
+    "rate_s": 0.14624999463558197,
     "min_long": null,
-    "max_short": 0.7777777777777778
+    "max_short": 0.8888888888888888
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7777777777777778,
-     "C long": 0.7179487728116409
+     "V long": 0.8888888888888888,
+     "C long": 0.8205128832133038
     }
    },
    "class_alarm": null,
@@ -17194,15 +17194,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14749999344348907,
-    "min_long": 0.23728832394459112,
-    "max_short": 0.8813559390525306
+    "rate_s": 0.1311111052831014,
+    "min_long": 0.266949364437665,
+    "max_short": 0.9915254314340969
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8813559390525306,
-     "C long": 0.8135593905253059,
-     "Vː short": -0.47457664788918225
+     "V long": 0.9915254314340969,
+     "C long": 0.915254314340969,
+     "Vː short": -0.53389872887533
     }
    },
    "class_alarm": null,
@@ -17331,15 +17331,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14874999225139618,
-    "min_long": 0.4369747966504792,
-    "max_short": 0.7394959330095849
+    "rate_s": 0.13222221533457437,
+    "min_long": 0.49159664623178917,
+    "max_short": 0.831932924635783
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7394959330095849,
-     "C long": 0.8739495933009584,
-     "Vː short": -0.8739495933009584
+     "V long": 0.831932924635783,
+     "C long": 0.9831932924635783,
+     "Vː short": -0.9831932924635783
     }
    },
    "class_alarm": null,
@@ -17378,14 +17378,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16999999114445277,
+    "rate_s": 0.14874999225139618,
     "min_long": null,
-    "max_short": 0.7647058941383387
+    "max_short": 0.8739495933009584
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7647058941383387,
-     "C long": 0.7647058941383387
+     "V long": 0.8739495933009584,
+     "C long": 0.8739495933009584
     }
    },
    "class_alarm": null,
@@ -17515,15 +17515,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15111111270056832,
-    "min_long": 0.5294116486933829,
-    "max_short": 0.7279412634799628
+    "rate_s": 0.13600000143051147,
+    "min_long": 0.58823516521487,
+    "max_short": 0.8088236260888476
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7279412634799628,
-     "Vː short": -1.0588232973867657,
-     "C long": 0.9926468906054051
+     "V long": 0.8088236260888476,
+     "Vː short": -1.17647033042974,
+     "C long": 1.1029409895615614
     }
    },
    "class_alarm": null,
@@ -17562,15 +17562,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17000000178813934,
-    "min_long": 0.49999986851916733,
-    "max_short": 0.5294119554819925
+    "rate_s": 0.15111111270056832,
+    "min_long": 0.5624998520840632,
+    "max_short": 0.5955884499172416
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.5294119554819925,
-     "Vː short": -0.9999997370383347,
-     "C long": 0.9411762643437919
+     "V long": 0.5955884499172416,
+     "Vː short": -1.1249997041681263,
+     "C long": 1.0588232973867657
     }
    },
    "class_alarm": null,
@@ -17700,15 +17700,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15125000476837158,
-    "min_long": 0.5289254928170987,
-    "max_short": 0.661157161581586
+    "rate_s": 0.13444444868299696,
+    "min_long": 0.5950411794192361,
+    "max_short": 0.7438018067792843
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.661157161581586,
-     "Vː short": -1.0578509856341973,
-     "C long": 1.0578509856341973
+     "V long": 0.7438018067792843,
+     "Vː short": -1.1900823588384721,
+     "C long": 1.1900823588384721
     }
    },
    "class_alarm": null,
@@ -17747,15 +17747,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13444444868299696,
-    "min_long": 0.5950411794192361,
-    "max_short": 0.7438018067792843
+    "rate_s": 0.12100000381469726,
+    "min_long": 0.6611568660213734,
+    "max_short": 0.8264464519769826
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7438018067792843,
-     "Vː short": -1.1900823588384721,
-     "C long": 1.1900823588384721
+     "V long": 0.8264464519769826,
+     "Vː short": -1.3223137320427467,
+     "C long": 1.3223137320427467
     }
    },
    "class_alarm": null,
@@ -19365,15 +19365,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1550000011920929,
-    "min_long": 0.6451614391791325,
-    "max_short": 0.774193573196522
+    "rate_s": 0.1377777788374159,
+    "min_long": 0.7258066190765241,
+    "max_short": 0.8709677698460874
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.774193573196522,
-     "ɰ̃ short": -0.6451614391791325,
-     "C long": 1.0322586103234859
+     "V long": 0.8709677698460874,
+     "ɰ̃ short": -0.7258066190765241,
+     "C long": 1.1612909366139217
     }
    },
    "class_alarm": null,
@@ -19412,14 +19412,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17714285850524902,
+    "rate_s": 0.1550000011920929,
     "min_long": null,
-    "max_short": 0.7903224938121727
+    "max_short": 0.9032257072139116
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7903224938121727,
-     "C long": 0.9032262840330502
+     "V long": 0.9032257072139116,
+     "C long": 1.0322586103234859
     }
    },
    "class_alarm": null,
@@ -19549,14 +19549,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16285714081355504,
+    "rate_s": 0.14249999821186066,
     "min_long": null,
-    "max_short": 0.6754386928052906
+    "max_short": 0.7719299346346178
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6754386928052906,
-     "C long": 1.0438593987062446
+     "V long": 0.7719299346346178,
+     "C long": 1.1929821699499938
     }
    },
    "class_alarm": null,
@@ -19595,15 +19595,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14249999821186066,
-    "min_long": 0.421052235315376,
-    "max_short": 0.7719299346346178
+    "rate_s": 0.12666666507720947,
+    "min_long": 0.473683764729798,
+    "max_short": 0.868421176463945
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7719299346346178,
-     "ɰ̃ short": -0.421052235315376,
-     "C long": 1.1929821699499938
+     "V long": 0.868421176463945,
+     "ɰ̃ short": -0.473683764729798,
+     "C long": 1.3421049411937431
     }
    },
    "class_alarm": null,
@@ -19733,15 +19733,15 @@
    "error": false,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15000000596046448,
-    "min_long": 0.7333333995607138,
-    "max_short": 0.8
+    "rate_s": 0.13333333863152397,
+    "min_long": 0.825000074505803,
+    "max_short": 0.9000000000000001
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8,
-     "C long": 1.1333330021964312,
-     "ɰ̃ short": -0.7333333995607138
+     "V long": 0.9000000000000001,
+     "C long": 1.2749996274709852,
+     "ɰ̃ short": -0.825000074505803
     }
    },
    "class_alarm": null,
@@ -19780,14 +19780,14 @@
    "error": true,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17142857824053084,
+    "rate_s": 0.15000000596046448,
     "min_long": null,
-    "max_short": 0.7
+    "max_short": 0.8
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7,
-     "C long": 0.9916663769218771
+     "V long": 0.8,
+     "C long": 1.1333330021964312
     }
    },
    "class_alarm": null,
@@ -19917,14 +19917,14 @@
    "error": false,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1642857108797346,
+    "rate_s": 0.14374999701976776,
     "min_long": null,
-    "max_short": 0.6695653183473778
+    "max_short": 0.7652175066827174
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6695653183473778,
-     "C long": 1.0347823689249778
+     "V long": 0.7652175066827174,
+     "C long": 1.1826084216285462
     }
    },
    "class_alarm": null,
@@ -19963,15 +19963,15 @@
    "error": true,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14374999701976776,
-    "min_long": 0.34782576245485725,
-    "max_short": 0.7652175066827174
+    "rate_s": 0.12777777512868246,
+    "min_long": 0.3913039827617144,
+    "max_short": 0.860869695018057
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7652175066827174,
-     "C long": 1.1826084216285462,
-     "ɰ̃ short": -0.34782576245485725
+     "V long": 0.860869695018057,
+     "C long": 1.3304344743321144,
+     "ɰ̃ short": -0.3913039827617144
     }
    },
    "class_alarm": null,
@@ -20892,15 +20892,15 @@
    "error": false,
    "meant": "t a n a k a s a ɰ̃ w a o ŋ ɡ a k ɯ ɡ a o s ɨ c i d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1693750061094761,
-    "min_long": 0.7675276194387411,
-    "max_short": 3.188191541696516
+    "rate_s": 0.1594117704559775,
+    "min_long": 0.8154980956536625,
+    "max_short": 3.3874535130525483
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 3.188191541696516,
-     "C long": 0.5313654915556387,
-     "ɰ̃ short": -0.7675276194387411
+     "V long": 3.3874535130525483,
+     "C long": 0.5645758347778662,
+     "ɰ̃ short": -0.8154980956536625
     }
    },
    "class_alarm": "V long",
@@ -21032,15 +21032,15 @@
    "error": false,
    "meant": "s o n o k e ɰ̃ w a z o n dʑ i t e o ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14750000834465027,
-    "min_long": 0.5423723334247271,
-    "max_short": 0.7457627666575273
+    "rate_s": 0.13615385385660025,
+    "min_long": 0.5875700278767877,
+    "max_short": 0.8079096638789879
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7457627666575273,
-     "C long": 0.8135585001370906,
-     "ɰ̃ short": -0.5423723334247271
+     "V long": 0.8079096638789879,
+     "C long": 0.8813550418151815,
+     "ɰ̃ short": -0.5875700278767877
     }
    },
    "class_alarm": null,
@@ -21268,15 +21268,15 @@
    "error": false,
    "meant": "t o ɕ o k a n d e b e ɲ c oː ɕ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15799999833106995,
-    "min_long": 0.3481013147690767,
-    "max_short": 0.6962026295381534
+    "rate_s": 0.13166666527589163,
+    "min_long": 0.41772157772289203,
+    "max_short": 0.8354431554457841
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6962026295381534,
-     "C long": 0.6962033840273357,
-     "Vː short": -0.6962026295381534
+     "V long": 0.8354431554457841,
+     "C long": 0.8354440608328029,
+     "Vː short": -0.8354431554457841
     }
    },
    "class_alarm": null,
@@ -21408,14 +21408,14 @@
    "error": false,
    "meant": "ɡ o ɕ ɨ mʲ i w a n a n d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.17249999940395355,
+    "rate_s": 0.15333333280351427,
     "min_long": null,
-    "max_short": 0.6376805534835502
+    "max_short": 0.717390622668994
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6376805534835502,
-     "C long": 0.7536231633670889
+     "V long": 0.717390622668994,
+     "C long": 0.8478260587879749
     }
    },
    "class_alarm": null,
@@ -21785,16 +21785,16 @@
    "error": false,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14900001287460327,
-    "min_long": 0.637583629509721,
-    "max_short": 0.9395971382412407
+    "rate_s": 0.13545455715873025,
+    "min_long": 0.7013419924606931,
+    "max_short": 1.0335568520653646
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9395971382412407,
-     "Vː short": -1.275167259019442,
-     "C long": 0.9395971382412407,
-     "ɰ̃ short": -0.6711402415564027
+     "V long": 1.0335568520653646,
+     "Vː short": -1.4026839849213861,
+     "C long": 1.0335568520653646,
+     "ɰ̃ short": -0.738254265712043
     }
    },
    "class_alarm": null,
@@ -21833,16 +21833,16 @@
    "error": true,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13700000047683716,
-    "min_long": 0.3284670564259332,
-    "max_short": 0.8029198096514799
+    "rate_s": 0.12454545497894287,
+    "min_long": 0.36131376206852656,
+    "max_short": 0.8832117906166279
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8029198096514799,
-     "Vː short": -0.6569341128518664,
-     "C long": 1.0218977022453026,
-     "ɰ̃ short": -0.7299271787868723
+     "V long": 0.8832117906166279,
+     "Vː short": -0.7226275241370531,
+     "C long": 1.1240874724698329,
+     "ɰ̃ short": -0.8029198966655595
     }
    },
    "class_alarm": null,
@@ -22396,15 +22396,15 @@
    "error": false,
    "meant": "k o n o d e ɰ̃ ɕ a w a ɕ i n dʑ ɨ k ɯ ɲ i t o m a ɾʲ i m a s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1706249937415123,
-    "min_long": 0.4688640389182975,
-    "max_short": 0.9963374800264392
+    "rate_s": 0.1605882294037763,
+    "min_long": 0.49816804135069104,
+    "max_short": 1.0586085725280916
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9963374800264392,
-     "ɰ̃ short": -0.4688640389182975,
-     "C long": 2.5201463051734345
+     "V long": 1.0586085725280916,
+     "ɰ̃ short": -0.49816804135069104,
+     "C long": 2.677655449246774
     }
    },
    "class_alarm": null,
@@ -22492,16 +22492,16 @@
    "error": false,
    "meant": "ɲ i h o ŋ ɡ o o b e ɲ c oː ɕ i t e ɲ i n e ɲː i n a ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15176470490062938,
-    "min_long": 0.4282945607041776,
-    "max_short": 1.3178289945964694
+    "rate_s": 0.1357894728058263,
+    "min_long": 0.4786821560811397,
+    "max_short": 1.4728676998431127
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.3178289945964694,
-     "C long": 0.7906984964404822,
-     "Vː short": -0.8565891214083552,
-     "Cː short": -0.7248055150098935
+     "V long": 1.4728676998431127,
+     "C long": 0.8837218489628919,
+     "Vː short": -0.9573643121622794,
+     "Cː short": -0.8100767520698811
     }
    },
    "class_alarm": null,
@@ -22730,15 +22730,15 @@
    "error": false,
    "meant": "eː t o a n o e c i n o tɕ i k a k ɯ ɲ i s ɨ n d eː m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.18647058220470653,
-    "min_long": 0.4022084706175322,
-    "max_short": 1.5552048930413418
+    "rate_s": 0.17611110541555616,
+    "min_long": 0.4258677924185635,
+    "max_short": 1.6466875338084797
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.8044169412350644,
-     "C long": 3.9684537988683126,
-     "V long": 1.5552048930413418
+     "Vː short": -0.851735584837127,
+     "C long": 4.201892257625272,
+     "V long": 1.6466875338084797
     }
    },
    "class_alarm": "C long",
@@ -22777,15 +22777,15 @@
    "error": false,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.15727273442528464,
-    "min_long": 0.540462456224611,
-    "max_short": 0.6994220244664997
+    "rate_s": 0.14416667322317758,
+    "min_long": 0.5895954067904847,
+    "max_short": 0.7630058448725452
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -1.080924912449222,
-     "V long": 0.6994220244664997,
-     "C long": 0.5086707699696654
+     "Vː short": -1.1791908135809694,
+     "V long": 0.7630058448725452,
+     "C long": 0.554913567239635
     }
    },
    "class_alarm": null,
@@ -22824,15 +22824,15 @@
    "error": true,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.15545455434105612,
-    "min_long": 0.22514616295469758,
-    "max_short": 0.7076020073309527
+    "rate_s": 0.1425000081459681,
+    "min_long": 0.2456139959505792,
+    "max_short": 0.7719294625428574
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.45029232590939516,
-     "V long": 0.7076020073309527,
-     "C long": 0.7076023907526222
+     "Vː short": -0.4912279919011584,
+     "V long": 0.7719294625428574,
+     "C long": 0.7719298808210425
     }
    },
    "class_alarm": null,
@@ -23248,14 +23248,14 @@
    "error": false,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1587499976158142,
+    "rate_s": 0.14111110899183485,
     "min_long": null,
-    "max_short": 0.6929134863442471
+    "max_short": 0.779527672137278
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6929134863442471,
-     "C long": 0.7559048022759025
+     "V long": 0.779527672137278,
+     "C long": 0.8503929025603904
     }
    },
    "class_alarm": null,
@@ -23294,15 +23294,15 @@
    "error": true,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14111110899183485,
-    "min_long": 0.24803126324678051,
-    "max_short": 0.779527672137278
+    "rate_s": 0.12699999809265136,
+    "min_long": 0.2755902924964228,
+    "max_short": 0.866141857930309
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.779527672137278,
-     "Vː short": -0.49606252649356103,
-     "C long": 0.8503929025603904
+     "V long": 0.866141857930309,
+     "Vː short": -0.5511805849928456,
+     "C long": 0.9448810028448782
     }
    },
    "class_alarm": null,
@@ -23434,22 +23434,22 @@
    "error": false,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1722222301695082,
-    "min_long": 0.4645163567827737,
-    "max_short": 1.6258062104652984
+    "rate_s": 0.15500000715255738,
+    "min_long": 0.516129285314193,
+    "max_short": 1.8064513449614426
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.6258062104652984,
-     "Vː short": -0.9290327135655474,
-     "C long": 0.7548379549747304
+     "V long": 1.8064513449614426,
+     "Vː short": -1.032258570628386,
+     "C long": 0.8387088388608115
     }
    },
-   "class_alarm": null,
+   "class_alarm": "V long",
    "flags": {
     "mfa_duration": true,
     "mfa_choice": false,
-    "mfa_class": false
+    "mfa_class": true
    },
    "picked": {
     "1.0": "long+",
@@ -23481,14 +23481,14 @@
    "error": true,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.19375000894069672,
+    "rate_s": 0.1722222301695082,
     "min_long": null,
-    "max_short": 1.4451610759691542
+    "max_short": 1.6258062104652984
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.4451610759691542,
-     "C long": 0.6193542194664454
+     "V long": 1.6258062104652984,
+     "C long": 0.6967734968997511
     }
    },
    "class_alarm": null,
@@ -23620,14 +23620,14 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17374999821186066,
+    "rate_s": 0.15444444285498726,
     "min_long": null,
-    "max_short": 1.3812950331320355
+    "max_short": 1.5539569122735397
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.3812950331320355,
-     "C long": 0.8057553216442478
+     "V long": 1.5539569122735397,
+     "C long": 0.9064747368497786
     }
    },
    "class_alarm": null,
@@ -23666,20 +23666,20 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15444444285498726,
-    "min_long": 0.22661849124776534,
-    "max_short": 1.5539569122735397
+    "rate_s": 0.13899999856948853,
+    "min_long": 0.2517983236086282,
+    "max_short": 1.7266187914150444
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.5539569122735397,
-     "Vː short": -0.4532369824955307,
-     "C long": 0.9064747368497786
+     "V long": 1.7266187914150444,
+     "Vː short": -0.5035966472172564,
+     "C long": 1.0071941520553096
     }
    },
    "class_alarm": null,
    "flags": {
-    "mfa_duration": false,
+    "mfa_duration": true,
     "mfa_choice": false,
     "mfa_class": false
    },
@@ -23806,15 +23806,15 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16555554336971706,
-    "min_long": 0.42281877986482946,
-    "max_short": 1.510067225243569
+    "rate_s": 0.14899998903274536,
+    "min_long": 0.46979864429425494,
+    "max_short": 1.6778524724928545
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.510067225243569,
-     "Vː short": -0.8456375597296589,
-     "C long": 0.6644296655139101
+     "V long": 1.6778524724928545,
+     "Vː short": -0.9395972885885099,
+     "C long": 0.7382551839043445
     }
    },
    "class_alarm": null,
@@ -23853,14 +23853,14 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1862499862909317,
+    "rate_s": 0.16555554336971706,
     "min_long": null,
-    "max_short": 1.3422819779942836
+    "max_short": 1.510067225243569
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.3422819779942836,
-     "C long": 0.5906041471234756
+     "V long": 1.510067225243569,
+     "C long": 0.6644296655139101
     }
    },
    "class_alarm": null,
@@ -24725,14 +24725,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1700000081743513,
+    "rate_s": 0.14875000715255737,
     "min_long": null,
-    "max_short": 0.7647058175332614
+    "max_short": 0.8739495057522987
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7647058175332614,
-     "C long": 0.7647054669177207
+     "V long": 0.8739495057522987,
+     "C long": 0.8739491050488237
     }
    },
    "class_alarm": null,
@@ -24771,15 +24771,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14875000715255737,
-    "min_long": 0.20168087093701703,
-    "max_short": 0.8739495057522987
+    "rate_s": 0.132222228580051,
+    "min_long": 0.22689097980414413,
+    "max_short": 0.983193193971336
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8739495057522987,
-     "C long": 0.8739491050488237,
-     "Vː short": -0.40336174187403406
+     "V long": 0.983193193971336,
+     "C long": 0.9831927431799267,
+     "Vː short": -0.45378195960828827
     }
    },
    "class_alarm": null,
@@ -24908,15 +24908,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1562500074505806,
-    "min_long": 0.41599996490478686,
-    "max_short": 0.8319999298095737
+    "rate_s": 0.1388888955116272,
+    "min_long": 0.46799996051788517,
+    "max_short": 0.9359999210357703
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8319999298095737,
-     "C long": 1.0239997375488405,
-     "Vː short": -0.8319999298095737
+     "V long": 0.9359999210357703,
+     "C long": 1.1519997047424457,
+     "Vː short": -0.9359999210357703
     }
    },
    "class_alarm": null,
@@ -24955,14 +24955,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.18000000715255737,
+    "rate_s": 0.1575000062584877,
     "min_long": null,
-    "max_short": 0.7222221670327386
+    "max_short": 0.8253967623231298
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7222221670327386,
-     "C long": 0.888888668130954
+     "V long": 0.8253967623231298,
+     "C long": 1.0158727635782332
     }
    },
    "class_alarm": null,
@@ -25092,15 +25092,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1577777730094062,
-    "min_long": 0.4753520514869974,
-    "max_short": 0.7605626779377094
+    "rate_s": 0.14199999570846558,
+    "min_long": 0.5281689460966638,
+    "max_short": 0.8450696421530105
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7605626779377094,
-     "Vː short": -0.9507041029739948,
-     "C long": 0.8239436566510432
+     "V long": 0.8450696421530105,
+     "Vː short": -1.0563378921933275,
+     "C long": 0.9154929518344924
     }
    },
    "class_alarm": null,
@@ -25139,15 +25139,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17749999463558197,
-    "min_long": 0.45070414494909805,
-    "max_short": 0.5633804330369919
+    "rate_s": 0.1577777730094062,
+    "min_long": 0.5070421630677353,
+    "max_short": 0.6338029871666159
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.5633804330369919,
-     "Vː short": -0.9014082898981961,
-     "C long": 0.732394361467594
+     "V long": 0.6338029871666159,
+     "Vː short": -1.0140843261354706,
+     "C long": 0.8239436566510432
     }
    },
    "class_alarm": null,
@@ -25277,15 +25277,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1600000038743019,
-    "min_long": 0.4687499141437022,
-    "max_short": 0.6250001338776169
+    "rate_s": 0.14222222566604614,
+    "min_long": 0.527343653411665,
+    "max_short": 0.703125150612319
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6250001338776169,
-     "Vː short": -0.9374998282874044,
-     "C long": 0.8749998894054469
+     "V long": 0.703125150612319,
+     "Vː short": -1.05468730682333,
+     "C long": 0.9843748755811278
     }
    },
    "class_alarm": null,
@@ -25324,15 +25324,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1400000055631002,
-    "min_long": 0.49999992904209234,
-    "max_short": 0.7142858562015295
+    "rate_s": 0.12600000500679015,
+    "min_long": 0.555555476713436,
+    "max_short": 0.7936509513350329
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7142858562015295,
-     "Vː short": -0.9999998580841847,
-     "C long": 0.9999998580841847
+     "V long": 0.7936509513350329,
+     "Vː short": -1.111110953426872,
+     "C long": 1.111110953426872
     }
    },
    "class_alarm": null,
@@ -26942,15 +26942,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1524999961256981,
-    "min_long": 1.0491809173477515,
-    "max_short": 0.786885297160674
+    "rate_s": 0.13555555211173165,
+    "min_long": 1.1803285320162205,
+    "max_short": 0.8852459593057582
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.786885297160674,
-     "ɰ̃ short": -1.0491809173477515,
-     "C long": 0.8524590067823736
+     "V long": 0.8852459593057582,
+     "ɰ̃ short": -1.1803285320162205,
+     "C long": 0.9590163826301702
     }
    },
    "class_alarm": null,
@@ -26989,14 +26989,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17428570985794067,
+    "rate_s": 0.1524999961256981,
     "min_long": null,
-    "max_short": 0.8606556227725511
+    "max_short": 0.9836064260257728
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8606556227725511,
-     "C long": 0.745901630934577
+     "V long": 0.9836064260257728,
+     "C long": 0.8524590067823736
     }
    },
    "class_alarm": null,
@@ -27126,14 +27126,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16714285952704294,
+    "rate_s": 0.14625000208616257,
     "min_long": null,
-    "max_short": 0.7179487362363579
+    "max_short": 0.8205128414129805
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7179487362363579,
-     "C long": 0.8376067400727574
+     "V long": 0.8205128414129805,
+     "C long": 0.957264845797437
     }
    },
    "class_alarm": null,
@@ -27172,15 +27172,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14500000327825546,
-    "min_long": 0.41379352160213584,
-    "max_short": 0.8275862210712588
+    "rate_s": 0.12888889180289376,
+    "min_long": 0.46551771180240276,
+    "max_short": 0.9310344987051661
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8275862210712588,
-     "ɰ̃ short": -0.41379352160213584,
-     "C long": 0.8965516709827793
+     "V long": 0.9310344987051661,
+     "ɰ̃ short": -0.46551771180240276,
+     "C long": 1.0086206298556266
     }
    },
    "class_alarm": null,
@@ -27310,15 +27310,15 @@
    "error": false,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1537500098347664,
-    "min_long": 0.5203254490931057,
-    "max_short": 0.8455283701857198
+    "rate_s": 0.13666667540868124,
+    "min_long": 0.5853661302297438,
+    "max_short": 0.9512194164589347
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8455283701857198,
-     "C long": 0.8455283701857198,
-     "ɰ̃ short": -0.5203254490931057
+     "V long": 0.9512194164589347,
+     "C long": 0.9512194164589347,
+     "ɰ̃ short": -0.5853661302297438
     }
    },
    "class_alarm": null,
@@ -27357,14 +27357,14 @@
    "error": true,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17428570985794067,
+    "rate_s": 0.1524999961256981,
     "min_long": null,
-    "max_short": 0.6885246350155898
+    "max_short": 0.786885297160674
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6885246350155898,
-     "C long": 0.803278626853564
+     "V long": 0.786885297160674,
+     "C long": 0.9180327164040731
     }
    },
    "class_alarm": null,
@@ -27494,14 +27494,14 @@
    "error": false,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16000000068119594,
+    "rate_s": 0.14000000059604645,
     "min_long": null,
-    "max_short": 0.6250001463506897
+    "max_short": 0.7142858815436454
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6250001463506897,
-     "C long": 0.874999906867743
+     "V long": 0.7142858815436454,
+     "C long": 0.9999998935631348
     }
    },
    "class_alarm": null,
@@ -27540,15 +27540,15 @@
    "error": true,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14000000059604645,
-    "min_long": 0.28571486351441117,
-    "max_short": 0.7142858815436454
+    "rate_s": 0.1244444449742635,
+    "min_long": 0.3214292214537126,
+    "max_short": 0.803571616736601
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7142858815436454,
-     "C long": 0.9999998935631348,
-     "ɰ̃ short": -0.28571486351441117
+     "V long": 0.803571616736601,
+     "C long": 1.1249998802585266,
+     "ɰ̃ short": -0.3214292214537126
     }
    },
    "class_alarm": null,
@@ -28469,15 +28469,15 @@
    "error": false,
    "meant": "t a n a k a s a ɰ̃ w a o ŋ ɡ a k ɯ ɡ a o s ɨ c i d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.16375000029802322,
-    "min_long": 0.6717558113277308,
-    "max_short": 3.480916344517212
+    "rate_s": 0.154117647339316,
+    "min_long": 0.7137405495357139,
+    "max_short": 3.6984736160495375
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 3.480916344517212,
-     "C long": 0.5496185234491725,
-     "ɰ̃ short": -0.6717558113277308
+     "V long": 3.6984736160495375,
+     "C long": 0.5839696811647457,
+     "ɰ̃ short": -0.7137405495357139
     }
    },
    "class_alarm": "V long",
@@ -28609,15 +28609,15 @@
    "error": false,
    "meant": "s o n o k e ɰ̃ w a z o n dʑ i t e o ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16666666169961294,
-    "min_long": 0.42000032722950953,
-    "max_short": 0.7199993348121444
+    "rate_s": 0.15384614926118118,
+    "min_long": 0.45500035449863535,
+    "max_short": 0.7799992793798232
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7199993348121444,
-     "C long": 0.660000820755983,
-     "ɰ̃ short": -0.42000032722950953
+     "V long": 0.7799992793798232,
+     "C long": 0.715000889152315,
+     "ɰ̃ short": -0.45500035449863535
     }
    },
    "class_alarm": null,
@@ -28845,15 +28845,15 @@
    "error": false,
    "meant": "t o ɕ o k a n d e b e ɲ c oː ɕ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15400000810623168,
-    "min_long": 0.4545457712171044,
-    "max_short": 0.6493507699874683
+    "rate_s": 0.1283333400885264,
+    "min_long": 0.5454549254605252,
+    "max_short": 0.779220923984962
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6493507699874683,
-     "C long": 0.6493499959012133,
-     "Vː short": -0.9090915424342088
+     "V long": 0.779220923984962,
+     "C long": 0.779219995081456,
+     "Vː short": -1.0909098509210504
     }
    },
    "class_alarm": null,
@@ -28985,14 +28985,14 @@
    "error": false,
    "meant": "ɡ o ɕ ɨ mʲ i w a n a n d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.17125000804662704,
+    "rate_s": 0.15222222937477958,
     "min_long": null,
-    "max_short": 0.7007299219261853
+    "max_short": 0.7883211621669586
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7007299219261853,
-     "C long": 0.7007299219261853
+     "V long": 0.7883211621669586,
+     "C long": 0.7883211621669586
     }
    },
    "class_alarm": null,
@@ -29362,16 +29362,16 @@
    "error": false,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14999998807907106,
-    "min_long": 0.5333328670925194,
-    "max_short": 1.0666665289136987
+    "rate_s": 0.13636362552642822,
+    "min_long": 0.5866661538017713,
+    "max_short": 1.1733331818050687
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.0666665289136987,
-     "Vː short": -1.2666663540733936,
-     "C long": 0.8000000953674392,
-     "ɰ̃ short": -0.5333328670925194
+     "V long": 1.1733331818050687,
+     "Vː short": -1.3933329894807331,
+     "C long": 0.8800001049041831,
+     "ɰ̃ short": -0.5866661538017713
     }
    },
    "class_alarm": null,
@@ -29410,16 +29410,16 @@
    "error": true,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13799999952316283,
-    "min_long": 0.362318928215189,
-    "max_short": 0.9420289542088611
+    "rate_s": 0.12545454502105713,
+    "min_long": 0.3985508210367079,
+    "max_short": 1.0362318496297471
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9420289542088611,
-     "Vː short": -0.724637856430378,
-     "C long": 0.8695652549493668,
-     "ɰ̃ short": -0.4347821955569661
+     "V long": 1.0362318496297471,
+     "Vː short": -0.7971016420734158,
+     "C long": 0.9565217804443034,
+     "ɰ̃ short": -0.4782604151126627
     }
    },
    "class_alarm": null,
@@ -29973,15 +29973,15 @@
    "error": false,
    "meant": "k o n o d e ɰ̃ ɕ a w a ɕ i n dʑ ɨ k ɯ ɲ i t o m a ɾʲ i m a s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.16874999925494194,
-    "min_long": 0.35555521804118695,
-    "max_short": 1.3037038790018642
+    "rate_s": 0.1588235287105336,
+    "min_long": 0.3777774191687611,
+    "max_short": 1.3851853714394806
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.3037038790018642,
-     "ɰ̃ short": -0.35555521804118695,
-     "C long": 2.5481478485714413
+     "V long": 1.3851853714394806,
+     "ɰ̃ short": -0.3777774191687611,
+     "C long": 2.707407089107156
     }
    },
    "class_alarm": null,
@@ -30069,16 +30069,16 @@
    "error": false,
    "meant": "ɲ i h o ŋ ɡ o o b e ɲ c oː ɕ i t e ɲ i n e ɲː i n a ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14588235406314626,
-    "min_long": 0.4112903357606523,
-    "max_short": 0.8911298098784892
+    "rate_s": 0.1305263167933414,
+    "min_long": 0.45967743408543493,
+    "max_short": 0.9959686110406644
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8911298098784892,
-     "C long": 0.7540331674850128,
-     "Vː short": -0.8225806715213047,
-     "Cː short": -0.6854848462882746
+     "V long": 0.9959686110406644,
+     "C long": 0.8427429518950142,
+     "Vː short": -0.9193548681708699,
+     "Cː short": -0.7661301223221892
     }
    },
    "class_alarm": null,
@@ -30307,15 +30307,15 @@
    "error": false,
    "meant": "eː t o a n o e c i n o tɕ i k a k ɯ ɲ i s ɨ n d eː m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.19470588599934296,
-    "min_long": 0.3851960000566154,
-    "max_short": 3.543806567913117
+    "rate_s": 0.1838888923327128,
+    "min_long": 0.40785458829523985,
+    "max_short": 3.752265777790359
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.7703920001132308,
-     "C long": 2.6706953283248867,
-     "V long": 3.543806567913117
+     "Vː short": -0.8157091765904797,
+     "C long": 2.827795053520468,
+     "V long": 3.752265777790359
     }
    },
    "class_alarm": "V long",
@@ -30354,15 +30354,15 @@
    "error": false,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.16272728009657425,
-    "min_long": 0.49161998690828995,
-    "max_short": 0.7374305297906999
+    "rate_s": 0.14916667342185974,
+    "min_long": 0.5363127129908617,
+    "max_short": 0.8044696688625816
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.9832399738165799,
-     "V long": 0.7374305297906999,
-     "C long": 0.43016863318697235
+     "Vː short": -1.0726254259817234,
+     "V long": 0.8044696688625816,
+     "C long": 0.46927487256760614
     }
    },
    "class_alarm": null,
@@ -30401,15 +30401,15 @@
    "error": true,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.14454545757987283,
-    "min_long": 0.20754717370150158,
-    "max_short": 0.8301886948060063
+    "rate_s": 0.13250000278155008,
+    "min_long": 0.2264150985834563,
+    "max_short": 0.9056603943338252
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.41509434740300316,
-     "V long": 0.8301886948060063,
-     "C long": 0.5534594047767836
+     "Vː short": -0.4528301971669126,
+     "V long": 0.9056603943338252,
+     "C long": 0.6037738961201277
     }
    },
    "class_alarm": null,
@@ -30825,14 +30825,14 @@
    "error": false,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17499999701976776,
+    "rate_s": 0.15555555290646023,
     "min_long": null,
-    "max_short": 0.5714287173991326
+    "max_short": 0.6428573070740241
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.5714287173991326,
-     "C long": 1.1428574347982652
+     "V long": 0.6428573070740241,
+     "C long": 1.2857146141480482
     }
    },
    "class_alarm": null,
@@ -30871,15 +30871,15 @@
    "error": true,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15555555290646023,
-    "min_long": 0.22499978925500239,
-    "max_short": 0.6428573070740241
+    "rate_s": 0.13999999761581422,
+    "min_long": 0.24999976583889152,
+    "max_short": 0.7142858967489156
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6428573070740241,
-     "Vː short": -0.44999957851000477,
-     "C long": 1.2857146141480482
+     "V long": 0.7142858967489156,
+     "Vː short": -0.49999953167778305,
+     "C long": 1.4285717934978313
     }
    },
    "class_alarm": null,
@@ -31011,15 +31011,15 @@
    "error": false,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16777777671813965,
-    "min_long": 0.4470197993210281,
-    "max_short": 0.8344370061005157
+    "rate_s": 0.1509999990463257,
+    "min_long": 0.4966886659122534,
+    "max_short": 0.9271522290005729
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8344370061005157,
-     "Vː short": -0.8940395986420562,
-     "C long": 1.0728473762666777
+     "V long": 0.9271522290005729,
+     "Vː short": -0.9933773318245068,
+     "C long": 1.1920526402963085
     }
    },
    "class_alarm": null,
@@ -31058,14 +31058,14 @@
    "error": true,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1887499988079071,
+    "rate_s": 0.16777777671813965,
     "min_long": null,
-    "max_short": 0.7947018654596055
+    "max_short": 0.8940395986420562
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7947018654596055,
-     "C long": 0.9536421122370468
+     "V long": 0.8940395986420562,
+     "C long": 1.0728473762666777
     }
    },
    "class_alarm": null,
@@ -31197,14 +31197,14 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17249999940395355,
+    "rate_s": 0.15333333280351427,
     "min_long": null,
-    "max_short": 0.7536235089012626
+    "max_short": 0.8478264475139204
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7536235089012626,
-     "C long": 1.1014489198126618
+     "V long": 0.8478264475139204,
+     "C long": 1.2391300347892444
     }
    },
    "class_alarm": null,
@@ -31243,15 +31243,15 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15333333280351427,
-    "min_long": 0.26086970606012516,
-    "max_short": 0.8478264475139204
+    "rate_s": 0.13799999952316283,
+    "min_long": 0.28985522895569465,
+    "max_short": 0.9420293861265784
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8478264475139204,
-     "Vː short": -0.5217394121202503,
-     "C long": 1.2391300347892444
+     "V long": 0.9420293861265784,
+     "Vː short": -0.5797104579113893,
+     "C long": 1.3768111497658273
     }
    },
    "class_alarm": null,
@@ -31383,15 +31383,15 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1655555566151937,
-    "min_long": 0.3926174327503599,
-    "max_short": 0.9060401186460448
+    "rate_s": 0.14900000095367433,
+    "min_long": 0.4362415919448443,
+    "max_short": 1.0067112429400498
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9060401186460448,
-     "Vː short": -0.7852348655007197,
-     "C long": 1.147650624936695
+     "V long": 1.0067112429400498,
+     "Vː short": -0.8724831838896886,
+     "C long": 1.275167361040772
     }
    },
    "class_alarm": null,
@@ -31430,14 +31430,14 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1862500011920929,
+    "rate_s": 0.1655555566151937,
     "min_long": null,
-    "max_short": 0.8053689943520399
+    "max_short": 0.9060401186460448
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8053689943520399,
-     "C long": 1.020133888832618
+     "V long": 0.9060401186460448,
+     "C long": 1.147650624936695
     }
    },
    "class_alarm": null,
@@ -32302,14 +32302,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17571428843906947,
+    "rate_s": 0.1537500023841858,
     "min_long": null,
-    "max_short": 0.6260163318662515
+    "max_short": 0.7154472364185731
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6260163318662515,
-     "C long": 1.024389929509513
+     "V long": 0.7154472364185731,
+     "C long": 1.1707313480108719
     }
    },
    "class_alarm": null,
@@ -32348,15 +32348,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1537500023841858,
-    "min_long": 0.19512214978346554,
-    "max_short": 0.7154472364185731
+    "rate_s": 0.1366666687859429,
+    "min_long": 0.21951241850639874,
+    "max_short": 0.8048781409708948
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7154472364185731,
-     "C long": 1.1707313480108719,
-     "Vː short": -0.3902442995669311
+     "V long": 0.8048781409708948,
+     "C long": 1.317072766512231,
+     "Vː short": -0.4390248370127975
     }
    },
    "class_alarm": null,
@@ -32485,15 +32485,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17499999701976776,
-    "min_long": 0.34285716231988433,
-    "max_short": 0.5714287173991326
+    "rate_s": 0.15555555290646023,
+    "min_long": 0.3857143076098699,
+    "max_short": 0.6428573070740241
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.5714287173991326,
-     "C long": 1.085714631177947,
-     "Vː short": -0.6857143246397687
+     "V long": 0.6428573070740241,
+     "C long": 1.2214289600751904,
+     "Vː short": -0.7714286152197398
     }
    },
    "class_alarm": null,
@@ -32532,14 +32532,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1999999965940203,
+    "rate_s": 0.17499999701976776,
     "min_long": null,
-    "max_short": 0.6000000340597976
+    "max_short": 0.6857143246397687
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6000000340597976,
-     "C long": 0.9500003022807036
+     "V long": 0.6857143246397687,
+     "C long": 1.085714631177947
     }
    },
    "class_alarm": null,
@@ -32669,15 +32669,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17222221692403158,
-    "min_long": 0.46451604641686856,
-    "max_short": 1.04516101791508
+    "rate_s": 0.1549999952316284,
+    "min_long": 0.5161289404631874,
+    "max_short": 1.1612900199056446
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.04516101791508,
-     "Vː short": -0.9290320928337371,
-     "C long": 1.161290635179416
+     "V long": 1.1612900199056446,
+     "Vː short": -1.0322578809263747,
+     "C long": 1.290322927977129
     }
    },
    "class_alarm": null,
@@ -32716,15 +32716,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.19374999403953552,
-    "min_long": 0.4387095801664039,
-    "max_short": 0.5677420267825596
+    "rate_s": 0.17222221692403158,
+    "min_long": 0.49354827768720433,
+    "max_short": 0.6387097801303796
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.5677420267825596,
-     "Vː short": -0.8774191603328078,
-     "C long": 1.0322583423817033
+     "V long": 0.6387097801303796,
+     "Vː short": -0.9870965553744087,
+     "C long": 1.161290635179416
     }
    },
    "class_alarm": null,
@@ -32854,15 +32854,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16374999284744263,
-    "min_long": 0.4885499017387813,
-    "max_short": 0.6106864671788602
+    "rate_s": 0.14555554919772679,
+    "min_long": 0.549618639456129,
+    "max_short": 0.6870222755762176
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6106864671788602,
-     "Vː short": -0.9770998034775626,
-     "C long": 1.1603057436312207
+     "V long": 0.6870222755762176,
+     "Vː short": -1.099237278912258,
+     "C long": 1.3053439615851232
     }
    },
    "class_alarm": null,
@@ -32901,15 +32901,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14555554919772679,
-    "min_long": 0.549618639456129,
-    "max_short": 0.6870222755762176
+    "rate_s": 0.1309999942779541,
+    "min_long": 0.6106873771734765,
+    "max_short": 0.7633580839735752
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6870222755762176,
-     "Vː short": -1.099237278912258,
-     "C long": 1.3053439615851232
+     "V long": 0.7633580839735752,
+     "Vː short": -1.221374754346953,
+     "C long": 1.4503821795390257
     }
    },
    "class_alarm": null,
@@ -34519,15 +34519,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1550000011920929,
-    "min_long": 0.45161246906086344,
-    "max_short": 0.5806453721704378
+    "rate_s": 0.1377777788374159,
+    "min_long": 0.5080640276934714,
+    "max_short": 0.6532260436917425
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.5806453721704378,
-     "ɰ̃ short": -0.45161246906086344,
-     "C long": 1.3548381762747752
+     "V long": 0.6532260436917425,
+     "ɰ̃ short": -0.5080640276934714,
+     "C long": 1.524192948309122
     }
    },
    "class_alarm": null,
@@ -34566,14 +34566,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17714285850524902,
+    "rate_s": 0.1550000011920929,
     "min_long": null,
-    "max_short": 0.564516259281741
+    "max_short": 0.6451614391791325
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.564516259281741,
-     "C long": 1.1854834042404283
+     "V long": 0.6451614391791325,
+     "C long": 1.3548381762747752
     }
    },
    "class_alarm": null,
@@ -34703,14 +34703,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.18428570883614676,
+    "rate_s": 0.16124999523162842,
     "min_long": null,
-    "max_short": 0.5426358043355958
+    "max_short": 0.6201552049549666
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.5426358043355958,
-     "C long": 1.1395351244175378
+     "V long": 0.6201552049549666,
+     "C long": 1.302325856477186
     }
    },
    "class_alarm": null,
@@ -34749,15 +34749,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16124999523162842,
-    "min_long": 0.5581390191052761,
-    "max_short": 0.6201552049549666
+    "rate_s": 0.1433333290947808,
+    "min_long": 0.6279063964934356,
+    "max_short": 0.6976746055743375
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6201552049549666,
-     "ɰ̃ short": -0.5581390191052761,
-     "C long": 1.302325856477186
+     "V long": 0.6976746055743375,
+     "ɰ̃ short": -0.6279063964934356,
+     "C long": 1.4651165885368345
     }
    },
    "class_alarm": null,
@@ -34887,15 +34887,15 @@
    "error": false,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1550000011920929,
-    "min_long": 0.3225803350434739,
-    "max_short": 0.6451614391791325
+    "rate_s": 0.1377777788374159,
+    "min_long": 0.36290287692390816,
+    "max_short": 0.7258066190765241
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6451614391791325,
-     "C long": 1.0967739082399959,
-     "ɰ̃ short": -0.3225803350434739
+     "V long": 0.7258066190765241,
+     "C long": 1.2338706467699956,
+     "ɰ̃ short": -0.36290287692390816
     }
    },
    "class_alarm": null,
@@ -34934,14 +34934,14 @@
    "error": true,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17714285850524902,
+    "rate_s": 0.1550000011920929,
     "min_long": null,
-    "max_short": 0.564516259281741
+    "max_short": 0.6451614391791325
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.564516259281741,
-     "C long": 0.9596771697099965
+     "V long": 0.6451614391791325,
+     "C long": 1.0967739082399959
     }
    },
    "class_alarm": null,
@@ -35071,14 +35071,14 @@
    "error": false,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.19714285646166121,
+    "rate_s": 0.17249999940395355,
     "min_long": null,
-    "max_short": 0.5579710889829106
+    "max_short": 0.6376812445518979
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.5579710889829106,
-     "C long": 1.014492394317725
+     "V long": 0.6376812445518979,
+     "C long": 1.1594198792202572
     }
    },
    "class_alarm": null,
@@ -35117,15 +35117,15 @@
    "error": true,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17249999940395355,
-    "min_long": 0.40579671585316834,
-    "max_short": 0.6376812445518979
+    "rate_s": 0.15333333280351427,
+    "min_long": 0.4565213053348144,
+    "max_short": 0.7173914001208851
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6376812445518979,
-     "C long": 1.1594198792202572,
-     "ɰ̃ short": -0.40579671585316834
+     "V long": 0.7173914001208851,
+     "C long": 1.3043473641227894,
+     "ɰ̃ short": -0.4565213053348144
     }
    },
    "class_alarm": null,
@@ -36046,15 +36046,15 @@
    "error": false,
    "meant": "t a n a k a s a ɰ̃ w a o ŋ ɡ a k ɯ ɡ a o s ɨ c i d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1574999988079071,
-    "min_long": 0.7619047979468754,
-    "max_short": 2.412698400684375
+    "rate_s": 0.14823529299567728,
+    "min_long": 0.8095238478185551,
+    "max_short": 2.5634920507271484
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 2.412698400684375,
-     "C long": 0.6349207911031268,
-     "ɰ̃ short": -0.7619047979468754
+     "V long": 2.5634920507271484,
+     "C long": 0.6746033405470723,
+     "ɰ̃ short": -0.8095238478185551
     }
    },
    "class_alarm": "V long",
@@ -36186,15 +36186,15 @@
    "error": false,
    "meant": "s o n o k e ɰ̃ w a z o n dʑ i t e o ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1608333388964335,
-    "min_long": 0.7461136228788932,
-    "max_short": 0.8082900978343812
+    "rate_s": 0.14846154359670785,
+    "min_long": 0.8082897581188009,
+    "max_short": 0.8756476059872462
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8082900978343812,
-     "C long": 0.932641565350098,
-     "ɰ̃ short": -0.7461136228788932
+     "V long": 0.8756476059872462,
+     "C long": 1.0103616957959394,
+     "ɰ̃ short": -0.8082897581188009
     }
    },
    "class_alarm": null,
@@ -36422,15 +36422,15 @@
    "error": false,
    "meant": "t o ɕ o k a n d e b e ɲ c oː ɕ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16400001049041749,
-    "min_long": 0.30487773852432576,
-    "max_short": 0.670731751639382
+    "rate_s": 0.13666667540868124,
+    "min_long": 0.3658532862291909,
+    "max_short": 0.8048781019672584
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.670731751639382,
-     "C long": 0.9146339424588426,
-     "Vː short": -0.6097554770486515
+     "V long": 0.8048781019672584,
+     "C long": 1.097560730950611,
+     "Vː short": -0.7317065724583818
     }
    },
    "class_alarm": null,
@@ -36562,14 +36562,14 @@
    "error": false,
    "meant": "ɡ o ɕ ɨ mʲ i w a n a n d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.17125000059604645,
+    "rate_s": 0.15222222275204128,
     "min_long": null,
-    "max_short": 0.4671535336461258
+    "max_short": 0.5255477253518915
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.4671535336461258,
-     "C long": 0.817518161796242
+     "V long": 0.5255477253518915,
+     "C long": 0.9197079320207724
     }
    },
    "class_alarm": null,
@@ -36939,16 +36939,16 @@
    "error": false,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15299999713897705,
-    "min_long": 0.4575163016758645,
-    "max_short": 0.7189543553075795
+    "rate_s": 0.13909090648997913,
+    "min_long": 0.503267931843451,
+    "max_short": 0.7908497908383375
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7189543553075795,
-     "Vː short": -0.915032603351729,
-     "C long": 1.1111116305415765,
-     "ɰ̃ short": -0.784313771322296
+     "V long": 0.7908497908383375,
+     "Vː short": -1.006535863686902,
+     "C long": 1.2222227935957342,
+     "ɰ̃ short": -0.8627451484545257
     }
    },
    "class_alarm": null,
@@ -36987,16 +36987,16 @@
    "error": true,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14500000476837158,
-    "min_long": 0.24137927774300155,
-    "max_short": 0.7586207633636487
+    "rate_s": 0.13181818615306506,
+    "min_long": 0.26551720551730174,
+    "max_short": 0.8344828397000136
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7586207633636487,
-     "Vː short": -0.4827585554860031,
-     "C long": 1.3103451791189398,
-     "ɰ̃ short": -0.8965516617692204
+     "V long": 0.8344828397000136,
+     "Vː short": -0.5310344110346035,
+     "C long": 1.441379697030834,
+     "ɰ̃ short": -0.9862068279461425
     }
    },
    "class_alarm": null,
@@ -37550,15 +37550,15 @@
    "error": false,
    "meant": "k o n o d e ɰ̃ ɕ a w a ɕ i n dʑ ɨ k ɯ ɲ i t o m a ɾʲ i m a s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.16312499344348907,
-    "min_long": 0.36781612135341735,
-    "max_short": 1.2260532506547606
+    "rate_s": 0.15352940559387207,
+    "min_long": 0.39080462893800594,
+    "max_short": 1.302681578820683
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.2260532506547606,
-     "ɰ̃ short": -0.36781612135341735,
-     "C long": 1.593869737400651
+     "V long": 1.302681578820683,
+     "ɰ̃ short": -0.39080462893800594,
+     "C long": 1.6934865959881915
     }
    },
    "class_alarm": null,
@@ -37646,16 +37646,16 @@
    "error": false,
    "meant": "ɲ i h o ŋ ɡ o o b e ɲ c oː ɕ i t e ɲ i n e ɲː i n a ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1623529406154857,
-    "min_long": 0.30797108898291065,
-    "max_short": 2.0326089670091747
+    "rate_s": 0.145263157392803,
+    "min_long": 0.34420298180442954,
+    "max_short": 2.2717394337161365
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 2.0326089670091747,
-     "C long": 0.9239136340787917,
-     "Vː short": -0.6159421779658213,
-     "Cː short": -0.923912165558553
+     "V long": 2.2717394337161365,
+     "C long": 1.0326093557351201,
+     "Vː short": -0.6884059636088591,
+     "Cː short": -1.0326077144477945
     }
    },
    "class_alarm": "V long",
@@ -37884,15 +37884,15 @@
    "error": false,
    "meant": "eː t o a n o e c i n o tɕ i k a k ɯ ɲ i s ɨ n d eː m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16647058374741497,
-    "min_long": 0.42049502606597544,
-    "max_short": 1.2614840040505886
+    "rate_s": 0.1572222179836697,
+    "min_long": 0.4452300275992681,
+    "max_short": 1.3356889454653291
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.8409900521319509,
-     "C long": 3.0035336498768315,
-     "V long": 1.2614840040505886
+     "Vː short": -0.8904600551985362,
+     "C long": 3.180212099869586,
+     "V long": 1.3356889454653291
     }
    },
    "class_alarm": null,
@@ -37931,15 +37931,15 @@
    "error": false,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.17090910131281073,
-    "min_long": 0.20478720065154213,
-    "max_short": 0.526595907925794
+    "rate_s": 0.15666667620340982,
+    "min_long": 0.22340421889259143,
+    "max_short": 0.5744682631917754
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.40957440130308426,
-     "V long": 0.526595907925794,
-     "C long": 0.643616368296824
+     "Vː short": -0.44680843778518287,
+     "V long": 0.5744682631917754,
+     "C long": 0.7021269472328989
     }
    },
    "class_alarm": null,
@@ -37978,15 +37978,15 @@
    "error": true,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1736363714391535,
-    "min_long": 0.14397908544884042,
-    "max_short": 0.6910994728453109
+    "rate_s": 0.15916667381922403,
+    "min_long": 0.15706809321691684,
+    "max_short": 0.7539266976494301
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.28795817089768083,
-     "V long": 0.6910994728453109,
-     "C long": 0.6910994728453109
+     "Vː short": -0.3141361864338337,
+     "V long": 0.7539266976494301,
+     "C long": 0.7539266976494301
     }
    },
    "class_alarm": null,
@@ -38402,14 +38402,14 @@
    "error": false,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13624999672174454,
+    "rate_s": 0.12111110819710626,
     "min_long": null,
-    "max_short": 0.7339451467737071
+    "max_short": 0.8256882901204206
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7339451467737071,
-     "C long": 0.587156292405083
+     "V long": 0.8256882901204206,
+     "C long": 0.6605508289557184
     }
    },
    "class_alarm": null,
@@ -38448,15 +38448,15 @@
    "error": true,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12111110819710626,
-    "min_long": 0.28899055703822873,
-    "max_short": 0.8256882901204206
+    "rate_s": 0.10899999737739563,
+    "min_long": 0.32110061893136527,
+    "max_short": 0.917431433467134
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8256882901204206,
-     "Vː short": -0.5779811140764575,
-     "C long": 0.6605508289557184
+     "V long": 0.917431433467134,
+     "Vː short": -0.6422012378627305,
+     "C long": 0.7339453655063538
     }
    },
    "class_alarm": null,
@@ -38588,15 +38588,15 @@
    "error": false,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12888889180289376,
-    "min_long": 0.5431033805030436,
-    "max_short": 0.8534483675547055
+    "rate_s": 0.11600000262260438,
+    "min_long": 0.6034482005589373,
+    "max_short": 0.9482759639496728
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8534483675547055,
-     "Vː short": -1.0862067610060873,
-     "C long": 0.7758613115046056
+     "V long": 0.9482759639496728,
+     "Vː short": -1.2068964011178747,
+     "C long": 0.8620681238940062
     }
    },
    "class_alarm": null,
@@ -38635,14 +38635,14 @@
    "error": true,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14500000327825546,
+    "rate_s": 0.12888889180289376,
     "min_long": null,
-    "max_short": 0.9655171208942999
+    "max_short": 1.0862067610060873
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9655171208942999,
-     "C long": 0.689654499115205
+     "V long": 1.0862067610060873,
+     "C long": 0.7758613115046056
     }
    },
    "class_alarm": null,
@@ -38774,14 +38774,14 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13875000923871994,
+    "rate_s": 0.12333334154552883,
     "min_long": null,
-    "max_short": 0.7207208445644675
+    "max_short": 0.810810950135026
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7207208445644675,
-     "C long": 0.5765768474847728
+     "V long": 0.810810950135026,
+     "C long": 0.6486489534203694
     }
    },
    "class_alarm": null,
@@ -38820,15 +38820,15 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12333334154552883,
-    "min_long": 0.3243239934293133,
-    "max_short": 0.810810950135026
+    "rate_s": 0.11100000739097596,
+    "min_long": 0.36035999269923696,
+    "max_short": 0.9009010557055844
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.810810950135026,
-     "Vː short": -0.6486479868586266,
-     "C long": 0.6486489534203694
+     "V long": 0.9009010557055844,
+     "Vː short": -0.7207199853984739,
+     "C long": 0.7207210593559659
     }
    },
    "class_alarm": null,
@@ -38960,15 +38960,15 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13000000185436672,
-    "min_long": 0.5769229769941867,
-    "max_short": 0.8461539441233464
+    "rate_s": 0.11700000166893006,
+    "min_long": 0.6410255299935408,
+    "max_short": 0.9401710490259404
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8461539441233464,
-     "Vː short": -1.1538459539883734,
-     "C long": 0.6153840197300542
+     "V long": 0.9401710490259404,
+     "Vː short": -1.2820510599870816,
+     "C long": 0.6837600219222824
     }
    },
    "class_alarm": null,
@@ -39007,14 +39007,14 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14625000208616257,
+    "rate_s": 0.13000000185436672,
     "min_long": null,
-    "max_short": 1.0256408479896653
+    "max_short": 1.1538459539883734
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.0256408479896653,
-     "C long": 0.5470080175378259
+     "V long": 1.1538459539883734,
+     "C long": 0.6153840197300542
     }
    },
    "class_alarm": null,
@@ -39879,14 +39879,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14142858130591257,
+    "rate_s": 0.12375000864267349,
     "min_long": null,
-    "max_short": 0.777777824605217
+    "max_short": 0.8888889424059624
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.777777824605217,
-     "C long": 0.7070708262678252
+     "V long": 0.8888889424059624,
+     "C long": 0.8080809443060861
     }
    },
    "class_alarm": null,
@@ -39925,15 +39925,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1250000074505806,
-    "min_long": 0.11999987840653191,
-    "max_short": 0.8800000619888269
+    "rate_s": 0.11111111773384942,
+    "min_long": 0.1349998632073484,
+    "max_short": 0.9900000697374303
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8800000619888269,
-     "C long": 0.800000143051139,
-     "Vː short": -0.23999975681306382
+     "V long": 0.9900000697374303,
+     "C long": 0.9000001609325313,
+     "Vː short": -0.2699997264146968
     }
    },
    "class_alarm": "Vː short",
@@ -40062,15 +40062,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13624999672174454,
-    "min_long": 0.4403670005711656,
-    "max_short": 0.8073395739580191
+    "rate_s": 0.12111110819710626,
+    "min_long": 0.4954128756425613,
+    "max_short": 0.9082570207027716
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8073395739580191,
-     "C long": 0.7339451467737071,
-     "Vː short": -0.8807340011423312
+     "V long": 0.9082570207027716,
+     "C long": 0.8256882901204206,
+     "Vː short": -0.9908257512851226
     }
    },
    "class_alarm": null,
@@ -40109,14 +40109,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15571428196770803,
+    "rate_s": 0.13624999672174454,
     "min_long": null,
-    "max_short": 0.7706422509995399
+    "max_short": 0.8807340011423312
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7706422509995399,
-     "C long": 0.6422020034269937
+     "V long": 0.8807340011423312,
+     "C long": 0.7339451467737071
     }
    },
    "class_alarm": null,
@@ -40246,15 +40246,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12888889180289376,
-    "min_long": 0.5043103149278133,
-    "max_short": 0.8534483675547055
+    "rate_s": 0.11600000262260438,
+    "min_long": 0.560344794364237,
+    "max_short": 0.9482759639496728
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8534483675547055,
-     "Vː short": -1.0086206298556266,
-     "C long": 0.6206890492036845
+     "V long": 0.9482759639496728,
+     "Vː short": -1.120689588728474,
+     "C long": 0.689654499115205
     }
    },
    "class_alarm": null,
@@ -40293,15 +40293,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14500000327825546,
-    "min_long": 0.48275856044714993,
-    "max_short": 0.7586207711597384
+    "rate_s": 0.12888889180289376,
+    "min_long": 0.5431033805030436,
+    "max_short": 0.8534483675547055
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7586207711597384,
-     "Vː short": -0.9655171208942999,
-     "C long": 0.5517235992921641
+     "V long": 0.8534483675547055,
+     "Vː short": -1.0862067610060873,
+     "C long": 0.6206890492036845
     }
    },
    "class_alarm": null,
@@ -40431,15 +40431,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1262500062584877,
-    "min_long": 0.5544553614050738,
-    "max_short": 0.8712871988291052
+    "rate_s": 0.1122222277853224,
+    "min_long": 0.623762281580708,
+    "max_short": 0.9801980986827433
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8712871988291052,
-     "Vː short": -1.1089107228101476,
-     "C long": 0.7128715161750769
+     "V long": 0.9801980986827433,
+     "Vː short": -1.247524563161416,
+     "C long": 0.8019804556969615
     }
    },
    "class_alarm": null,
@@ -40478,15 +40478,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1122222277853224,
-    "min_long": 0.40099022784848076,
-    "max_short": 0.9801980986827433
+    "rate_s": 0.10100000500679016,
+    "min_long": 0.44554469760942306,
+    "max_short": 1.0891089985363815
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9801980986827433,
-     "Vː short": -0.8019804556969615,
-     "C long": 0.8019804556969615
+     "V long": 1.0891089985363815,
+     "Vː short": -0.8910893952188461,
+     "C long": 0.8910893952188461
     }
    },
    "class_alarm": null,
@@ -42096,15 +42096,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13250000029802322,
-    "min_long": 0.4528297558082055,
-    "max_short": 0.8301887853411261
+    "rate_s": 0.11777777804268731,
+    "min_long": 0.5094334752842312,
+    "max_short": 0.9339623835087668
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8301887853411261,
-     "ɰ̃ short": -0.4528297558082055,
-     "C long": 0.6037739074370233
+     "V long": 0.9339623835087668,
+     "ɰ̃ short": -0.5094334752842312,
+     "C long": 0.6792456458666513
     }
    },
    "class_alarm": null,
@@ -42143,14 +42143,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1514285717691694,
+    "rate_s": 0.13250000029802322,
     "min_long": null,
-    "max_short": 0.7264151871734853
+    "max_short": 0.8301887853411261
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7264151871734853,
-     "C long": 0.5283021690073954
+     "V long": 0.8301887853411261,
+     "C long": 0.6037739074370233
     }
    },
    "class_alarm": null,
@@ -42280,14 +42280,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14428572143827165,
+    "rate_s": 0.1262500062584877,
     "min_long": null,
-    "max_short": 0.6930686116113738
+    "max_short": 0.7920784132701414
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6930686116113738,
-     "C long": 0.6237625766531923
+     "V long": 0.7920784132701414,
+     "C long": 0.7128715161750769
     }
    },
    "class_alarm": null,
@@ -42326,15 +42326,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1262500062584877,
-    "min_long": 0.47524704796208483,
-    "max_short": 0.792079357502091
+    "rate_s": 0.1122222277853224,
+    "min_long": 0.5346529289573455,
+    "max_short": 0.8910892771898524
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.792079357502091,
-     "ɰ̃ short": -0.47524704796208483,
-     "C long": 0.7128715161750769
+     "V long": 0.8910892771898524,
+     "ɰ̃ short": -0.5346529289573455,
+     "C long": 0.8019804556969615
     }
    },
    "class_alarm": null,
@@ -42464,15 +42464,15 @@
    "error": false,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13374999910593033,
-    "min_long": 0.4485985973077306,
-    "max_short": 0.822430018993828
+    "rate_s": 0.11888888809416029,
+    "min_long": 0.5046734219711969,
+    "max_short": 0.9252337713680564
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.822430018993828,
-     "C long": 0.5981311659821695,
-     "ɰ̃ short": -0.4485985973077306
+     "V long": 0.9252337713680564,
+     "C long": 0.6728975617299408,
+     "ɰ̃ short": -0.5046734219711969
     }
    },
    "class_alarm": null,
@@ -42511,14 +42511,14 @@
    "error": true,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.15285714183534896,
+    "rate_s": 0.13374999910593033,
     "min_long": null,
-    "max_short": 0.7850467654146663
+    "max_short": 0.8971963033310474
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7850467654146663,
-     "C long": 0.5233647702343983
+     "V long": 0.8971963033310474,
+     "C long": 0.5981311659821695
     }
    },
    "class_alarm": null,
@@ -42648,14 +42648,14 @@
    "error": false,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14142858130591257,
+    "rate_s": 0.12375000864267349,
     "min_long": null,
-    "max_short": 0.7070708262678252
+    "max_short": 0.8080809443060861
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7070708262678252,
-     "C long": 0.7070708262678252
+     "V long": 0.8080809443060861,
+     "C long": 0.8080809443060861
     }
    },
    "class_alarm": null,
@@ -42694,15 +42694,15 @@
    "error": true,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12375000864267349,
-    "min_long": 0.4848479885992578,
-    "max_short": 0.8080809443060861
+    "rate_s": 0.11000000768237644,
+    "min_long": 0.545453987174165,
+    "max_short": 0.9090910623443468
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8080809443060861,
-     "C long": 0.8080809443060861,
-     "ɰ̃ short": -0.4848479885992578
+     "V long": 0.9090910623443468,
+     "C long": 0.9090910623443468,
+     "ɰ̃ short": -0.545453987174165
     }
    },
    "class_alarm": null,
@@ -43623,15 +43623,15 @@
    "error": false,
    "meant": "t a n a k a s a ɰ̃ w a o ŋ ɡ a k ɯ ɡ a o s ɨ c i d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.12937499210238457,
-    "min_long": 0.4637677019686955,
-    "max_short": 0.9275363253619074
+    "rate_s": 0.12176469844930313,
+    "min_long": 0.4927531833417389,
+    "max_short": 0.9855073456970267
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9275363253619074,
-     "C long": 0.5410632403879946,
-     "ɰ̃ short": -0.4637677019686955
+     "V long": 0.9855073456970267,
+     "C long": 0.5748796929122443,
+     "ɰ̃ short": -0.4927531833417389
     }
    },
    "class_alarm": null,
@@ -43763,15 +43763,15 @@
    "error": false,
    "meant": "s o n o k e ɰ̃ w a z o n dʑ i t e o ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1425000031789144,
-    "min_long": 0.42105222063896175,
-    "max_short": 0.7719299077278291
+    "rate_s": 0.13153846447284406,
+    "min_long": 0.4561399056922085,
+    "max_short": 0.8362574000384815
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7719299077278291,
-     "C long": 0.6315791675148419,
-     "ɰ̃ short": -0.42105222063896175
+     "V long": 0.8362574000384815,
+     "C long": 0.6842107648077453,
+     "ɰ̃ short": -0.4561399056922085
     }
    },
    "class_alarm": null,
@@ -43999,15 +43999,15 @@
    "error": false,
    "meant": "t o ɕ o k a n d e b e ɲ c oː ɕ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14700000286102294,
-    "min_long": 0.3741497012388197,
-    "max_short": 0.7482994024776394
+    "rate_s": 0.12250000238418579,
+    "min_long": 0.4489796414865836,
+    "max_short": 0.8979592829731672
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7482994024776394,
-     "C long": 0.6802722577930842,
-     "Vː short": -0.7482994024776394
+     "V long": 0.8979592829731672,
+     "C long": 0.8163267093517009,
+     "Vː short": -0.8979592829731672
     }
    },
    "class_alarm": null,
@@ -44139,14 +44139,14 @@
    "error": false,
    "meant": "ɡ o ɕ ɨ mʲ i w a n a n d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1550000086426735,
+    "rate_s": 0.1377777854601542,
     "min_long": null,
-    "max_short": 0.5806453442598255
+    "max_short": 0.6532260122923037
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.5806453442598255,
-     "C long": 0.4516128318987121
+     "V long": 0.6532260122923037,
+     "C long": 0.5080644358860511
     }
    },
    "class_alarm": null,
@@ -44516,16 +44516,16 @@
    "error": false,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13499999642372132,
-    "min_long": 0.5555554819695724,
-    "max_short": 0.9629629531514985
+    "rate_s": 0.12272726947611029,
+    "min_long": 0.6111110301665296,
+    "max_short": 1.0592592484666483
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9629629531514985,
-     "Vː short": -1.1111109639391448,
-     "C long": 0.7407409369700291,
-     "ɰ̃ short": -0.592592043150585
+     "V long": 1.0592592484666483,
+     "Vː short": -1.2222220603330591,
+     "C long": 0.814815030667032,
+     "ɰ̃ short": -0.6518512474656435
     }
    },
    "class_alarm": null,
@@ -44564,16 +44564,16 @@
    "error": true,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12400000691413879,
-    "min_long": 0.2822580199366951,
-    "max_short": 1.0483869998623807
+    "rate_s": 0.11272727901285345,
+    "min_long": 0.31048382193036456,
+    "max_short": 1.1532256998486186
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.0483869998623807,
-     "Vː short": -0.5645160398733902,
-     "C long": 0.6451616004403822,
-     "ɰ̃ short": -0.4032253994219984
+     "V long": 1.1532256998486186,
+     "Vː short": -0.6209676438607291,
+     "C long": 0.7096777604844203,
+     "ɰ̃ short": -0.44354793936419823
     }
    },
    "class_alarm": null,
@@ -45127,15 +45127,15 @@
    "error": false,
    "meant": "k o n o d e ɰ̃ ɕ a w a ɕ i n dʑ ɨ k ɯ ɲ i t o m a ɾʲ i m a s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1393749974668026,
-    "min_long": 0.28699524721107056,
-    "max_short": 0.7892377851437479
+    "rate_s": 0.1311764682040495,
+    "min_long": 0.3049324501617625,
+    "max_short": 0.8385651467152322
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7892377851437479,
-     "ɰ̃ short": -0.28699524721107056,
-     "C long": 0.6457401615382126
+     "V long": 0.8385651467152322,
+     "ɰ̃ short": -0.3049324501617625,
+     "C long": 0.6860989216343509
     }
    },
    "class_alarm": null,
@@ -45223,16 +45223,16 @@
    "error": false,
    "meant": "ɲ i h o ŋ ɡ o o b e ɲ c oː ɕ i t e ɲ i n e ɲː i n a ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1282352980445413,
-    "min_long": 0.4678899125211637,
-    "max_short": 0.857798250423275
+    "rate_s": 0.11473684561880011,
+    "min_long": 0.5229357845824771,
+    "max_short": 0.9587156916495426
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.857798250423275,
-     "C long": 0.7018351011851699,
-     "Vː short": -0.9357798250423274,
-     "Cː short": -0.7018341715714725
+     "V long": 0.9587156916495426,
+     "C long": 0.7844039366187194,
+     "Vː short": -1.0458715691649543,
+     "Cː short": -0.7844028976387046
     }
    },
    "class_alarm": null,
@@ -45461,15 +45461,15 @@
    "error": false,
    "meant": "eː t o a n o e c i n o tɕ i k a k ɯ ɲ i s ɨ n d eː m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.20117647507611444,
-    "min_long": 0.3479534693388137,
-    "max_short": 3.230994554017841
+    "rate_s": 0.1900000042385525,
+    "min_long": 0.368421320476391,
+    "max_short": 3.421053057195361
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.6959069386776274,
-     "C long": 3.230993961457058,
-     "V long": 3.230994554017841
+     "Vː short": -0.736842640952782,
+     "C long": 3.4210524297780616,
+     "V long": 3.421053057195361
     }
    },
    "class_alarm": "V long",
@@ -45508,15 +45508,15 @@
    "error": false,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.15090909871188077,
-    "min_long": 0.3975903566871022,
-    "max_short": 0.6626507261353428
+    "rate_s": 0.13833334048589072,
+    "min_long": 0.4337349345677478,
+    "max_short": 0.7228917012385557
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.7951807133742044,
-     "V long": 0.6626507261353428,
-     "C long": 0.5301207388964811
+     "Vː short": -0.8674698691354956,
+     "V long": 0.7228917012385557,
+     "C long": 0.5783135333416157
     }
    },
    "class_alarm": null,
@@ -45555,15 +45555,15 @@
    "error": true,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.141818182034926,
-    "min_long": 0.21153846962094539,
-    "max_short": 0.5641028658486286
+    "rate_s": 0.13000000019868216,
+    "min_long": 0.23076923958648587,
+    "max_short": 0.6153849445621402
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.42307693924189077,
-     "V long": 0.5641028658486286,
-     "C long": 0.705128372166205
+     "Vː short": -0.46153847917297175,
+     "V long": 0.6153849445621402,
+     "C long": 0.7692309514540419
     }
    },
    "class_alarm": null,
@@ -45979,14 +45979,14 @@
    "error": false,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1524999961256981,
+    "rate_s": 0.13555555211173165,
     "min_long": null,
-    "max_short": 0.786885297160674
+    "max_short": 0.8852459593057582
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.786885297160674,
-     "C long": 0.6557378779172749
+     "V long": 0.8852459593057582,
+     "C long": 0.7377051126569342
     }
    },
    "class_alarm": null,
@@ -46025,15 +46025,15 @@
    "error": true,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13444443543752035,
-    "min_long": 0.2603307910226532,
-    "max_short": 0.8925620787342927
+    "rate_s": 0.12099999189376831,
+    "min_long": 0.2892564344696147,
+    "max_short": 0.9917356430381031
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8925620787342927,
-     "Vː short": -0.5206615820453064,
-     "C long": 0.7438018800586982
+     "V long": 0.9917356430381031,
+     "Vː short": -0.5785128689392294,
+     "C long": 0.8264465333985537
     }
    },
    "class_alarm": null,
@@ -46165,15 +46165,15 @@
    "error": false,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14444445901446873,
-    "min_long": 0.5538463950862302,
-    "max_short": 0.7615384837579422
+    "rate_s": 0.13000001311302184,
+    "min_long": 0.6153848834291448,
+    "max_short": 0.8461538708421581
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7615384837579422,
-     "Vː short": -1.1076927901724605,
-     "C long": 0.761537658462944
+     "V long": 0.8461538708421581,
+     "Vː short": -1.2307697668582895,
+     "C long": 0.8461529538477156
     }
    },
    "class_alarm": null,
@@ -46212,14 +46212,14 @@
    "error": true,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1625000163912773,
+    "rate_s": 0.14444445901446873,
     "min_long": null,
-    "max_short": 0.9846158134866315
+    "max_short": 1.1076927901724605
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9846158134866315,
-     "C long": 0.6769223630781724
+     "V long": 1.1076927901724605,
+     "C long": 0.761537658462944
     }
    },
    "class_alarm": null,
@@ -46351,14 +46351,14 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1562499925494194,
+    "rate_s": 0.1388888822661506,
     "min_long": null,
-    "max_short": 0.7040001251220763
+    "max_short": 0.7920001407623357
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7040001251220763,
-     "C long": 0.6400001831054775
+     "V long": 0.7920001407623357,
+     "C long": 0.7200002059936621
     }
    },
    "class_alarm": null,
@@ -46397,15 +46397,15 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1388888822661506,
-    "min_long": 0.32400013561249424,
-    "max_short": 0.7920001407623357
+    "rate_s": 0.12499999403953552,
+    "min_long": 0.3600001506805492,
+    "max_short": 0.8800001564025954
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7920001407623357,
-     "Vː short": -0.6480002712249885,
-     "C long": 0.7200002059936621
+     "V long": 0.8800001564025954,
+     "Vː short": -0.7200003013610984,
+     "C long": 0.8000002288818469
     }
    },
    "class_alarm": null,
@@ -46537,15 +46537,15 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14666667249467638,
-    "min_long": 0.6136365668340082,
-    "max_short": 0.8181818181818181
+    "rate_s": 0.13200000524520875,
+    "min_long": 0.6818184075933424,
+    "max_short": 0.9090909090909091
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8181818181818181,
-     "Vː short": -1.2272731336680165,
-     "C long": 0.6818175044927
+     "V long": 0.9090909090909091,
+     "Vː short": -1.363636815186685,
+     "C long": 0.7575750049918888
     }
    },
    "class_alarm": null,
@@ -46584,14 +46584,14 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16500000655651093,
+    "rate_s": 0.14666667249467638,
     "min_long": null,
-    "max_short": 1.0909094521493479
+    "max_short": 1.2272731336680165
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.0909094521493479,
-     "C long": 0.606060003993511
+     "V long": 1.2272731336680165,
+     "C long": 0.6818175044927
     }
    },
    "class_alarm": null,
@@ -47456,14 +47456,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1557142904826573,
+    "rate_s": 0.13625000417232513,
     "min_long": null,
-    "max_short": 0.899082449407415
+    "max_short": 1.02752279932276
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.899082449407415,
-     "C long": 0.7064220885838735
+     "V long": 1.02752279932276,
+     "C long": 0.8073395298101411
     }
    },
    "class_alarm": null,
@@ -47502,20 +47502,20 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13499999046325684,
-    "min_long": 0.18518502166077097,
-    "max_short": 1.0370370043321542
+    "rate_s": 0.11999999152289496,
+    "min_long": 0.20833314936836733,
+    "max_short": 1.1666666298736734
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.0370370043321542,
-     "C long": 0.814814978339229,
-     "Vː short": -0.37037004332154194
+     "V long": 1.1666666298736734,
+     "C long": 0.9166668506316327,
+     "Vː short": -0.41666629873673466
     }
    },
    "class_alarm": null,
    "flags": {
-    "mfa_duration": true,
+    "mfa_duration": false,
     "mfa_choice": false,
     "mfa_class": false
    },
@@ -47639,15 +47639,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1512499898672104,
-    "min_long": 0.495867722998971,
-    "max_short": 0.9256198021421221
+    "rate_s": 0.13444443543752035,
+    "min_long": 0.5578511883738423,
+    "max_short": 1.0413222774098874
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9256198021421221,
-     "C long": 0.7272728705746627,
-     "Vː short": -0.991735445997942
+     "V long": 1.0413222774098874,
+     "C long": 0.8181819793964955,
+     "Vː short": -1.1157023767476846
     }
    },
    "class_alarm": null,
@@ -47686,14 +47686,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.17285713127681188,
+    "rate_s": 0.1512499898672104,
     "min_long": null,
-    "max_short": 0.8677685152481992
+    "max_short": 0.991735445997942
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8677685152481992,
-     "C long": 0.6363637617528298
+     "V long": 0.991735445997942,
+     "C long": 0.7272728705746627
     }
    },
    "class_alarm": null,
@@ -47823,15 +47823,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14333334234025744,
-    "min_long": 0.5581393833738167,
-    "max_short": 0.8372092829838915
+    "rate_s": 0.1290000081062317,
+    "min_long": 0.6201548704153519,
+    "max_short": 0.9302325366487684
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8372092829838915,
-     "Vː short": -1.1162787667476335,
-     "C long": 0.6976737094093549
+     "V long": 0.9302325366487684,
+     "Vː short": -1.2403097408307038,
+     "C long": 0.7751930104548389
     }
    },
    "class_alarm": null,
@@ -47870,15 +47870,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1625000163912773,
-    "min_long": 0.4923075399455388,
-    "max_short": 0.7999998899606668
+    "rate_s": 0.14444445901446873,
+    "min_long": 0.5538459824387311,
+    "max_short": 0.8999998762057502
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7999998899606668,
-     "Vː short": -0.9846150798910775,
-     "C long": 0.6153839664347023
+     "V long": 0.8999998762057502,
+     "Vː short": -1.1076919648774621,
+     "C long": 0.69230696223904
     }
    },
    "class_alarm": null,
@@ -48008,15 +48008,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14000000059604645,
-    "min_long": 0.6071431270363368,
-    "max_short": 0.9285713905582624
+    "rate_s": 0.1244444449742635,
+    "min_long": 0.683036017915879,
+    "max_short": 1.0446428143780453
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9285713905582624,
-     "Vː short": -1.2142862540726735,
-     "C long": 0.7142858815436454
+     "V long": 1.0446428143780453,
+     "Vː short": -1.366072035831758,
+     "C long": 0.803571616736601
     }
    },
    "class_alarm": null,
@@ -48055,15 +48055,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1244444449742635,
-    "min_long": 0.5624999401292633,
-    "max_short": 1.0446428143780453
+    "rate_s": 0.11200000047683716,
+    "min_long": 0.6249999334769593,
+    "max_short": 1.1607142381978282
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.0446428143780453,
-     "Vː short": -1.1249998802585266,
-     "C long": 0.803571616736601
+     "V long": 1.1607142381978282,
+     "Vː short": -1.2499998669539185,
+     "C long": 0.8928573519295567
     }
    },
    "class_alarm": null,
@@ -49673,15 +49673,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14499999582767487,
-    "min_long": 0.482758174186358,
-    "max_short": 0.8275862635953831
+    "rate_s": 0.12888888518015543,
+    "min_long": 0.5431029459596528,
+    "max_short": 0.9310345465448061
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8275862635953831,
-     "ɰ̃ short": -0.482758174186358,
-     "C long": 0.7586208101401891
+     "V long": 0.9310345465448061,
+     "ɰ̃ short": -0.5431029459596528,
+     "C long": 0.8534484114077128
     }
    },
    "class_alarm": null,
@@ -49720,14 +49720,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16714285952704294,
+    "rate_s": 0.14625000208616257,
     "min_long": null,
-    "max_short": 0.7179487362363579
+    "max_short": 0.8205128414129805
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7179487362363579,
-     "C long": 0.6581197343181583
+     "V long": 0.8205128414129805,
+     "C long": 0.7521368392207524
     }
    },
    "class_alarm": null,
@@ -49857,14 +49857,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16000000919614518,
+    "rate_s": 0.14000000804662704,
     "min_long": null,
-    "max_short": 0.6250001130891634
+    "max_short": 0.7142858435304723
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6250001130891634,
-     "C long": 0.5625001762860486
+     "V long": 0.7142858435304723,
+     "C long": 0.6428573443269128
     }
    },
    "class_alarm": null,
@@ -49903,15 +49903,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14000000804662704,
-    "min_long": 0.5000003459197936,
-    "max_short": 0.785714342734032
+    "rate_s": 0.12444445159700182,
+    "min_long": 0.5625003891597677,
+    "max_short": 0.8839286355757858
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.785714342734032,
-     "ɰ̃ short": -0.5000003459197936,
-     "C long": 0.785714342734032
+     "V long": 0.8839286355757858,
+     "ɰ̃ short": -0.5625003891597677,
+     "C long": 0.8839286355757858
     }
    },
    "class_alarm": null,
@@ -50041,15 +50041,15 @@
    "error": false,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14874999970197678,
-    "min_long": 0.40336096067060134,
-    "max_short": 0.8739495495266264
+    "rate_s": 0.1322222219573127,
+    "min_long": 0.45378108075442647,
+    "max_short": 0.9831932432174546
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8739495495266264,
-     "C long": 0.7394958959697593,
-     "ɰ̃ short": -0.40336096067060134
+     "V long": 0.9831932432174546,
+     "C long": 0.8319328829659791,
+     "ɰ̃ short": -0.45378108075442647
     }
    },
    "class_alarm": null,
@@ -50088,14 +50088,14 @@
    "error": true,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16999999965940202,
+    "rate_s": 0.14874999970197678,
     "min_long": null,
-    "max_short": 0.7647058558357982
+    "max_short": 0.8739495495266264
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7647058558357982,
-     "C long": 0.7058823824046688
+     "V long": 0.8739495495266264,
+     "C long": 0.8067227227481929
     }
    },
    "class_alarm": null,
@@ -50225,14 +50225,14 @@
    "error": false,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1571428690637861,
+    "rate_s": 0.13750001043081284,
     "min_long": null,
-    "max_short": 0.6363629812051939
+    "max_short": 0.7272719785202216
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6363629812051939,
-     "C long": 0.7000000379302256
+     "V long": 0.7272719785202216,
+     "C long": 0.8000000433488292
     }
    },
    "class_alarm": null,
@@ -50271,15 +50271,15 @@
    "error": true,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13624999672174454,
-    "min_long": 0.36697301085214684,
-    "max_short": 0.8073386990274326
+    "rate_s": 0.12111110819710626,
+    "min_long": 0.4128446372086652,
+    "max_short": 0.9082560364058617
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8073386990274326,
-     "C long": 0.8073395739580191,
-     "ɰ̃ short": -0.36697301085214684
+     "V long": 0.9082560364058617,
+     "C long": 0.9082570207027716,
+     "ɰ̃ short": -0.4128446372086652
     }
    },
    "class_alarm": null,
@@ -51200,15 +51200,15 @@
    "error": false,
    "meant": "t a n a k a s a ɰ̃ w a o ŋ ɡ a k ɯ ɡ a o s ɨ c i d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.15000000596046448,
-    "min_long": 0.39999960263571727,
-    "max_short": 0.9999998013178586
+    "rate_s": 0.1411764761980842,
+    "min_long": 0.4249995778004496,
+    "max_short": 1.0624997889002248
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9999998013178586,
-     "C long": 0.5333335982428551,
-     "ɰ̃ short": -0.39999960263571727
+     "V long": 1.0624997889002248,
+     "C long": 0.5666669481330336,
+     "ɰ̃ short": -0.4249995778004496
     }
    },
    "class_alarm": null,
@@ -51340,15 +51340,15 @@
    "error": false,
    "meant": "s o n o k e ɰ̃ w a z o n dʑ i t e o ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16499999662240347,
-    "min_long": 0.48484803238591345,
-    "max_short": 0.7272727710594277
+    "rate_s": 0.1523076891899109,
+    "min_long": 0.5252520350847396,
+    "max_short": 0.7878788353143801
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7272727710594277,
-     "C long": 0.7878787751076669,
-     "ɰ̃ short": -0.48484803238591345
+     "V long": 0.7878788353143801,
+     "C long": 0.8535353396999725,
+     "ɰ̃ short": -0.5252520350847396
     }
    },
    "class_alarm": null,
@@ -51576,15 +51576,15 @@
    "error": false,
    "meant": "t o ɕ o k a n d e b e ɲ c oː ɕ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.16199999451637268,
-    "min_long": 0.43209873590685843,
-    "max_short": 0.8024691335312968
+    "rate_s": 0.13499999543031058,
+    "min_long": 0.51851848308823,
+    "max_short": 0.9629629602375561
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8024691335312968,
-     "C long": 0.6172841186840369,
-     "Vː short": -0.8641974718137169
+     "V long": 0.9629629602375561,
+     "C long": 0.7407409424208441,
+     "Vː short": -1.03703696617646
     }
    },
    "class_alarm": null,
@@ -51716,14 +51716,14 @@
    "error": false,
    "meant": "ɡ o ɕ ɨ mʲ i w a n a n d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.17500000447034836,
+    "rate_s": 0.15555555952919853,
     "min_long": null,
-    "max_short": 0.685714295445656
+    "max_short": 0.7714285823763631
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.685714295445656,
-     "C long": 0.5142855512852613
+     "V long": 0.7714285823763631,
+     "C long": 0.5785712451959191
     }
    },
    "class_alarm": null,
@@ -52093,16 +52093,16 @@
    "error": false,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14899998903274536,
-    "min_long": 0.5369130792201792,
-    "max_short": 0.9395972885885099
+    "rate_s": 0.13545453548431396,
+    "min_long": 0.5906043871421971,
+    "max_short": 1.033557017447361
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9395972885885099,
-     "Vː short": -1.1409401933350802,
-     "C long": 0.7382543838419396,
-     "ɰ̃ short": -0.5369130792201792
+     "V long": 1.033557017447361,
+     "Vː short": -1.255034212668588,
+     "C long": 0.8120798222261336,
+     "ɰ̃ short": -0.5906043871421971
     }
    },
    "class_alarm": null,
@@ -52141,16 +52141,16 @@
    "error": true,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13799999952316283,
-    "min_long": 0.25362337932594753,
-    "max_short": 1.0144926534683556
+    "rate_s": 0.12545454502105713,
+    "min_long": 0.2789857172585422,
+    "max_short": 1.115941918815191
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.0144926534683556,
-     "Vː short": -0.5072467586518951,
-     "C long": 0.7971024195253069,
-     "ɰ̃ short": -0.36231849629747176
+     "V long": 1.115941918815191,
+     "Vː short": -0.5579714345170844,
+     "C long": 0.8768126614778375,
+     "ɰ̃ short": -0.39855034592721894
     }
    },
    "class_alarm": null,
@@ -52704,15 +52704,15 @@
    "error": false,
    "meant": "k o n o d e ɰ̃ ɕ a w a ɕ i n dʑ ɨ k ɯ ɲ i t o m a ɾʲ i m a s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1574999988079071,
-    "min_long": 0.2539680136874972,
-    "max_short": 0.8888880479062402
+    "rate_s": 0.14823529299567728,
+    "min_long": 0.2698410145429658,
+    "max_short": 0.9444435509003801
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8888880479062402,
-     "ɰ̃ short": -0.2539680136874972,
-     "C long": 0.6349207911031268
+     "V long": 0.9444435509003801,
+     "ɰ̃ short": -0.2698410145429658,
+     "C long": 0.6746033405470723
     }
    },
    "class_alarm": null,
@@ -52800,16 +52800,16 @@
    "error": false,
    "meant": "ɲ i h o ŋ ɡ o o b e ɲ c oː ɕ i t e ɲ i n e ɲː i n a ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.14705882703556733,
-    "min_long": 0.47599953470231215,
-    "max_short": 0.9519998800277739
+    "rate_s": 0.1315789505055076,
+    "min_long": 0.5319994799614077,
+    "max_short": 1.0639998659133945
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9519998800277739,
-     "C long": 0.680000145912167,
-     "Vː short": -0.9519990694046243,
-     "Cː short": -0.7479992688179191
+     "V long": 1.0639998659133945,
+     "C long": 0.7600001630783043,
+     "Vː short": -1.0639989599228155,
+     "Cː short": -0.8359991827964979
     }
    },
    "class_alarm": null,
@@ -53038,15 +53038,15 @@
    "error": false,
    "meant": "eː t o a n o e c i n o tɕ i k a k ɯ ɲ i s ɨ n d eː m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11235294622533462,
-    "min_long": 0.13350772008062292,
-    "max_short": 1.0680617606449834
+    "rate_s": 0.10611111587948269,
+    "min_long": 0.1413611153794831,
+    "max_short": 1.1308889230358647
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.26701544016124584,
-     "C long": 1.3350793228563143,
-     "V long": 1.0680617606449834
+     "Vː short": -0.2827222307589662,
+     "C long": 1.4136134006713919,
+     "V long": 1.1308889230358647
     }
    },
    "class_alarm": "Vː short",
@@ -53085,15 +53085,15 @@
    "error": false,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.17181818051771683,
-    "min_long": 0.4656083719990875,
-    "max_short": 0.6984127314513026
+    "rate_s": 0.1574999988079071,
+    "min_long": 0.5079364058171864,
+    "max_short": 0.7619047979468754
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.931216743998175,
-     "V long": 0.6984127314513026,
-     "C long": 0.5238097220411482
+     "Vː short": -1.0158728116343727,
+     "V long": 0.7619047979468754,
+     "C long": 0.5714287876812525
     }
    },
    "class_alarm": null,
@@ -53132,15 +53132,15 @@
    "error": true,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.16272726384076205,
-    "min_long": 0.24581001800959434,
-    "max_short": 0.6145253197381458
+    "rate_s": 0.14916665852069855,
+    "min_long": 0.26815638328319386,
+    "max_short": 0.670391257896159
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.4916200360191887,
-     "V long": 0.6145253197381458,
-     "C long": 0.9832400720383774
+     "Vː short": -0.5363127665663877,
+     "V long": 0.670391257896159,
+     "C long": 1.0726255331327754
     }
    },
    "class_alarm": null,
@@ -53556,14 +53556,14 @@
    "error": false,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12250000238418579,
+    "rate_s": 0.10888889100816515,
     "min_long": null,
-    "max_short": 0.6530615621087685
+    "max_short": 0.7346942573723645
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6530615621087685,
-     "C long": 0.6530605889717299
+     "V long": 0.7346942573723645,
+     "C long": 0.7346931625931961
     }
    },
    "class_alarm": null,
@@ -53602,15 +53602,15 @@
    "error": true,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.10777778095669216,
-    "min_long": 0.27835024179821677,
-    "max_short": 0.742268417527452
+    "rate_s": 0.09700000286102295,
+    "min_long": 0.3092780464424631,
+    "max_short": 0.8247426861416133
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.742268417527452,
-     "Vː short": -0.5567004835964335,
-     "C long": 0.7422673114619115
+     "V long": 0.8247426861416133,
+     "Vː short": -0.6185560928849262,
+     "C long": 0.8247414571799015
     }
    },
    "class_alarm": null,
@@ -53742,15 +53742,15 @@
    "error": false,
    "meant": "k o ɾ e w a o b aː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11444444126553005,
-    "min_long": 0.567961680809364,
-    "max_short": 0.6990295206189254
+    "rate_s": 0.10299999713897705,
+    "min_long": 0.6310685342326267,
+    "max_short": 0.7766994673543616
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6990295206189254,
-     "Vː short": -1.135923361618728,
-     "C long": 0.7864080804919664
+     "V long": 0.7766994673543616,
+     "Vː short": -1.2621370684652533,
+     "C long": 0.8737867561021848
     }
    },
    "class_alarm": null,
@@ -53789,14 +53789,14 @@
    "error": true,
    "meant": "k o ɾ e w a o b a s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1287499964237213,
+    "rate_s": 0.11444444126553005,
     "min_long": null,
-    "max_short": 1.0097096547722026
+    "max_short": 1.135923361618728
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.0097096547722026,
-     "C long": 0.6990294048817478
+     "V long": 1.135923361618728,
+     "C long": 0.7864080804919664
     }
    },
    "class_alarm": null,
@@ -53928,14 +53928,14 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1237500011920929,
+    "rate_s": 0.11000000105963813,
     "min_long": null,
-    "max_short": 0.7272729899929221
+    "max_short": 0.8181821137420374
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7272729899929221,
-     "C long": 0.5656569840628018
+     "V long": 0.8181821137420374,
+     "C long": 0.636364107070652
     }
    },
    "class_alarm": null,
@@ -53974,15 +53974,15 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11000000105963813,
-    "min_long": 0.3181815116749242,
-    "max_short": 0.8181821137420374
+    "rate_s": 0.09900000095367431,
+    "min_long": 0.353535012972138,
+    "max_short": 0.9090912374911527
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8181821137420374,
-     "Vː short": -0.6363630233498484,
-     "C long": 0.636364107070652
+     "V long": 0.9090912374911527,
+     "Vː short": -0.707070025944276,
+     "C long": 0.7070712300785024
     }
    },
    "class_alarm": null,
@@ -54114,15 +54114,15 @@
    "error": false,
    "meant": "k o ɾ e w a o ʑ iː s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11666666136847602,
-    "min_long": 0.5999999659402014,
-    "max_short": 0.6857146847004975
+    "rate_s": 0.10499999523162842,
+    "min_long": 0.666666628822446,
+    "max_short": 0.7619052052227749
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6857146847004975,
-     "Vː short": -1.1999999318804029,
-     "C long": 0.6000004768371798
+     "V long": 0.7619052052227749,
+     "Vː short": -1.333333257644892,
+     "C long": 0.6666671964857553
     }
    },
    "class_alarm": null,
@@ -54161,14 +54161,14 @@
    "error": true,
    "meant": "k o ɾ e w a o ʑ i s a n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13249999284744263,
+    "rate_s": 0.117777771419949,
     "min_long": null,
-    "max_short": 1.056603722658898
+    "max_short": 1.1886791879912604
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 1.056603722658898,
-     "C long": 0.528302311175849
+     "V long": 1.1886791879912604,
+     "C long": 0.5943401000728301
     }
    },
    "class_alarm": null,
@@ -55033,14 +55033,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12857142516544887,
+    "rate_s": 0.11249999701976776,
     "min_long": null,
-    "max_short": 0.7000002781550163
+    "max_short": 0.8000003178914472
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7000002781550163,
-     "C long": 0.6999998145633225
+     "V long": 0.8000003178914472,
+     "C long": 0.7999997880723685
     }
    },
    "class_alarm": null,
@@ -55079,15 +55079,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11249999701976776,
-    "min_long": 0.13333320970888163,
-    "max_short": 0.8000003178914472
+    "rate_s": 0.09999999735090467,
+    "min_long": 0.14999986092249185,
+    "max_short": 0.9000003576278781
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8000003178914472,
-     "C long": 0.7999997880723685,
-     "Vː short": -0.26666641941776326
+     "V long": 0.9000003576278781,
+     "C long": 0.8999997615814146,
+     "Vː short": -0.2999997218449837
     }
    },
    "class_alarm": "Vː short",
@@ -55216,15 +55216,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɕ ɨː ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12250000238418579,
-    "min_long": 0.4489796414865836,
-    "max_short": 0.8163257362146623
+    "rate_s": 0.10888889100816515,
+    "min_long": 0.5051020966724066,
+    "max_short": 0.9183664532414951
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8163257362146623,
-     "C long": 0.6530610755402492,
-     "Vː short": -0.8979592829731672
+     "V long": 0.9183664532414951,
+     "C long": 0.7346937099827803,
+     "Vː short": -1.0102041933448132
     }
    },
    "class_alarm": null,
@@ -55263,14 +55263,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɕ ɨ ʑ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1414285727909633,
+    "rate_s": 0.1237500011920929,
     "min_long": null,
-    "max_short": 0.7777778714326621
+    "max_short": 0.8888889959230424
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7777778714326621,
-     "C long": 0.5656564422024001
+     "V long": 0.8888889959230424,
+     "C long": 0.6464645053741714
     }
    },
    "class_alarm": null,
@@ -55400,15 +55400,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11444444126553005,
-    "min_long": 0.48058260011902415,
-    "max_short": 0.8737866403650073
+    "rate_s": 0.10299999713897705,
+    "min_long": 0.5339806667989156,
+    "max_short": 0.9708740448500082
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8737866403650073,
-     "Vː short": -0.9611652002380483,
-     "C long": 0.6990295206189254
+     "V long": 0.9708740448500082,
+     "Vː short": -1.0679613335978313,
+     "C long": 0.7766994673543616
     }
    },
    "class_alarm": null,
@@ -55447,15 +55447,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1287499964237213,
-    "min_long": 0.46601944893826186,
-    "max_short": 0.7766992358800064
+    "rate_s": 0.11444444126553005,
+    "min_long": 0.5242718800555446,
+    "max_short": 0.8737866403650073
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7766992358800064,
-     "Vː short": -0.9320388978765237,
-     "C long": 0.6213595738834893
+     "V long": 0.8737866403650073,
+     "Vː short": -1.0485437601110892,
+     "C long": 0.6990295206189254
     }
    },
    "class_alarm": null,
@@ -55585,15 +55585,15 @@
    "error": false,
    "meant": "k o ɾ e w a bʲ oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11499999463558197,
-    "min_long": 0.4782609540708614,
-    "max_short": 0.8695654652745267
+    "rate_s": 0.10222221745385064,
+    "min_long": 0.5380435733297191,
+    "max_short": 0.9782611484338425
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8695654652745267,
-     "Vː short": -0.9565219081417228,
-     "C long": 0.6956525795401346
+     "V long": 0.9782611484338425,
+     "Vː short": -1.0760871466594382,
+     "C long": 0.7826091519826515
     }
    },
    "class_alarm": null,
@@ -55632,15 +55632,15 @@
    "error": true,
    "meant": "k o ɾ e w a bʲ i j oː i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.10222221745385064,
-    "min_long": 0.29347857776573016,
-    "max_short": 0.9782611484338425
+    "rate_s": 0.09199999570846558,
+    "min_long": 0.32608730862858903,
+    "max_short": 1.0869568315931584
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9782611484338425,
-     "Vː short": -0.5869571555314603,
-     "C long": 0.7826091519826515
+     "V long": 1.0869568315931584,
+     "Vː short": -0.6521746172571781,
+     "C long": 0.8695657244251682
     }
    },
    "class_alarm": null,
@@ -57250,15 +57250,15 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11875000596046448,
-    "min_long": 0.5052626506773974,
-    "max_short": 0.7578949798837471
+    "rate_s": 0.1055555608537462,
+    "min_long": 0.568420482012072,
+    "max_short": 0.8526318523692155
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7578949798837471,
-     "ɰ̃ short": -0.5052626506773974,
-     "C long": 0.6736845381041808
+     "V long": 0.8526318523692155,
+     "ɰ̃ short": -0.568420482012072,
+     "C long": 0.7578951053672035
     }
    },
    "class_alarm": null,
@@ -57297,14 +57297,14 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13571429252624512,
+    "rate_s": 0.11875000596046448,
     "min_long": null,
-    "max_short": 0.6631581073982787
+    "max_short": 0.7578949798837471
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6631581073982787,
-     "C long": 0.5894739708411583
+     "V long": 0.7578949798837471,
+     "C long": 0.6736845381041808
     }
    },
    "class_alarm": null,
@@ -57434,14 +57434,14 @@
    "error": false,
    "meant": "k o ɾ e w a ɡ e ɲ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12999999523162842,
+    "rate_s": 0.11374999582767487,
     "min_long": null,
-    "max_short": 0.6153849680748341
+    "max_short": 0.703297106371239
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6153849680748341,
-     "C long": 0.6153849680748341
+     "V long": 0.703297106371239,
+     "C long": 0.703297106371239
     }
    },
    "class_alarm": null,
@@ -57480,15 +57480,15 @@
    "error": true,
    "meant": "k o ɾ e w a ɡ e ɰ̃ i n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11374999582767487,
-    "min_long": 0.4395600364859039,
-    "max_short": 0.7912091136684197
+    "rate_s": 0.10111110740237766,
+    "min_long": 0.49450504104664184,
+    "max_short": 0.8901102528769722
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7912091136684197,
-     "ɰ̃ short": -0.4395600364859039,
-     "C long": 0.703297106371239
+     "V long": 0.8901102528769722,
+     "ɰ̃ short": -0.49450504104664184,
+     "C long": 0.7912092446676438
     }
    },
    "class_alarm": null,
@@ -57618,15 +57618,15 @@
    "error": false,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11750000715255737,
-    "min_long": 0.5106377798057447,
-    "max_short": 0.7659576842557003
+    "rate_s": 0.10444445080227321,
+    "min_long": 0.5744675022814628,
+    "max_short": 0.861702394787663
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7659576842557003,
-     "C long": 0.5957450909871188,
-     "ɰ̃ short": -0.5106377798057447
+     "V long": 0.861702394787663,
+     "C long": 0.6702132273605087,
+     "ɰ̃ short": -0.5744675022814628
     }
    },
    "class_alarm": null,
@@ -57665,14 +57665,14 @@
    "error": true,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.13428572246006557,
+    "rate_s": 0.11750000715255737,
     "min_long": null,
-    "max_short": 0.7446809832787422
+    "max_short": 0.8510639808899911
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7446809832787422,
-     "C long": 0.5212769546137289
+     "V long": 0.8510639808899911,
+     "C long": 0.5957450909871188
     }
    },
    "class_alarm": null,
@@ -57802,14 +57802,14 @@
    "error": false,
    "meant": "k o ɾ e w a c i n e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12714285509926931,
+    "rate_s": 0.11124999821186066,
     "min_long": null,
-    "max_short": 0.6292138307959391
+    "max_short": 0.7191015209096446
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6292138307959391,
-     "C long": 0.6292138307959391
+     "V long": 0.7191015209096446,
+     "C long": 0.7191015209096446
     }
    },
    "class_alarm": null,
@@ -57848,15 +57848,15 @@
    "error": true,
    "meant": "k o ɾ e w a c i ɰ̃ e n d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11124999821186066,
-    "min_long": 0.5393264085682816,
-    "max_short": 0.7191015209096446
+    "rate_s": 0.0988888872994317,
+    "min_long": 0.6067422096393169,
+    "max_short": 0.8089892110233501
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7191015209096446,
-     "C long": 0.7191015209096446,
-     "ɰ̃ short": -0.5393264085682816
+     "V long": 0.8089892110233501,
+     "C long": 0.8089892110233501,
+     "ɰ̃ short": -0.6067422096393169
     }
    },
    "class_alarm": null,
@@ -58777,15 +58777,15 @@
    "error": false,
    "meant": "t a n a k a s a ɰ̃ w a o ŋ ɡ a k ɯ ɡ a o s ɨ c i d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.11312500014901161,
-    "min_long": 0.4419895819643063,
-    "max_short": 0.7071826988726259
+    "rate_s": 0.10647058837554034,
+    "min_long": 0.4696139308370754,
+    "max_short": 0.751381617552165
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7071826988726259,
-     "C long": 0.6187849932365194,
-     "ɰ̃ short": -0.4419895819643063
+     "V long": 0.751381617552165,
+     "C long": 0.6574590553138018,
+     "ɰ̃ short": -0.4696139308370754
     }
    },
    "class_alarm": null,
@@ -58917,15 +58917,15 @@
    "error": false,
    "meant": "s o n o k e ɰ̃ w a z o n dʑ i t e o ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.12166665991147359,
-    "min_long": 0.4109585350059323,
-    "max_short": 0.657534635811926
+    "rate_s": 0.11230768607212947,
+    "min_long": 0.44520507958975997,
+    "max_short": 0.7123291887962531
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.657534635811926,
-     "C long": 0.5753424389095224,
-     "ɰ̃ short": -0.4109585350059323
+     "V long": 0.7123291887962531,
+     "C long": 0.6232876421519825,
+     "ɰ̃ short": -0.44520507958975997
     }
    },
    "class_alarm": null,
@@ -59153,15 +59153,15 @@
    "error": false,
    "meant": "t o ɕ o k a n d e b e ɲ c oː ɕ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1309999942779541,
-    "min_long": 0.3816794969840958,
-    "max_short": 0.6106869221761684
+    "rate_s": 0.10916666189829509,
+    "min_long": 0.458015396380915,
+    "max_short": 0.7328243066114021
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6106869221761684,
-     "C long": 0.6870222755762176,
-     "Vː short": -0.7633589939681916
+     "V long": 0.7328243066114021,
+     "C long": 0.8244267306914612,
+     "Vː short": -0.91603079276183
     }
    },
    "class_alarm": null,
@@ -59293,14 +59293,14 @@
    "error": false,
    "meant": "ɡ o ɕ ɨ mʲ i w a n a n d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.13249999284744263,
+    "rate_s": 0.117777771419949,
     "min_long": null,
-    "max_short": 0.6037739413877131
+    "max_short": 0.6792456840611774
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.6037739413877131,
-     "C long": 0.528301861329449
+     "V long": 0.6792456840611774,
+     "C long": 0.5943395939956302
     }
    },
    "class_alarm": null,
@@ -59670,16 +59670,16 @@
    "error": false,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11699999570846557,
-    "min_long": 0.5128210614497419,
-    "max_short": 0.8547005803862402
+    "rate_s": 0.10636363246224144,
+    "min_long": 0.5641031675947161,
+    "max_short": 0.9401706384248641
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8547005803862402,
-     "Vː short": -1.1111111111111112,
-     "C long": 0.5982910685442232,
-     "ɰ̃ short": -0.5128210614497419
+     "V long": 0.9401706384248641,
+     "Vː short": -1.222222222222222,
+     "C long": 0.6581201753986455,
+     "ɰ̃ short": -0.5641031675947161
     }
    },
    "class_alarm": null,
@@ -59718,16 +59718,16 @@
    "error": true,
    "meant": "o b aː s a ɰ̃ w a ɡ e ɲ c i d e s ɨ",
    "mfa_duration": {
-    "rate_s": 0.10900000333786011,
-    "min_long": 0.2752293603065669,
-    "max_short": 0.9174313832990852
+    "rate_s": 0.09909091212532738,
+    "min_long": 0.30275229633722356,
+    "max_short": 1.0091745216289938
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.9174313832990852,
-     "Vː short": -0.5504587206131338,
-     "C long": 0.7339453253719028,
-     "ɰ̃ short": -0.4587151448179559
+     "V long": 1.0091745216289938,
+     "Vː short": -0.6055045926744471,
+     "C long": 0.8073398579090931,
+     "ɰ̃ short": -0.5045866592997515
     }
    },
    "class_alarm": null,
@@ -60281,15 +60281,15 @@
    "error": false,
    "meant": "k o n o d e ɰ̃ ɕ a w a ɕ i n dʑ ɨ k ɯ ɲ i t o m a ɾʲ i m a s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.11937499791383743,
-    "min_long": 0.33507822033135065,
-    "max_short": 0.7539269943574061
+    "rate_s": 0.11235293921302347,
+    "min_long": 0.35602060910206007,
+    "max_short": 0.8010474315047439
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.7539269943574061,
-     "ɰ̃ short": -0.33507822033135065,
-     "C long": 0.6701574392745684
+     "V long": 0.8010474315047439,
+     "ɰ̃ short": -0.35602060910206007,
+     "C long": 0.7120422792292289
     }
    },
    "class_alarm": null,
@@ -60377,16 +60377,16 @@
    "error": false,
    "meant": "ɲ i h o ŋ ɡ o o b e ɲ c oː ɕ i t e ɲ i n e ɲː i n a ɾʲ i m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.11176470097373514,
-    "min_long": 0.4473685473616489,
-    "max_short": 0.8947370947232978
+    "rate_s": 0.0999999956080788,
+    "min_long": 0.5000001411689017,
+    "max_short": 1.0000002823378034
    },
    "mfa_cls": {
     "by_kind": {
-     "V long": 0.8947370947232978,
-     "C long": 0.7157888224910545,
-     "Vː short": -0.8947370947232978,
-     "Cː short": -0.7157888224910545
+     "V long": 1.0000002823378034,
+     "C long": 0.7999992721958845,
+     "Vː short": -1.0000002823378034,
+     "Cː short": -0.7999992721958845
     }
    },
    "class_alarm": null,
@@ -60615,15 +60615,15 @@
    "error": false,
    "meant": "eː t o a n o e c i n o tɕ i k a k ɯ ɲ i s ɨ n d eː m a s ɨ",
    "mfa_duration": {
-    "rate_s": 0.1594117704559775,
-    "min_long": 0.3763841391210189,
-    "max_short": 2.3837640956457005
+    "rate_s": 0.15055556098620096,
+    "min_long": 0.3985243825987259,
+    "max_short": 2.523985513036624
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.7527682782420378,
-     "C long": 2.070110895647293,
-     "V long": 2.3837640956457005
+     "Vː short": -0.7970487651974518,
+     "C long": 2.191882124803016,
+     "V long": 2.523985513036624
     }
    },
    "class_alarm": "V long",
@@ -60662,15 +60662,15 @@
    "error": false,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.13000000065023248,
-    "min_long": 0.4230769759804537,
-    "max_short": 0.6153849424246227
+    "rate_s": 0.11916666726271312,
+    "min_long": 0.461538519251404,
+    "max_short": 0.6713290280995884
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.8461539519609074,
-     "V long": 0.6153849424246227,
-     "C long": 0.6153840254300923
+     "Vː short": -0.923077038502808,
+     "V long": 0.6713290280995884,
+     "C long": 0.6713280277419189
     }
    },
    "class_alarm": null,
@@ -60709,15 +60709,15 @@
    "error": true,
    "meant": "j ɨː bʲ i ɲ c o k ɯ w a d o k o d e s ɨ k a",
    "mfa_duration": {
-    "rate_s": 0.1218181848526001,
-    "min_long": 0.20522392441419535,
-    "max_short": 0.5746263033511598
+    "rate_s": 0.11166666944821675,
+    "min_long": 0.22388064481548584,
+    "max_short": 0.6268650582012654
    },
    "mfa_cls": {
     "by_kind": {
-     "Vː short": -0.4104478488283907,
-     "V long": 0.5746263033511598,
-     "C long": 0.6567162645503163
+     "Vː short": -0.44776128963097167,
+     "V long": 0.6268650582012654,
+     "C long": 0.7164177431457996
     }
    },
    "class_alarm": null,

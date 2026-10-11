@@ -20,6 +20,7 @@ and OpenJTalk (does).
 import argparse
 import json
 import sys
+import zlib
 from collections import defaultdict
 from pathlib import Path
 
@@ -270,7 +271,8 @@ def main():
         for n, t in enumerate(trials(manifest)):
             key = (t["item"], voice)
             if key not in cache:
-                cache[key] = model.logp(load(root / "audio" / f"{t['item']}_{voice}.wav", args.noise, hash(key) % 2 ** 32))
+                cache[key] = model.logp(load(root / "audio" / f"{t['item']}_{voice}.wav", args.noise,
+                                         zlib.crc32(f"{t['item']}_{voice}".encode())))
             logp = cache[key]
             k = kana(t["intended"])
             r = dict(t, voice=voice, kana=k, spoken_kana=kana(t["spoken"]),

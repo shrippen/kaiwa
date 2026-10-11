@@ -40,7 +40,7 @@ Erkennung bei Fehlalarmen, ohne Störgeräusch, alle Stimmen. „Rahmen“ = Min
 | Verfahren | Rahmen | Sätze | alle Versuche |
 |---|---|---|---|
 | Dauer, CTC | 5 % bei 0 % | 3 % bei 6,8 % | 4 % bei 3,6 % |
-| Dauer, MFA je Lautklasse | 10 % bei 1,9 % | 12 % bei 9,2 % | 10 % bei 5,4 % |
+| Dauer, MFA je Lautklasse | 10 % bei 2,4 % | 12 % bei 9,5 % | 10 % bei 5,6 % |
 | MFA-Aussprachewahl | 23 % bei 4,3 % | 11 % bei 3,0 % | 19 % bei 4,4 % |
 | Varianten, eine Schwelle | 62 % bei 2,4 % | 50 % bei 3,8 % | 47 % bei 5,3 % |
 | **Varianten je Fehlerart** | **76 % bei 4,3 %** | 51 % bei 5,2 % | 58 % bei 6,6 % |
@@ -57,7 +57,7 @@ Modelle (Varianten je Fehlerart, alle Versuche):
 | `reazon-research/japanese-wav2vec2-base-rs35kh` | Apache-2.0 | Teilwörter mit Kanji | 12 % bei 5,1 % |
 | `facebook/wav2vec2-xlsr-53-espeak-cv-ft` | Apache-2.0 | Phoneme (IPA) | nicht gemessen: kennt Länge und っ nicht verlässlich (とう → `t o`, きって → `k i t e`) |
 
-Mit rosa Rauschen bei 10 dB fällt das Hiragana-Modell auf 47 % im Rahmen und 57 % in Sätzen (je Fehlerart, Fehlalarme 4,8 und 5,5 %).
+Mit rosa Rauschen bei 10 dB fällt das Hiragana-Modell auf 52 % im Rahmen und 60 % in Sätzen (je Fehlerart, Fehlalarme 3,8 und 5,8 %).
 
 Trifft der Varianten-Vergleich, nennt er in 88 % der Fälle die richtige Stelle (die Variante liegt näher an dem, was gesprochen wurde).
 

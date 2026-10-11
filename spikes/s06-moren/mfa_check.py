@@ -50,7 +50,7 @@ _BASE = {
     "ら": ("ɾ", "a"), "り": ("ɾʲ", "i"), "る": ("ɾ", "ɯ"), "れ": ("ɾ", "e"), "ろ": ("ɾ", "o"),
     "わ": ("w", "a"), "を": ("", "o"), "ゔ": ("v", "ɯ"),
 }
-_SMALL = {"ゃ": "a", "ゅ": "ɨ", "ょ": "o", "ぁ": "a", "ぃ": "i", "ぅ": "ɯ", "ぇ": "e", "ぉ": "o"}
+_SMALL = {"ゃ": "a", "ゅ": "ɨ", "ょ": "o", "ぁ": "a", "ぃ": "i", "ぅ": "ɯ", "ぇ": "e", "ぉ": "o", "ゎ": "a"}
 _AFTER_N = {"z": "dz", "ʑ": "dʑ"}  # affricate after ん and at the start
 
 
@@ -134,13 +134,12 @@ def read_phones(path):
     return [(s, e, p) for s, e, p in tiers["phones"]["entries"] if p not in ("", "sil", "sp", "spn")]
 
 
-def duration_features(ph):
-    """Lengths relative to the mean mora; long elements and short vowels (last vowel left out)."""
+def duration_features(ph, n_moras):
+    """Lengths relative to the mean mora; long elements and short vowels (last vowel left out).
+    n_moras comes from the kana: from the phones, ん before p/t/k (m, n, ŋ, ɲ) looks like an onset."""
     if not ph:
         return None
     speech = sum(e - s for s, e, _ in ph)
-    n_moras = sum(1 for _, _, p in ph if p.rstrip("ː") in VOWELS) + sum(
-        1 for _, _, p in ph if p.endswith("ː") or p in ("ɰ̃", "ɴ", "ʔ"))
     rate = speech / max(n_moras, 1)
     long_el, short_el = [], []
     last_vowel = max((i for i, (_, _, p) in enumerate(ph) if p.rstrip("ː") in VOWELS), default=-1)
@@ -160,15 +159,13 @@ def duration_features(ph):
 GEMINABLE_C = ("k", "c", "t", "p", "s", "ɕ", "ts", "tɕ")
 
 
-def class_features(ph):
+def class_features(ph, n_moras):
     """Per class of sound the most suspicious length in the utterance, relative to the mean mora,
     oriented so that larger means more likely an error:
       Vː, Cː, ɰ̃ too short (spoken short), V and a voiceless C too long (spoken long, っ added)."""
     if not ph:
         return {"by_kind": {}}
     speech = sum(e - s for s, e, _ in ph)
-    n_moras = sum(1 for _, _, p in ph if p.rstrip("ː") in VOWELS) + sum(
-        1 for _, _, p in ph if p.endswith("ː") or p in ("ɰ̃", "ɴ", "ʔ"))
     rate = speech / max(n_moras, 1)
     last_vowel = max((i for i, (_, _, p) in enumerate(ph) if p.rstrip("ː") in VOWELS), default=-1)
     worst = {}
@@ -255,8 +252,9 @@ def main():
     for r in rows:
         f = out / r["voice"] / f"{r['uid']}.json"
         ph = read_phones(f) if f.exists() else []
-        r["mfa_duration"] = duration_features(ph)
-        r["mfa_cls"] = class_features(ph)
+        n_moras = len(ctc.moras(r["kana"]))
+        r["mfa_duration"] = duration_features(ph, n_moras)
+        r["mfa_cls"] = class_features(ph, n_moras)
 
     # Runs 2..: with the variants at several priors -> which pronunciation MFA picks
     for prior in PRIORS:

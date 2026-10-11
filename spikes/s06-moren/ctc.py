@@ -9,6 +9,7 @@ import numpy as np
 
 NEG = -1e30
 SMALL_Y = "ゃゅょ"
+SMALL = SMALL_Y + "ぁぃぅぇぉゎ"  # join the kana before them into one mora (てぃ, ふぁ)
 VOWEL_KANA = "あいうえお"
 # Vowel of each hiragana mora (the last letter of its rōmaji).
 _ROWS = {
@@ -38,10 +39,10 @@ def reading(text):
 
 
 def moras(kana):
-    """Splits into moras: a small ゃゅょ joins the kana before it."""
+    """Splits into moras: a small kana (ゃゅょ, ぁぃぅぇぉ) joins the kana before it."""
     out = []
     for c in kana:
-        if c in SMALL_Y and out:
+        if c in SMALL and out:
             out[-1] += c
         else:
             out.append(c)
