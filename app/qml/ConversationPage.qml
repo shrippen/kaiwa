@@ -9,7 +9,7 @@ import org.shrippen.kaiwa
 // types (speech follows with spike 0.3), help comes in three steps, corrections sit under
 // the learner's turn as hint cards with a diff, and the summary closes the scenario. Each
 // line of the character can be heard again, slower or translated (/LF111/); a spoken turn
-// may get a mora hint (/LF320/, a preview).
+// may get a mora hint (/LF320/).
 Kirigami.ScrollablePage {
     id: page
 

@@ -15,8 +15,11 @@
 | Akzent zusätzlich | OJAD (nicht weiterverteilbar), Kanjium-Akzentdaten (`mifunetoshiro/kanjium`, `accents.txt`, 124 137 Wörter) | Kanjium: CC BY-SA 4.0 laut README des Repos (2026-10-11 geprüft), Teile aus EDRDG-Daten unter deren Lizenz; OJAD nicht weiterverteilbar | Kanjium passt ins Datenpaket (CC BY-SA, Namensnennung Uros Ozvatic); OJAD nicht |
 | Beispielsätze | Tatoeba | CC BY 2.0 FR | Namensnennung; nur geprüfte Sätze |
 
-**Folge für das Paket:** `NOTICE` mit allen Quellen. Die Daten liegen als getrenntes, versioniertes Paket vor (`kaiwa-data`), damit Code (MIT) und Daten (CC BY-SA) sauber getrennt sind. Die Share-alike-Pflicht gilt nur für das Datenpaket.
+**Folge für das Paket:** `NOTICE` mit allen Quellen. Die Daten liegen als getrenntes, versioniertes Paket vor (`kaiwa-data`), damit Code (MIT) und Daten (CC BY-SA) sauber getrennt sind. Die Share-alike-Pflicht gilt nur für das Datenpaket. Es erscheint als GitHub-Release eines eigenen Repos `kaiwa-data` (L-06); wie alle Release-Artefakte baut es GitHub Actions, die App lädt es von dort mit Prüfsumme.
 
 ## Entschieden
+
+- **L-06 (2026-10-12):** Das Datenpaket ist ein GitHub-Release des eigenen Repos `kaiwa-data` (Arbeits-Repo auf Gitea, wie alle Projekte).
+- **L-09 (2026-10-12):** Die JLPT-Listen von Jonathan Waller (tanos.co.uk) kommen nur hinein, wenn eine Archivkopie der Seite (Internet Archive) die freie Lizenz zeigt; sonst eine eigene Zuordnung über Häufigkeit und Kann-Beschreibungen.
 
 - **F-02:** Code unter **MIT** (wie Kante). Abhängigkeiten müssen dazu passen: keine (A)GPL-Bibliotheken im ausgelieferten Programm, LGPL (Qt, Kirigami) nur dynamisch gelinkt. `cargo deny` prüft das ab M1.

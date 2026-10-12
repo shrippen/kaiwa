@@ -18,6 +18,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "lena_retention" => retention(),
         "hinnerk_gamification_off" => gamification_off(root),
         "hinnerk_a11y_names" => a11y_names(root),
+        "hinnerk_targets" => targets(root),
         "theo_keyboard" => keyboard(root),
         "lena_download_announced" => download_announced(root),
         "mara_ptt" => push_to_talk(root),
@@ -340,6 +341,85 @@ fn talk_titles(root: &Path) -> Result<Option<String>> {
     };
     let n = line.matches("page.t(").count();
     Ok((n != 5).then(|| format!("the talk button names {n} of 5 states")))
+}
+
+/// WCAG contrast of two "#rrggbb" colours.
+fn contrast(a: &str, b: &str) -> Option<f64> {
+    let lum = |hex: &str| -> Option<f64> {
+        let h = hex.trim_start_matches('#');
+        if h.len() != 6 {
+            return None;
+        }
+        let c = |i: usize| -> Option<f64> {
+            let v = f64::from(u8::from_str_radix(&h[i..i + 2], 16).ok()?) / 255.0;
+            Some(if v <= 0.03928 {
+                v / 12.92
+            } else {
+                ((v + 0.055) / 1.055).powf(2.4)
+            })
+        };
+        Some(0.2126 * c(0)? + 0.7152 * c(2)? + 0.0722 * c(4)?)
+    };
+    let (x, y) = (lum(a)?, lum(b)?);
+    Some((x.max(y) + 0.05) / (x.min(y) + 0.05))
+}
+
+/// /LL202/, /LL203/ from the source: the talk button is at least 48 units high, names every
+/// state, and the text roles of Kante (dark) and Kante Light reach WCAG AA (4.5:1) on the
+/// ground, the label on the accent too. The System style follows the platform theme and
+/// needs the GUI mode, as do font scaling and overlaps.
+fn targets(root: &Path) -> Result<Option<String>> {
+    let palette = std::fs::read_to_string(root.join("app/qml/Kante/KantePalette.qml"))?;
+    let talk = std::fs::read_to_string(root.join("app/qml/Kante/KanteTalkButton.qml"))?;
+    let mut found = Vec::new();
+    let height = regex::Regex::new(r"heightLarge: (\d+)")?
+        .captures(&palette)
+        .and_then(|c| c[1].parse::<u32>().ok())
+        .unwrap_or(0);
+    if height < 48 || !talk.contains("implicitHeight: Math.max(KanteStyle.heightLarge") {
+        found.push(format!("talk button below 48 ({height})"));
+    }
+    if let Some(why) = talk_titles(root)? {
+        found.push(why);
+    }
+    let color = regex::Regex::new(r#"readonly property color (\w+): "(#[0-9a-fA-F]{6})""#)?;
+    for theme in ["dark", "light"] {
+        let start = palette
+            .find(&format!("property QtObject {theme}: QtObject"))
+            .unwrap_or(0);
+        let block = &palette[start..];
+        let block = &block[..block.find("\n    }").unwrap_or(block.len())];
+        let roles: std::collections::HashMap<String, String> = color
+            .captures_iter(block)
+            .map(|c| (c[1].to_string(), c[2].to_string()))
+            .collect();
+        let pairs = [
+            "text",
+            "strongText",
+            "mutedText",
+            "accentText",
+            "positive",
+            "negative",
+            "info",
+            "warning",
+            "tag",
+        ]
+        .map(|r| (r, "ground"))
+        .into_iter()
+        .chain([("accentForeground", "accent")]);
+        for (fg, bg) in pairs {
+            match (roles.get(fg), roles.get(bg)) {
+                (Some(f), Some(b)) => {
+                    let c = contrast(f, b).unwrap_or(0.0);
+                    if c < 4.5 {
+                        found.push(format!("{theme} {fg} on {bg}: {c:.2}"));
+                    }
+                }
+                _ => found.push(format!("{theme}: no {fg} or {bg}")),
+            }
+        }
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
 /// /LL010/ for Lena: response times over 3 s in the median bring a suggestion (a smaller
