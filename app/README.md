@@ -102,9 +102,9 @@ cargo run -p kaiwa-app -- --shot out.png --view talk --resume           # die un
 cargo run -p kaiwa-app -- --shot out.png --view place --say '…|read:21'  # Einstufung; "read:KK" beantwortet die Lesefragen
 ```
 
-## Moren-Hinweise (Vorschau)
+## Moren-Hinweise
 
-Nach einem gesprochenen Satz prüft die App im Hintergrund die Moren-Längen mit dem eigenen Modell `kaiwa-kana-ctc` (ADR-005). Gemeldet wird höchstens eine Kürzung je Satz, ein zu kurzer langer Vokal oder ein fehlendes っ, als Hinweis ohne Schweregrad („どーして → どして?“), nie als Fehler. Auf echten Stimmen findet das gut die Hälfte der Kürzungen und irrt sich bei etwa jedem zwanzigsten richtigen Satz (58,1 % bei 4,4 %). Die Freigabegrenze K-02 sind 60 %, darum ist es eine Vorschau und in den Einstellungen („Aussprache-Hinweise“) standardmäßig aus.
+Nach einem gesprochenen Satz prüft die App im Hintergrund die Moren-Längen mit dem eigenen Modell `kaiwa-kana-ctc` (ADR-005). Gemeldet wird höchstens eine Kürzung je Satz, ein zu kurzer langer Vokal oder ein fehlendes っ, als Hinweis ohne Schweregrad („どーして → どして?“), nie als Fehler. Auf echten Stimmen findet das sechs von zehn Kürzungen und irrt sich bei etwa jedem zwanzigsten richtigen Satz (59,7 % bei 4,8 %, ADR-005). Die Hinweise sind standardmäßig an; abschalten lassen sie sich in den Einstellungen („Aussprache-Hinweise“).
 
 ## Freies Gespräch und Textgröße
 

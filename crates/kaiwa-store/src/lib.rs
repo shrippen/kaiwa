@@ -83,9 +83,9 @@ pub struct Profile {
     /// Cost limit for a cloud tutor per month in euro cents; `None` without a limit (/LF714/).
     #[serde(default)]
     pub cost_limit_cents: Option<u32>,
-    /// Hints on mora lengths after a spoken turn (/LF320/). Off until they reach the release
-    /// mark of K-02 in the app (58.1 % of 60 %); a preview to switch on until then.
-    #[serde(default)]
+    /// Hints on mora lengths after a spoken turn (/LF320/); on by default since the app path
+    /// counts as reaching K-02 (L-01).
+    #[serde(default = "yes")]
     pub mora_hints: bool,
     /// Easier listening (/LL204/): the character's voice louder, and clearer (more highs).
     #[serde(default)]
@@ -101,6 +101,10 @@ pub struct Profile {
     /// The whole interface, text and readings included, 1.0 to 2.0 (/LL202/); from the next start.
     #[serde(default = "one")]
     pub text_scale: f32,
+}
+
+fn yes() -> bool {
+    true
 }
 
 fn one() -> f32 {
@@ -126,7 +130,7 @@ impl Default for Profile {
             placed: false,
             reminder: None,
             cost_limit_cents: None,
-            mora_hints: false,
+            mora_hints: true,
             louder: false,
             clear: false,
             unload_after_min: ten_minutes(),

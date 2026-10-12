@@ -4,7 +4,7 @@
 |---|---|
 | Produkt | Kaiwa (会話), Arbeitstitel |
 | Auftraggeber | shrippen |
-| Stand | 2026-10-11, Version 0.2 (Entwurf, Entscheidungen der Fragenpakete eingearbeitet) |
+| Stand | 2026-10-12, Version 0.3 (Entwurf, Entscheidungen der Fragenpakete eingearbeitet) |
 | Bezug | [Roadmap](../ROADMAP.md), [QA-Personas](../qa/personas/), [Rückverfolgung](RUECKVERFOLGUNG.md), [Stand](STAND.md) |
 
 Das Lastenheft beschreibt, **was** das Produkt leisten soll und **warum**. Das **Wie** steht im Pflichtenheft und in den ADRs (`spec/adr/`). Die Nummerierung folgt Balzert:
@@ -164,8 +164,8 @@ Oberflächen:
 | /LF306/ | M | Nur Fehler mit dem Schweregrad *verhindert Verständnis* unterbrechen das Gespräch mit einer Rückfrage. Alle anderen stehen in der Seitenleiste und in der Bilanz. | Flüssigkeit vor Genauigkeit. |
 | /LF307/ | S | Lernende können einem Vorschlag **widersprechen** („Das ist korrekt“). Widersprüche werden gesammelt und fließen in die QA ein. | Fehlkorrekturen finden. |
 | /LF310/ | M | **Sitzungsbilanz**: erreichte Ziele, die drei wichtigsten Verbesserungen, neue Wörter, Sprechzeit, Vergleich mit der letzten Sitzung. Neue Lerninhalte gehen in die Wiederholung. | Abschluss und Lernerfolg sichtbar machen. |
-| /LF320/ | S | **Aussprache-Feedback** für die Moren-Struktur: Langvokale (おばさん/おばあさん), Doppelkonsonanten (きて/きって), ん, Vokalentstimmung (です, した), Silbenrhythmus. *Für 1.0 (ADR-005): Hinweise nur in Sätzen (J-05) und nur für Kürzungen, also Langvokal zu kurz und っ weggelassen (K-01); sie erscheinen ab 60 % Erkennung insgesamt und 55 % je Art bei höchstens 5 % Fehlalarmen auf echten Stimmen (K-02). Das eigene Modell `kaiwa-kana-ctc` wird heruntergeladen (K-04 bis K-06).* | Typische Fehler deutschsprachiger Lernender. |
-| /LF321/ | S | **Pitch-Akzent**: Soll- und Ist-Kontur eines Wortes oder Satzes als Kurve. Bewertet werden nur Akzente, die Bedeutung unterscheiden oder die Verständlichkeit stören. *Scheitert der Spike, erscheint 1.0 ohne Pitch-Bewertung (F-09); Vorbilder braucht eine akzenttreue Stimme (H-02).* | Feinschliff ohne Überforderung (Theo). |
+| /LF320/ | S | **Aussprache-Feedback** für die Moren-Struktur: Langvokale (おばさん/おばあさん), Doppelkonsonanten (きて/きって), ん, Vokalentstimmung (です, した), Silbenrhythmus. *Für 1.0 (ADR-005): Hinweise nur in Sätzen (J-05) und nur für Kürzungen, also Langvokal zu kurz und っ weggelassen (K-01); sie erscheinen ab 60 % Erkennung insgesamt und 55 % je Art bei höchstens 5 % Fehlalarmen auf echten Stimmen (K-02); 59,7 % bei 4,8 % auf dem App-Weg gelten als erreicht, die Hinweise sind standardmäßig an (L-01). Das eigene Modell `kaiwa-kana-ctc` wird heruntergeladen (K-04 bis K-06).* | Typische Fehler deutschsprachiger Lernender. |
+| /LF321/ | S | **Pitch-Akzent**: Soll- und Ist-Kontur eines Wortes oder Satzes als Kurve. Bewertet werden nur Akzente, die Bedeutung unterscheiden oder die Verständlichkeit stören. *1.0 erscheint ohne Pitch-Bewertung (F-09, Vorstudie, L-02). Mit einer akzenttreuen Stimme (H-02) zeigt die App die eigene Kurve neben der Kurve der Figur, ohne Urteil (L-03); die Bewertung folgt nach 1.0 mit eigenem Akzentmodell und eigenen Aufnahmen (L-04).* | Feinschliff ohne Überforderung (Theo). |
 | /LF330/ | S | **Nachsprechen und Shadowing**: Satz hören, nachsprechen, eigene Aufnahme und Vorbild vergleichen (Wiedergabe, Kurve, Moren). *Erst mit einer akzenttreuen Stimme (H-02).* | Aussprache gezielt üben. |
 
 ### 4.4 Plasmoid und Plasma-Integration
@@ -221,7 +221,7 @@ Oberflächen:
 | /LD020/ | M | Lernermodell | Zustand je Fähigkeit, Wort (FSRS: Stabilität, Schwierigkeit, fällig), Grammatikpunkt, Fehlerart; Verlauf der Stellgrößen |
 | /LD030/ | M | Sitzungen | Szenario, Züge (Transkript, Text der KI, Korrekturen, Hilfen, Latenzen), Ergebnis; Audio nur bei Opt-in (/LF712/) |
 | /LD040/ | M | Curriculum | Einheiten, Kann-Beschreibungen, Grammatik, Wortschatz, Szenarien, Figuren; versioniert und mitgeliefert |
-| /LD050/ | M | Sprachdaten | Wörterbuch (JMdict), Kanji (KANJIDIC2), Morphologie (UniDic), Akzent, JLPT-Zuordnung, jeweils mit Lizenzangabe |
+| /LD050/ | M | Sprachdaten | Wörterbuch (JMdict), Kanji (KANJIDIC2), Morphologie (UniDic), Akzent, JLPT-Zuordnung, jeweils mit Lizenzangabe. *Als eigenes Paket `kaiwa-data`, GitHub-Release (L-06); JLPT-Listen von tanos.co.uk nur mit im Webarchiv bestätigter Lizenz, sonst eigene Zuordnung (L-09).* |
 | /LD060/ | S | Widersprüche | Vorschläge, denen widersprochen wurde (/LF307/), lokal und nur auf Wunsch exportiert |
 
 Mengengerüst: bis 10 000 Sitzungen und 20 000 Lernobjekte pro Profil ohne spürbare Verzögerung (/LL020/).
@@ -368,3 +368,4 @@ Die Personas in [`qa/personas/`](../qa/personas/) sind **ausführbare Spezifikat
 |---|---|---|
 | 0.1 | 2026-10-09 | Erster Entwurf, Lizenz MIT (F-02) |
 | 0.2 | 2026-10-11 | Entscheidungen der Fragenpakete bei den Anforderungen vermerkt (H-02, H-03, F-03, F-05, F-08, F-09, G-08, I-05 bis I-09, J-05, K-01 bis K-06); Modelle in Kap. 8; Rückverfolgung erzeugt |
+| 0.3 | 2026-10-12 | Fragenpaket 7: Moren-Hinweise standardmäßig an (L-01, /LF320/), Pitch nach 1.0 und Kurve ohne Urteil (L-02 bis L-04, /LF321/), Datenpaket und JLPT-Listen (L-06, L-09, /LD050/) |

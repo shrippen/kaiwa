@@ -119,16 +119,15 @@ QQC2.ScrollView {
                 onActivated: function (i) { page.kaiwa.setSetting("endPause", String(values[i])) }
             }
         }
-        // /LF320/: a preview, off by default until the hints reach K-02 in the app; without the
-        // model it says where to get it (F-08).
+        // /LF320/: on by default (L-01); without the model it says where to get it (F-08).
         Row {
             readonly property var mora: page.p.moraModel || ({})
             title: page.t("Aussprache-Hinweise", "Pronunciation hints")
             hint: mora.present === false
                 ? page.t("Dafür fehlt das Modell kaiwa-kana-ctc (" + mora.licence + ", " + mora.size + "); es lässt sich unten unter „Modelle“ laden.",
                          "This needs the model kaiwa-kana-ctc (" + mora.licence + ", " + mora.size + "); download it below under “Models”.")
-                : page.t("Vorschau: nach einem gesprochenen Satz ein Hinweis, wenn ein langer Vokal oder ein っ zu kurz klang. Findet etwa jeden zweiten solchen Fehler und irrt sich bei etwa jedem zwanzigsten richtigen Satz.",
-                         "Preview: after a spoken sentence, a hint when a long vowel or a っ sounded too short. Finds about every second such mistake and is wrong for about one correct sentence in twenty.")
+                : page.t("Nach einem gesprochenen Satz ein Hinweis, wenn ein langer Vokal oder ein っ zu kurz klang. Findet etwa sechs von zehn solchen Fehlern und irrt sich bei etwa jedem zwanzigsten richtigen Satz; ein Hinweis zählt nie als Fehler.",
+                         "After a spoken sentence, a hint when a long vowel or a っ sounded too short. Finds about six in ten such mistakes and is wrong for about one correct sentence in twenty; a hint never counts as a mistake.")
             QQC2.Switch {
                 checked: page.p.moraHints === true
                 text: checked ? page.t("An", "On") : page.t("Aus", "Off")
