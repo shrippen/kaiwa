@@ -212,10 +212,12 @@ QtObject {
     }
     /**
      * Words for playing techniques (Kante 1.31, KanteTechniqueMark): keys slide, hammer, pull,
-     * slap, pop, ghost. An app sets its translations once, like noteStateNames.
+     * slap, pop, ghost, dead (1.32, a dead note). An app sets its translations once, like
+     * noteStateNames.
      */
     property var techniqueNames: ({
-        slide: "Slide", hammer: "Hammer-on", pull: "Pull-off", slap: "Slap", pop: "Pop", ghost: "Ghost Note"
+        slide: "Slide", hammer: "Hammer-on", pull: "Pull-off", slap: "Slap", pop: "Pop", ghost: "Ghost Note",
+        dead: "Dead Note"
     })
     /** Name of a technique key; "" for an unknown key. */
     function techniqueName(key) {
