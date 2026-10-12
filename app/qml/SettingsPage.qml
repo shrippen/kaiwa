@@ -114,7 +114,7 @@ QQC2.ScrollView {
             hint: page.t("Beim Freisprechen: so lange Stille, bis Kaiwa annimmt, dass du fertig bist", "Hands-free: silence until Kaiwa takes it you are done")
             KanteSegmented {
                 readonly property var values: [1.2, 2, 3, 5]
-                model: ["1,2 s", "2 s", "3 s", "5 s"]
+                model: [page.t("1,2 s", "1.2 s"), "2 s", "3 s", "5 s"]
                 currentIndex: Math.max(0, values.indexOf(page.p.endPause))
                 onActivated: function (i) { page.kaiwa.setSetting("endPause", String(values[i])) }
             }
@@ -319,6 +319,19 @@ QQC2.ScrollView {
                     emphasis: KanteButton.Emphasis.Quiet
                     onClicked: page.kaiwa.storeKey("")
                 }
+            }
+        }
+        // Response time (/LL010/): measured on this device; when slow, a suggestion, no switch.
+        Row {
+            id: latencyRow
+            readonly property var lat: page.p.latency || null
+            visible: lat !== null
+            title: page.t("Antwortzeit", "Response time")
+            hint: lat ? (lat.text + (lat.slow ? " " + lat.suggestion : "")) : ""
+            Text {
+                text: latencyRow.lat ? (latencyRow.lat.p50 / 1000).toFixed(1).replace(".", page.t(",", ".")) + " s" : ""
+                color: latencyRow.lat && latencyRow.lat.slow ? KanteStyle.warningColor : KanteStyle.textColor
+                font: KanteStyle.defaultFont
             }
         }
         // The cost brake (/LF714/): only with a cloud tutor.

@@ -368,8 +368,9 @@ pub const MIN_MORAS: usize = 6;
 
 /// What a finding must beat its threshold by before the app shows it. The thresholds come from
 /// spike 0.6 with OpenJTalk's reading; the app reads with its own G2P, which differs in about one
-/// sentence of ten. 0.3 keeps the false alarms at 4.8 % on the 500 real voices of the spike
-/// (`examples/mora_hints.rs`: 55.6 % of shortened long vowels and 56.1 % of left-out っ found).
+/// sentence of ten. With 0.3 the 500 real voices of the spike give 4.4 % false alarms and find
+/// 55.3 % of shortened long vowels and 62.0 % of left-out っ (`examples/mora_hints.rs`); without
+/// it 4.8 % and 59.7 % overall.
 pub const APP_MARGIN: f32 = 0.3;
 
 /// A hint for the learner (K-01, K-02): in `surface` (as written), the word `meant` (pronounced
@@ -610,6 +611,27 @@ impl Checker {
         }
         let findings = self.check(&resample(samples, rate), &kana)?;
         Ok(hints(&findings, words))
+    }
+
+    /// Per kind, how far its strongest variant beats the meant kana, without a threshold: for
+    /// calibrating thresholds and comparing models (`examples/mora_scores.rs`).
+    pub fn raw_scores(&self, logp: &[f32], kana: &str) -> Vec<(Kind, f32)> {
+        let Some(ids) = self.ids(kana) else {
+            return Vec::new();
+        };
+        let base = log_likelihood(logp, self.vocab_size, &ids, self.blank);
+        let mut best: HashMap<Kind, f32> = HashMap::new();
+        for v in variants(kana, Some('ー')) {
+            let Some(ids) = self.ids(&v.kana) else {
+                continue;
+            };
+            let diff = log_likelihood(logp, self.vocab_size, &ids, self.blank) - base;
+            let e = best.entry(v.kind).or_insert(f32::NEG_INFINITY);
+            *e = e.max(diff);
+        }
+        let mut out: Vec<(Kind, f32)> = best.into_iter().collect();
+        out.sort_by_key(|(k, _)| *k);
+        out
     }
 
     fn findings(&self, logp: &[f32], kana: &str) -> Vec<Finding> {

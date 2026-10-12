@@ -368,6 +368,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "handsFree": p.hands_free,
         "textScale": p.text_scale,
         "cost": st.cost_view(crate::now())?,
+        "latency": st.latency_view(&p.ui_lang)?,
         "path": st.path.display().to_string(),
         "profiles": st.profiles(),
         "key": key_view(&p.ui_lang),

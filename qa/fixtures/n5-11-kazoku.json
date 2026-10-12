@@ -1,6 +1,10 @@
 [
-  {"learner": "四人家族です。", "reply": "そうですか。ご兄弟は？", "analysis": {"understood": true, "goals_met": ["number"], "corrections": [], "new_words": []}},
-  {"learner": "兄が一人います。", "reply": "お兄さんがいるんですね。", "analysis": {"understood": true, "goals_met": ["siblings"], "corrections": [], "new_words": []}},
-  {"learner": "母は先生です。", "reply": "へえ、先生ですか。", "analysis": {"understood": true, "goals_met": ["job"], "corrections": [], "new_words": []}},
-  {"learner": "鈴木さんのご家族は？", "reply": "うちは三人家族です。", "analysis": {"understood": true, "goals_met": ["ask_back"], "corrections": [], "new_words": []}}
+  {"learner": "四人家族です。", "reply": "そうですか。ご兄弟は？",
+    "translation": { "de": "Ach so. Und Geschwister?", "en": "I see. And brothers or sisters?" }, "analysis": {"understood": true, "goals_met": ["number"], "corrections": [], "new_words": []}},
+  {"learner": "兄が一人います。", "reply": "お兄さんがいるんですね。",
+    "translation": { "de": "Sie haben also einen älteren Bruder.", "en": "So you have an older brother." }, "analysis": {"understood": true, "goals_met": ["siblings"], "corrections": [], "new_words": []}},
+  {"learner": "母は先生です。", "reply": "へえ、先生ですか。",
+    "translation": { "de": "Oh, eine Lehrkraft?", "en": "Oh, a teacher?" }, "analysis": {"understood": true, "goals_met": ["job"], "corrections": [], "new_words": []}},
+  {"learner": "鈴木さんのご家族は？", "reply": "うちは三人家族です。",
+    "translation": { "de": "Wir sind zu dritt in der Familie.", "en": "There are three people in my family." }, "analysis": {"understood": true, "goals_met": ["ask_back"], "corrections": [], "new_words": []}}
 ]
