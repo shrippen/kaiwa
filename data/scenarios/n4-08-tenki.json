@@ -42,8 +42,8 @@
     {
       "id": "rumour",
       "text": {
-        "de": "Gib weiter, was du gehört hast: Herr Kimura zieht anscheinend um.",
-        "en": "Pass on what you heard: Mr Kimura seems to be moving."
+        "de": "Sag, dass Herr Kimura anscheinend umzieht (auf seinem Tisch stehen Umzugskartons).",
+        "en": "Say Mr Kimura seems to be moving (there are moving boxes on his desk)."
       },
       "help": {
         "keyword": "〜みたいです",

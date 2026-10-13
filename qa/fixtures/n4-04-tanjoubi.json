@@ -51,7 +51,7 @@
     "learner": "家族に何をもらったの？",
     "reply": "母に、かわいいかばんをもらったよ。",
     "translation": {
-      "de": "Von meiner Mutter habe ich eine schöne Tasche bekommen.",
+      "de": "Von meiner Mutter habe ich eine süße Tasche bekommen.",
       "en": "I got a cute bag from my mum."
     },
     "analysis": {
@@ -67,7 +67,7 @@
     "learner": "家族に何をくれたの？",
     "reply": "母に、かわいいかばんをもらったよ。",
     "translation": {
-      "de": "Von meiner Mutter habe ich eine schöne Tasche bekommen.",
+      "de": "Von meiner Mutter habe ich eine süße Tasche bekommen.",
       "en": "I got a cute bag from my mum."
     },
     "analysis": {
@@ -80,9 +80,9 @@
         {
           "severity": "wrong",
           "kind": "word_choice",
-          "original": "何をくれたの",
-          "better": "何をもらったの",
-          "explanation": "Was sie bekommen hat: 〜に〜をもらう. くれる sagt man, wenn man selbst bekommt.",
+          "original": "家族に何をくれたの",
+          "better": "家族に何をもらったの",
+          "explanation": "Mit 家族に („von der Familie“) passt もらう: 家族に何をもらったの？ Mit くれる hieße es 家族は何をくれたの？",
           "also_possible": false
         }
       ]

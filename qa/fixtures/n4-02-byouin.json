@@ -124,10 +124,10 @@
   },
   {
     "learner": "薬は食後に飲まなければなりませんか。",
-    "reply": "いいえ、食後じゃなくてもいいですよ。でも、無理しないほうがいいです。",
+    "reply": "いいえ、食後じゃなくてもいいですよ。でも、一日三回飲んでください。",
     "translation": {
-      "de": "Nein, nicht unbedingt nach dem Essen. Aber übernehmen Sie sich nicht.",
-      "en": "No, it doesn't have to be after meals. But don't overdo it."
+      "de": "Nein, nicht unbedingt nach dem Essen. Aber nehmen Sie es dreimal am Tag.",
+      "en": "No, it doesn't have to be after meals. But take it three times a day."
     },
     "analysis": {
       "understood": true,

@@ -13,7 +13,7 @@
   "register": "casual",
   "voice": "jm_kumo",
   "opening": "お{疲|つか}れ！{今日|きょう}、どうだった？",
-  "opening_translation": { "de": "Na, Feierabend! Wie war dein Tag?", "en": "Cheers! How was your day?" },
+  "opening_translation": { "de": "Na, Feierabend! Wie war dein Tag?", "en": "Hey, good work today! How was your day?" },
   "goals": [
     {
       "id": "rain",

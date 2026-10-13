@@ -1,6 +1,6 @@
 [
   {
-    "learner": "英語と、日本語が少し話せます。",
+    "learner": "英語が話せます。日本語も少し話せます。",
     "reply": "そうですか。英語が話せると助かります。",
     "translation": {
       "de": "Gut. Englisch hilft uns sehr.",
@@ -16,7 +16,7 @@
     }
   },
   {
-    "learner": "英語と、日本語が少し話されます。",
+    "learner": "英語が話せます。日本語も少し話されます。",
     "reply": "そうですか。英語が話せると助かります。",
     "translation": {
       "de": "Gut. Englisch hilft uns sehr.",

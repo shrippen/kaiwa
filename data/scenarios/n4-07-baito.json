@@ -18,13 +18,13 @@
     {
       "id": "can",
       "text": {
-        "de": "Sag, dass du Englisch und ein bisschen Japanisch sprechen kannst.",
-        "en": "Say you can speak English and a little Japanese."
+        "de": "Sag, dass du Englisch sprechen kannst und auch ein bisschen Japanisch.",
+        "en": "Say you can speak English, and a little Japanese too."
       },
       "help": {
         "keyword": "話せる（はなせる）",
-        "start": "英語と、…",
-        "example": "英語と、日本語が少し話せます。"
+        "start": "英語が話せます。日本語も…",
+        "example": "英語が話せます。日本語も少し話せます。"
       }
     },
     {

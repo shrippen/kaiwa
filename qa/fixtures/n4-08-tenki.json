@@ -30,7 +30,7 @@
       "new_words": [],
       "corrections": [
         {
-          "severity": "unnatural",
+          "severity": "wrong",
           "kind": "conjugation",
           "original": "降るそうです",
           "better": "降りそうです",

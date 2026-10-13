@@ -58,10 +58,10 @@
   },
   {
     "learner": "それに、部長に残業させられたんだ。",
-    "reply": "ひどいね。でも、大変でも、がんばってるね。",
+    "reply": "ひどいね。でも、がんばってるね。",
     "translation": {
-      "de": "Gemein. Aber auch wenn es hart ist, du gibst nicht auf.",
-      "en": "That's harsh. But even when it's tough, you keep going."
+      "de": "Gemein. Aber du gibst nicht auf.",
+      "en": "That's harsh. But you keep going."
     },
     "analysis": {
       "understood": true,
@@ -74,10 +74,10 @@
   },
   {
     "learner": "それに、部長に残業させたんだ。",
-    "reply": "ひどいね。でも、大変でも、がんばってるね。",
+    "reply": "ひどいね。でも、がんばってるね。",
     "translation": {
-      "de": "Gemein. Aber auch wenn es hart ist, du gibst nicht auf.",
-      "en": "That's harsh. But even when it's tough, you keep going."
+      "de": "Gemein. Aber du gibst nicht auf.",
+      "en": "That's harsh. But you keep going."
     },
     "analysis": {
       "understood": true,

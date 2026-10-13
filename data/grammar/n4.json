@@ -160,8 +160,8 @@
       "id": "ageru-kureru-morau",
       "label": "あげる・くれる・もらう",
       "explain": {
-        "de": "Geben und Bekommen hängt an der Richtung: あげる (ich oder meine Seite geben weg), くれる (jemand gibt mir oder meiner Seite), もらう (ich bekomme von jemandem: 〜に／〜から).",
-        "en": "Giving and receiving depend on direction: あげる (I or my side give away), くれる (someone gives to me or my side), もらう (I receive from someone: 〜に／〜から)."
+        "de": "Geben und Bekommen hängt an der Richtung: あげる (ich oder meine Seite geben weg), くれる (jemand gibt mir oder meiner Seite), もらう (jemand, oft ich, bekommt von jemandem: 〜に／〜から).",
+        "en": "Giving and receiving depend on direction: あげる (I or my side give away), くれる (someone gives to me or my side), もらう (someone, often I, receives from someone: 〜に／〜から)."
       },
       "examples": [
         "{友|とも}だちが{本|ほん}をくれました。",
@@ -702,8 +702,8 @@
       "id": "causative",
       "label": "使役 (〜させる)",
       "explain": {
-        "de": "Kausativ: jemanden etwas tun lassen oder machen lassen. う-Verben a-Laut + せる (行かせる), る-Verben させる. „Lass mich …“: 〜させてください, unter Freunden 〜させて.",
-        "en": "Causative: making or letting someone do something. う-verbs a-sound + せる (行かせる), る-verbs させる. “Let me …”: 〜させてください, casually 〜させて."
+        "de": "Kausativ: jemanden etwas tun lassen oder machen lassen. う-Verben a-Laut + せる (行かせる), る-Verben させる, する → させる, 来る → 来させる. „Lass mich …“: 〜させてください, unter Freunden 〜させて.",
+        "en": "Causative: making or letting someone do something. う-verbs a-sound + せる (行かせる), る-verbs させる, する → させる, 来る → 来させる. “Let me …”: 〜させてください, casually 〜させて."
       },
       "examples": [
         "{少|すこ}し{考|かんが}えさせてください。"
@@ -713,8 +713,8 @@
       "id": "causative-passive",
       "label": "使役受身 (〜させられる)",
       "explain": {
-        "de": "Etwas tun müssen, weil jemand es verlangt: る-Verben させられる, う-Verben a-Laut + される (待たされる) oder せられる.",
-        "en": "Being made to do something: る-verbs させられる, う-verbs a-sound + される (待たされる) or せられる."
+        "de": "Etwas tun müssen, weil jemand es verlangt: る-Verben させられる, する → させられる, う-Verben a-Laut + せられる oder kurz + される (待たされる; nicht bei Verben auf す: 話させられる).",
+        "en": "Being made to do something: る-verbs させられる, する → させられる, う-verbs a-sound + せられる or short + される (待たされる; not for verbs ending in す: 話させられる)."
       },
       "examples": [
         "{一時間|いちじかん}も{待|ま}たされました。"

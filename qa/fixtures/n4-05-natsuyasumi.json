@@ -87,7 +87,7 @@
       "new_words": [],
       "corrections": [
         {
-          "severity": "wrong",
+          "severity": "unnatural",
           "kind": "particle",
           "original": "来週に",
           "better": "来週までに",
