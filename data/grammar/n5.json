@@ -418,8 +418,8 @@
       "id": "ji-ni",
       "label": "〜時に (時間)",
       "explain": {
-        "de": "Ein Zeitpunkt mit Zahl bekommt に: 七時に, 月曜日に. Ohne に bleiben Wörter wie 毎朝, きょう, あした.",
-        "en": "A point in time with a number takes に: 七時に, 月曜日に. Words like 毎朝, きょう, あした go without に."
+        "de": "Uhrzeiten und Daten bekommen に (七時に, 五月三日に), Wochentage meist auch (月曜日に). Ohne に bleiben Wörter wie 毎朝, きょう, あした, 週末.",
+        "en": "Clock times and dates take に (七時に, 五月三日に), weekdays usually too (月曜日に). Words like 毎朝, きょう, あした, 週末 go without に."
       },
       "examples": [
         "{七時|しちじ}に{起|お}きます。"

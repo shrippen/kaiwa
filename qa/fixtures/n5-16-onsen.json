@@ -73,41 +73,41 @@
     }
   },
   {
-    "learner": "ここで靴を脱ぎましょうか。",
-    "reply": "はい、こちらでお願いします。",
+    "learner": "タオルはここに置きましょうか。",
+    "reply": "はい、そちらに置いてください。",
     "translation": {
-      "de": "Ja, bitte hier.",
-      "en": "Yes, here please."
+      "de": "Ja, legen Sie es bitte dort hin.",
+      "en": "Yes, please leave it there."
     },
     "analysis": {
       "understood": true,
       "goals_met": [
-        "shoes"
+        "towel"
       ],
       "new_words": [],
       "corrections": []
     }
   },
   {
-    "learner": "ここで靴を脱ぎますか。",
-    "reply": "はい、こちらでお願いします。",
+    "learner": "タオルはここに置いてましょうか。",
+    "reply": "はい、そちらに置いてください。",
     "translation": {
-      "de": "Ja, bitte hier.",
-      "en": "Yes, here please."
+      "de": "Ja, legen Sie es bitte dort hin.",
+      "en": "Yes, please leave it there."
     },
     "analysis": {
       "understood": true,
       "goals_met": [
-        "shoes"
+        "towel"
       ],
       "new_words": [],
       "corrections": [
         {
-          "severity": "unnatural",
+          "severity": "wrong",
           "kind": "conjugation",
-          "original": "脱ぎますか",
-          "better": "脱ぎましょうか",
-          "explanation": "Wer etwas anbietet oder vorschlägt, sagt 〜ましょうか.",
+          "original": "置いてましょうか",
+          "better": "置きましょうか",
+          "explanation": "ましょうか hängt am Verbstamm: 置き + ましょうか.",
           "also_possible": false
         }
       ]

@@ -52,15 +52,15 @@
       }
     },
     {
-      "id": "shoes",
+      "id": "towel",
       "text": {
-        "de": "Frag, ob du die Schuhe hier ausziehen sollst.",
-        "en": "Ask whether you should take your shoes off here."
+        "de": "Frag, ob du dein Handtuch hier ablegen sollst.",
+        "en": "Ask whether you should leave your towel here."
       },
       "help": {
-        "keyword": "脱ぐ（ぬぐ）",
-        "start": "ここで…",
-        "example": "ここで靴を脱ぎましょうか。"
+        "keyword": "置く（おく）",
+        "start": "タオルは…",
+        "example": "タオルはここに置きましょうか。"
       }
     }
   ]

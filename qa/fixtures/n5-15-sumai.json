@@ -58,7 +58,7 @@
   },
   {
     "learner": "部屋は小さいですが、静かです。",
-    "reply": "静かなのはいちばんですね。",
+    "reply": "静かなのがいちばんですね。",
     "translation": {
       "de": "Ruhig ist das Wichtigste.",
       "en": "Quiet is the best."
@@ -74,7 +74,7 @@
   },
   {
     "learner": "部屋は小さいですが、静かなです。",
-    "reply": "静かなのはいちばんですね。",
+    "reply": "静かなのがいちばんですね。",
     "translation": {
       "de": "Ruhig ist das Wichtigste.",
       "en": "Quiet is the best."
