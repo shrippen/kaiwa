@@ -500,6 +500,10 @@ Beispielsätze, später LLM-Vorlagen):
 
 ### 3.3 Muttersprachler-Review (manuell, Release-Gate)
 
+**Stand 2026-10-14:** `cargo run -p kaiwa-sim -- review-hash` gibt je Einheit den Hash aus, den die
+Reviewerin mit `by` und `date` als `review` einträgt; ein Test bricht, wenn sich Einheit oder
+Szenario danach ändern. Wer reviewt, entscheidet Q-08 später.
+
 - Je Einheit eine Checkliste: natürlich gesagt? Register passend zur Figur? Kulturell stimmig
   (Ryokan, Arzt, Firma)? Lesungen und Furigana richtig? Akzent der Kernwörter (Kanjium/UniDic)
   plausibel? Kann-Satz realistisch für die Stufe?

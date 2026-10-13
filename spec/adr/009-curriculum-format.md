@@ -39,5 +39,9 @@ Muttersprachler-Reviews.
   stehen im Katalog), „遠い・近い“ ist kein Grammatikpunkt mehr.
 - App und `kaiwad` binden die Stufendateien ein (`kaiwa-backend::CURRICULUM`), `kaiwa-sim` liest
   `data/curriculum/` als Verzeichnis.
-- Noch nicht umgesetzt: Morphologie-Muster je Punkt (für den Grammatik-Lint, INHALT-ENTWURF 3.2),
-  Prüfung des Review-Hashs im Release-Gate (M7), Abdeckung der JF-Themen je Stufe.
+- Review-Nachweis: `Curriculum::content_hash` (Einheit ohne `review` plus ihre Szenariodateien,
+  FNV-1a 64); `kaiwa-sim review-hash` listet ihn je Einheit, ein Test verlangt, dass ein
+  eingetragener `review.hash` noch passt. Abdeckung: N5 und N4 erreichen die JF-Themen 1–13 (Test).
+  Register-Lint der Hilfe-Sätze (INHALT-ENTWURF 3.2) als Test in `kaiwa-core`.
+- Noch nicht umgesetzt: Morphologie-Muster je Punkt (Grammatik-Abdeckung und Vorgriff,
+  INHALT-ENTWURF 3.2), das Release-Gate selbst (M7: jede Einheit reviewt).

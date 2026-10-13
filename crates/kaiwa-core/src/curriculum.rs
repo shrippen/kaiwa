@@ -256,6 +256,29 @@ impl Curriculum {
         Self::from_files(&refs).map_err(std::io::Error::other)
     }
 
+    /// What the native speaker review (INHALT-ENTWURF 3.3, `review.hash`) is about: the unit
+    /// without its review and the files of its scenarios, as FNV-1a 64 in hex. Any change to the
+    /// unit or a scenario changes it, so a review no longer matches (release gate, M7). A change
+    /// detector, not a signature.
+    pub fn content_hash(unit: &Unit, scenarios: &[&str]) -> String {
+        let mut u = unit.clone();
+        u.review = None;
+        u.level = None;
+        let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+        let mut eat = |bytes: &[u8]| {
+            for b in bytes {
+                h ^= u64::from(*b);
+                h = h.wrapping_mul(0x0000_0100_0000_01b3);
+            }
+        };
+        eat(serde_json::to_string(&u).unwrap_or_default().as_bytes());
+        for s in scenarios {
+            eat(b"\n");
+            eat(s.as_bytes());
+        }
+        format!("{h:016x}")
+    }
+
     /// The grammar points of the units against the catalogue: every point is in it, and its
     /// level is the level of the first unit that uses it.
     pub fn check_grammar(
@@ -669,6 +692,31 @@ mod bundled {
             }),
             Err(CurriculumError::UnknownGrammar(_, _))
         ));
+    }
+
+    /// A recorded review still matches its unit and scenarios (INHALT-ENTWURF 3.3).
+    #[test]
+    fn recorded_reviews_match_the_content() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let c = Curriculum::from_dir(&root.join("data/curriculum")).unwrap();
+        for u in &c.units {
+            let texts: Vec<String> = u
+                .scenarios
+                .iter()
+                .map(|s| {
+                    std::fs::read_to_string(root.join(format!("data/scenarios/{s}.json"))).unwrap()
+                })
+                .collect();
+            let refs: Vec<&str> = texts.iter().map(String::as_str).collect();
+            let now = Curriculum::content_hash(u, &refs);
+            if let Some(h) = u.review.as_ref().and_then(|r| r.hash.as_deref()) {
+                assert_eq!(h, now, "{} changed after its review", u.id);
+            }
+            let mut changed = texts.clone();
+            changed[0].push(' ');
+            let refs: Vec<&str> = changed.iter().map(String::as_str).collect();
+            assert_ne!(Curriculum::content_hash(u, &refs), now);
+        }
     }
 
     /// Q-07: N5 and N4 together reach every everyday topic of the JF Standard (1 self and
