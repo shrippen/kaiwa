@@ -1,6 +1,6 @@
 # Inhaltsstruktur Kaiwa: Entwurf N5 bis N1
 
-Stand 2026-10-13 · Entwurf zur Entscheidung · Bezug: /LF220/, /LF221/, /LD040/, /LD050/, ADR-007 (L-06, L-09), ROADMAP M2, M7, „Nach 1.0“
+Stand 2026-10-13 · entschieden mit Fragenpaket 8 (Abschnitt 6) · Bezug: /LF220/, /LF221/, /LD040/, /LD050/, ADR-007 (L-06, L-09), ROADMAP M2, M7, „Nach 1.0“
 
 Dieses Papier schlägt vor, wie die Inhalte von Kaiwa über alle Stufen aufgebaut werden. Es baut auf
 `data/curriculum/n5.json` (12 Einheiten) und `data/scenarios/*.json` auf und erweitert deren Format,
@@ -551,22 +551,22 @@ dient als Gegenprobe.
 
 ---
 
-## 6. Offene Fragen (Fragenpaket 8)
+## 6. Fragen und Entscheidungen (Fragenpaket 8, beantwortet 2026-10-13)
 
-| Id | Frage | Vorschlag |
-|---|---|---|
-| Q-01 | tanos-Listen übernehmen, da die CC-BY-Lizenz im Webarchiv bestätigt ist (L-09)? | **Ja**, als eine Quelle neben Häufigkeit und Curriculum (Abschnitt 4.2); Snapshot-URLs in ADR-007, Namensnennung in `NOTICE` und „Über“. |
-| Q-02 | N5-Lücken schließen: N5 um vier Einheiten (n5-13 bis n5-16) erweitern oder die fehlende Grammatik an den Anfang von N4 legen? | **N5 auf 16 Einheiten erweitern.** Die て-Form-Bitten und Gesprächsstrategien gehören an den Anfang, und M2 bleibt bei „N5 als Graph“. |
-| Q-03 | Wie heißt die Stufe in der App: „N4“, „Stufe 4“ oder „A2“? | „N4 · A2“ mit dem Hinweis „orientiert an JLPT und JF-Standard“, nie „JLPT-Kurs“; keine Bestehensversprechen. |
-| Q-04 | Eine Datei je Stufe mit stufenübergreifendem `requires`, oder eine große Datei? | **Eine Datei je Stufe**; der Lader fügt zusammen und prüft den Gesamtgraphen. |
-| Q-05 | Wie tief geht Keigo in N4? | Feste Formeln aktiv (申します, おります, 伺います, お〜ください), 尊敬語 nur verstehen; aktives Keigo in N3. Emi bekommt ihren Weg über das Überspringen. |
-| Q-06 | Bleibt N4 bei 12 Einheiten, oder kommen n4-13 (Feste) und n4-14 (Reklamation) für 1.0 dazu? | 12 für 1.0, die zwei als erste Inhalte von 1.1; Aufwand für Review spricht dagegen. |
-| Q-07 | Neue optionale Felder (`level`, `topics`, `review`) und ein Grammatik-Katalog `data/grammar/`? | **Ja**, alle optional, ein Lauf von `check()` prüft sie; ADR „Curriculum-Format v2“. |
-| Q-08 | Wer macht das Muttersprachler-Review (F-05), und wann? | Bezahltes Lektorat je Einheit, beauftragt zu Beginn von M6, N5 zuerst; Budget für 30–40 h. |
-| Q-09 | Zwei Register je Einheit (höflich und Freundesform) als Regel für N4? | Für jede zweite N4-Einheit, wo es im Leben vorkommt (Arzt nicht, Freunde ja), siehe 2.4. |
-| Q-10 | Sollen Kann-Sätze auf JF-Can-do-Ids verweisen? | Nein im Datensatz (Nutzungsbedingungen unklar für Weitergabe), nur die Themennummer `topics` und eigene Formulierung. |
-| Q-11 | Ab welcher Stufe dürfen KI-Figuren Dialekt sprechen? | Erst N2 (nur Hören), N1 aktiv verstehen; bis dahin Standardsprache (標準語). |
-| Q-12 | Schreibweise `unit` in Szenarien (`N5-03`) an die Einheiten-Id (`n5-03`) angleichen? | Ja, mit N4 einheitlich klein; N5 in einem kleinen PR nachziehen. |
+| Id | Frage | Vorschlag | Entscheidung |
+|---|---|---|---|
+| Q-01 | tanos-Listen übernehmen, da die CC-BY-Lizenz im Webarchiv bestätigt ist (L-09)? | **Ja**, als eine Quelle neben Häufigkeit und Curriculum (Abschnitt 4.2); Snapshot-URLs in ADR-007, Namensnennung in `NOTICE` und „Über“. | Wie vorgeschlagen; Namensnennung in `NOTICE` und „Über“. |
+| Q-02 | N5-Lücken schließen: N5 um vier Einheiten (n5-13 bis n5-16) erweitern oder die fehlende Grammatik an den Anfang von N4 legen? | **N5 auf 16 Einheiten erweitern.** Die て-Form-Bitten und Gesprächsstrategien gehören an den Anfang, und M2 bleibt bei „N5 als Graph“. | Wie vorgeschlagen: N5 auf 16 Einheiten. |
+| Q-03 | Wie heißt die Stufe in der App: „N4“, „Stufe 4“ oder „A2“? | „N4 · A2“ mit dem Hinweis „orientiert an JLPT und JF-Standard“, nie „JLPT-Kurs“; keine Bestehensversprechen. | Wie vorgeschlagen: „N4 · A2“, ohne Bestehensversprechen. |
+| Q-04 | Eine Datei je Stufe mit stufenübergreifendem `requires`, oder eine große Datei? | **Eine Datei je Stufe**; der Lader fügt zusammen und prüft den Gesamtgraphen. | Wie vorgeschlagen: eine Datei je Stufe, der Lader prüft den Gesamtgraphen. |
+| Q-05 | Wie tief geht Keigo in N4? | Feste Formeln aktiv (申します, おります, 伺います, お〜ください), 尊敬語 nur verstehen; aktives Keigo in N3. Emi bekommt ihren Weg über das Überspringen. | Wie vorgeschlagen; aktives Keigo ab N3. |
+| Q-06 | Bleibt N4 bei 12 Einheiten, oder kommen n4-13 (Feste) und n4-14 (Reklamation) für 1.0 dazu? | 12 für 1.0, die zwei als erste Inhalte von 1.1; Aufwand für Review spricht dagegen. | **Abweichend:** 14 Einheiten schon für 1.0 (n4-13 und n4-14 gehören dazu). |
+| Q-07 | Neue optionale Felder (`level`, `topics`, `review`) und ein Grammatik-Katalog `data/grammar/`? | **Ja**, alle optional, ein Lauf von `check()` prüft sie; ADR „Curriculum-Format v2“. | Wie vorgeschlagen; ADR „Curriculum-Format v2“. |
+| Q-08 | Wer macht das Muttersprachler-Review (F-05), und wann? | Bezahltes Lektorat je Einheit, beauftragt zu Beginn von M6, N5 zuerst; Budget für 30–40 h. | **Offen:** später entscheiden. |
+| Q-09 | Zwei Register je Einheit (höflich und Freundesform) als Regel für N4? | Für jede zweite N4-Einheit, wo es im Leben vorkommt (Arzt nicht, Freunde ja), siehe 2.4. | Wie vorgeschlagen: jede zweite N4-Einheit bekommt zusätzlich ein Szenario in Freundesform, wo es im Leben vorkommt. |
+| Q-10 | Sollen Kann-Sätze auf JF-Can-do-Ids verweisen? | Nein im Datensatz (Nutzungsbedingungen unklar für Weitergabe), nur die Themennummer `topics` und eigene Formulierung. | **Abweichend:** Ja, Can-do-Ids im Datensatz (nur die Ids als Verweis, Kann-Sätze bleiben eigene Formulierung). |
+| Q-11 | Ab welcher Stufe dürfen KI-Figuren Dialekt sprechen? | Erst N2 (nur Hören), N1 aktiv verstehen; bis dahin Standardsprache (標準語). | Wie vorgeschlagen: Dialekt ab N2 nur zum Hören, ab N1 aktiv verstehen. |
+| Q-12 | Schreibweise `unit` in Szenarien (`N5-03`) an die Einheiten-Id (`n5-03`) angleichen? | Ja, mit N4 einheitlich klein; N5 in einem kleinen PR nachziehen. | Umgesetzt (Szenarien tragen `n5-0x`, PR #31). |
 
 ---
 
