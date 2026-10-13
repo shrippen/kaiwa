@@ -41,7 +41,28 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | M-03 | Wörterbuch nur nach Klick laden, angeboten im Wort-Popup und unter Einstellungen › Modelle | `kaiwa_speech::download::MODELS` |
 | M-04 | Soll-Akzent im Popup ohne Urteil (Kanjium) | `kaiwa-lang::accent`, `KantePitchCurve` |
 
-Offen dazu: [Fragenpaket 8](https://claude.ai/artifact/7LU4Pr5HzXW8zzfL43zfFW) (Q-01 bis Q-15: Inhaltsaufbau nach `spec/INHALT-ENTWURF.md`, Namen im Wörterbuch, Demo aus dem Release mit Tutor-Einrichtung in den Einstellungen).
+## Entscheidungen aus Fragenpaket 8 (2026-10-13)
+
+[Fragenpaket 8](https://claude.ai/artifact/7LU4Pr5HzXW8zzfL43zfFW); Q-01 bis Q-12 auch in `spec/INHALT-ENTWURF.md`, Abschnitt 6. Noch nicht umgesetzt.
+
+| ID | Entscheidung | Wo |
+|---|---|---|
+| Q-01 | tanos-Listen als eine Quelle der Kaiwa-Stufe neben Curriculum und Häufigkeit; Namensnennung in `NOTICE` und „Über“ | ADR-007, /LD050/ |
+| Q-02 | N5 auf 16 Einheiten erweitern (n5-13 bis n5-16) | `data/curriculum/n5.json` |
+| Q-03 | Stufe in der App als „N4 · A2“, Hinweis „orientiert an JLPT und JF-Standard“, kein Bestehensversprechen | UI |
+| Q-04 | Eine Curriculum-Datei je Stufe; der Lader prüft den Gesamtgraphen | `Curriculum::check` |
+| Q-05 | N4: feste Keigo-Formeln aktiv (申します, おります, 伺います, お〜ください), 尊敬語 nur verstehen; aktives Keigo ab N3 | `n4.json` |
+| Q-06 | N4 mit 14 Einheiten schon für 1.0 (n4-13 Feste, n4-14 Reklamation) | `n4.json`, Roadmap |
+| Q-07 | Optionale Felder `level`, `topics`, `review` und Grammatik-Katalog `data/grammar/`; ADR „Curriculum-Format v2“ | neues ADR |
+| Q-08 | Muttersprachler-Review: später entscheiden | offen |
+| Q-09 | Jede zweite N4-Einheit bekommt zusätzlich ein Szenario in Freundesform, wo es im Leben vorkommt | `data/scenarios/` |
+| Q-10 | JF-Can-do-Ids im Datensatz (Verweis; Kann-Sätze bleiben eigene Formulierung) | Curriculum-Format v2 |
+| Q-11 | Dialekt erst ab N2 und nur zum Hören, ab N1 aktiv verstehen; bis dahin Standardsprache | Szenarien, Tutor-Anweisungen |
+| Q-13 | Namen aus JMnedict in kaiwa-data 0.2 (Paket wird deutlich größer); der IPADIC-Entwurf auf `m3/namen` wird nicht gemergt | kaiwa-data, ADR-007 |
+| Q-14 | Reihenfolge: Curriculum-Format v2, N5 auf 16 Einheiten, danach `n4.json` nach dem Entwurf | Roadmap M3/M7 |
+| Q-15 | Vor dem ersten Paket: Tutor-Einrichtung in den Einstellungen (lokal OpenAI-kompatibel, Anthropic), dann Demo hinter ein Build-Feature (standardmäßig aus), der Paketbau prüft das Binary | Offen Nr. 7 |
+
+Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA 3.0 US; eine zusätzliche Lizenz für Kaiwa hilft nicht (NC und ShareAlike bleiben). Er dient nur als Orientierung für Reihenfolge und Aufbau, Erklärungen schreibt Kaiwa selbst.
 
 ## Entscheidungen aus Fragenpaket 7 (2026-10-12)
 
@@ -63,7 +84,7 @@ Offen dazu: [Fragenpaket 8](https://claude.ai/artifact/7LU4Pr5HzXW8zzfL43zfFW) (
 4. **31 Prüfregeln** sind noch nicht automatisch, meist Audio, GUI (AT-SPI, Tastatur) oder Verhalten des echten Tutors. Sie brauchen den gui- und audio-Modus von `kaiwa-sim` oder den lokalen Test.
 5. **Stimme:** H-01 (VOICEVOX) entscheidet die endgültige Stimme; bis dahin Kokoro als Übergang.
 6. **Secret `ANTHROPIC_API_KEY`** fehlt noch in der Cloud-Umgebung (G-04).
-7. **Demo im Release** (Q-15): Der Demo-Modus hängt nur an `KAIWA_DEMO`, und ohne `KAIWA_PROVIDER` antwortet die App mit den Aufzeichnungen. Vor dem ersten Paket braucht es eine Tutor-Einrichtung in den Einstellungen, dann ein Build-Feature `demo` (aus) und eine Prüfung im Paketbau.
+7. **Demo im Release** (Q-15, entschieden): Der Demo-Modus hängt nur an `KAIWA_DEMO`, und ohne `KAIWA_PROVIDER` antwortet die App mit den Aufzeichnungen. Vor dem ersten Paket braucht es eine Tutor-Einrichtung in den Einstellungen, dann ein Build-Feature `demo` (aus) und eine Prüfung im Paketbau.
 8. **Kanji in Stücken:** `KanteRubyText` setzt ein `Text` je Zeichen; unter deutscher Locale nahm Qt für ein einzelnes Kanji oder 。 eine chinesische Schrift (andere Zeichenformen, tiefere Grundlinie). Kante 1.34 (Kante #59) setzt eine japanische Schrift, die Kopie hier ist abgeglichen.
 
 ## Lessons learned
