@@ -190,9 +190,7 @@ fn no_hearts(root: &Path) -> Result<Option<String>> {
             "after ten mistakes the right answer no longer counts".into(),
         ));
     }
-    let c = Curriculum::from_json(&std::fs::read_to_string(
-        root.join("data/curriculum/n5.json"),
-    )?)?;
+    let c = Curriculum::from_dir(&root.join("data/curriculum"))?;
     Ok(c.next_scenario(&CourseProgress::default())
         .is_none()
         .then(|| "the path is locked".into()))
@@ -312,9 +310,7 @@ fn misrecognition(root: &Path) -> Result<Option<String>> {
 
 /// /LF215/: after Emi's placement, skipping is offered at once; not so for a beginner.
 fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
-    let c = Curriculum::from_json(&std::fs::read_to_string(
-        root.join("data/curriculum/n5.json"),
-    )?)?;
+    let c = Curriculum::from_dir(&root.join("data/curriculum"))?;
     let emi = c.placement_skip(&placed(p), &CourseProgress::default());
     let mara = c.placement_skip(&placed(&persona(root, "mara")?), &CourseProgress::default());
     if emi.is_empty() {

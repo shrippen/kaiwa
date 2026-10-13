@@ -44,9 +44,7 @@ fn session(root: &Path) -> Result<Session> {
 }
 
 fn curriculum(root: &Path) -> Result<Curriculum> {
-    Ok(Curriculum::from_json(&std::fs::read_to_string(
-        root.join("data/curriculum/n5.json"),
-    )?)?)
+    Ok(Curriculum::from_dir(&root.join("data/curriculum"))?)
 }
 
 /// Three sessions in a profile on disk, like Lena's journey.

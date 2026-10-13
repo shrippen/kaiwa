@@ -1,0 +1,385 @@
+{
+  "level": "n5",
+  "points": [
+    {
+      "id": "ne",
+      "label": "〜ね",
+      "explain": {
+        "de": "Am Satzende: sucht Zustimmung oder teilt ein Gefühl, etwa „nicht wahr?“ oder „was?“. Kurz und freundlich, sehr häufig im Gespräch.",
+        "en": "At the end of a sentence: asks for agreement or shares a feeling, like “isn't it?”. Short and friendly, very common in talk."
+      },
+      "examples": [
+        "いい{天気|てんき}ですね。"
+      ]
+    },
+    {
+      "id": "arigatou-gozaimashita",
+      "label": "ありがとうございました",
+      "explain": {
+        "de": "Dank in der Vergangenheitsform: für etwas, das abgeschlossen ist (nach dem Einkauf, nach einer Hilfe). Für etwas, das noch läuft, ありがとうございます.",
+        "en": "Thanks in the past form: for something that is finished (after shopping, after help). For something still going on, ありがとうございます."
+      },
+      "examples": [
+        "どうもありがとうございました。"
+      ]
+    },
+    {
+      "id": "desu",
+      "label": "〜です",
+      "explain": {
+        "de": "Höfliches „ist/bin/sind“ nach einem Nomen. Es gibt keine Unterscheidung nach Person; die Person sagt der Zusammenhang.",
+        "en": "Polite “is/am/are” after a noun. There is no change by person; context says who is meant."
+      },
+      "examples": [
+        "ミラーです。",
+        "{学生|がくせい}です。"
+      ]
+    },
+    {
+      "id": "kara-kimashita",
+      "label": "〜から来ました",
+      "explain": {
+        "de": "„Ich komme aus …“: wörtlich „bin aus … gekommen“. So sagt man, woher man stammt.",
+        "en": "“I'm from …”: literally “came from …”. The usual way to say where you come from."
+      },
+      "examples": [
+        "ドイツから{来|き}ました。"
+      ]
+    },
+    {
+      "id": "ga-suki",
+      "label": "〜が好きです",
+      "explain": {
+        "de": "„Ich mag …“: was man mag, steht vor が. 好き ist ein な-Adjektiv, kein Verb.",
+        "en": "“I like …”: what you like goes before が. 好き is a な-adjective, not a verb."
+      },
+      "examples": [
+        "アニメが{好|す}きです。"
+      ]
+    },
+    {
+      "id": "wa-irimasen",
+      "label": "〜はいりません",
+      "explain": {
+        "de": "„… brauche ich nicht“: lehnt höflich etwas ab, das angeboten wird (Tüte, Quittung). いります heißt „brauchen“.",
+        "en": "“I don't need …”: politely declines something on offer (bag, receipt). いります means “to need”."
+      },
+      "examples": [
+        "{袋|ふくろ}はいりません。"
+      ]
+    },
+    {
+      "id": "ikura",
+      "label": "いくらですか",
+      "explain": {
+        "de": "„Wie viel kostet das?“ Die Antwort ist eine Zahl mit 円.",
+        "en": "“How much is it?” The answer is a number with 円."
+      },
+      "examples": [
+        "これはいくらですか。",
+        "{三百円|さんびゃくえん}です。"
+      ]
+    },
+    {
+      "id": "suuji",
+      "label": "数字 (いち・に・さん…)",
+      "explain": {
+        "de": "Zahlen: いち, に, さん … じゅう, dann 百 (ひゃく), 千 (せん), 万 (まん). Achtung auf Lautwechsel wie さんびゃく, ろっぴゃく, はっせん.",
+        "en": "Numbers: いち, に, さん … じゅう, then 百 (ひゃく), 千 (せん), 万 (まん). Watch the sound changes like さんびゃく, ろっぴゃく, はっせん."
+      },
+      "examples": [
+        "{六百五十円|ろっぴゃくごじゅうえん}です。"
+      ]
+    },
+    {
+      "id": "o-kudasai",
+      "label": "〜をください",
+      "explain": {
+        "de": "„Geben Sie mir bitte …“: bestellt oder verlangt eine Sache. Die Sache steht vor を.",
+        "en": "“Please give me …”: orders or asks for a thing. The thing goes before を."
+      },
+      "examples": [
+        "コーヒーをください。"
+      ]
+    },
+    {
+      "id": "o-onegaishimasu",
+      "label": "〜をおねがいします",
+      "explain": {
+        "de": "Wie 〜をください, etwas weicher und auch für Dienste: „… bitte“.",
+        "en": "Like 〜をください, a little softer and also for services: “… please”."
+      },
+      "examples": [
+        "{紅茶|こうちゃ}をおねがいします。"
+      ]
+    },
+    {
+      "id": "tsu",
+      "label": "〜つ (ひとつ・ふたつ…)",
+      "explain": {
+        "de": "Allgemeine Zählwörter für Dinge bis zehn: ひとつ, ふたつ, みっつ … とお. Passen, wenn man das genaue Zählwort nicht weiß.",
+        "en": "General counters for things up to ten: ひとつ, ふたつ, みっつ … とお. They fit when you don't know the exact counter."
+      },
+      "examples": [
+        "ケーキをひとつください。"
+      ]
+    },
+    {
+      "id": "made",
+      "label": "〜まで",
+      "explain": {
+        "de": "„bis …“, für Ort und Zeit: wohin die Fahrt geht, bis wann etwas dauert.",
+        "en": "“to …, until …”, for place and time: where the trip goes, how long something lasts."
+      },
+      "examples": [
+        "{京都|きょうと}までおねがいします。"
+      ]
+    },
+    {
+      "id": "nanji",
+      "label": "何時",
+      "explain": {
+        "de": "„Wie spät?“ / „Um wie viel Uhr?“ Uhrzeiten mit 〜時 (じ) und 〜分 (ふん/ぷん).",
+        "en": "“What time?” Times with 〜時 (じ) and 〜分 (ふん/ぷん)."
+      },
+      "examples": [
+        "{電車|でんしゃ}は{何時|なんじ}ですか。"
+      ]
+    },
+    {
+      "id": "mai",
+      "label": "〜枚",
+      "explain": {
+        "de": "Zählwort für flache Dinge: Fahrkarten, Papier, Hemden.",
+        "en": "Counter for flat things: tickets, paper, shirts."
+      },
+      "examples": [
+        "{切符|きっぷ}を{二枚|にまい}ください。"
+      ]
+    },
+    {
+      "id": "doko",
+      "label": "〜はどこですか",
+      "explain": {
+        "de": "„Wo ist …?“ Der Ort, nach dem man fragt, steht vor は.",
+        "en": "“Where is …?” The place you ask about goes before は."
+      },
+      "examples": [
+        "{郵便局|ゆうびんきょく}はどこですか。"
+      ]
+    },
+    {
+      "id": "te-sequence",
+      "label": "〜て、〜 (順番)",
+      "explain": {
+        "de": "Die て-Form verbindet Handlungen in ihrer Reihenfolge: „… und dann …“. Die Zeit (Gegenwart, Vergangenheit) sagt erst das letzte Verb.",
+        "en": "The て-form joins actions in order: “… and then …”. Only the last verb carries the tense."
+      },
+      "examples": [
+        "まっすぐ{行|い}って、{右|みぎ}に{曲|ま}がります。"
+      ]
+    },
+    {
+      "id": "futsuukei",
+      "label": "普通形 (だ・〜る)",
+      "explain": {
+        "de": "Die einfache Form unter Freunden: Verben in der Wörterbuchform (行く, 食べる), Nomen ohne です oder mit だ. Klingt vertraut, gegenüber Fremden zu direkt.",
+        "en": "The plain form among friends: verbs in the dictionary form (行く, 食べる), nouns without です or with だ. Sounds close, too direct with strangers."
+      },
+      "examples": [
+        "アニメが{好|す}き。",
+        "{明日|あした}{行|い}く？"
+      ]
+    },
+    {
+      "id": "yo-ne",
+      "label": "〜よ・〜ね",
+      "explain": {
+        "de": "よ bringt neue Information („weißt du“), ね sucht Zustimmung. よね verbindet beides: „…, oder?“",
+        "en": "よ gives new information (“you know”), ね asks for agreement. よね joins both: “…, right?”"
+      },
+      "examples": [
+        "おいしいよ。",
+        "{楽|たの}しいよね。"
+      ]
+    },
+    {
+      "id": "nai-invitation",
+      "label": "〜ない？ (さそい)",
+      "explain": {
+        "de": "Unter Freunden mit steigender Stimme: „Wollen wir nicht …?“ Die einfache Form von 〜ませんか.",
+        "en": "Among friends with a rising voice: “Shall we …?” The plain form of 〜ませんか."
+      },
+      "examples": [
+        "こんど、いっしょに{行|い}かない？"
+      ]
+    },
+    {
+      "id": "masen-ka",
+      "label": "〜ませんか",
+      "explain": {
+        "de": "Höfliche Einladung: „Wollen wir nicht …?“ Lässt der anderen Person Raum zum Ablehnen.",
+        "en": "Polite invitation: “Won't you …?” Leaves the other person room to say no."
+      },
+      "examples": [
+        "{週末|しゅうまつ}、{映画|えいが}を{見|み}ませんか。"
+      ]
+    },
+    {
+      "id": "tai",
+      "label": "〜たいです",
+      "explain": {
+        "de": "„Ich möchte …“: Verbstamm + たい. Für eigene Wünsche; nach Wünschen anderer fragt man vorsichtiger.",
+        "en": "“I want to …”: verb stem + たい. For your own wishes; ask about others' wishes more carefully."
+      },
+      "examples": [
+        "{美術館|びじゅつかん}に{行|い}きたいです。"
+      ]
+    },
+    {
+      "id": "ni-aimasu",
+      "label": "〜に会います",
+      "explain": {
+        "de": "„… treffen“: die Person steht vor に, nicht vor を.",
+        "en": "“to meet …”: the person goes before に, not を."
+      },
+      "examples": [
+        "{駅|えき}で{友|とも}だちに{会|あ}います。"
+      ]
+    },
+    {
+      "id": "nin",
+      "label": "〜人 (ひとり・ふたり…)",
+      "explain": {
+        "de": "Zählwort für Menschen: ひとり, ふたり, dann さんにん, よにん … Im Restaurant hört man 〜名様 (めいさま).",
+        "en": "Counter for people: ひとり, ふたり, then さんにん, よにん … In restaurants you hear 〜名様 (めいさま)."
+      },
+      "examples": [
+        "{二人|ふたり}です。"
+      ]
+    },
+    {
+      "id": "counter-placement",
+      "label": "〜を二つください",
+      "explain": {
+        "de": "Die Menge steht nach dem Ding und seiner Partikel, direkt vor dem Verb: „Ramen を ふたつ ください“.",
+        "en": "The amount comes after the thing and its particle, right before the verb: “ラーメンを ふたつ ください”."
+      },
+      "examples": [
+        "ラーメンを{二|ふた}つください。"
+      ]
+    },
+    {
+      "id": "i-adjective",
+      "label": "い形容詞",
+      "explain": {
+        "de": "Adjektive auf い (大きい, 青い) stehen direkt vor dem Nomen oder vor です. Sie verändern selbst ihre Form (Verneinung, Vergangenheit).",
+        "en": "Adjectives ending in い (大きい, 青い) go straight before the noun or before です. They change their own form (negative, past)."
+      },
+      "examples": [
+        "{青|あお}いTシャツ",
+        "これは{小|ちい}さいです。"
+      ]
+    },
+    {
+      "id": "no-wa-arimasu-ka",
+      "label": "〜のはありますか",
+      "explain": {
+        "de": "„Haben Sie … (in einer anderen Art)?“ の ersetzt das Ding: „ein kleineres“, „ein blaues“.",
+        "en": "“Do you have one that's …?” の stands for the thing: “a smaller one”, “a blue one”."
+      },
+      "examples": [
+        "{小|ちい}さいのはありますか。"
+      ]
+    },
+    {
+      "id": "ni-shimasu",
+      "label": "〜にします",
+      "explain": {
+        "de": "„Ich nehme …“: sagt die Entscheidung beim Auswählen.",
+        "en": "“I'll take …”: states your choice when picking."
+      },
+      "examples": [
+        "これにします。"
+      ]
+    },
+    {
+      "id": "ninkazoku",
+      "label": "〜人家族",
+      "explain": {
+        "de": "„Wir sind eine Familie aus … Personen“: Zahl + 人家族.",
+        "en": "“We are a family of …”: number + 人家族."
+      },
+      "examples": [
+        "{四人家族|よにんかぞく}です。"
+      ]
+    },
+    {
+      "id": "ga-imasu",
+      "label": "〜がいます",
+      "explain": {
+        "de": "„Es gibt …/Ich habe …“ für Menschen und Tiere (いる). Für Dinge あります.",
+        "en": "“There is …/I have …” for people and animals (いる). For things あります."
+      },
+      "examples": [
+        "{兄|あに}がいます。"
+      ]
+    },
+    {
+      "id": "family-words",
+      "label": "母・お母さん",
+      "explain": {
+        "de": "Die eigene Familie nennt man nach außen schlicht (母, 父, 兄), die Familie anderer und die eigene in der Anrede höflich (お母さん, お父さん, お兄さん).",
+        "en": "Your own family you name plainly to others (母, 父, 兄); the family of others, and your own when you address them, politely (お母さん, お父さん, お兄さん)."
+      },
+      "examples": [
+        "{母|はは}は{先生|せんせい}です。",
+        "お{母|かあ}さんはお{元気|げんき}ですか。"
+      ]
+    },
+    {
+      "id": "mashita",
+      "label": "〜ました",
+      "explain": {
+        "de": "Höfliche Vergangenheit der Verben: 〜ます wird 〜ました, verneint 〜ませんでした.",
+        "en": "Polite past of verbs: 〜ます becomes 〜ました, negative 〜ませんでした."
+      },
+      "examples": [
+        "きのう、{映画|えいが}を{見|み}ました。"
+      ]
+    },
+    {
+      "id": "katta-desu",
+      "label": "〜かったです",
+      "explain": {
+        "de": "Vergangenheit der い-Adjektive: い fällt weg, dafür かった (おもしろい → おもしろかったです). いい wird よかったです.",
+        "en": "Past of い-adjectives: い drops, かった comes in (おもしろい → おもしろかったです). いい becomes よかったです."
+      },
+      "examples": [
+        "とてもおもしろかったです。"
+      ]
+    },
+    {
+      "id": "de-place",
+      "label": "〜で (場所)",
+      "explain": {
+        "de": "で nennt den Ort, an dem etwas geschieht: „im Kino sehen“, „im Café essen“. Für den Ort, an dem etwas ist, に.",
+        "en": "で marks where an action happens: “watch at the cinema”, “eat at the café”. For where something is, に."
+      },
+      "examples": [
+        "{駅|えき}で{会|あ}いました。"
+      ]
+    },
+    {
+      "id": "to-with",
+      "label": "〜と (一緒に)",
+      "explain": {
+        "de": "と nach einer Person: „mit …“. Oft mit いっしょに.",
+        "en": "と after a person: “with …”. Often with いっしょに."
+      },
+      "examples": [
+        "{友|とも}だちと{行|い}きました。"
+      ]
+    }
+  ]
+}

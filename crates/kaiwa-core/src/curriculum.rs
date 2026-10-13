@@ -6,6 +6,11 @@
 //! the answers right once there are three or more), so new material does not pile up on
 //! shaky old material (Hinnerk). Skipped units (/LF215/) count as done. Every state has a word
 //! and a symbol in the GUI, never only a colour.
+//!
+//! Format v2 (ADR-009): one file per level (`data/curriculum/n5.json`, `n4.json`, …) with the
+//! level it is oriented on, units may require units of other levels, and [`Curriculum::merge`]
+//! joins the files into one graph that [`Curriculum::check`] checks as a whole. All v2 fields
+//! are optional, a v1 file reads as before.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -27,13 +32,54 @@ pub struct Unit {
     pub scenarios: Vec<String>,
     #[serde(default)]
     pub requires: Vec<String>,
+    /// JF Standard topics 1–15 the unit covers (Q-07), for the coverage check.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub topics: Vec<u8>,
+    /// Ids of JF Can-do statements the unit's can-do is oriented on (Q-10). Only the ids: the
+    /// can-do text is Kaiwa's own.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub jf_can_do: Vec<u32>,
+    /// The native speaker review (Q-07, INHALT-ENTWURF 3.3).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub review: Option<Review>,
+    /// The level of the file the unit comes from, set by [`Curriculum::merge`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub level: Option<Level>,
+}
+
+/// What a level is oriented on (Q-03): shown as „N4 · A2“, never as a JLPT course.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Level {
+    pub jlpt: String,
+    pub cefr: String,
+}
+
+impl Level {
+    /// „N4 · A2“.
+    pub fn label(&self) -> String {
+        format!("{} · {}", self.jlpt, self.cefr)
+    }
+}
+
+/// Proof of the native speaker review of a unit: who, when, and a hash over the unit and its
+/// scenarios as they were reviewed.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Review {
+    pub by: Option<String>,
+    pub date: Option<String>,
+    pub hash: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Curriculum {
     pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub level: Option<Level>,
     pub units: Vec<Unit>,
 }
+
+/// The levels in course order: the files are joined in this order.
+pub const LEVELS: [&str; 5] = ["n5", "n4", "n3", "n2", "n1"];
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum CurriculumError {
@@ -43,6 +89,12 @@ pub enum CurriculumError {
     Cycle(Vec<String>),
     #[error("unit id {0} appears twice")]
     Duplicate(String),
+    #[error("unit {0} names JF topic {1}, there are 15")]
+    Topic(String, u8),
+    #[error("unit {0} has the grammar point {1}, which is not in the catalogue")]
+    UnknownGrammar(String, String),
+    #[error("grammar point {0} is first used in {1}, but its level is {2}")]
+    GrammarLevel(String, String, String),
 }
 
 /// What the learner has done, as far as the path is concerned.
@@ -117,6 +169,8 @@ pub struct UnitNode {
     pub id: String,
     pub title: String,
     pub can_do: String,
+    /// „N5 · A1“, from the unit's level file.
+    pub level: Option<String>,
     pub state: NodeState,
     pub scenarios: Vec<ScenarioNode>,
     /// Why a locked unit is locked, in words.
@@ -158,6 +212,77 @@ impl Curriculum {
         serde_json::from_str(json)
     }
 
+    /// The level files joined into one course, in [`LEVELS`] order (unknown ids last); each
+    /// unit keeps its file's level.
+    pub fn merge(mut parts: Vec<Curriculum>) -> Curriculum {
+        let rank = |id: &str| LEVELS.iter().position(|l| *l == id).unwrap_or(LEVELS.len());
+        parts.sort_by_key(|c| rank(&c.id));
+        let mut units = Vec::new();
+        for c in parts {
+            for mut u in c.units {
+                if u.level.is_none() {
+                    u.level = c.level.clone();
+                }
+                units.push(u);
+            }
+        }
+        Curriculum {
+            id: "kaiwa".into(),
+            level: None,
+            units,
+        }
+    }
+
+    /// The level files as JSON, parsed and joined ([`Curriculum::merge`]).
+    pub fn from_files(files: &[&str]) -> Result<Self, serde_json::Error> {
+        Ok(Self::merge(
+            files
+                .iter()
+                .map(|j| Self::from_json(j))
+                .collect::<Result<_, _>>()?,
+        ))
+    }
+
+    /// Every `*.json` in `dir` (`data/curriculum`), joined.
+    pub fn from_dir(dir: &std::path::Path) -> std::io::Result<Self> {
+        let mut files = Vec::new();
+        for e in std::fs::read_dir(dir)? {
+            let p = e?.path();
+            if p.extension().is_some_and(|x| x == "json") {
+                files.push(std::fs::read_to_string(&p)?);
+            }
+        }
+        let refs: Vec<&str> = files.iter().map(String::as_str).collect();
+        Self::from_files(&refs).map_err(std::io::Error::other)
+    }
+
+    /// The grammar points of the units against the catalogue: every point is in it, and its
+    /// level is the level of the first unit that uses it.
+    pub fn check_grammar(
+        &self,
+        catalogue: &crate::grammar::Catalogue,
+    ) -> Result<(), CurriculumError> {
+        let mut first: BTreeSet<&str> = BTreeSet::new();
+        for u in &self.units {
+            for g in &u.grammar {
+                let Some(point) = catalogue.by_label(g) else {
+                    return Err(CurriculumError::UnknownGrammar(u.id.clone(), g.clone()));
+                };
+                if first.insert(g.as_str()) {
+                    let level = u.id.split('-').next().unwrap_or_default();
+                    if point.level != level {
+                        return Err(CurriculumError::GrammarLevel(
+                            point.id.clone(),
+                            u.id.clone(),
+                            point.level.clone(),
+                        ));
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub fn unit(&self, id: &str) -> Option<&Unit> {
         self.units.iter().find(|u| u.id == id)
     }
@@ -175,6 +300,9 @@ impl Curriculum {
         for u in &self.units {
             if !seen.insert(u.id.as_str()) {
                 return Err(CurriculumError::Duplicate(u.id.clone()));
+            }
+            if let Some(t) = u.topics.iter().find(|t| !(1..=15).contains(*t)) {
+                return Err(CurriculumError::Topic(u.id.clone(), *t));
             }
         }
         for u in &self.units {
@@ -296,6 +424,7 @@ impl Curriculum {
                 id: u.id.clone(),
                 title: u.title.get(lang).to_string(),
                 can_do: u.can_do.get(lang).to_string(),
+                level: u.level.as_ref().map(Level::label),
                 state,
                 scenarios,
                 locked_because,
@@ -364,12 +493,17 @@ mod tests {
             words: vec![],
             scenarios: scenarios.iter().map(|s| s.to_string()).collect(),
             requires: requires.iter().map(|s| s.to_string()).collect(),
+            topics: vec![],
+            jf_can_do: vec![],
+            review: None,
+            level: None,
         }
     }
 
     fn course() -> Curriculum {
         Curriculum {
             id: "n5".into(),
+            level: None,
             units: vec![
                 unit("u1", &["a", "b"], &[]),
                 unit("u2", &["c"], &["u1"]),
@@ -436,14 +570,25 @@ mod bundled {
     use super::*;
 
     #[test]
-    fn the_n5_curriculum_is_a_sound_graph_of_existing_scenarios() {
+    fn the_curriculum_is_a_sound_graph_of_existing_scenarios() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let c = Curriculum::from_json(
-            &std::fs::read_to_string(root.join("data/curriculum/n5.json")).unwrap(),
-        )
-        .unwrap();
+        let c = Curriculum::from_dir(&root.join("data/curriculum")).unwrap();
         c.check().unwrap();
-        assert_eq!(c.units.len(), 12);
+        assert_eq!(c.units[0].id, "n5-01", "the levels are joined from N5 up");
+        assert_eq!(
+            c.units[0].level.as_ref().map(Level::label).as_deref(),
+            Some("N5 · A1")
+        );
+        let grammar = crate::grammar::Catalogue::from_dir(&root.join("data/grammar")).unwrap();
+        grammar.check().unwrap();
+        c.check_grammar(&grammar).unwrap();
+        for p in &grammar.points {
+            assert!(
+                c.units.iter().any(|u| u.grammar.contains(&p.label)),
+                "grammar point {} belongs to no unit",
+                p.id
+            );
+        }
         for u in &c.units {
             for s in &u.scenarios {
                 let path = root.join(format!("data/scenarios/{s}.json"));
@@ -458,6 +603,64 @@ mod bundled {
             c.next_scenario(&CourseProgress::default()).as_deref(),
             Some("n5-01-aisatsu")
         );
+    }
+
+    #[test]
+    fn levels_join_in_course_order_and_require_across_files() {
+        let n4 = r#"{"id":"n4","level":{"jlpt":"N4","cefr":"A2"},"units":[
+            {"id":"n4-01","title":{"de":"a","en":"a"},"can_do":{"de":"a","en":"a"},
+             "scenarios":["x"],"requires":["n5-01"],"topics":[3]}]}"#;
+        let n5 = r#"{"id":"n5","units":[
+            {"id":"n5-01","title":{"de":"b","en":"b"},"can_do":{"de":"b","en":"b"},
+             "scenarios":["y"]}]}"#;
+        let c = Curriculum::from_files(&[n4, n5]).unwrap();
+        c.check().unwrap();
+        assert_eq!(c.units[0].id, "n5-01");
+        assert_eq!(c.units[1].level.as_ref().unwrap().label(), "N4 · A2");
+        let alone = Curriculum::from_files(&[n4]).unwrap();
+        assert!(matches!(
+            alone.check(),
+            Err(CurriculumError::UnknownUnit(_, _))
+        ));
+        let mut bad = c.clone();
+        bad.units[1].topics = vec![16];
+        assert!(matches!(bad.check(), Err(CurriculumError::Topic(_, 16))));
+    }
+
+    #[test]
+    fn grammar_is_introduced_at_its_level() {
+        use crate::grammar::{Catalogue, Point};
+        let mut c = Curriculum::from_files(&[r#"{"id":"n5","units":[
+            {"id":"n5-01","title":{"de":"b","en":"b"},"can_do":{"de":"b","en":"b"},
+             "grammar":["〜ね"],"scenarios":["y"]}]}"#])
+        .unwrap();
+        let point = |level: &str| Point {
+            id: "ne".into(),
+            label: "〜ね".into(),
+            level: level.into(),
+            explain: Text {
+                de: "x".into(),
+                en: "x".into(),
+            },
+            examples: vec![],
+        };
+        c.check_grammar(&Catalogue {
+            points: vec![point("n5")],
+        })
+        .unwrap();
+        assert!(matches!(
+            c.check_grammar(&Catalogue {
+                points: vec![point("n4")]
+            }),
+            Err(CurriculumError::GrammarLevel(_, _, _))
+        ));
+        c.units[0].grammar.push("〜よ".into());
+        assert!(matches!(
+            c.check_grammar(&Catalogue {
+                points: vec![point("n5")]
+            }),
+            Err(CurriculumError::UnknownGrammar(_, _))
+        ));
     }
 
     #[test]
