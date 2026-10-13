@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "毎朝、六時に起きます。",
+    "reply": "早いですね。わたしは八時です。",
+    "translation": {
+      "de": "Früh! Ich um acht.",
+      "en": "Early! I get up at eight."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "wake"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "仕事の前に、コーヒーを飲みます。",
+    "reply": "わたしも毎朝コーヒーを飲みます。",
+    "translation": {
+      "de": "Ich trinke auch jeden Morgen Kaffee.",
+      "en": "I drink coffee every morning too."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "before"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "仕事の前で、コーヒーを飲みます。",
+    "reply": "わたしも毎朝コーヒーを飲みます。",
+    "translation": {
+      "de": "Ich trinke auch jeden Morgen Kaffee.",
+      "en": "I drink coffee every morning too."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "before"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "particle",
+          "original": "前で",
+          "better": "前に",
+          "explanation": "„Vor etwas (zeitlich)“ heißt 〜の前に.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "うちに帰ってから、晩ご飯を作ります。",
+    "reply": "えらいですね。何を作りますか。",
+    "translation": {
+      "de": "Toll. Was kochst du?",
+      "en": "Good for you. What do you cook?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "after"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "うちに帰りてから、晩ご飯を作ります。",
+    "reply": "えらいですね。何を作りますか。",
+    "translation": {
+      "de": "Toll. Was kochst du?",
+      "en": "Good for you. What do you cook?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "after"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "帰りてから",
+          "better": "帰ってから",
+          "explanation": "帰る bildet die て-Form 帰って, dann から: 帰ってから.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "週末はときどきテニスをします。",
+    "reply": "いいですね。わたしはあまりしません。",
+    "translation": {
+      "de": "Schön. Ich mache das selten.",
+      "en": "Nice. I don't do it much."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "often"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

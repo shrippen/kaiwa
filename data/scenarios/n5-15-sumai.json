@@ -1,0 +1,67 @@
+{
+  "id": "n5-15-sumai",
+  "unit": "n5-15",
+  "name": "佐藤 · Satō",
+  "title": {
+    "de": "Meine Wohnung",
+    "en": "My flat"
+  },
+  "character": {
+    "de": "Frau Satō, Kollegin im Büro, Anfang dreißig. Freundlich und höflich, fragt in der Mittagspause, wie man wohnt.",
+    "en": "Ms Satō, a colleague at the office, early thirties. Friendly and polite, asks at lunch how you live."
+  },
+  "register": "polite",
+  "voice": "jf_gongitsune",
+  "opening": "どこに{住|す}んでいますか。",
+  "opening_translation": { "de": "Wo wohnst du?", "en": "Where do you live?" },
+  "goals": [
+    {
+      "id": "where",
+      "text": {
+        "de": "Sag, wo du wohnst.",
+        "en": "Say where you live."
+      },
+      "help": {
+        "keyword": "住む（すむ）",
+        "start": "…に住んでいます",
+        "example": "中野に住んでいます。"
+      }
+    },
+    {
+      "id": "near",
+      "text": {
+        "de": "Sag, was es in der Nähe gibt.",
+        "en": "Say what is nearby."
+      },
+      "help": {
+        "keyword": "近く（ちかく）",
+        "start": "近くに…",
+        "example": "近くに公園があります。"
+      }
+    },
+    {
+      "id": "room",
+      "text": {
+        "de": "Beschreib die Wohnung: klein, aber ruhig.",
+        "en": "Describe the flat: small but quiet."
+      },
+      "help": {
+        "keyword": "静か（しずか）",
+        "start": "部屋は小さいですが、…",
+        "example": "部屋は小さいですが、静かです。"
+      }
+    },
+    {
+      "id": "reason",
+      "text": {
+        "de": "Sag, warum sie praktisch ist.",
+        "en": "Say why it is handy."
+      },
+      "help": {
+        "keyword": "便利（べんり）",
+        "start": "駅に近いですから、…",
+        "example": "駅に近いですから、便利です。"
+      }
+    }
+  ]
+}

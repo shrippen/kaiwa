@@ -48,6 +48,10 @@ const SCENARIOS: &[&str] = &[
     include_str!("../../../data/scenarios/n5-10-kaimono.json"),
     include_str!("../../../data/scenarios/n5-11-kazoku.json"),
     include_str!("../../../data/scenarios/n5-12-kinou.json"),
+    include_str!("../../../data/scenarios/n5-13-jugyou.json"),
+    include_str!("../../../data/scenarios/n5-14-ichinichi.json"),
+    include_str!("../../../data/scenarios/n5-15-sumai.json"),
+    include_str!("../../../data/scenarios/n5-16-onsen.json"),
     // Free talk on a topic, outside the path (/LF116/).
     include_str!("../../../data/scenarios/frei-shumi.json"),
     include_str!("../../../data/scenarios/frei-tabemono.json"),
@@ -103,6 +107,22 @@ const FIXTURES: &[(&str, &str)] = &[
     (
         "n5-12-kinou",
         include_str!("../../../qa/fixtures/n5-12-kinou.json"),
+    ),
+    (
+        "n5-13-jugyou",
+        include_str!("../../../qa/fixtures/n5-13-jugyou.json"),
+    ),
+    (
+        "n5-14-ichinichi",
+        include_str!("../../../qa/fixtures/n5-14-ichinichi.json"),
+    ),
+    (
+        "n5-15-sumai",
+        include_str!("../../../qa/fixtures/n5-15-sumai.json"),
+    ),
+    (
+        "n5-16-onsen",
+        include_str!("../../../qa/fixtures/n5-16-onsen.json"),
     ),
 ];
 

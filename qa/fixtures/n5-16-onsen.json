@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "はい、初めてです。",
+    "reply": "そうですか。では、ご説明します。タオルはお湯に入れないでください。",
+    "translation": {
+      "de": "Gut. Dann erkläre ich es: Bitte das Handtuch nicht ins Wasser tun.",
+      "en": "I see. Then let me explain: please don't put your towel in the water."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "first"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "お風呂で写真を撮ってもいいですか。",
+    "reply": "すみません、お風呂では写真を撮らないでください。",
+    "translation": {
+      "de": "Entschuldigung, im Bad bitte keine Fotos.",
+      "en": "Sorry, please don't take photos in the bath."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "photo"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "お風呂で写真を撮るもいいですか。",
+    "reply": "すみません、お風呂では写真を撮らないでください。",
+    "translation": {
+      "de": "Entschuldigung, im Bad bitte keine Fotos.",
+      "en": "Sorry, please don't take photos in the bath."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "photo"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "撮るもいいですか",
+          "better": "撮ってもいいですか",
+          "explanation": "Um Erlaubnis bittet man mit der て-Form + もいいですか: 撮ってもいいですか.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "タオルはお湯に入れてはいけませんね。",
+    "reply": "はい、そのとおりです。",
+    "translation": {
+      "de": "Ja, genau.",
+      "en": "Yes, exactly."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "rule"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "ここで靴を脱ぎましょうか。",
+    "reply": "はい、こちらでお願いします。",
+    "translation": {
+      "de": "Ja, bitte hier.",
+      "en": "Yes, here please."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "shoes"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "ここで靴を脱ぎますか。",
+    "reply": "はい、こちらでお願いします。",
+    "translation": {
+      "de": "Ja, bitte hier.",
+      "en": "Yes, here please."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "shoes"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "unnatural",
+          "kind": "conjugation",
+          "original": "脱ぎますか",
+          "better": "脱ぎましょうか",
+          "explanation": "Wer etwas anbietet oder vorschlägt, sagt 〜ましょうか.",
+          "also_possible": false
+        }
+      ]
+    }
+  }
+]

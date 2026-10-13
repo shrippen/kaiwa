@@ -380,6 +380,216 @@
       "examples": [
         "{友|とも}だちと{行|い}きました。"
       ]
+    },
+    {
+      "id": "mou-ichido",
+      "label": "もう一度おねがいします",
+      "explain": {
+        "de": "„Noch einmal, bitte.“ Die wichtigste Bitte im Gespräch: wer nachfragt, bleibt im Gespräch.",
+        "en": "“Once more, please.” The most useful request in a conversation: asking again keeps you in it."
+      },
+      "examples": [
+        "すみません、もう{一度|いちど}おねがいします。"
+      ]
+    },
+    {
+      "id": "te-kudasai",
+      "label": "〜てください",
+      "explain": {
+        "de": "Bitte um eine Handlung: て-Form + ください („bitte …“). Höflich, aber direkt; weicher ist 〜てくださいませんか.",
+        "en": "Asking someone to do something: て-form + ください (“please …”). Polite but direct; softer is 〜てくださいませんか."
+      },
+      "examples": [
+        "ゆっくり{話|はな}してください。"
+      ]
+    },
+    {
+      "id": "nihongo-de",
+      "label": "〜は日本語で何ですか",
+      "explain": {
+        "de": "„Wie heißt … auf Japanisch?“ で nennt das Mittel, hier die Sprache.",
+        "en": "“What is … in Japanese?” で names the means, here the language."
+      },
+      "examples": [
+        "「Museum」は{日本語|にほんご}で{何|なん}ですか。"
+      ]
+    },
+    {
+      "id": "ji-ni",
+      "label": "〜時に (時間)",
+      "explain": {
+        "de": "Ein Zeitpunkt mit Zahl bekommt に: 七時に, 月曜日に. Ohne に bleiben Wörter wie 毎朝, きょう, あした.",
+        "en": "A point in time with a number takes に: 七時に, 月曜日に. Words like 毎朝, きょう, あした go without に."
+      },
+      "examples": [
+        "{七時|しちじ}に{起|お}きます。"
+      ]
+    },
+    {
+      "id": "mae-ni",
+      "label": "〜前に",
+      "explain": {
+        "de": "„vor …“ zeitlich: Nomen + の前に, Verb in Wörterbuchform + 前に.",
+        "en": "“before …” in time: noun + の前に, verb in dictionary form + 前に."
+      },
+      "examples": [
+        "{仕事|しごと}の{前|まえ}に、コーヒーを{飲|の}みます。"
+      ]
+    },
+    {
+      "id": "te-kara",
+      "label": "〜てから",
+      "explain": {
+        "de": "„nachdem …, dann …“: て-Form + から. Das Erste ist abgeschlossen, bevor das Zweite beginnt.",
+        "en": "“after …, then …”: て-form + から. The first is finished before the second starts."
+      },
+      "examples": [
+        "うちに{帰|かえ}ってから、{晩|ばん}ご{飯|はん}を{作|つく}ります。"
+      ]
+    },
+    {
+      "id": "hindo",
+      "label": "よく・ときどき・あまり〜ない",
+      "explain": {
+        "de": "Wie oft: よく (oft), ときどき (manchmal), あまり + Verneinung (selten), ぜんぜん + Verneinung (nie). Das Wort steht vor dem Verb.",
+        "en": "How often: よく (often), ときどき (sometimes), あまり + negative (rarely), ぜんぜん + negative (never). The word goes before the verb."
+      },
+      "examples": [
+        "ときどきテニスをします。",
+        "あまりしません。"
+      ]
+    },
+    {
+      "id": "ni-sunde-imasu",
+      "label": "〜に住んでいます",
+      "explain": {
+        "de": "„Ich wohne in …“: Wohnen ist ein Zustand, darum 住んでいます, und der Ort bekommt に.",
+        "en": "“I live in …”: living is a state, so 住んでいます, and the place takes に."
+      },
+      "examples": [
+        "{中野|なかの}に{住|す}んでいます。"
+      ]
+    },
+    {
+      "id": "ni-ga-arimasu",
+      "label": "〜に〜があります",
+      "explain": {
+        "de": "„In/bei … gibt es …“: der Ort mit に zuerst, dann das Ding mit が und あります.",
+        "en": "“At … there is …”: the place with に first, then the thing with が and あります."
+      },
+      "examples": [
+        "{近|ちか}くに{公園|こうえん}があります。"
+      ]
+    },
+    {
+      "id": "na-adjective",
+      "label": "な形容詞",
+      "explain": {
+        "de": "な-Adjektive (静か, 便利, 好き) bekommen vor einem Nomen な (静かな部屋), vor です nichts (静かです).",
+        "en": "な-adjectives (静か, 便利, 好き) take な before a noun (静かな部屋), nothing before です (静かです)."
+      },
+      "examples": [
+        "{静|しず}かな{部屋|へや}です。"
+      ]
+    },
+    {
+      "id": "ga-but",
+      "label": "〜が、〜 (逆接)",
+      "explain": {
+        "de": "が zwischen zwei Sätzen heißt „aber“: der zweite Teil steht dem ersten entgegen.",
+        "en": "が between two clauses means “but”: the second part goes against the first."
+      },
+      "examples": [
+        "{小|ちい}さいですが、{静|しず}かです。"
+      ]
+    },
+    {
+      "id": "kara-reason",
+      "label": "〜から (理由)",
+      "explain": {
+        "de": "から nach einem Satz nennt den Grund: „weil …“. Der Grund steht zuerst.",
+        "en": "から after a clause gives the reason: “because …”. The reason comes first."
+      },
+      "examples": [
+        "{駅|えき}に{近|ちか}いですから、{便利|べんり}です。"
+      ]
+    },
+    {
+      "id": "te-mo-ii",
+      "label": "〜てもいいですか",
+      "explain": {
+        "de": "Um Erlaubnis bitten: て-Form + もいいですか („darf ich …?“).",
+        "en": "Asking for permission: て-form + もいいですか (“may I …?”)."
+      },
+      "examples": [
+        "{写真|しゃしん}を{撮|と}ってもいいですか。"
+      ]
+    },
+    {
+      "id": "naide-kudasai",
+      "label": "〜ないでください",
+      "explain": {
+        "de": "Bitte, etwas nicht zu tun: ない-Form + でください.",
+        "en": "Asking someone not to do something: ない-form + でください."
+      },
+      "examples": [
+        "タオルを{入|い}れないでください。"
+      ]
+    },
+    {
+      "id": "te-wa-ikemasen",
+      "label": "〜てはいけません",
+      "explain": {
+        "de": "Verbot: て-Form + はいけません („man darf nicht …“). Auf Schildern und von Personal oft zu hören.",
+        "en": "Prohibition: て-form + はいけません (“you must not …”). Often heard from staff and on signs."
+      },
+      "examples": [
+        "お{湯|ゆ}に{入|い}れてはいけません。"
+      ]
+    },
+    {
+      "id": "mashou-ka",
+      "label": "〜ましょうか",
+      "explain": {
+        "de": "Anbieten oder vorschlagen: „Soll ich …?“ / „Sollen wir …?“",
+        "en": "Offering or suggesting: “Shall I …?” / “Shall we …?”"
+      },
+      "examples": [
+        "{窓|まど}を{開|あ}けましょうか。"
+      ]
+    },
+    {
+      "id": "ku-naru",
+      "label": "〜くなります",
+      "explain": {
+        "de": "Veränderung bei い-Adjektiven: い wird く + なります („wird …“). Beim Wetter oft in der Vergangenheit: 暖かくなりましたね.",
+        "en": "Change with い-adjectives: い becomes く + なります (“becomes …”). For the weather often in the past: 暖かくなりましたね."
+      },
+      "examples": [
+        "{暖|あたた}かくなりましたね。"
+      ]
+    },
+    {
+      "id": "hou-ga",
+      "label": "〜のほうが〜",
+      "explain": {
+        "de": "Vergleich: „… ist mehr …“. Mit より: これよりそれのほうが大きいです.",
+        "en": "Comparison: “… is more …”. With より: これよりそれのほうが大きいです."
+      },
+      "examples": [
+        "こっちのほうがいいです。"
+      ]
+    },
+    {
+      "id": "ga-hoshii",
+      "label": "〜がほしいです",
+      "explain": {
+        "de": "„Ich hätte gern …“ für Dinge: was man möchte, steht vor が.",
+        "en": "“I'd like …” for things: what you want goes before が."
+      },
+      "examples": [
+        "もっと{大|おお}きいのがほしいです。"
+      ]
     }
   ]
 }

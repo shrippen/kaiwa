@@ -3,6 +3,8 @@
     "translation": { "de": "Heute ist es nicht kalt, nicht wahr?", "en": "It isn't cold today, is it?" }, "analysis": {"understood": true, "goals_met": ["greet"], "corrections": [], "new_words": []}},
   {"learner": "そうですね。いい天気ですね。", "reply": "ええ、本当に。あ、荷物を預かりましたよ。",
     "translation": { "de": "Ja, wirklich. Ach, ich habe ein Paket für Sie angenommen.", "en": "Yes, really. Oh, I took in a parcel for you." }, "analysis": {"understood": true, "goals_met": ["weather"], "corrections": [], "new_words": []}},
+  {"learner": "そうですね。暖かくなりましたね。", "reply": "ええ、本当に。あ、荷物を預かりましたよ。",
+    "translation": { "de": "Ja, wirklich. Ach, ich habe ein Paket für Sie angenommen.", "en": "Yes, really. Oh, I took in a parcel for you." }, "analysis": {"understood": true, "goals_met": ["weather"], "corrections": [], "new_words": []}},
   {"learner": "にもつ、ありがとうございました。", "reply": "いえいえ。お出かけですか。",
     "translation": { "de": "Aber nicht doch. Gehen Sie aus?", "en": "Not at all. Are you going out?" }, "analysis": {"understood": true, "goals_met": ["thanks"], "corrections": [], "new_words": []}},
   {"learner": "じゃあ、いってきます。", "reply": "いってらっしゃい。",

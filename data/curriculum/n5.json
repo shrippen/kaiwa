@@ -17,7 +17,8 @@
       },
       "grammar": [
         "〜ね",
-        "ありがとうございました"
+        "ありがとうございました",
+        "〜くなります"
       ],
       "words": [
         "おはようございます",
@@ -59,6 +60,38 @@
       ],
       "requires": [
         "n5-01"
+      ]
+    },
+    {
+      "id": "n5-13",
+      "title": {
+        "de": "Im Unterricht",
+        "en": "In class"
+      },
+      "can_do": {
+        "de": "Ich kann im Unterricht nachfragen, um Wiederholung bitten und fragen, wie etwas auf Japanisch heißt.",
+        "en": "I can ask in class, ask to have something repeated and ask what something is called in Japanese."
+      },
+      "grammar": [
+        "もう一度おねがいします",
+        "〜てください",
+        "〜は日本語で何ですか"
+      ],
+      "words": [
+        "日本語",
+        "もう一度",
+        "ゆっくり",
+        "話す",
+        "質問"
+      ],
+      "scenarios": [
+        "n5-13-jugyou"
+      ],
+      "requires": [
+        "n5-02"
+      ],
+      "topics": [
+        13
       ]
     },
     {
@@ -179,6 +212,42 @@
       ]
     },
     {
+      "id": "n5-16",
+      "title": {
+        "de": "Darf ich?",
+        "en": "May I?"
+      },
+      "can_do": {
+        "de": "Ich kann um Erlaubnis bitten, Verbote verstehen und meine Hilfe anbieten.",
+        "en": "I can ask for permission, understand what is not allowed and offer to do something."
+      },
+      "grammar": [
+        "〜てもいいですか",
+        "〜ないでください",
+        "〜てはいけません",
+        "〜ましょうか"
+      ],
+      "words": [
+        "温泉",
+        "初めて",
+        "写真",
+        "撮る",
+        "タオル",
+        "脱ぐ"
+      ],
+      "scenarios": [
+        "n5-16-onsen"
+      ],
+      "requires": [
+        "n5-06",
+        "n5-13"
+      ],
+      "topics": [
+        6,
+        10
+      ]
+    },
+    {
       "id": "n5-07",
       "title": {
         "de": "Mit Freunden reden",
@@ -237,6 +306,40 @@
       ]
     },
     {
+      "id": "n5-14",
+      "title": {
+        "de": "Mein Tag",
+        "en": "My day"
+      },
+      "can_do": {
+        "de": "Ich kann meinen Tagesablauf mit Uhrzeiten beschreiben und sagen, wie oft ich etwas mache.",
+        "en": "I can describe my day with times and say how often I do something."
+      },
+      "grammar": [
+        "〜時に (時間)",
+        "〜前に",
+        "〜てから",
+        "よく・ときどき・あまり〜ない"
+      ],
+      "words": [
+        "毎朝",
+        "起きる",
+        "帰る",
+        "晩ご飯",
+        "ときどき",
+        "平日"
+      ],
+      "scenarios": [
+        "n5-14-ichinichi"
+      ],
+      "requires": [
+        "n5-08"
+      ],
+      "topics": [
+        4
+      ]
+    },
+    {
       "id": "n5-09",
       "title": {
         "de": "Im Restaurant",
@@ -277,7 +380,9 @@
       "grammar": [
         "い形容詞",
         "〜のはありますか",
-        "〜にします"
+        "〜にします",
+        "〜のほうが〜",
+        "〜がほしいです"
       ],
       "words": [
         "Tシャツ",
@@ -322,6 +427,41 @@
       ],
       "requires": [
         "n5-02"
+      ]
+    },
+    {
+      "id": "n5-15",
+      "title": {
+        "de": "Meine Wohnung",
+        "en": "My flat"
+      },
+      "can_do": {
+        "de": "Ich kann sagen, wo ich wohne, was es in der Nähe gibt und wie die Wohnung ist.",
+        "en": "I can say where I live, what is nearby and what the flat is like."
+      },
+      "grammar": [
+        "〜に住んでいます",
+        "〜に〜があります",
+        "な形容詞",
+        "〜が、〜 (逆接)",
+        "〜から (理由)"
+      ],
+      "words": [
+        "住む",
+        "近く",
+        "公園",
+        "部屋",
+        "静か",
+        "便利"
+      ],
+      "scenarios": [
+        "n5-15-sumai"
+      ],
+      "requires": [
+        "n5-11"
+      ],
+      "topics": [
+        2
       ]
     },
     {
