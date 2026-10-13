@@ -197,12 +197,14 @@ impl Dictionary {
     }
 
     /// The JLPT level of a word in the tanos lists (5 = N5 … 1 = N1), the easiest if it has
-    /// several; an estimate, one source for Kaiwa's own level (Q-01).
+    /// several; an estimate, one source for Kaiwa's own level (Q-01). A word in kana also
+    /// matches the reading of a kanji spelling (いる → 居る).
     pub fn jlpt(&self, word: &str, reading: &str) -> Result<Option<u8>, LangError> {
         Ok(self
             .db
             .query_row(
-                "SELECT max(level) FROM jlpt WHERE word = ?1 AND (reading = ?2 OR ?2 = '')",
+                "SELECT max(level) FROM jlpt WHERE (word = ?1 OR reading = ?1)
+                     AND (reading = ?2 OR ?2 = '')",
                 params![word, crate::words::hiragana(reading)],
                 |r| r.get::<_, Option<u8>>(0),
             )
