@@ -29,6 +29,25 @@ QQC2.ScrollView {
             pageTitle: true
         }
 
+        // Without a tutor there are no conversations (Q-15): the way to set one up comes first.
+        KanteCallout {
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            visible: page.today.needsTutor === true
+            kind: KanteCallout.Kind.Warn
+            title: page.t("Noch kein Tutor", "No tutor yet")
+            text: page.t("Die Figuren spielt ein Sprachmodell: lokal auf deinem Rechner oder Anthropic Claude in der Cloud. Richte es in den Einstellungen unter „Tutor“ ein.",
+                         "A language model plays the characters: locally on your computer or Anthropic Claude in the cloud. Set it up in the settings under Tutor.")
+        }
+        KanteButton {
+            Layout.leftMargin: KanteStyle.unit(18)
+            visible: page.today.needsTutor === true
+            text: page.t("Tutor einrichten", "Set up a tutor")
+            emphasis: KanteButton.Emphasis.Primary
+            onClicked: page.showTab(4)
+        }
+
         // Placement (/LF200/): a short talk that gets harder while it goes well, or start at
         // zero; both can be corrected later in the profile (/LF202/).
         KanteCallout {

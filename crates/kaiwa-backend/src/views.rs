@@ -90,8 +90,12 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
             json!({ "id": s.id, "topic": topic })
         })
         .collect();
+    // No tutor and no recordings (a package without a tutor set up): say so first (Q-15).
+    let needs_tutor =
+        !crate::DEMO && !kaiwa_ai::provider_from(st.tutor_env()).is_ok_and(|p| p.is_some());
     Ok(json!({
         "free": free,
+        "needsTutor": needs_tutor,
         "name": p.name,
         "gamification": p.gamification,
         "goalFraction": t.goal_fraction,
