@@ -53,6 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for w in ws {
             keys.insert(w.key);
             keys.insert(w.text);
+            keys.extend(w.fallback);
         }
     }
 

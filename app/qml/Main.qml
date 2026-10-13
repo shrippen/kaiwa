@@ -41,11 +41,11 @@ Kirigami.ApplicationWindow {
     readonly property var views: ["start", "path", "review", "profile", "settings"]
 
     function talk(scenario, resume) {
-        pageStack.push(talkPage, { scenarioId: scenario, resume: resume, lang: kaiwa.lang, script: shot.length > 0 ? arg("--say", "") : "", shot: shot })
+        pageStack.push(talkPage, { scenarioId: scenario, resume: resume, lang: kaiwa.lang, kaiwa: kaiwa, script: shot.length > 0 ? arg("--say", "") : "", shot: shot })
     }
 
     function place() {
-        pageStack.push(talkPage, { placement: true, lang: kaiwa.lang, script: shot.length > 0 ? arg("--say", "") : "", shot: shot })
+        pageStack.push(talkPage, { placement: true, lang: kaiwa.lang, kaiwa: kaiwa, script: shot.length > 0 ? arg("--say", "") : "", shot: shot })
     }
 
     Component {

@@ -8,7 +8,7 @@ pub mod words;
 
 use std::path::PathBuf;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub use accent::Accent;
@@ -63,7 +63,7 @@ pub struct Segment {
 }
 
 /// A word of a line, to look up when it is clicked.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LineWord {
     /// As written.
     pub text: String,
@@ -74,6 +74,9 @@ pub struct LineWord {
     pub reading: Option<String>,
     /// IPADIC part of speech (助詞, 動詞 …), to choose between entries alike.
     pub pos: String,
+    /// What to look up when the group is not in the dictionary (弁当 for お弁当).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fallback: Option<String>,
 }
 
 /// Furigana markup (`{駅|えき}までは{歩|ある|new}いて`, as in KanteRubyText) to segments with
@@ -153,6 +156,7 @@ pub fn annotate(words: &Words, markup: &str) -> (Vec<Segment>, Vec<LineWord>) {
             }
             .or_else(|| (w.plain && !w.reading.is_empty()).then(|| w.reading.clone())),
             pos: w.pos.clone(),
+            fallback: w.fallback.clone(),
         })
         .collect();
     (segments, line_words)

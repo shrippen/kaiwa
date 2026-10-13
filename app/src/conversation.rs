@@ -137,6 +137,21 @@ pub mod qobject {
         /// 1 says it at 0.7×, 2 translates it into the UI language. Each counts as help.
         #[qinvokable]
         fn listen(self: Pin<&mut Conversation>, log_index: i32, aid: i32);
+
+        /// The word lookup (/LF112/): what a click on word `word` of the character's line at
+        /// `log_index` shows, as JSON (reading, meanings, part of speech, target accent), or
+        /// `{"missing": true}` without the dictionary.
+        #[qinvokable]
+        fn lookup(self: Pin<&mut Conversation>, log_index: i32, word: i32) -> QString;
+
+        /// Takes the looked-up word into the review (/LF230/); false when it is there already.
+        #[qinvokable]
+        fn remember(self: Pin<&mut Conversation>, log_index: i32, word: i32) -> bool;
+
+        /// Says the looked-up word with the character's voice.
+        #[qinvokable]
+        #[cxx_name = "sayWord"]
+        fn say_word(self: Pin<&mut Conversation>, log_index: i32, word: i32);
     }
 
     impl cxx_qt::Threading for Conversation {}
@@ -274,6 +289,15 @@ fn summary_json(s: &Summary, lang: &str) -> Value {
 
 impl qobject::Conversation {
     fn publish_turns(mut self: Pin<&mut Self>) {
+        // The character's lines as words to look up (/LF112/, Kante 1.33), once per line.
+        for entry in self.as_mut().rust_mut().log.iter_mut() {
+            if entry["who"] == "character" && entry.get("segments").is_none() {
+                let line =
+                    kaiwa_backend::lookup::line(entry["markup"].as_str().unwrap_or_default());
+                entry["segments"] = line["segments"].clone();
+                entry["words"] = line["words"].clone();
+            }
+        }
         let text = Value::Array(self.log.clone()).to_string();
         self.as_mut().set_turns(QString::from(&text));
     }
@@ -888,6 +912,78 @@ impl qobject::Conversation {
             }
             _ => {}
         }
+    }
+
+    /// The word `word` of the character's line at `log_index`.
+    fn line_word(&self, log_index: i32, word: i32) -> Option<kaiwa_lang::LineWord> {
+        let entry = self
+            .log
+            .get(usize::try_from(log_index).ok()?)
+            .filter(|e| e["who"] == "character")?;
+        serde_json::from_value(entry["words"].get(usize::try_from(word).ok()?)?.clone()).ok()
+    }
+
+    fn lookup(self: Pin<&mut Self>, log_index: i32, word: i32) -> QString {
+        let Some(w) = self.line_word(log_index, word) else {
+            return QString::from("null");
+        };
+        let lang = self.lang.clone();
+        let st = state();
+        let mut v = kaiwa_backend::lookup::lookup(&st, &w, &lang);
+        if v["missing"] == true {
+            // What the download would bring (M-03): offered in the popup, only after a click.
+            if let Some(m) = kaiwa_speech::download::MODELS
+                .iter()
+                .find(|m| m.dir == kaiwa_lang::PACKAGE)
+            {
+                v["download"] = json!({
+                    "dir": m.dir,
+                    "name": m.name,
+                    "licence": m.licence,
+                    "origin": m.origin,
+                    "downloadMB": (m.download_bytes() as f64 / 1e6).round(),
+                    "diskMB": (m.disk_bytes as f64 / 1e6).round(),
+                });
+            }
+        }
+        QString::from(&v.to_string())
+    }
+
+    fn remember(self: Pin<&mut Self>, log_index: i32, word: i32) -> bool {
+        let Some(w) = self.line_word(log_index, word) else {
+            return false;
+        };
+        let lang = self.lang.clone();
+        let st = state();
+        let found = kaiwa_backend::lookup::lookup(&st, &w, &lang);
+        let text = found["word"].as_str().unwrap_or(&w.key).to_string();
+        let unit = st
+            .scenarios
+            .get(&self.scenario().to_string())
+            .map(|s| s.unit.clone());
+        match kaiwa_backend::lookup::remember(&st, &text, unit.as_deref(), now()) {
+            Ok(added) => added,
+            Err(e) => {
+                eprintln!("kaiwa: {e:#}");
+                false
+            }
+        }
+    }
+
+    fn say_word(mut self: Pin<&mut Self>, log_index: i32, word: i32) {
+        let Some(w) = self.line_word(log_index, word) else {
+            return;
+        };
+        // The voice reads the kana when known (the reading of the dictionary form), so a word
+        // with kanji the voice does not know is still said.
+        let markup = match &w.reading {
+            Some(r) if w.text == w.key => format!("{{{}|{}}}", w.text, r),
+            _ => w.text.clone(),
+        };
+        self.as_mut().wake();
+        self.as_mut().interrupt();
+        let speed = self.speed();
+        self.speak_at(&markup, speed, false);
     }
 
     fn interrupt(mut self: Pin<&mut Self>) {

@@ -107,7 +107,13 @@ impl Dictionary {
         {
             return Ok(Some(e));
         }
-        self.lookup_with(&w.key, w.reading.as_deref(), pos, lang)
+        if let Some(e) = self.lookup_with(&w.key, w.reading.as_deref(), pos, lang)? {
+            return Ok(Some(e));
+        }
+        match &w.fallback {
+            Some(f) => self.lookup_with(f, None, pos, lang),
+            None => Ok(None),
+        }
     }
 
     /// Looks a word up: `key` as written or in its dictionary form, `reading` (kana) to choose

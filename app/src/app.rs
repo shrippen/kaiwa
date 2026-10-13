@@ -151,6 +151,12 @@ fn models_json(lang: &str) -> serde_json::Value {
                 ("ReazonSpeech", false) => "Speech recognition: understands what you say",
                 ("Kokoro", true) => "Übergangsstimme der Figur",
                 ("Kokoro", false) => "The character's interim voice",
+                ("kaiwa-data", true) => {
+                    "Wörterbuch: Lesung, Bedeutung und Akzent beim Klick auf ein Wort"
+                }
+                ("kaiwa-data", false) => {
+                    "Dictionary: reading, meaning and accent when you click a word"
+                }
                 (_, true) => "Aussprache-Hinweise zu langen Vokalen und っ",
                 (_, false) => "Pronunciation hints on long vowels and っ",
             };

@@ -22,7 +22,8 @@ case "$mode" in
   demo)
     lang=de
     case "${1:-}" in de|en) lang="$1"; shift ;; esac
-    export KAIWA_DEMO=1 KAIWA_LANG="$lang"
+    # The demo looks words up in the excerpt of the dictionary (data/dict), never in a download.
+    export KAIWA_DEMO=1 KAIWA_LANG="$lang" KAIWA_DICT="$PWD/data/dict/kaiwa-dict-excerpt.sqlite"
     exec cargo run -q -p kaiwa-app -- "$@"
     ;;
   sim)

@@ -1786,6 +1786,7 @@ dependencies = [
  "kaiwa-ai",
  "kaiwa-backend",
  "kaiwa-core",
+ "kaiwa-lang",
  "kaiwa-speech",
  "kaiwa-store",
  "serde",

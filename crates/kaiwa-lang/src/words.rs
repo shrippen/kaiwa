@@ -29,6 +29,9 @@ pub struct Word {
     pub plain: bool,
     /// IPADIC part of speech of the first token (名詞, 動詞 …).
     pub pos: String,
+    /// For a group: what to look up when the whole is not in the dictionary (弁当 for お弁当,
+    /// 五 for 五分).
+    pub fallback: Option<String>,
 }
 
 pub struct Words {
@@ -103,6 +106,13 @@ impl Words {
             };
             if joins {
                 let w = out.last_mut().expect("checked above");
+                // A prefix makes a noun with the noun after it (お・弁当 → お弁当).
+                if w.pos == "接頭詞" {
+                    w.pos = t.pos.clone();
+                    w.fallback = Some(t.base.clone());
+                } else if w.pos == "名詞" && w.fallback.is_none() {
+                    w.fallback = Some(w.key.clone());
+                }
                 w.surface.push_str(&t.surface);
                 w.end = t.end;
                 w.reading.push_str(&t.reading);
@@ -121,6 +131,7 @@ impl Words {
                     end: t.end,
                     reading: t.reading.clone(),
                     pos: t.pos.clone(),
+                    fallback: None,
                 });
             }
             prev = Some((t.pos, t.sub));
@@ -144,8 +155,11 @@ fn joins(prev_pos: &str, prev_sub: &str, t: &Token) -> bool {
             matches!(t.sub.as_str(), "非自立" | "接尾") && (inflecting || prev_pos == "助詞")
         }
         "形容詞" => t.sub == "非自立" && inflecting,
-        // Counters and suffixes after a noun: 五・分, 田中・さん.
-        "名詞" => prev_pos == "名詞" && (t.sub == "接尾" || prev_sub == "数" && t.sub == "数"),
+        // Counters and suffixes after a noun: 五・分, 田中・さん; a noun after a prefix: お・弁当.
+        "名詞" => {
+            prev_pos == "接頭詞"
+                || prev_pos == "名詞" && (t.sub == "接尾" || prev_sub == "数" && t.sub == "数")
+        }
         _ => false,
     }
 }
@@ -191,6 +205,8 @@ mod tests {
         assert!(w.contains(&pair("歩いて", "歩く")), "{w:?}");
         assert!(w.contains(&pair("五分", "五分")), "{w:?}");
         assert!(w.contains(&pair("です", "です")), "{w:?}");
+        let w = surfaces("お弁当、温めますか。");
+        assert!(w.contains(&pair("お弁当", "お弁当")), "{w:?}");
     }
 
     #[test]
