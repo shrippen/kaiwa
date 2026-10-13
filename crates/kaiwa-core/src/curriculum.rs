@@ -671,6 +671,26 @@ mod bundled {
         ));
     }
 
+    /// Q-07: N5 and N4 together reach every everyday topic of the JF Standard (1 self and
+    /// family … 13 language and culture); 14 media and 15 science belong to the B levels.
+    #[test]
+    fn the_a_levels_cover_the_everyday_topics() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let c = Curriculum::from_dir(&root.join("data/curriculum")).unwrap();
+        let covered: BTreeSet<u8> = c
+            .units
+            .iter()
+            .filter(|u| u.id.starts_with("n5") || u.id.starts_with("n4"))
+            .flat_map(|u| u.topics.iter().copied())
+            .collect();
+        let missing: Vec<u8> = (1..=13).filter(|t| !covered.contains(t)).collect();
+        assert!(missing.is_empty(), "JF topics without a unit: {missing:?}");
+        assert!(
+            c.units.iter().all(|u| !u.topics.is_empty()),
+            "every unit names its topics"
+        );
+    }
+
     #[test]
     fn a_native_speaker_skips_up_to_keigo() {
         use crate::learner::{LearnerModel, Skill, level_index};
