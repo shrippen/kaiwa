@@ -443,21 +443,29 @@ impl Curriculum {
     }
 
     /// After the placement (/LF200/, /LF215/): the units below the learner's level, to offer
-    /// skipping at once. A learner who speaks and understands at N4 or above (heritage speakers,
-    /// false beginners) does not have to start with N5 greetings.
+    /// skipping at once, in path order. A learner who speaks and understands at N4 or above
+    /// (heritage speakers, false beginners) does not have to start with N5 greetings; at N3 or
+    /// above the N4 units go too. The offer stops at the first unit the learner is not ready
+    /// for: one above the level, or one with keigo (`keigo`) while the register lacks it.
     pub fn placement_skip(
         &self,
         m: &crate::learner::LearnerModel,
         p: &CourseProgress,
+        keigo: impl Fn(&Unit) -> bool,
     ) -> Vec<String> {
-        use crate::learner::Skill;
-        let n4 = crate::learner::level_index("n4").unwrap_or(5.0);
-        if m.level(Skill::Speaking) < n4 || m.level(Skill::Listening) < n4 {
-            return Vec::new();
-        }
+        use crate::learner::{Skill, level_index};
+        let level = m.level(Skill::Speaking).min(m.level(Skill::Listening));
+        let at = |name: &str| level_index(name).unwrap_or(f64::MAX);
+        let ready = |u: &Unit| match u.id.split('-').next() {
+            Some("n5") => level >= at("n4"),
+            Some("n4") => level >= at("n3"),
+            _ => false,
+        };
+        let keigo_ok = m.level(Skill::Register) >= at("keigo_basic");
         self.units
             .iter()
-            .filter(|u| u.id.starts_with("n5") && !self.unit_done(u, p))
+            .take_while(|u| ready(u) && (keigo_ok || !keigo(u)))
+            .filter(|u| !self.unit_done(u, p))
             .map(|u| u.id.clone())
             .collect()
     }
@@ -661,6 +669,46 @@ mod bundled {
             }),
             Err(CurriculumError::UnknownGrammar(_, _))
         ));
+    }
+
+    #[test]
+    fn a_native_speaker_skips_up_to_keigo() {
+        use crate::learner::{LearnerModel, Skill, level_index};
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let c = Curriculum::from_dir(&root.join("data/curriculum")).unwrap();
+        let mut m = LearnerModel::default();
+        for s in [Skill::Speaking, Skill::Listening] {
+            m.set(s, level_index("native_casual").unwrap());
+        }
+        m.set(
+            Skill::Register,
+            level_index("desu_masu_and_casual").unwrap(),
+        );
+        let keigo = |u: &Unit| u.id == "n4-11";
+        let offer = c.placement_skip(&m, &CourseProgress::default(), keigo);
+        assert!(offer.contains(&"n5-01".to_string()));
+        assert!(offer.contains(&"n4-14".to_string()));
+        assert!(
+            !offer.contains(&"n4-11".to_string()),
+            "keigo is where she starts"
+        );
+        assert!(
+            !offer.contains(&"n4-12".to_string()),
+            "nothing after the keigo unit"
+        );
+        // With keigo she may skip it too.
+        m.set(Skill::Register, level_index("keigo_basic").unwrap());
+        assert!(
+            c.placement_skip(&m, &CourseProgress::default(), keigo)
+                .contains(&"n4-12".to_string())
+        );
+        // At N4 only the N5 units.
+        for s in [Skill::Speaking, Skill::Listening] {
+            m.set(s, level_index("n4").unwrap());
+        }
+        let offer = c.placement_skip(&m, &CourseProgress::default(), keigo);
+        assert!(offer.iter().all(|u| u.starts_with("n5")));
+        assert_eq!(offer.len(), 16);
     }
 
     #[test]
