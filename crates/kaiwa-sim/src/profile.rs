@@ -86,6 +86,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "lena_delete" => delete(root),
         "lena_default_no_audio" => no_audio(root),
         "lena_stats_fast" => fast(root),
+        "jonas_local_switch" => local_switch(root),
         _ => return None,
     };
     Some(match r {
@@ -93,6 +94,78 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         Ok(Some(why)) => Outcome::Fail(why),
         Err(e) => Outcome::Fail(format!("{e:#}")),
     })
+}
+
+/// A local model: the same answers as the cloud one, only slower.
+struct Local(MockProvider);
+
+impl kaiwa_ai::ChatProvider for Local {
+    fn reply(&self, r: &kaiwa_ai::TurnRequest) -> Result<String, kaiwa_ai::AiError> {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        self.0.reply(r)
+    }
+    fn analyse(&self, r: &kaiwa_ai::TurnRequest) -> Result<kaiwa_ai::Analysis, kaiwa_ai::AiError> {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        self.0.analyse(r)
+    }
+}
+
+/// /LL504/: the provider sits behind a trait; switching from the cloud (Android) to a local
+/// model (PC) mid-course changes nothing in the learner model, the regulator or the course,
+/// and the stored model names no provider. Latency and provider are all that differ.
+fn local_switch(root: &Path) -> Result<Option<String>> {
+    let sc = Scenario::from_json(&std::fs::read_to_string(
+        root.join("data/scenarios/n5-02-jikoshoukai.json"),
+    )?)?;
+    let fixtures = std::fs::read_to_string(root.join("qa/fixtures/n5-02-jikoshoukai.json"))?;
+    let mock = || -> Result<MockProvider> {
+        Ok(MockProvider::from_json(&fixtures)?.with_fallback("すみません、もう一度お願いします。"))
+    };
+    let c = curriculum(root)?;
+    let course = |name: &str, switch: bool| -> Result<Store> {
+        let store = Store::open(&temp_dir(name).join("p.kaiwa"))?;
+        for d in 0..4 {
+            let provider: Arc<dyn kaiwa_ai::ChatProvider> = if switch && d >= 2 {
+                Arc::new(Local(mock()?))
+            } else {
+                Arc::new(mock()?)
+            };
+            let mut s = Session::new(sc.clone(), provider, Amount::Little, "de");
+            let id = store.begin_session(&s.snapshot(), at(d, 9 * 3600))?;
+            for t in [
+                "マラです。よろしくおねがいします。",
+                "コーヒーを好きです。",
+                "ドイツから来ました。",
+            ] {
+                s.turn(t, Input::Spoken)?;
+            }
+            store.record(id, &s, at(d, 9 * 3600), at(d, 9 * 3600 + 400), Some(&c))?;
+        }
+        Ok(store)
+    };
+    let (cloud, switched) = (
+        course("switch-cloud", false)?,
+        course("switch-local", true)?,
+    );
+    let (a, b) = (cloud.learning()?, switched.learning()?);
+    let mut found = Vec::new();
+    if a.model != b.model {
+        found.push("the learner model differs after the switch".to_string());
+    }
+    if serde_json::to_value(&a.regulator)? != serde_json::to_value(&b.regulator)? {
+        found.push("the regulator differs after the switch".into());
+    }
+    if serde_json::to_value(&a.course)? != serde_json::to_value(&b.course)? {
+        found.push("the course differs after the switch".into());
+    }
+    let stored = serde_json::to_string(&serde_json::to_value(&b.model)?)?.to_lowercase();
+    if ["provider", "anthropic", "openai", "model_name"]
+        .iter()
+        .any(|w| stored.contains(w))
+    {
+        found.push("the stored learner model names a provider".into());
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
 /// /LF121/: an interrupted session is offered and continues at the next unanswered goal.
