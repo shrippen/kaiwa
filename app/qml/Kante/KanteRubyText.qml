@@ -34,7 +34,8 @@ Flow {
     property var segments: []
     property string markup: ""
     property int density: KanteRubyText.Density.All
-    property font font: KanteStyle.defaultFont
+    /** In the Japanese family (Kante 1.34, KanteStyle.japaneseFont). */
+    property font font: KanteStyle.japaneseFont()
     property color color: KanteStyle.textColor
     property color readingColor: KanteStyle.mutedTextColor
     /** Reading size as a share of the base size. */
