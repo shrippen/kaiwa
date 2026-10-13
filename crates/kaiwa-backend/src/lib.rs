@@ -3,12 +3,16 @@
 //!
 //! - The profile file is the current one in `$KAIWA_DATA` (see `kaiwa_store::profiles_dir` and
 //!   [`profiles`]), or `KAIWA_PROFILE`.
-//! - `KAIWA_DEMO=1` uses a fresh profile in a temporary directory, filled with two weeks of
-//!   history, for screenshots and the demo (`KAIWA_LANG=en` for the English UI).
+//! - With the build feature `demo` (off by default, never in a package): `KAIWA_DEMO=1` uses a
+//!   fresh profile in a temporary directory, filled with two weeks of history, for screenshots
+//!   (`KAIWA_LANG=en` for the English UI), and without a tutor the recorded answers stand in.
+//!   Without the feature there is neither, and a missing tutor says so ([`kaiwa_ai::NoTutor`]).
 //! - `KAIWA_NOW=<unix>:<offset minutes>` fixes the clock (screenshots); otherwise it is the
 //!   system time in the local time zone.
 
 pub mod cost;
+#[cfg(any(test, feature = "demo"))]
+mod demo;
 pub mod latency;
 pub mod lookup;
 pub mod profiles;
@@ -22,16 +26,13 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use kaiwa_ai::ChatProvider;
+#[cfg(any(test, feature = "demo"))]
 use kaiwa_ai::mock::MockProvider;
 
 use kaiwa_core::Scenario;
-use kaiwa_core::clock::{Day, Moment};
+use kaiwa_core::clock::Moment;
 use kaiwa_core::curriculum::Curriculum;
-use kaiwa_core::difficulty::{Difficulty, Regulator};
-use kaiwa_core::learner::{LearnerModel, Skill};
-use kaiwa_core::progress::DayRecord;
-use kaiwa_core::srs::{Grade, Item, ItemKind, Source};
-use kaiwa_store::{Learning, Profile, Store};
+use kaiwa_store::Store;
 
 /// The level files of the curriculum (ADR-009), joined by [`Curriculum::from_files`].
 const CURRICULUM: &[&str] = &[include_str!("../../../data/curriculum/n5.json")];
@@ -55,6 +56,7 @@ const SCENARIOS: &[&str] = &[
     include_str!("../../../data/scenarios/frei-mainichi.json"),
 ];
 
+#[cfg(any(test, feature = "demo"))]
 const FIXTURES: &[(&str, &str)] = &[
     (
         "n5-01-aisatsu",
@@ -107,6 +109,7 @@ const FIXTURES: &[(&str, &str)] = &[
 ];
 
 /// The recorded answers of a scenario (demo mode without a provider).
+#[cfg(any(test, feature = "demo"))]
 pub fn fixtures(scenario: &str) -> Option<&'static str> {
     FIXTURES
         .iter()
@@ -126,7 +129,10 @@ pub struct Backend {
 impl Backend {
     /// Opens the default profile, or the demo profile with `KAIWA_DEMO` set.
     pub fn open() -> anyhow::Result<Self> {
+        #[cfg(any(test, feature = "demo"))]
         let demo_data = std::env::var_os("KAIWA_DEMO").is_some();
+        #[cfg(not(any(test, feature = "demo")))]
+        let demo_data = false;
         let path = if let Some(p) = std::env::var_os("KAIWA_PROFILE") {
             PathBuf::from(p)
         } else if demo_data {
@@ -141,6 +147,7 @@ impl Backend {
 
     /// Opens the profile at `path`; `demo` fills a new one with two weeks of history.
     pub fn open_at(path: PathBuf, demo: bool) -> anyhow::Result<Self> {
+        #[cfg_attr(not(any(test, feature = "demo")), allow(unused_variables))]
         let fresh = !path.exists();
         let store = Store::open(&path)?;
         let curriculum = Curriculum::from_files(CURRICULUM)?;
@@ -155,8 +162,9 @@ impl Backend {
             scenarios,
             demo_data: demo,
         };
+        #[cfg(any(test, feature = "demo"))]
         if demo && fresh {
-            seed(&st)?;
+            demo::seed(&st)?;
         }
         // Recordings past their days go when the profile opens (/LF712/).
         if let Err(e) = st.purge_recordings(now()) {
@@ -166,19 +174,50 @@ impl Backend {
     }
 }
 
-/// The tutor from the environment (`kaiwa_ai::provider_from_env`, for the owner's local
-/// test); recorded answers otherwise (demo mode, `true`).
-pub fn provider(scenario: &str) -> (Arc<dyn ChatProvider>, bool) {
-    match kaiwa_ai::provider_from_env() {
-        Ok(Some(p)) => return (p, false),
-        Ok(None) => {}
-        Err(e) => eprintln!("kaiwa: {e}; using recorded answers"),
+/// Whether this build has the demo (the build feature `demo`, for screenshots; never in a
+/// package, `packaging/check-release.sh` checks the binary).
+pub const DEMO: bool = cfg!(any(test, feature = "demo"));
+
+/// What only a demo build contains; the package check looks for it.
+#[cfg(any(test, feature = "demo"))]
+#[used]
+static DEMO_MARKER: [u8; 16] = *b"kaiwa:demo-build";
+
+impl Backend {
+    /// The tutor of the profile (Q-15).
+    pub fn tutor(&self) -> kaiwa_ai::Tutor {
+        self.store.profile().map(|p| p.tutor).unwrap_or_default()
     }
-    let mock = fixtures(scenario)
-        .and_then(|f| MockProvider::from_json(f).ok())
-        .unwrap_or_default()
-        .with_fallback("すみません、もう一度お願いします。");
-    (Arc::new(mock), true)
+
+    /// The tutor's settings as the providers read them, the environment on top (local test).
+    pub fn tutor_env(&self) -> impl Fn(&str) -> Option<String> + use<> {
+        let tutor = self.tutor();
+        move |k: &str| tutor.lookup(|k| std::env::var(k).ok())(k)
+    }
+
+    /// The tutor for a conversation in `scenario`: the one set up in the settings (or the
+    /// environment). Without one, a demo build replays the recorded answers (`true`); any other
+    /// build says that no tutor is set up.
+    pub fn provider(&self, scenario: &str) -> (Arc<dyn ChatProvider>, bool) {
+        match kaiwa_ai::provider_from(self.tutor_env()) {
+            Ok(Some(p)) => return (p, false),
+            Ok(None) => {}
+            Err(e) => eprintln!("kaiwa: {e}"),
+        }
+        #[cfg(any(test, feature = "demo"))]
+        {
+            let mock = fixtures(scenario)
+                .and_then(|f| MockProvider::from_json(f).ok())
+                .unwrap_or_default()
+                .with_fallback("すみません、もう一度お願いします。");
+            (Arc::new(mock), true)
+        }
+        #[cfg(not(any(test, feature = "demo")))]
+        {
+            let _ = scenario;
+            (Arc::new(kaiwa_ai::NoTutor), false)
+        }
+    }
 }
 
 /// Now, in the local time zone (or `KAIWA_NOW`).
@@ -191,169 +230,4 @@ pub fn now() -> Moment {
     }
     let local = chrono::Local::now();
     Moment::new(local.timestamp(), local.offset().local_minus_utc() / 60)
-}
-
-/// Two weeks of a beginner's history: units 1 and 2 done, unit 3 under way, words to review,
-/// a few gaps. For screenshots and the demo.
-fn seed(st: &Backend) -> anyhow::Result<()> {
-    let now = now();
-    let today = now.day();
-    let profile = Profile {
-        name: "Mara".into(),
-        placed: true,
-        ui_lang: if std::env::var("KAIWA_LANG").as_deref() == Ok("en") {
-            "en".into()
-        } else {
-            "de".into()
-        },
-        ..Default::default()
-    };
-    st.store.set_profile(&profile)?;
-    let model = LearnerModel::placed(&[
-        (Skill::Listening, "n5_low"),
-        (Skill::Speaking, "a0"),
-        (Skill::Fluency, "a0"),
-        (Skill::ReadingKana, "a0"),
-        (Skill::ReadingKanji, "none"),
-        (Skill::Register, "casual_only"),
-    ]);
-    let mut learning = Learning {
-        regulator: Regulator::new(Difficulty::for_learner(&model)),
-        model,
-        ..Default::default()
-    };
-    learning.model.errors.insert(
-        "particle".into(),
-        kaiwa_core::learner::ErrorStat {
-            corrected: 4,
-            rate: 0.3,
-        },
-    );
-    learning.model.errors.insert(
-        "counter".into(),
-        kaiwa_core::learner::ErrorStat {
-            corrected: 3,
-            rate: 0.22,
-        },
-    );
-    for s in [0.74, 0.81, 0.86, 0.79, 0.9, 0.83, 0.78] {
-        let model = learning.model.clone();
-        learning.regulator.after_session(s, &model);
-    }
-    for s in ["n5-01-aisatsu", "n5-02-jikoshoukai"] {
-        learning.course.scenarios_done.insert(s.into());
-        learning.course.completions.insert(s.into(), 2);
-    }
-    learning
-        .course
-        .completions
-        .insert("n5-03-konbini".into(), 1);
-    st.store.set_learning(&learning)?;
-    // Days: practised on 13 of the last 14 (one gap, covered by a freeze), two minutes today.
-    let minutes = [6, 5, 0, 7, 5, 12, 6, 5, 6, 5, 8, 5, 6, 7];
-    for (i, m) in minutes.iter().enumerate() {
-        if *m == 0 {
-            continue;
-        }
-        let d = today.plus(i as i64 - minutes.len() as i64);
-        st.store.put_day(
-            d,
-            &DayRecord {
-                speaking_secs: m * 60,
-                scenarios_done: u32::from(*m >= 6),
-                reviews_done: 4,
-                xp: m * 18,
-                ..Default::default()
-            },
-        )?;
-    }
-    st.store.put_day(
-        today,
-        &DayRecord {
-            speaking_secs: 130,
-            xp: 40,
-            ..Default::default()
-        },
-    )?;
-    let words = [
-        (
-            "コーヒーが好きです",
-            ItemKind::Pattern,
-            Some("particle"),
-            "n5-02",
-        ),
-        (
-            "ビールを二つください",
-            ItemKind::Pattern,
-            Some("counter"),
-            "n5-03",
-        ),
-        ("おはようございます", ItemKind::Phrase, None, "n5-01"),
-        ("天気", ItemKind::Word, None, "n5-01"),
-        ("仕事", ItemKind::Word, None, "n5-02"),
-        ("袋", ItemKind::Word, None, "n5-03"),
-        ("温める", ItemKind::Word, None, "n5-03"),
-        ("いくら", ItemKind::Word, None, "n5-03"),
-    ];
-    for (n, (w, kind, corr, unit)) in words.iter().enumerate() {
-        let added = Day(today.0 - 9 + n as i64)
-            .start(now.offset_min)
-            .plus_secs(9 * 3600);
-        let source = match corr {
-            Some(k) => Source::Correction {
-                kind: (*k).to_string(),
-            },
-            None => Source::NewWord,
-        };
-        let mut item = Item::new(*w, *kind, source, added);
-        item.unit = Some((*unit).to_string());
-        item.review(Grade::Good, added.plus_secs(86_400));
-        if n % 3 == 0 {
-            item.due = today;
-        }
-        st.store.put_item(&item)?;
-    }
-    // Talks of the last weeks with their corrections, for the statistics (/LF610/): particles
-    // fade, counters stay. Recorded answers, so the corrections are the real ones.
-    let n502 = st
-        .scenarios
-        .get("n5-02-jikoshoukai")
-        .cloned()
-        .ok_or_else(|| anyhow::anyhow!("scenario n5-02"))?;
-    for (days_ago, particles, counters) in [
-        (70, 3, 1),
-        (56, 3, 1),
-        (42, 2, 1),
-        (28, 1, 1),
-        (21, 1, 2),
-        (1, 0, 2),
-    ] {
-        // Always the recorded answers here, never a configured tutor.
-        let mock: Arc<dyn ChatProvider> = Arc::new(
-            fixtures("n5-02-jikoshoukai")
-                .and_then(|f| MockProvider::from_json(f).ok())
-                .unwrap_or_default()
-                .with_fallback("そうですか。"),
-        );
-        let mut s = kaiwa_core::Session::new(
-            n502.clone(),
-            mock,
-            kaiwa_core::Amount::Little,
-            &profile.ui_lang,
-        );
-        s.turn(
-            "マラです。よろしくおねがいします。",
-            kaiwa_core::Input::Spoken,
-        )?;
-        for _ in 0..particles {
-            s.turn("コーヒーを好きです。", kaiwa_core::Input::Spoken)?;
-        }
-        for _ in 0..counters {
-            s.turn("ビール二ください。", kaiwa_core::Input::Spoken)?;
-        }
-        let started = now.plus_secs(-days_ago * 86_400 - 3600);
-        st.store
-            .put_finished_session(&s.snapshot(), started, started.plus_secs(420), 0.8)?;
-    }
-    Ok(())
 }

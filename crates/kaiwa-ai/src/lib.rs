@@ -16,12 +16,14 @@ pub mod openai;
 pub mod privacy;
 pub mod secrets;
 pub mod transport;
+pub mod tutor;
 pub mod types;
 
+pub use tutor::{NoTutor, Tutor};
 pub use types::{Analysis, ChatMessage, Correction, CorrectionKind, Role, Severity, TurnRequest};
 
 /// Errors a provider can report. The engine shows them in words and never invents an answer.
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum AiError {
     #[error("network: {0}")]
     Network(String),
@@ -34,6 +36,9 @@ pub enum AiError {
     /// The month's cost limit is reached (/LF714/).
     #[error("the cost limit for this month is reached")]
     Budget,
+    /// No tutor is set up (Q-15): the settings have none and the environment names none.
+    #[error("no tutor is set up")]
+    NoTutor,
 }
 
 /// Who answers the tutor's two calls.
@@ -65,12 +70,20 @@ pub fn analysis_schema() -> serde_json::Value {
 }
 
 /// The tutor named by the environment, for the owner's local test (ADR-004); `None` when
-/// none is configured.
+/// none is configured. See [`provider_from`].
+pub fn provider_from_env() -> Result<Option<std::sync::Arc<dyn ChatProvider>>, String> {
+    provider_from(|k| std::env::var(k).ok())
+}
+
+/// The tutor named by `env` (the settings with the environment on top, [`Tutor::lookup`]);
+/// `None` when none is configured.
 ///
 ///   KAIWA_PROVIDER=anthropic  [ANTHROPIC_API_KEY=…, else the system keyring]
 ///   KAIWA_PROVIDER=openai     KAIWA_MODEL=…  [KAIWA_OPENAI_BASE=http://localhost:11434/v1]  [KAIWA_API_KEY=…, else the keyring]
-pub fn provider_from_env() -> Result<Option<std::sync::Arc<dyn ChatProvider>>, String> {
-    let env = |k: &str| std::env::var(k).ok().filter(|v| !v.is_empty());
+pub fn provider_from(
+    env: impl Fn(&str) -> Option<String>,
+) -> Result<Option<std::sync::Arc<dyn ChatProvider>>, String> {
+    let env = |k: &str| env(k).filter(|v| !v.is_empty());
     match env("KAIWA_PROVIDER").as_deref() {
         None => Ok(None),
         Some("anthropic") => {

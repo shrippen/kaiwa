@@ -3,7 +3,7 @@
 
 use std::sync::{Mutex, MutexGuard, OnceLock};
 
-pub use kaiwa_backend::{Backend as AppState, now, provider, views};
+pub use kaiwa_backend::{Backend as AppState, now, views};
 
 static STATE: OnceLock<Mutex<AppState>> = OnceLock::new();
 

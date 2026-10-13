@@ -186,7 +186,7 @@ use kaiwa_speech::tts::{self, Voice};
 use kaiwa_speech::{Synthesizer, Transcriber};
 use serde_json::{Value, json};
 
-use crate::state::{now, provider, state};
+use crate::state::{now, state};
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -383,7 +383,7 @@ impl qobject::Conversation {
         let Some((scenario, profile)) = prepared else {
             return;
         };
-        let (provider, demo) = provider(&scenario.id);
+        let (provider, demo) = state().provider(&scenario.id);
         let log = vec![json!({ "who": "character", "markup": scenario.opening.clone() })];
         let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
             .with_difficulty(placement::difficulty_at(level));
@@ -654,7 +654,7 @@ impl qobject::Conversation {
             return;
         };
         let log = log_of(&scenario, &state, &lang);
-        let (provider, demo) = provider(&scenario.id);
+        let (provider, demo) = crate::state::state().provider(&scenario.id);
         let session = Session::restore(scenario, provider, state);
         self.begin(session, Some(id), demo, log, lang);
     }
@@ -682,7 +682,7 @@ impl qobject::Conversation {
         let Some((scenario, profile, learning)) = prepared else {
             return;
         };
-        let (provider, demo) = provider(&scenario.id);
+        let (provider, demo) = state().provider(&scenario.id);
         let _ = state().arm_brake(now());
         let opening = scenario.opening.clone();
         let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
@@ -1296,11 +1296,16 @@ impl qobject::Conversation {
                             turn["pending"] = json!(false);
                         }
                         let budget = e == kaiwa_ai::AiError::Budget.to_string();
-                        let msg = match (budget, q.lang == "en") {
+                        let no_tutor = e == kaiwa_ai::AiError::NoTutor.to_string();
+                        let msg = match (no_tutor, q.lang == "en") {
+                            (true, true) => "No tutor is set up. Choose one in the settings under Tutor.".to_string(),
+                            (true, false) => "Es ist kein Tutor eingerichtet. In den Einstellungen unter „Tutor“ einen wählen.".to_string(),
+                            _ => match (budget, q.lang == "en") {
                             (true, true) => "The cost limit for this month is reached. Raise it in the settings or switch to a local tutor.".to_string(),
                             (true, false) => "Das Kostenlimit für diesen Monat ist erreicht. In den Einstellungen anheben oder auf einen lokalen Tutor wechseln.".to_string(),
                             (false, true) => format!("The tutor did not answer: {e}"),
                             (false, false) => format!("Der Tutor hat nicht geantwortet: {e}"),
+                            },
                         };
                         q.as_mut().set_error(QString::from(&msg));
                     }

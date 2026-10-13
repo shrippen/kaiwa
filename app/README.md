@@ -33,8 +33,11 @@ Einstufung per Gespräch (/LF200/): erster Start, eine Stufe, Ergebnis (deutsch 
 
 ```sh
 # Qt ≥ 6.6, Kirigami 6, Rust; Kante wird nicht gebraucht (einkompiliert)
-cargo run -p kaiwa-app                    # Demo: aufgezeichnete Antworten (qa/fixtures)
+cargo run -p kaiwa-app                    # wie im Paket: Tutor in den Einstellungen einrichten
+cargo run -p kaiwa-app --features demo    # mit Demo: aufgezeichnete Antworten (qa/fixtures), Screenshot-Schalter
 ```
+
+Die Demo (Demo-Profil, aufgezeichnete Antworten, `--shot` und die anderen Schalter) gibt es nur mit dem Build-Feature `demo`; ein Paket baut ohne, und `packaging/check-release.sh` bricht den Paketbau ab, wenn doch etwas davon im Binary steckt (Q-15). Die CI prüft das bei jedem Lauf.
 
 ## Modelle
 
@@ -75,14 +78,16 @@ Die Stimme spricht im Tempo, das die Schwierigkeit gerade vorgibt (0,7–1,1×, 
 
 Die Lautumschrift ist ein Nachbau von misakis japanischer G2P auf lindera mit IPADIC (in `kaiwa-speech`). Abgleich mit misaki über die 100 Korpussätze: `cargo run -p kaiwa-speech --example g2p_compare -- golden.json` (67 von 100 gleich, der Rest sind Wortgrenzen und Lesarten des Wörterbuchs). Einen Satz hören: `cargo run -p kaiwa-speech --example say -- "コーヒーが好きです。" out.wav`.
 
-## Echter Tutor (für den lokalen Test, ADR-004)
+## Tutor (ADR-004, Q-15)
+
+Der Tutor wird in den Einstellungen unter „Tutor“ eingerichtet: „Lokal (OpenAI-kompatibel)“ mit Modellname und Server (leer ist Ollama auf diesem Rechner) oder „Anthropic Claude“; der API-Schlüssel liegt im Schlüsselbund des Systems (/LF713/). Ohne Tutor gibt es keine Gespräche, die App sagt das, statt etwas zu erfinden. Für den lokalen Test überschreiben Umgebungsvariablen die Einstellungen:
 
 ```sh
 KAIWA_PROVIDER=anthropic ANTHROPIC_API_KEY=… cargo run -p kaiwa-app
 KAIWA_PROVIDER=openai KAIWA_OPENAI_BASE=http://localhost:11434/v1 KAIWA_MODEL=qwen3:14b cargo run -p kaiwa-app
 ```
 
-Ohne diese Variablen läuft die App im Demo-Modus, was ein Banner oben anzeigt. Anthropic nutzt die Voreinstellung aus ADR-004: ein schnelles Modell für die Antwort, ein stärkeres für die Analyse.
+Im Demo-Build antworten ohne Tutor die Aufzeichnungen, was ein Banner oben anzeigt. Anthropic nutzt die Voreinstellung aus ADR-004: ein schnelles Modell für die Antwort, ein stärkeres für die Analyse.
 
 ## Kante aktualisieren
 
@@ -92,17 +97,17 @@ tools/sync-kante.sh ../Kante   # Kopie unverändert (GUI-Regel), danach committe
 
 ## Screenshots
 
-`KAIWA_DEMO=1` startet mit einem frischen Profil im Temp-Verzeichnis, gefüllt mit zwei Wochen Verlauf. `KAIWA_NOW=<unix>:<offset in Minuten>` hält die Uhr fest.
+Nur im Demo-Build (`--features demo`, oder `./start.sh demo`): `KAIWA_DEMO=1` startet mit einem frischen Profil im Temp-Verzeichnis, gefüllt mit zwei Wochen Verlauf. `KAIWA_NOW=<unix>:<offset in Minuten>` hält die Uhr fest.
 
 ```sh
 export KAIWA_DEMO=1 KAIWA_NOW=1792478400:120
-cargo run -p kaiwa-app -- --shot out.png --view path --kind 1           # start, path, review, profile, settings
-cargo run -p kaiwa-app -- --shot out.png --view talk --scenario n5-03-konbini --kind 1 \
+cargo run -p kaiwa-app --features demo -- --shot out.png --view path --kind 1           # start, path, review, profile, settings
+cargo run -p kaiwa-app --features demo -- --shot out.png --view talk --scenario n5-03-konbini --kind 1 \
   --say 'はい、おねがいします。|袋はいりません。'                        # "?" Hilfe, "!" Sprechhilfe, "wav:datei", "~" wartet auf die Stimme
-cargo run -p kaiwa-app -- --shot out.png --view talk --resume           # die unterbrochene Sitzung
+cargo run -p kaiwa-app --features demo -- --shot out.png --view talk --resume           # die unterbrochene Sitzung
 KAIWA_DICT=data/dict/kaiwa-dict-excerpt.sqlite \
-  cargo run -p kaiwa-app -- --shot out.png --view talk --say 'lookup:0:3' # Wort 3 der Zeile 0 nachschlagen: das Bild zeigt nur das Popup
-cargo run -p kaiwa-app -- --shot out.png --view place --say '…|read:21'  # Einstufung; "read:KK" beantwortet die Lesefragen
+  cargo run -p kaiwa-app --features demo -- --shot out.png --view talk --say 'lookup:0:3' # Wort 3 der Zeile 0 nachschlagen: das Bild zeigt nur das Popup
+cargo run -p kaiwa-app --features demo -- --shot out.png --view place --say '…|read:21'  # Einstufung; "read:KK" beantwortet die Lesefragen
 ```
 
 ## Wort nachschlagen

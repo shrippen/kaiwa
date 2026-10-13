@@ -28,6 +28,11 @@ hound = "3.5.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+[features]
+# Screenshot mode, demo profile and recorded tutor answers. Never in a package
+# (packaging/check-release.sh).
+demo = ["kaiwa-backend/demo"]
+
 [build-dependencies]
 cxx-qt-build = "0.10.0"
 

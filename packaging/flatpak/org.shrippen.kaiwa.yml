@@ -29,6 +29,7 @@ modules:
     buildsystem: simple
     build-commands:
       - cargo --offline build --release --locked -p kaiwa-app
+      - sh packaging/check-release.sh target/release/kaiwa
       - install -Dm755 target/release/kaiwa /app/bin/kaiwa
       - install -Dm644 packaging/org.shrippen.kaiwa.desktop /app/share/applications/org.shrippen.kaiwa.desktop
       - install -Dm644 packaging/org.shrippen.kaiwa.metainfo.xml /app/share/metainfo/org.shrippen.kaiwa.metainfo.xml

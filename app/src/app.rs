@@ -30,6 +30,8 @@ pub mod qobject {
         #[qproperty(QString, models)]
         /// The running download: {"dir", "done", "total"}; empty when none runs.
         #[qproperty(QString, download)]
+        /// A build with the demo (screenshots, recorded answers); never a package.
+        #[qproperty(bool, demo_build, cxx_name = "demoBuild")]
         type KaiwaApp = super::KaiwaAppRust;
 
         /// Reads everything again from the profile.
@@ -37,7 +39,8 @@ pub mod qobject {
         fn refresh(self: Pin<&mut KaiwaApp>);
 
         /// Changes one setting: goal, gamification, feedback, script, endPause, style, uiLang,
-        /// reminder, costLimit, moraHints, keepRecordings, name.
+        /// reminder, costLimit, moraHints, keepRecordings, name, tutorProvider, tutorModel,
+        /// tutorBase.
         #[qinvokable]
         #[cxx_name = "setSetting"]
         fn set_setting(self: Pin<&mut KaiwaApp>, key: &QString, value: &QString);
@@ -120,7 +123,6 @@ use serde_json::json;
 use crate::state::views;
 use crate::state::{AppState, now, state};
 
-#[derive(Default)]
 pub struct KaiwaAppRust {
     today: QString,
     path: QString,
@@ -135,7 +137,30 @@ pub struct KaiwaAppRust {
     notice: QString,
     models: QString,
     download: QString,
+    demo_build: bool,
     stop: Arc<AtomicBool>,
+}
+
+impl Default for KaiwaAppRust {
+    fn default() -> Self {
+        Self {
+            today: Default::default(),
+            path: Default::default(),
+            review: Default::default(),
+            learner: Default::default(),
+            stats: Default::default(),
+            profile: Default::default(),
+            privacy: Default::default(),
+            lang: Default::default(),
+            gamification: Default::default(),
+            answer: Default::default(),
+            notice: Default::default(),
+            models: Default::default(),
+            download: Default::default(),
+            demo_build: kaiwa_backend::DEMO,
+            stop: Default::default(),
+        }
+    }
 }
 
 /// The speech models for the settings (F-08: source, size and licence before the download).
@@ -182,9 +207,10 @@ fn q(v: &serde_json::Value) -> QString {
 impl qobject::KaiwaApp {
     fn refresh(mut self: Pin<&mut Self>) {
         let now = now();
-        let (today, path, review, learner, stats, profile, lang, gam) = {
+        let (today, path, review, learner, stats, profile, lang, gam, privacy) = {
             let st = state();
             let p = st.store.profile().unwrap_or_default();
+            let privacy = views::privacy(&st, &p.ui_lang);
             (
                 views::today(&st, now),
                 views::path(&st),
@@ -194,6 +220,7 @@ impl qobject::KaiwaApp {
                 views::profile(&st),
                 p.ui_lang.clone(),
                 p.gamification,
+                privacy,
             )
         };
         let ok = |r: anyhow::Result<serde_json::Value>| match r {
@@ -214,7 +241,7 @@ impl qobject::KaiwaApp {
             v
         });
         self.as_mut().set_profile(ok(profile));
-        self.as_mut().set_privacy(q(&views::privacy(&lang)));
+        self.as_mut().set_privacy(q(&privacy));
         self.as_mut().set_models(q(&models_json(&lang)));
         self.as_mut().set_lang(QString::from(&lang));
         self.as_mut().set_gamification(gam);
@@ -329,6 +356,16 @@ impl qobject::KaiwaApp {
                 }
                 "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
                 "name" => p.name = value,
+                // The tutor (Q-15): "anthropic", "openai" or "" for none; model and server for
+                // an OpenAI-compatible one.
+                "tutorProvider" => {
+                    p.tutor.provider = match value.as_str() {
+                        "anthropic" | "openai" => value,
+                        _ => String::new(),
+                    }
+                }
+                "tutorModel" => p.tutor.model = value.trim().to_string(),
+                "tutorBase" => p.tutor.base_url = value.trim().to_string(),
                 _ => return,
             }
             if let Err(e) = st.store.set_profile(&p) {
@@ -480,7 +517,7 @@ impl qobject::KaiwaApp {
     }
 
     fn store_key(mut self: Pin<&mut Self>, key: &QString) {
-        let provider = std::env::var("KAIWA_PROVIDER").unwrap_or_default();
+        let provider = state().tutor_env()("KAIWA_PROVIDER").unwrap_or_default();
         let de = self.lang().to_string() == "de";
         let msg = match (kaiwa_ai::secrets::store(&provider, &key.to_string()), de) {
             (Ok(()), true) => "Der Schlüssel liegt im Schlüsselbund.".to_string(),

@@ -101,6 +101,9 @@ pub struct Profile {
     /// The whole interface, text and readings included, 1.0 to 2.0 (/LL202/); from the next start.
     #[serde(default = "one")]
     pub text_scale: f32,
+    /// The tutor set up in the settings (Q-15); the key is in the system keyring.
+    #[serde(default)]
+    pub tutor: kaiwa_ai::Tutor,
 }
 
 fn yes() -> bool {
@@ -136,6 +139,7 @@ impl Default for Profile {
             unload_after_min: ten_minutes(),
             hands_free: false,
             text_scale: 1.0,
+            tutor: kaiwa_ai::Tutor::default(),
         }
     }
 }

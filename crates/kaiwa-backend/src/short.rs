@@ -11,7 +11,7 @@ use kaiwa_core::srs::Grade;
 use kaiwa_core::{Session, TurnOutcome};
 use serde_json::{Value, json};
 
-use crate::{Backend, provider};
+use crate::Backend;
 
 /// A short talk in progress.
 pub struct ShortTalk {
@@ -35,7 +35,7 @@ impl ShortTalk {
         if let Some(row) = b.store.open_session()? {
             let state = b.store.session_state(row.id)?;
             if let Some(sc) = b.scenarios.get(&state.scenario).cloned() {
-                let (p, demo) = provider(&sc.id);
+                let (p, demo) = b.provider(&sc.id);
                 return Ok(Self {
                     session: Session::restore(sc, p, state),
                     id: Some(row.id),
@@ -55,7 +55,7 @@ impl ShortTalk {
             .get(&id)
             .cloned()
             .ok_or_else(|| anyhow::anyhow!("no scenario {id}"))?;
-        let (p, demo) = provider(&sc.id);
+        let (p, demo) = b.provider(&sc.id);
         b.arm_brake(now)?;
         let mut d = learning.regulator.difficulty.clone();
         d.set(Knob::Goals, 0);
