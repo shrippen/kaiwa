@@ -449,7 +449,7 @@ mod bundled {
                 let path = root.join(format!("data/scenarios/{s}.json"));
                 let sc =
                     crate::Scenario::from_json(&std::fs::read_to_string(&path).unwrap()).unwrap();
-                assert_eq!(sc.unit.to_lowercase(), u.id, "{s} names its unit");
+                assert_eq!(sc.unit, u.id, "{s} names its unit");
             }
         }
         let path = c.path(&CourseProgress::default(), "de");

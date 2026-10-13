@@ -83,7 +83,7 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let free: Vec<Value> = st
         .scenarios
         .values()
-        .filter(|s| s.unit == "FREI")
+        .filter(|s| s.unit == "frei")
         .map(|s| {
             let topic = s.title.get(lang);
             let topic = topic.rsplit(": ").next().unwrap_or(topic);
