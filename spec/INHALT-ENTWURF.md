@@ -136,7 +136,7 @@ beides: die Einheit ist eine Situation (Szenario), ihre Grammatik folgt der obig
    mit `id`, `title`, `can_do`, `grammar`, `words`, `scenarios`, `requires`). Neue Felder nur optional,
    damit `Unit` in `kaiwa-core` ohne Bruch weiterliest (siehe 2.6).
 2. **Ein Graph über alle Stufen.** `n4-01` darf `n5-12` voraussetzen. Der Lader fügt die Dateien
-   zusammen und prüft den Gesamtgraphen (`Curriculum::check` heute nur je Datei, siehe Frage F-4).
+   zusammen und prüft den Gesamtgraphen (`Curriculum::check` heute nur je Datei, siehe Frage Q-04).
 3. **Einheit = Situation mit Kann-Ziel.** Jede Einheit hat 1–2 Szenarien (eines höflich, bei Bedarf
    eines in Freundesform), 3–4 Ziele je Szenario wie heute, 2–5 Grammatikpunkte, 15–25 Kernwörter.
 4. **Grammatikpunkte sind Ids aus einem Katalog**, nicht Freitext. Heute steht z. B.
@@ -199,7 +199,7 @@ N5 (A1) ──► N4 (A2) ──► N3 (A2/B1) ──► N2 (B1/B2) ──► N1
   „〜は日本語で何ですか“. Für ein Sprechprogramm sind sie wichtiger als manche Grammatik und
   passen zu /LF122/ (Code-Switching).
 
-**Vorschlag: N5 um vier Einheiten erweitern** (Frage F-2):
+**Vorschlag: N5 um vier Einheiten erweitern** (Frage Q-02):
 
 | Einheit | Kann | Grammatik | Szenario, Figur, Register | requires |
 |---|---|---|---|---|
@@ -347,7 +347,7 @@ gewählt; Lernende aus der Demowelt (Studio Weber) treten nur als Personas auf, 
   um Erlaubnis bitten (〜させてください); trösten oder relativieren (〜ても).
 - Kernwörter: 怒る, 叱る, 踏む, 盗む, 残業, 部長, 褒める, 手伝わせる …
 
-**Optional, falls der Umfang reicht (Frage F-6):**
+**Optional, falls der Umfang reicht (Frage Q-06):**
 
 - n4-13 **Feste und Jahreszeiten** (JF 13): Ausdrücke für Wandel (〜くなってきた), 〜ば〜ほど (N4/N3
   Grenze), Figur Gastmutter, höflich.
@@ -555,18 +555,18 @@ dient als Gegenprobe.
 
 | Id | Frage | Vorschlag |
 |---|---|---|
-| F-1 | tanos-Listen übernehmen, da die CC-BY-Lizenz im Webarchiv bestätigt ist (L-09)? | **Ja**, als eine Quelle neben Häufigkeit und Curriculum (Abschnitt 4.2); Snapshot-URLs in ADR-007, Namensnennung in `NOTICE` und „Über“. |
-| F-2 | N5-Lücken schließen: N5 um vier Einheiten (n5-13 bis n5-16) erweitern oder die fehlende Grammatik an den Anfang von N4 legen? | **N5 auf 16 Einheiten erweitern.** Die て-Form-Bitten und Gesprächsstrategien gehören an den Anfang, und M2 bleibt bei „N5 als Graph“. |
-| F-3 | Wie heißt die Stufe in der App: „N4“, „Stufe 4“ oder „A2“? | „N4 · A2“ mit dem Hinweis „orientiert an JLPT und JF-Standard“, nie „JLPT-Kurs“; keine Bestehensversprechen. |
-| F-4 | Eine Datei je Stufe mit stufenübergreifendem `requires`, oder eine große Datei? | **Eine Datei je Stufe**; der Lader fügt zusammen und prüft den Gesamtgraphen. |
-| F-5 | Wie tief geht Keigo in N4? | Feste Formeln aktiv (申します, おります, 伺います, お〜ください), 尊敬語 nur verstehen; aktives Keigo in N3. Emi bekommt ihren Weg über das Überspringen. |
-| F-6 | Bleibt N4 bei 12 Einheiten, oder kommen n4-13 (Feste) und n4-14 (Reklamation) für 1.0 dazu? | 12 für 1.0, die zwei als erste Inhalte von 1.1; Aufwand für Review spricht dagegen. |
-| F-7 | Neue optionale Felder (`level`, `topics`, `review`) und ein Grammatik-Katalog `data/grammar/`? | **Ja**, alle optional, ein Lauf von `check()` prüft sie; ADR „Curriculum-Format v2“. |
-| F-8 | Wer macht das Muttersprachler-Review (F-05), und wann? | Bezahltes Lektorat je Einheit, beauftragt zu Beginn von M6, N5 zuerst; Budget für 30–40 h. |
-| F-9 | Zwei Register je Einheit (höflich und Freundesform) als Regel für N4? | Für jede zweite N4-Einheit, wo es im Leben vorkommt (Arzt nicht, Freunde ja), siehe 2.4. |
-| F-10 | Sollen Kann-Sätze auf JF-Can-do-Ids verweisen? | Nein im Datensatz (Nutzungsbedingungen unklar für Weitergabe), nur die Themennummer `topics` und eigene Formulierung. |
-| F-11 | Ab welcher Stufe dürfen KI-Figuren Dialekt sprechen? | Erst N2 (nur Hören), N1 aktiv verstehen; bis dahin Standardsprache (標準語). |
-| F-12 | Schreibweise `unit` in Szenarien (`N5-03`) an die Einheiten-Id (`n5-03`) angleichen? | Ja, mit N4 einheitlich klein; N5 in einem kleinen PR nachziehen. |
+| Q-01 | tanos-Listen übernehmen, da die CC-BY-Lizenz im Webarchiv bestätigt ist (L-09)? | **Ja**, als eine Quelle neben Häufigkeit und Curriculum (Abschnitt 4.2); Snapshot-URLs in ADR-007, Namensnennung in `NOTICE` und „Über“. |
+| Q-02 | N5-Lücken schließen: N5 um vier Einheiten (n5-13 bis n5-16) erweitern oder die fehlende Grammatik an den Anfang von N4 legen? | **N5 auf 16 Einheiten erweitern.** Die て-Form-Bitten und Gesprächsstrategien gehören an den Anfang, und M2 bleibt bei „N5 als Graph“. |
+| Q-03 | Wie heißt die Stufe in der App: „N4“, „Stufe 4“ oder „A2“? | „N4 · A2“ mit dem Hinweis „orientiert an JLPT und JF-Standard“, nie „JLPT-Kurs“; keine Bestehensversprechen. |
+| Q-04 | Eine Datei je Stufe mit stufenübergreifendem `requires`, oder eine große Datei? | **Eine Datei je Stufe**; der Lader fügt zusammen und prüft den Gesamtgraphen. |
+| Q-05 | Wie tief geht Keigo in N4? | Feste Formeln aktiv (申します, おります, 伺います, お〜ください), 尊敬語 nur verstehen; aktives Keigo in N3. Emi bekommt ihren Weg über das Überspringen. |
+| Q-06 | Bleibt N4 bei 12 Einheiten, oder kommen n4-13 (Feste) und n4-14 (Reklamation) für 1.0 dazu? | 12 für 1.0, die zwei als erste Inhalte von 1.1; Aufwand für Review spricht dagegen. |
+| Q-07 | Neue optionale Felder (`level`, `topics`, `review`) und ein Grammatik-Katalog `data/grammar/`? | **Ja**, alle optional, ein Lauf von `check()` prüft sie; ADR „Curriculum-Format v2“. |
+| Q-08 | Wer macht das Muttersprachler-Review (F-05), und wann? | Bezahltes Lektorat je Einheit, beauftragt zu Beginn von M6, N5 zuerst; Budget für 30–40 h. |
+| Q-09 | Zwei Register je Einheit (höflich und Freundesform) als Regel für N4? | Für jede zweite N4-Einheit, wo es im Leben vorkommt (Arzt nicht, Freunde ja), siehe 2.4. |
+| Q-10 | Sollen Kann-Sätze auf JF-Can-do-Ids verweisen? | Nein im Datensatz (Nutzungsbedingungen unklar für Weitergabe), nur die Themennummer `topics` und eigene Formulierung. |
+| Q-11 | Ab welcher Stufe dürfen KI-Figuren Dialekt sprechen? | Erst N2 (nur Hören), N1 aktiv verstehen; bis dahin Standardsprache (標準語). |
+| Q-12 | Schreibweise `unit` in Szenarien (`N5-03`) an die Einheiten-Id (`n5-03`) angleichen? | Ja, mit N4 einheitlich klein; N5 in einem kleinen PR nachziehen. |
 
 ---
 
