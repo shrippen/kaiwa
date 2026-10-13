@@ -957,10 +957,11 @@ impl qobject::Conversation {
         let st = state();
         let found = kaiwa_backend::lookup::lookup(&st, &w, &lang);
         let text = found["word"].as_str().unwrap_or(&w.key).to_string();
+        // The unit as the review counts it (the curriculum's id, as for words from mistakes).
         let unit = st
-            .scenarios
-            .get(&self.scenario().to_string())
-            .map(|s| s.unit.clone());
+            .curriculum
+            .unit_of(&self.scenario().to_string())
+            .map(|u| u.id.clone());
         match kaiwa_backend::lookup::remember(&st, &text, unit.as_deref(), now()) {
             Ok(added) => added,
             Err(e) => {

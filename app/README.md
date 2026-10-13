@@ -45,6 +45,7 @@ Spracherkennung, Stimme und Moren-Prüfung laufen lokal mit Modellen, die nicht 
 | ReazonSpeech (sherpa-onnx) | Spracherkennung | Apache-2.0 | 713 MB (Archiv, nur die int8-Dateien bleiben) | 160 MB |
 | Kokoro-82M (kokoro-onnx, int8) | Übergangsstimme der Figur | Apache-2.0 | 121 MB | 121 MB |
 | kaiwa-kana-ctc (huggingface.co/shrippen) | Moren-Hinweise | Apache-2.0 | 356 MB | 356 MB |
+| kaiwa-data 0.1.0 (github.com/shrippen) | Wörterbuch: Wort nachschlagen | CC BY-SA 4.0 | 26 MB | 84 MB |
 
 Ohne Oberfläche: `cargo run -p kaiwa-speech --example fetch_models` (alle fehlenden, oder Namen als Argumente). Die Modelle liegen in `~/.local/share/kaiwa/models`, ein anderer Ort geht über `KAIWA_MODELS=/pfad`.
 
@@ -99,8 +100,14 @@ cargo run -p kaiwa-app -- --shot out.png --view path --kind 1           # start,
 cargo run -p kaiwa-app -- --shot out.png --view talk --scenario n5-03-konbini --kind 1 \
   --say 'はい、おねがいします。|袋はいりません。'                        # "?" Hilfe, "!" Sprechhilfe, "wav:datei", "~" wartet auf die Stimme
 cargo run -p kaiwa-app -- --shot out.png --view talk --resume           # die unterbrochene Sitzung
+KAIWA_DICT=data/dict/kaiwa-dict-excerpt.sqlite \
+  cargo run -p kaiwa-app -- --shot out.png --view talk --say 'lookup:0:3' # Wort 3 der Zeile 0 nachschlagen: das Bild zeigt nur das Popup
 cargo run -p kaiwa-app -- --shot out.png --view place --say '…|read:21'  # Einstufung; "read:KK" beantwortet die Lesefragen
 ```
+
+## Wort nachschlagen
+
+Ein Klick auf ein Wort in einem Satz der Figur (oder Tab, Pfeiltasten, Eingabe) öffnet ein Popup mit Lesung, Wortart, Bedeutungen und dem Soll-Akzent als Kurve, ohne Urteil über die eigene Aussprache (/LF112/, M-04). „Anhören“ spricht das Wort, „In die Wiederholung“ übernimmt es (/LF230/). Die Bedeutungen kommen in der UI-Sprache, wo JMdict sie hat, sonst englisch mit Hinweis (M-01). Das Wörterbuch ist das Datenpaket `kaiwa-data` (CC BY-SA, ADR-007); fehlt es, bietet das Popup den Download an, nur nach Klick (M-03). Die Demo liest den Auszug `data/dict/` über `KAIWA_DICT`. Ein Satz von der Kommandozeile: `cargo run -p kaiwa-lang --example lookup -- <kaiwa-dict.sqlite> de "駅まで歩いて五分です。"`.
 
 ## Moren-Hinweise
 

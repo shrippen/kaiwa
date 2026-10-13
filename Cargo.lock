@@ -1840,6 +1840,7 @@ dependencies = [
  "kaiwa-ai",
  "kaiwa-backend",
  "kaiwa-core",
+ "kaiwa-lang",
  "kaiwa-store",
  "regex",
  "serde",
