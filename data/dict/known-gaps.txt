@@ -2,40 +2,7 @@
 # The test content_words_are_in_the_dictionary (kaiwa-lang) fails on any other one: a typo, an
 # odd spelling or a segmentation the lookup cannot follow. One word per line, as clicked.
 #
-# Names: JMdict has none (JMnedict in kaiwa-data 0.2, Q-13).
-ハンブルク
-田中
-鈴木
-鈴木さん
-山田
-山田さん
-小林
-小林さん
-佐藤
-佐藤さん
-中村
-中村さん
-木村
-新宿
-中野
-ミュラー
-ミュラー様
-健太
-大輝
-岡田
-木村さん
-松本
-森田
-森田さん
-竹田
-結衣
-美咲
-藤井
-西田
-遠藤
-遠藤さん
-# 輪王寺 (a temple in Nikko): IPADIC splits it as 輪 + 王寺.
-王寺
+# Names are looked up in JMnedict (kaiwa-data 0.2, Q-13); none is missing.
 # お待ちください: お + 待ち is no entry; the expression is お待ちください (IPADIC splits it).
 お待ち
 # The same for おかけ (ご迷惑をおかけして, おかけください) and お伝え (とお伝えください).

@@ -1,5 +1,6 @@
 //! The dictionary of the data package kaiwa-data (L-06, ADR-007): JMdict with English and
-//! German meanings, Kanjium accents. Opened read-only; the schema is described in the README of
+//! German meanings, Kanjium accents, names from JMnedict (Q-13) and the JLPT levels of tanos
+//! (Q-01). Opened read-only; the schema is described in the README of
 //! kaiwa-data.
 
 use std::path::Path;
@@ -12,7 +13,7 @@ use crate::accent::Accent;
 use crate::pos;
 
 /// The schema version this reader understands (kaiwa-data `SCHEMA_VERSION`).
-pub const SCHEMA: u32 = 1;
+pub const SCHEMA: u32 = 2;
 /// Senses shown at most.
 const MAX_SENSES: usize = 5;
 
@@ -42,6 +43,34 @@ pub struct Entry {
     /// The target accent (Kanjium), if known.
     pub accent: Option<Accent>,
 }
+
+/// A name (JMnedict) for a word JMdict does not have: 田中, 新宿 (Q-13).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Name {
+    /// The spelling looked up.
+    pub word: String,
+    /// Its reading in kana.
+    pub reading: String,
+    /// JMnedict kinds: surname, given, place, station …
+    pub kinds: Vec<String>,
+    /// The first romanisation or translation (Tanaka).
+    pub trans: Option<String>,
+}
+
+/// Honorifics after a name and their reading: 田中さん is looked up as 田中.
+const HONORIFICS: [(&str, &str); 6] = [
+    ("さん", "さん"),
+    ("様", "さま"),
+    ("さま", "さま"),
+    ("くん", "くん"),
+    ("ちゃん", "ちゃん"),
+    ("先生", "せんせい"),
+];
+
+/// Kinds a conversation meets first, preferred when a spelling has several entries.
+const COMMON_KINDS: [&str; 7] = [
+    "surname", "given", "fem", "masc", "place", "station", "person",
+];
 
 struct Form {
     kind: String,
@@ -106,6 +135,79 @@ impl Dictionary {
             .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
             .collect::<rusqlite::Result<_>>()?;
         Ok(rows)
+    }
+
+    /// The name a word of a line stands for, when JMdict has no entry (Q-13): the spelling as
+    /// written or without an honorific (田中さん → 田中); among several readings the one of the
+    /// line, among kinds the everyday ones first.
+    pub fn lookup_name(&self, w: &crate::LineWord) -> Result<Option<Name>, LangError> {
+        let line = w.reading.as_deref().map(crate::words::hiragana);
+        let mut spellings = vec![(w.text.clone(), line.clone())];
+        if let Some((bare, kana)) = HONORIFICS
+            .iter()
+            .find_map(|(h, kana)| w.text.strip_suffix(h).map(|b| (b, kana)))
+            .filter(|(b, _)| !b.is_empty())
+        {
+            let reading = line
+                .as_deref()
+                .and_then(|l| l.strip_suffix(kana))
+                .map(String::from);
+            spellings.push((bare.to_string(), reading));
+        }
+        for (spelling, line) in spellings {
+            let mut st = self.db.prepare(
+                "SELECT reading, types, trans FROM name WHERE kanji = ?1
+                 UNION ALL SELECT reading, types, trans FROM name
+                     WHERE kanji IS NULL AND reading IN (?1, ?2)",
+            )?;
+            let rows: Vec<(String, String, Option<String>)> = st
+                .query_map(params![spelling, crate::words::hiragana(&spelling)], |r| {
+                    Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+                })?
+                .collect::<rusqlite::Result<_>>()?;
+            let best = rows
+                .into_iter()
+                .enumerate()
+                .map(|(i, (reading, types, trans))| {
+                    let kinds: Vec<String> = serde_json::from_str(&types).unwrap_or_default();
+                    let mut score = 0;
+                    if line
+                        .as_deref()
+                        .is_some_and(|l| crate::words::hiragana(&reading) == l)
+                    {
+                        score += 100;
+                    }
+                    if kinds.iter().any(|k| COMMON_KINDS.contains(&k.as_str())) {
+                        score += 10;
+                    }
+                    // On a tie the first row: JMnedict's own order.
+                    ((score, std::cmp::Reverse(i)), reading, kinds, trans)
+                })
+                .max_by_key(|(key, ..)| *key);
+            if let Some((_, reading, kinds, trans)) = best {
+                return Ok(Some(Name {
+                    word: spelling,
+                    reading,
+                    kinds,
+                    trans,
+                }));
+            }
+        }
+        Ok(None)
+    }
+
+    /// The JLPT level of a word in the tanos lists (5 = N5 … 1 = N1), the easiest if it has
+    /// several; an estimate, one source for Kaiwa's own level (Q-01).
+    pub fn jlpt(&self, word: &str, reading: &str) -> Result<Option<u8>, LangError> {
+        Ok(self
+            .db
+            .query_row(
+                "SELECT max(level) FROM jlpt WHERE word = ?1 AND (reading = ?2 OR ?2 = '')",
+                params![word, crate::words::hiragana(reading)],
+                |r| r.get::<_, Option<u8>>(0),
+            )
+            .optional()?
+            .flatten())
     }
 
     /// Looks up a word of a line: as written first (いらっしゃいませ is an expression of its

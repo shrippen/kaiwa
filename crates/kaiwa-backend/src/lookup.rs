@@ -1,7 +1,8 @@
 //! The word lookup (/LF112/): the words of the character's lines, what a click shows, and
 //! taking a word over into the review (/LF230/). The dictionary is the data package kaiwa-data
 //! (L-06), downloaded only after the learner asks for it (M-03); without it the view says so
-//! and offers the download.
+//! and offers the download. A word JMdict does not have may be a name (JMnedict, Q-13): then
+//! the view shows its kind and reading, and it goes into no review.
 
 use std::path::Path;
 use std::sync::{Mutex, OnceLock};
@@ -54,8 +55,20 @@ pub fn lookup(backend: &Backend, word: &LineWord, lang: &str) -> Value {
 
 /// [`lookup`] in the dictionary at `path`.
 pub fn lookup_in(path: &Path, backend: &Backend, word: &LineWord, lang: &str) -> Value {
+    enum Found {
+        Word(kaiwa_lang::dict::Entry),
+        Name(kaiwa_lang::dict::Name),
+        Nothing,
+    }
     let entry = if path.exists() {
-        dictionary(path).and_then(|g| g.as_ref().map(|(_, d)| d.lookup_word(word, lang)))
+        dictionary(path).and_then(|g| {
+            g.as_ref().map(|(_, d)| {
+                Ok(match d.lookup_word(word, lang)? {
+                    Some(e) => Found::Word(e),
+                    None => d.lookup_name(word)?.map_or(Found::Nothing, Found::Name),
+                })
+            })
+        })
     } else {
         None
     };
@@ -63,7 +76,7 @@ pub fn lookup_in(path: &Path, backend: &Backend, word: &LineWord, lang: &str) ->
         return json!({ "text": word.text, "missing": true });
     };
     match entry {
-        Ok(Some(e)) => {
+        Ok(Found::Word(e)) => {
             let known = backend
                 .store
                 .items()
@@ -79,8 +92,21 @@ pub fn lookup_in(path: &Path, backend: &Backend, word: &LineWord, lang: &str) ->
             v["inReview"] = json!(known);
             v
         }
-        Ok(None) => json!({ "text": word.text, "found": false }),
-        Err(e) => {
+        Ok(Found::Name(n)) => json!({
+            "text": word.text,
+            "found": true,
+            "name": true,
+            "word": n.word,
+            "reading": n.reading,
+            "pos": [kaiwa_lang::pos::name_label(&n.kinds, lang)],
+            "senses": n.trans.map(|t| vec![vec![t]]).unwrap_or_default(),
+            "lang": lang,
+            "fallback": false,
+            "accent": null,
+            "inReview": false,
+        }),
+        Ok(Found::Nothing) => json!({ "text": word.text, "found": false }),
+        Err::<_, kaiwa_lang::LangError>(e) => {
             eprintln!("kaiwa: lookup: {e}");
             json!({ "text": word.text, "found": false })
         }
@@ -178,6 +204,23 @@ mod tests {
             .unwrap();
         assert_eq!(card["fromLookup"], true);
         assert_eq!(card["fromMistake"], false);
+    }
+
+    #[test]
+    fn a_name_shows_its_kind_and_reading() {
+        let b = backend("name");
+        let v = lookup_in(&excerpt(), &b, &word("{田中|たなか}です。", 0), "de");
+        assert_eq!(v["name"], true);
+        assert_eq!(v["reading"], "たなか");
+        assert_eq!(v["pos"][0], "Name · Familienname");
+        assert_eq!(v["senses"][0][0], "Tanaka");
+        let v = lookup_in(&excerpt(), &b, &word("山田さんは", 0), "en");
+        assert_eq!(v["word"], "山田");
+        assert_eq!(v["reading"], "やまだ");
+        // A name in katakana only.
+        let v = lookup_in(&excerpt(), &b, &word("ミュラーと申します。", 0), "de");
+        assert_eq!(v["name"], true);
+        assert_eq!(v["reading"], "ミュラー");
     }
 
     #[test]

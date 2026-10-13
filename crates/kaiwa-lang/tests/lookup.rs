@@ -71,14 +71,21 @@ fn the_reading_chooses_between_spellings_alike() {
 }
 
 #[test]
+fn levels_come_from_the_tanos_lists() {
+    assert_eq!(dict().jlpt("駅", "えき").unwrap(), Some(5));
+    assert_eq!(dict().jlpt("駅", "").unwrap(), Some(5));
+    assert_eq!(dict().jlpt("ほげほげ", "").unwrap(), None);
+}
+
+#[test]
 fn sources_carry_licence_and_attribution() {
     let s = dict().sources().unwrap();
-    assert_eq!(s.len(), 3);
-    assert!(
-        s.iter()
-            .all(|(_, l, a)| l == "CC BY-SA 4.0" && !a.is_empty())
-    );
-    assert_eq!(dict().version().unwrap(), "0.1.0");
+    assert_eq!(s.len(), 5);
+    // The tanos lists are CC BY (L-09), everything else CC BY-SA.
+    assert!(s.iter().all(|(n, l, a)| {
+        !a.is_empty() && (l == "CC BY-SA 4.0" || (n.contains("tanos") && l == "CC BY"))
+    }));
+    assert!(dict().version().unwrap().starts_with("0.2."));
 }
 
 fn first(text: &str) -> kaiwa_lang::Entry {
@@ -143,6 +150,7 @@ fn content_words_are_in_the_dictionary() {
                 for w in annotate(&words, &t).1 {
                     if !gaps.contains(&w.text.as_str())
                         && d.lookup_word(&w, "de").unwrap().is_none()
+                        && d.lookup_name(&w).unwrap().is_none()
                     {
                         unknown.insert(format!(
                             "{} ({})",

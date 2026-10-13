@@ -22,6 +22,7 @@
 - **L-06 (2026-10-12):** Das Datenpaket ist ein GitHub-Release des eigenen Repos `kaiwa-data` (Arbeits-Repo auf Gitea, wie alle Projekte).
 - **L-09 (2026-10-12):** Die JLPT-Listen von Jonathan Waller (tanos.co.uk) kommen nur hinein, wenn eine Archivkopie der Seite (Internet Archive) die freie Lizenz zeigt; sonst eine eigene Zuordnung über Häufigkeit und Kann-Beschreibungen.
   - *Geprüft 2026-10-13:* Die Seite „Sharing and copyrights“ sagt in drei Archivkopien gleich: „Everything on this site (that I'm not selling), is licenced under Creative Commons "BY" … use anything here however you like (commercial or non-commercial), but credit my site.“ Ausgenommen sind nur Verkaufsprodukte (Grammar-Plus-Audio). Kopien: [2012](https://web.archive.org/web/20121216045735/http://www.tanos.co.uk/jlpt/sharing/), [2017](https://web.archive.org/web/20170118202220/http://www.tanos.co.uk/jlpt/sharing/), [2021](https://web.archive.org/web/20210122121139/https://www.tanos.co.uk/jlpt/sharing/). Eine CC-Version nennt die Seite nicht. Damit ist die Bedingung erfüllt; ob und wie die Listen ins Paket kommen, entscheidet Fragenpaket 8 (Inhaltsaufbau).
+  - *Umgesetzt mit kaiwa-data 0.2 (Q-01, Q-13):* Tabelle `jlpt` aus den Wortlisten N5 bis N1, gelesen aus festen Archivkopien von 2020 (`fetch.sh` in kaiwa-data), Namensnennung in `NOTICE` des Pakets und hier; Tabelle `name` aus JMnedict (EDRDG, CC BY-SA 4.0) für Namen im Wort-Popup. Das Paket wächst von 25,9 auf 47,8 MB (entpackt 84 auf 158 MB).
 
 ## Umsetzung (2026-10-13)
 

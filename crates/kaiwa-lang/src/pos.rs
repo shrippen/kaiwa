@@ -53,6 +53,32 @@ pub fn jmdict_prefix(ipadic: &str) -> Option<&'static str> {
     })
 }
 
+/// The label of a JMnedict name kind in `lang` ("de" or "en"): "Name · Familienname".
+pub fn name_label(kinds: &[String], lang: &str) -> String {
+    let de = lang == "de";
+    let kind = kinds.iter().find_map(|k| {
+        let (d, e) = match k.as_str() {
+            "surname" => ("Familienname", "family name"),
+            "given" => ("Vorname", "given name"),
+            "fem" => ("weiblicher Vorname", "female given name"),
+            "masc" => ("männlicher Vorname", "male given name"),
+            "person" => ("Person", "person"),
+            "place" => ("Ortsname", "place name"),
+            "station" => ("Bahnhof", "railway station"),
+            "company" => ("Firma", "company"),
+            "organization" => ("Organisation", "organisation"),
+            "product" => ("Produkt", "product"),
+            "work" => ("Werk", "work"),
+            _ => return None,
+        };
+        Some(if de { d } else { e })
+    });
+    match kind {
+        Some(k) => format!("Name · {k}"),
+        None => "Name".into(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

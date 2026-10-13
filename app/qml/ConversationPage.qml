@@ -686,7 +686,8 @@ Kirigami.ScrollablePage {
                     onClicked: conv.sayWord(wordPopup.line, wordPopup.word)
                 }
                 KanteButton {
-                    visible: wordPopup.found
+                    // A name goes into no review (Q-13).
+                    visible: wordPopup.found && wordPopup.info.name !== true
                     size: KanteButton.Size.Small
                     emphasis: KanteButton.Emphasis.Primary
                     enabled: wordPopup.found && !wordPopup.info.inReview && !wordPopup.added
@@ -712,7 +713,9 @@ Kirigami.ScrollablePage {
             Text {
                 visible: wordPopup.found
                 Layout.fillWidth: true
-                text: "JMdict (EDRDG), Kanjium · CC BY-SA 4.0"
+                text: wordPopup.found && wordPopup.info.name === true
+                    ? "JMnedict (EDRDG) · CC BY-SA 4.0"
+                    : "JMdict (EDRDG), Kanjium · CC BY-SA 4.0"
                 color: KanteStyle.mutedTextColor
                 font: KanteStyle.smallFont
                 wrapMode: Text.Wrap
