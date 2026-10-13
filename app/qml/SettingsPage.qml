@@ -405,6 +405,29 @@ QQC2.ScrollView {
             }
         }
 
+        // About (/LD050/): version, licence and the sources of the dictionary, each with its
+        // licence and attribution (tanos: Q-01).
+        KanteSectionLabel {
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.topMargin: KanteStyle.unit(18)
+            text: page.t("Über Kaiwa", "About Kaiwa")
+            rule: true
+        }
+        Text {
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            readonly property var about: page.p.about || ({ sources: [] })
+            text: page.t("Kaiwa " + (about.version || "") + " · MIT-Lizenz. ", "Kaiwa " + (about.version || "") + " · MIT licence. ")
+                + (about.sources.length > 0
+                   ? page.t("Wörterbuch: ", "Dictionary: ") + about.sources.map(function (s) { return s.name + " (" + s.by + ", " + s.licence + ")" }).join("; ") + "."
+                   : page.t("Das Wörterbuch ist noch nicht geladen; seine Quellen stehen nach dem Download hier.", "The dictionary is not downloaded yet; its sources appear here afterwards."))
+                + page.t(" Die JLPT-Stufen sind Schätzungen, keine offiziellen Listen.", " The JLPT levels are estimates, not official lists.")
+            wrapMode: Text.Wrap
+            color: KanteStyle.mutedTextColor
+            font: KanteStyle.smallFont
+        }
+
         // Data (/LF710/, /LF712/).
         KanteSectionLabel {
             Layout.leftMargin: KanteStyle.unit(18)

@@ -45,6 +45,18 @@ pub fn available() -> bool {
     path.exists() && dictionary(&path).is_some_and(|g| g.is_some())
 }
 
+/// The sources of the dictionary with licence and attribution, for "About" (/LD050/, Q-01);
+/// empty without the dictionary.
+pub fn sources() -> Vec<(String, String, String)> {
+    let path = dictionary_path();
+    if !path.exists() {
+        return Vec::new();
+    }
+    dictionary(&path)
+        .and_then(|g| g.as_ref().and_then(|(_, d)| d.sources().ok()))
+        .unwrap_or_default()
+}
+
 /// What a click on `word` shows, in the UI language `lang`: reading, meanings, part of speech,
 /// the target accent (M-04, without a judgement) and whether the word is in the review
 /// already. `{"missing": true}` without the dictionary, `{"found": false}` for a word it
