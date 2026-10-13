@@ -97,6 +97,57 @@ mod tests {
         }
     }
 
+    /// Grammar lint, register (INHALT-ENTWURF 3.2): in a polite or keigo scenario every
+    /// sentence of the help ends in a です/ます form, in a casual one none does. Set phrases
+    /// (どうぞ) and short questions ending in は？ count for both.
+    #[test]
+    fn the_examples_keep_the_register_of_their_scenario() {
+        const POLITE: [&str; 15] = [
+            "です",
+            "ます",
+            "ません",
+            "ました",
+            "ましょう",
+            "でした",
+            "ください",
+            "ございます",
+            "ございました",
+            "申します",
+            "おります",
+            "いたします",
+            "伺います",
+            "ませんか",
+            "でしょう",
+        ];
+        const ANY: [&str; 4] = ["どうぞ", "はい", "いいえ", "すみません"];
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut wrong = Vec::new();
+        for entry in std::fs::read_dir(root.join("data/scenarios")).unwrap() {
+            let path = entry.unwrap().path();
+            let s = Scenario::from_json(&std::fs::read_to_string(&path).unwrap()).unwrap();
+            for g in &s.goals {
+                for sentence in g.help.example.split_inclusive(['。', '！', '？']) {
+                    let core = sentence.trim_end_matches(['。', '！', '？', ' ']);
+                    if core.is_empty() || ANY.contains(&core) || sentence.ends_with("は？") {
+                        continue;
+                    }
+                    let bare = core.trim_end_matches(['か', 'ね', 'よ', 'が']);
+                    let polite = POLITE
+                        .iter()
+                        .any(|p| bare.ends_with(p) || core.ends_with(p));
+                    let ok = match s.register {
+                        Register::Polite | Register::Keigo => polite,
+                        Register::Casual => !polite,
+                    };
+                    if !ok {
+                        wrong.push(format!("{} ({:?}): {sentence}", s.id, s.register));
+                    }
+                }
+            }
+        }
+        assert!(wrong.is_empty(), "register does not match: {wrong:#?}");
+    }
+
     #[test]
     fn every_scenario_and_its_fixtures_load() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
