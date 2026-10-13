@@ -43,7 +43,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 ## Entscheidungen aus Fragenpaket 8 (2026-10-13)
 
-[Fragenpaket 8](https://claude.ai/artifact/7LU4Pr5HzXW8zzfL43zfFW); Q-01 bis Q-12 auch in `spec/INHALT-ENTWURF.md`, Abschnitt 6. Umgesetzt: Q-03, Q-04, Q-07 (ADR-009, #33), Q-02 (N5 mit 16 Einheiten, #34), Q-05, Q-06, Q-09 und Q-14 (N4, #35); Q-10 (JF-Can-do-Ids bei 21 von 30 Einheiten, aus „JF Can-do for Life in Japan“; für n5-03, n5-07, n5-13, n5-15, n4-03, n4-10, n4-11, n4-12 und n4-14 gibt es dort keinen passenden Eintrag zum Sprechen).
+[Fragenpaket 8](https://claude.ai/artifact/7LU4Pr5HzXW8zzfL43zfFW); Q-01 bis Q-12 auch in `spec/INHALT-ENTWURF.md`, Abschnitt 6. Umgesetzt: Q-03, Q-04, Q-07 (ADR-009, #33), Q-02 (N5 mit 16 Einheiten, #34), Q-05, Q-06, Q-09 und Q-14 (N4); Q-10 (JF-Can-do-Ids bei 21 von 30 Einheiten, aus „JF Can-do for Life in Japan“; für n5-03, n5-07, n5-13, n5-15, n4-03, n4-10, n4-11, n4-12 und n4-14 gibt es dort keinen passenden Eintrag zum Sprechen).
 
 | ID | Entscheidung | Wo |
 |---|---|---|
