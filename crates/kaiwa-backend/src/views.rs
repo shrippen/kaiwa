@@ -111,7 +111,8 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     }))
 }
 
-/// The learning path (/LF600/): one node per scenario, units as meta, states with words.
+/// The learning path (/LF600/): one node per scenario, units as meta, states with words, and
+/// the level each belongs to („N5 · A1“, Q-03).
 pub fn path(st: &Backend) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
     let lang = p.ui_lang.as_str();
@@ -137,6 +138,7 @@ pub fn path(st: &Backend) -> anyhow::Result<Value> {
                 "title": scenario_title(st, &sc.id, lang),
                 "meta": meta,
                 "state": state,
+                "level": unit.level,
             }));
         }
         let due = items
@@ -150,6 +152,7 @@ pub fn path(st: &Backend) -> anyhow::Result<Value> {
                 "title": if lang == "de" { format!("Wiederholung: {}", unit.title) } else { format!("Review: {}", unit.title) },
                 "meta": if lang == "de" { format!("{due} fällig") } else { format!("{due} due") },
                 "state": "review",
+                "level": unit.level,
             }));
         }
     }

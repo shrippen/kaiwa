@@ -9,6 +9,7 @@ pub mod curriculum;
 pub mod diff;
 pub mod difficulty;
 pub mod feedback;
+pub mod grammar;
 pub mod learner;
 pub mod placement;
 pub mod progress;

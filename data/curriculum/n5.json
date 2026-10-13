@@ -1,5 +1,9 @@
 {
   "id": "n5",
+  "level": {
+    "jlpt": "N5",
+    "cefr": "A1"
+  },
   "units": [
     {
       "id": "n5-01",
@@ -13,7 +17,7 @@
       },
       "grammar": [
         "〜ね",
-        "〜ました (Dank)"
+        "ありがとうございました"
       ],
       "words": [
         "おはようございます",
@@ -70,7 +74,7 @@
       "grammar": [
         "〜はいりません",
         "いくらですか",
-        "数字"
+        "数字 (いち・に・さん…)"
       ],
       "words": [
         "袋",
@@ -99,7 +103,7 @@
       "grammar": [
         "〜をください",
         "〜をおねがいします",
-        "〜つ (Zählwort)"
+        "〜つ (ひとつ・ふたつ…)"
       ],
       "words": [
         "コーヒー",
@@ -129,7 +133,7 @@
       "grammar": [
         "〜まで",
         "何時",
-        "〜枚 (Zählwort)"
+        "〜枚"
       ],
       "words": [
         "電車",
@@ -157,8 +161,7 @@
       },
       "grammar": [
         "〜はどこですか",
-        "〜て、〜 (Reihenfolge)",
-        "遠い・近い"
+        "〜て、〜 (順番)"
       ],
       "words": [
         "郵便局",
@@ -186,9 +189,9 @@
         "en": "I can talk casually about hobbies and suggest something."
       },
       "grammar": [
-        "einfache Form (だ, 〜る)",
+        "普通形 (だ・〜る)",
         "〜よ・〜ね",
-        "〜ない？ (Vorschlag)"
+        "〜ない？ (さそい)"
       ],
       "words": [
         "しゅみ",
@@ -244,7 +247,7 @@
         "en": "I can say how many we are, order and ask for the toilet."
       },
       "grammar": [
-        "〜人 (Zählwort)",
+        "〜人 (ひとり・ふたり…)",
         "〜を二つください"
       ],
       "words": [
@@ -272,7 +275,7 @@
         "en": "I can ask for colours and sizes and say what I take."
       },
       "grammar": [
-        "い-Adjektive",
+        "い形容詞",
         "〜のはありますか",
         "〜にします"
       ],
@@ -304,7 +307,7 @@
       "grammar": [
         "〜人家族",
         "〜がいます",
-        "家族の言葉 (母・お母さん)"
+        "母・お母さん"
       ],
       "words": [
         "家族",
@@ -334,8 +337,8 @@
       "grammar": [
         "〜ました",
         "〜かったです",
-        "〜で (Ort)",
-        "〜と (mit)"
+        "〜で (場所)",
+        "〜と (一緒に)"
       ],
       "words": [
         "きのう",

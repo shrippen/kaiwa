@@ -33,7 +33,8 @@ use kaiwa_core::progress::DayRecord;
 use kaiwa_core::srs::{Grade, Item, ItemKind, Source};
 use kaiwa_store::{Learning, Profile, Store};
 
-const CURRICULUM: &str = include_str!("../../../data/curriculum/n5.json");
+/// The level files of the curriculum (ADR-009), joined by [`Curriculum::from_files`].
+const CURRICULUM: &[&str] = &[include_str!("../../../data/curriculum/n5.json")];
 const SCENARIOS: &[&str] = &[
     include_str!("../../../data/scenarios/n5-01-aisatsu.json"),
     include_str!("../../../data/scenarios/n5-02-jikoshoukai.json"),
@@ -142,7 +143,7 @@ impl Backend {
     pub fn open_at(path: PathBuf, demo: bool) -> anyhow::Result<Self> {
         let fresh = !path.exists();
         let store = Store::open(&path)?;
-        let curriculum = Curriculum::from_json(CURRICULUM)?;
+        let curriculum = Curriculum::from_files(CURRICULUM)?;
         let scenarios = SCENARIOS
             .iter()
             .map(|j| Scenario::from_json(j).map(|s| (s.id.clone(), s)))

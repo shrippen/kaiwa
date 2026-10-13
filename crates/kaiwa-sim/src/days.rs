@@ -157,10 +157,8 @@ struct PlannedError {
 }
 
 pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<DaysRun> {
-    let curriculum = Curriculum::from_json(
-        &std::fs::read_to_string(root.join("data/curriculum/n5.json"))
-            .context("data/curriculum/n5.json")?,
-    )?;
+    let curriculum =
+        Curriculum::from_dir(&root.join("data/curriculum")).context("data/curriculum")?;
     let mut rng = Rng(script.seed ^ 0x006B_6169_7761);
     let first_day = {
         let p: Vec<u32> = script
