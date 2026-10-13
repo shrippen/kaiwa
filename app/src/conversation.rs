@@ -981,10 +981,13 @@ impl qobject::Conversation {
         let Some(w) = self.line_word(log_index, word) else {
             return;
         };
-        // The voice reads the kana when known (the reading of the dictionary form), so a word
-        // with kanji the voice does not know is still said.
-        let markup = match &w.reading {
-            Some(r) if w.text == w.key => format!("{{{}|{}}}", w.text, r),
+        // The voice says the word as the popup shows it: the entry's spelling and reading
+        // (IPADIC reads 四人 よんにん, the dictionary よにん); without the dictionary as written.
+        let lang = self.lang.clone();
+        let entry = kaiwa_backend::lookup::lookup(&state(), &w, &lang);
+        let markup = match (entry["word"].as_str(), entry["reading"].as_str()) {
+            (Some(word), Some(reading)) if word != reading => format!("{{{word}|{reading}}}"),
+            (Some(word), _) => word.to_string(),
             _ => w.text.clone(),
         };
         self.as_mut().wake();

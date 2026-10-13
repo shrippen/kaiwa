@@ -150,7 +150,10 @@ pub fn annotate(words: &Words, markup: &str) -> (Vec<Segment>, Vec<LineWord>) {
             text: w.surface.clone(),
             key: w.key.clone(),
             reading: if w.plain {
-                Some(words::hiragana(&marked)).filter(|r| !r.is_empty())
+                // Only when the furigana cover every kanji of the word; else IPADIC's.
+                Some(words::hiragana(&marked)).filter(|r| {
+                    !r.is_empty() && !r.chars().any(|c| ('\u{3400}'..='\u{9fff}').contains(&c))
+                })
             } else {
                 None
             }
@@ -238,8 +241,10 @@ mod tests {
     #[test]
     fn plain_text_without_markup() {
         let words = Words::new().unwrap();
-        let (segs, ws) = annotate(&words, "コーヒーが好きです。");
+        let (segs, ws) = annotate(&words, "コーヒーが好きです。駅");
         assert_eq!(ws[0].key, "コーヒー");
+        // Without furigana the reading comes from IPADIC, never the kanji themselves.
+        assert_eq!(ws.last().unwrap().reading.as_deref(), Some("えき"));
         assert!(segs.iter().all(|s| s.reading.is_empty()));
         assert_eq!(ws[2].text, "好き");
     }
