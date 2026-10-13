@@ -168,6 +168,16 @@ mod tests {
         assert_eq!(item.source, Source::Lookup);
         assert_eq!(item.unit.as_deref(), Some("n5-05"));
         assert_eq!(lookup_in(&excerpt(), &b, &w, "de")["inReview"], true);
+        // The next day it is due, marked as looked up.
+        let due = crate::views::review(&b, now.plus_secs(86_400), 10).unwrap();
+        let card = due
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["text"] == "駅")
+            .unwrap();
+        assert_eq!(card["fromLookup"], true);
+        assert_eq!(card["fromMistake"], false);
     }
 
     #[test]

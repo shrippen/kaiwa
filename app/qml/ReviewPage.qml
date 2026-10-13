@@ -52,7 +52,9 @@ QQC2.ScrollView {
                 spacing: KanteStyle.unit(10)
                 KanteSectionLabel {
                     text: page.current
-                        ? (page.current.fromMistake ? page.t("Aus deinen Korrekturen", "From your corrections") : page.t("Neues Wort", "New word"))
+                        ? (page.current.fromMistake ? page.t("Aus deinen Korrekturen", "From your corrections")
+                           : page.current.fromLookup ? page.t("Nachgeschlagen", "Looked up")
+                           : page.t("Neues Wort", "New word"))
                           + " · " + page.t("noch ", "") + page.items.length + page.t("", " left")
                         : ""
                 }

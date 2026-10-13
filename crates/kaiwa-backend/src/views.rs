@@ -168,6 +168,8 @@ pub fn review(st: &Backend, now: Moment, limit: usize) -> anyhow::Result<Value> 
                     "unit": i.unit,
                     "reps": i.reps,
                     "fromMistake": matches!(i.source, kaiwa_core::srs::Source::Correction { .. }),
+                    // Taken over from the word lookup (/LF112/).
+                    "fromLookup": i.source == kaiwa_core::srs::Source::Lookup,
                 })
             })
             .collect(),
