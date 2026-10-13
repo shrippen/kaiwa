@@ -64,7 +64,7 @@ Offen dazu: [Fragenpaket 8](https://claude.ai/artifact/7LU4Pr5HzXW8zzfL43zfFW) (
 5. **Stimme:** H-01 (VOICEVOX) entscheidet die endgültige Stimme; bis dahin Kokoro als Übergang.
 6. **Secret `ANTHROPIC_API_KEY`** fehlt noch in der Cloud-Umgebung (G-04).
 7. **Demo im Release** (Q-15): Der Demo-Modus hängt nur an `KAIWA_DEMO`, und ohne `KAIWA_PROVIDER` antwortet die App mit den Aufzeichnungen. Vor dem ersten Paket braucht es eine Tutor-Einrichtung in den Einstellungen, dann ein Build-Feature `demo` (aus) und eine Prüfung im Paketbau.
-8. **Kanji in Offscreen-Bildern:** Im Offscreen-Betrieb sitzen Kanji ohne Lesung in `KanteRubyText` etwas tiefer als Kana (Schriftfallback, schon vor Kante 1.33). Auf dem Desktop prüfen, bevor Screenshots für die Landing Page entstehen.
+8. **Kanji in Stücken:** `KanteRubyText` setzt ein `Text` je Zeichen; unter deutscher Locale nahm Qt für ein einzelnes Kanji oder 。 eine chinesische Schrift (andere Zeichenformen, tiefere Grundlinie). Kante 1.34 (Kante #59) setzt eine japanische Schrift; der Abgleich hier folgt nach dessen Merge.
 
 ## Lessons learned
 
