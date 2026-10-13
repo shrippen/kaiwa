@@ -18,7 +18,32 @@
 木村
 新宿
 中野
+ミュラー
+ミュラー様
+健太
+大輝
+岡田
+木村さん
+松本
+森田
+森田さん
+竹田
+結衣
+美咲
+藤井
+西田
+遠藤
+遠藤さん
+# 輪王寺 (a temple in Nikko): IPADIC splits it as 輪 + 王寺.
+王寺
 # お待ちください: お + 待ち is no entry; the expression is お待ちください (IPADIC splits it).
 お待ち
+# The same for おかけ (ご迷惑をおかけして, おかけください) and お伝え (とお伝えください).
+おかけ
+お伝え
 # 四人（よにん） in a help text: the reading in brackets is split by IPADIC.
 よに
+# 結婚するって: IPADIC joins する and the quoting って.
+するって
+# Planted mistake in a recorded answer (しすぎりました for しすぎました).
+ぎりました

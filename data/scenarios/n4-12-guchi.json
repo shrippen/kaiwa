@@ -1,0 +1,67 @@
+{
+  "id": "n4-12-guchi",
+  "unit": "n4-12",
+  "name": "健太 · Kenta",
+  "title": {
+    "de": "Feierabend im Izakaya",
+    "en": "After work at the izakaya"
+  },
+  "character": {
+    "de": "Kenta, ein Freund, abends im Izakaya. Hört zu, lacht mit, tröstet. Spricht in Freundesform.",
+    "en": "Kenta, a friend, in the izakaya in the evening. Listens, laughs along, comforts. Speaks casually."
+  },
+  "register": "casual",
+  "voice": "jm_kumo",
+  "opening": "お{疲|つか}れ！{今日|きょう}、どうだった？",
+  "opening_translation": { "de": "Na, Feierabend! Wie war dein Tag?", "en": "Cheers! How was your day?" },
+  "goals": [
+    {
+      "id": "rain",
+      "text": {
+        "de": "Erzähl, dass du auf dem Heimweg in den Regen gekommen und klatschnass bist.",
+        "en": "Say you got caught in the rain on the way and are soaked."
+      },
+      "help": {
+        "keyword": "雨に降られる（ふられる）",
+        "start": "帰りに…",
+        "example": "帰りに雨に降られて、びしょびしょだよ。"
+      }
+    },
+    {
+      "id": "scolded",
+      "text": {
+        "de": "Erzähl, dass dich der Chef angeschrien hat, weil du zu spät warst.",
+        "en": "Say the boss told you off because you were late."
+      },
+      "help": {
+        "keyword": "怒られる（おこられる）",
+        "start": "遅刻して、…",
+        "example": "遅刻して、部長に怒られた。"
+      }
+    },
+    {
+      "id": "overtime",
+      "text": {
+        "de": "Erzähl, dass der Chef dich Überstunden machen ließ.",
+        "en": "Say the boss made you work overtime."
+      },
+      "help": {
+        "keyword": "〜させられる",
+        "start": "それに、…",
+        "example": "それに、部長に残業させられたんだ。"
+      }
+    },
+    {
+      "id": "pay",
+      "text": {
+        "de": "Sag, dass du heute bezahlen möchtest.",
+        "en": "Say you'd like to pay today."
+      },
+      "help": {
+        "keyword": "〜させて",
+        "start": "今日は…",
+        "example": "今日はわたしに払わせて。"
+      }
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+[
+  {
+    "learner": "ごめん、風邪をひいたんだ。",
+    "reply": "えっ、大丈夫？熱はある？",
+    "translation": {
+      "de": "Oh nein, alles okay? Hast du Fieber?",
+      "en": "Oh no, are you okay? Do you have a fever?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "sick"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "ごめん、風邪をひいたんです。",
+    "reply": "えっ、大丈夫？熱はある？",
+    "translation": {
+      "de": "Oh nein, alles okay? Hast du Fieber?",
+      "en": "Oh no, are you okay? Do you have a fever?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "sick"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "unnatural",
+          "kind": "register",
+          "original": "ひいたんです",
+          "better": "ひいたんだ",
+          "explanation": "Unter Freunden ohne です: 風邪をひいたんだ.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "熱があるから、明日はだめなんだ。",
+    "reply": "そっか、残念。無理しないでね。",
+    "translation": {
+      "de": "Ach so, schade. Übernimm dich nicht.",
+      "en": "I see, too bad. Don't push yourself."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "cancel"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "来週の土曜日はどう？",
+    "reply": "うん、いいよ。じゃあ、来週ね。",
+    "translation": {
+      "de": "Ja, passt. Dann nächste Woche.",
+      "en": "Yes, fine. Next week then."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "again"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "ありがとう。ゆっくり休むね。",
+    "reply": "うん、お大事に！",
+    "translation": {
+      "de": "Ja, gute Besserung!",
+      "en": "Yes, get well soon!"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "thanks"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

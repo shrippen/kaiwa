@@ -1,0 +1,67 @@
+{
+  "id": "n4-10-tonari",
+  "unit": "n4-10",
+  "name": "松本 · Matsumoto",
+  "title": {
+    "de": "Die Nachbarin",
+    "en": "The neighbour"
+  },
+  "character": {
+    "de": "Frau Matsumoto, Nachbarin um die sechzig, freundlich und hilfsbereit, aber am Wochenende oft unterwegs. Höflich.",
+    "en": "Mrs Matsumoto, a neighbour around sixty, friendly and helpful but often out at weekends. Polite."
+  },
+  "register": "polite",
+  "voice": "jf_tebukuro",
+  "opening": "あら、こんにちは。どうしました？",
+  "opening_translation": { "de": "Oh, hallo. Was gibt's?", "en": "Oh, hello. What is it?" },
+  "goals": [
+    {
+      "id": "request",
+      "text": {
+        "de": "Bitte sie, am Samstag ein Paket für dich anzunehmen.",
+        "en": "Ask her to take in a parcel for you on Saturday."
+      },
+      "help": {
+        "keyword": "預かる（あずかる）",
+        "start": "土曜日に荷物が届くんですが、…",
+        "example": "土曜日に荷物が届くんですが、預かっていただけませんか。"
+      }
+    },
+    {
+      "id": "reason",
+      "text": {
+        "de": "Erklär: Du bist den ganzen Tag weg und weißt nicht, wann es kommt.",
+        "en": "Explain: you're out all day and don't know when it will come."
+      },
+      "help": {
+        "keyword": "〜か分かりません",
+        "start": "一日留守にするんです。…",
+        "example": "一日留守にするんです。何時に届くか分かりません。"
+      }
+    },
+    {
+      "id": "check",
+      "text": {
+        "de": "Bitte sie, dir zu sagen, ob sie am Samstag zu Hause ist.",
+        "en": "Ask her to tell you whether she'll be home on Saturday."
+      },
+      "help": {
+        "keyword": "〜かどうか",
+        "start": "土曜日に家にいるかどうか、…",
+        "example": "土曜日に家にいるかどうか、教えてくださいませんか。"
+      }
+    },
+    {
+      "id": "thanks",
+      "text": {
+        "de": "Entschuldige dich für die Mühe und bedank dich.",
+        "en": "Apologise for the trouble and say thank you."
+      },
+      "help": {
+        "keyword": "迷惑（めいわく）",
+        "start": "ご迷惑をおかけして、…",
+        "example": "ご迷惑をおかけして、すみません。ありがとうございます。"
+      }
+    }
+  ]
+}

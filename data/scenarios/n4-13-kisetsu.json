@@ -1,0 +1,67 @@
+{
+  "id": "n4-13-kisetsu",
+  "unit": "n4-13",
+  "name": "鈴木 · Suzuki",
+  "title": {
+    "de": "Bald ist Fest",
+    "en": "Festival time soon"
+  },
+  "character": {
+    "de": "Frau Suzuki, die Gastmutter, am Abend auf der Veranda. Herzlich, erzählt von der Jahreszeit und dem Sommerfest im Viertel.",
+    "en": "Mrs Suzuki, the host mother, on the veranda in the evening. Warm, talks about the season and the neighbourhood summer festival."
+  },
+  "register": "polite",
+  "voice": "jf_gongitsune",
+  "opening": "だんだん{涼|すず}しくなってきましたね。もうすぐお{祭|まつ}りですよ。",
+  "opening_translation": { "de": "Es wird langsam kühler. Bald ist das Fest.", "en": "It's getting cooler. The festival is coming soon." },
+  "goals": [
+    {
+      "id": "change",
+      "text": {
+        "de": "Stimm zu: Morgens und abends wird es kalt.",
+        "en": "Agree: mornings and evenings are getting cold."
+      },
+      "help": {
+        "keyword": "〜てきました",
+        "start": "そうですね。朝と夜は…",
+        "example": "そうですね。朝と夜は寒くなってきました。"
+      }
+    },
+    {
+      "id": "ask",
+      "text": {
+        "de": "Frag, was man auf dem Fest macht.",
+        "en": "Ask what people do at the festival."
+      },
+      "help": {
+        "keyword": "〜んですか",
+        "start": "お祭りでは…",
+        "example": "お祭りでは、何をするんですか。"
+      }
+    },
+    {
+      "id": "more",
+      "text": {
+        "de": "Sag: Je öfter du die Festmusik hörst, desto mehr magst du sie.",
+        "en": "Say: the more you hear the festival music, the more you like it."
+      },
+      "help": {
+        "keyword": "〜ば〜ほど",
+        "start": "聞けば…",
+        "example": "聞けば聞くほど、好きになります。"
+      }
+    },
+    {
+      "id": "yukata",
+      "text": {
+        "de": "Frag, ob du einen Yukata ausleihen kannst.",
+        "en": "Ask whether you could borrow a yukata."
+      },
+      "help": {
+        "keyword": "浴衣（ゆかた）",
+        "start": "浴衣を…",
+        "example": "浴衣を貸していただけませんか。"
+      }
+    }
+  ]
+}

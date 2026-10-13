@@ -1,0 +1,55 @@
+{
+  "id": "n4-11-uketsuke",
+  "unit": "n4-11",
+  "name": "受付 · Empfang",
+  "title": {
+    "de": "Am Empfang",
+    "en": "At reception"
+  },
+  "character": {
+    "de": "Die Empfangsdame einer Firma in Tokio. Spricht Keigo, freundlich und formell.",
+    "en": "The receptionist of a company in Tokyo. Speaks keigo, friendly and formal."
+  },
+  "register": "keigo",
+  "voice": "jf_tebukuro",
+  "opening": "いらっしゃいませ。",
+  "opening_translation": { "de": "Willkommen.", "en": "Welcome." },
+  "goals": [
+    {
+      "id": "appointment",
+      "text": {
+        "de": "Stell dich vor und sag, dass du um zwei mit Frau Ono verabredet bist.",
+        "en": "Introduce yourself and say you have an appointment with Ms Ono at two."
+      },
+      "help": {
+        "keyword": "約束（やくそく）",
+        "start": "ミュラーと申します。二時に…",
+        "example": "ミュラーと申します。二時に小野様とお約束しております。"
+      }
+    },
+    {
+      "id": "sit",
+      "text": {
+        "de": "Bedank dich und setz dich.",
+        "en": "Say thank you and sit down."
+      },
+      "help": {
+        "keyword": "失礼します（しつれいします）",
+        "start": "ありがとうございます。…",
+        "example": "ありがとうございます。失礼します。"
+      }
+    },
+    {
+      "id": "visit",
+      "text": {
+        "de": "Sag, dass du danach auch noch bei Herrn Mori vorbeigehst.",
+        "en": "Say you'll also call on Mr Mori afterwards."
+      },
+      "help": {
+        "keyword": "伺います（うかがいます）",
+        "start": "このあと、…",
+        "example": "このあと、森様のところにも伺います。"
+      }
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+[
+  {
+    "learner": "通勤のために、駅から近くて静かな部屋がいいです。",
+    "reply": "かしこまりました。では、こちらの二つはいかがですか。",
+    "translation": {
+      "de": "Sehr gern. Wie wären dann diese beiden?",
+      "en": "Certainly. Then how about these two?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "wish"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "通勤のために、駅から近いと静かな部屋がいいです。",
+    "reply": "かしこまりました。では、こちらの二つはいかがですか。",
+    "translation": {
+      "de": "Sehr gern. Wie wären dann diese beiden?",
+      "en": "Certainly. Then how about these two?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "wish"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "近いと静かな",
+          "better": "近くて静かな",
+          "explanation": "Adjektive verbindet man mit der て-Form: 近くて、静かな部屋. と verbindet nur Nomen.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "こちらのほうが駅から行きやすいですね。",
+    "reply": "そうですね。駅から歩いて五分です。",
+    "translation": {
+      "de": "Ja, fünf Minuten zu Fuß vom Bahnhof.",
+      "en": "Yes, five minutes' walk from the station."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "compare"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "こちらのほうが駅から行くやすいですね。",
+    "reply": "そうですね。駅から歩いて五分です。",
+    "translation": {
+      "de": "Ja, fünf Minuten zu Fuß vom Bahnhof.",
+      "en": "Yes, five minutes' walk from the station."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "compare"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "行くやすい",
+          "better": "行きやすい",
+          "explanation": "やすい hängt am Verbstamm: 行き + やすい.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "ごみの出し方はどこに書いてありますか。",
+    "reply": "この紙に書いてあります。燃えるごみは月曜日と木曜日です。",
+    "translation": {
+      "de": "Das steht auf diesem Blatt. Brennbarer Müll ist montags und donnerstags.",
+      "en": "It's written on this sheet. Burnable rubbish is on Mondays and Thursdays."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "rule"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "じゃあ、来週までに書類を準備しておきます。",
+    "reply": "ありがとうございます。では、お待ちしております。",
+    "translation": {
+      "de": "Vielen Dank. Dann erwarte ich Sie.",
+      "en": "Thank you. I'll be expecting you then."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "prepare"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "じゃあ、来週までに書類を準備しています。",
+    "reply": "ありがとうございます。では、お待ちしております。",
+    "translation": {
+      "de": "Vielen Dank. Dann erwarte ich Sie.",
+      "en": "Thank you. I'll be expecting you then."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "prepare"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "unnatural",
+          "kind": "conjugation",
+          "original": "準備しています",
+          "better": "準備しておきます",
+          "explanation": "Etwas im Voraus erledigen: て-Form + おきます.",
+          "also_possible": false
+        }
+      ]
+    }
+  }
+]

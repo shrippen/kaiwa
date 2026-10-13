@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "雨が降りそうですね。",
+    "reply": "そうですね。傘、持ってきましたか。",
+    "translation": {
+      "de": "Ja. Haben Sie einen Schirm dabei?",
+      "en": "Yes. Did you bring an umbrella?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "guess"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "雨が降るそうですね。",
+    "reply": "そうですね。傘、持ってきましたか。",
+    "translation": {
+      "de": "Ja. Haben Sie einen Schirm dabei?",
+      "en": "Yes. Did you bring an umbrella?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "guess"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "unnatural",
+          "kind": "conjugation",
+          "original": "降るそうです",
+          "better": "降りそうです",
+          "explanation": "Was man sieht: Verbstamm + そう (降りそう). Wörterbuchform + そう heißt „ich habe gehört, dass …“.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "天気予報によると、午後から台風が来るそうです。",
+    "reply": "本当ですか。早く帰ったほうがいいでしょうね。",
+    "translation": {
+      "de": "Wirklich? Dann gehen wir besser früh nach Hause.",
+      "en": "Really? We'd better go home early, then."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "forecast"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "木村さんが引っ越すみたいですよ。",
+    "reply": "ああ、結婚するらしいですよ。",
+    "translation": {
+      "de": "Ach, er heiratet wohl.",
+      "en": "Ah, apparently he's getting married."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "rumour"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "電車が止まるかもしれませんね。",
+    "reply": "台風ですから、止まるはずですよ。",
+    "translation": {
+      "de": "Bei einem Taifun bleiben sie bestimmt stehen.",
+      "en": "With a typhoon, they're bound to stop."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "maybe"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "電車が止まるかもしれないですね。",
+    "reply": "台風ですから、止まるはずですよ。",
+    "translation": {
+      "de": "Bei einem Taifun bleiben sie bestimmt stehen.",
+      "en": "With a typhoon, they're bound to stop."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "maybe"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "style",
+          "kind": "register",
+          "original": "かもしれないです",
+          "better": "かもしれません",
+          "explanation": "Höflicher und üblicher ist かもしれません.",
+          "also_possible": false
+        }
+      ]
+    }
+  }
+]

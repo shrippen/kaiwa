@@ -1,0 +1,67 @@
+{
+  "id": "n4-11-denwa",
+  "unit": "n4-11",
+  "name": "竹田 · Takeda",
+  "title": {
+    "de": "Anruf in der Firma",
+    "en": "Calling a company"
+  },
+  "character": {
+    "de": "Frau Takeda am Telefonempfang einer Handelsfirma in Osaka. Spricht durchgehend Keigo, ruhig und sehr korrekt.",
+    "en": "Ms Takeda at the switchboard of a trading company in Osaka. Speaks keigo throughout, calm and very correct."
+  },
+  "register": "keigo",
+  "voice": "jf_gongitsune",
+  "opening": "お{電話|でんわ}ありがとうございます。さくら{商事|しょうじ}でございます。",
+  "opening_translation": { "de": "Danke für Ihren Anruf. Sakura Shōji, guten Tag.", "en": "Thank you for calling. Sakura Trading." },
+  "goals": [
+    {
+      "id": "intro",
+      "text": {
+        "de": "Melde dich mit Namen und Herkunft: Müller von der Universität Berlin.",
+        "en": "Introduce yourself: Müller from the University of Berlin."
+      },
+      "help": {
+        "keyword": "〜と申します",
+        "start": "わたくし、…",
+        "example": "わたくし、ベルリン大学のミュラーと申します。"
+      }
+    },
+    {
+      "id": "ask",
+      "text": {
+        "de": "Frag, ob Herr Yamaguchi da ist.",
+        "en": "Ask whether Mr Yamaguchi is in."
+      },
+      "help": {
+        "keyword": "いらっしゃいますか",
+        "start": "山口様は…",
+        "example": "山口様はいらっしゃいますか。"
+      }
+    },
+    {
+      "id": "message",
+      "text": {
+        "de": "Hinterlass eine Nachricht: Das Treffen am Freitag beginnt um drei.",
+        "en": "Leave a message: Friday's meeting starts at three."
+      },
+      "help": {
+        "keyword": "〜とお伝えください",
+        "start": "金曜日の会議は…",
+        "example": "金曜日の会議は三時からだとお伝えください。"
+      }
+    },
+    {
+      "id": "again",
+      "text": {
+        "de": "Sag, dass du später noch einmal anrufst.",
+        "en": "Say you'll call again later."
+      },
+      "help": {
+        "keyword": "お〜します",
+        "start": "では、…",
+        "example": "では、また後ほどお電話いたします。"
+      }
+    }
+  ]
+}

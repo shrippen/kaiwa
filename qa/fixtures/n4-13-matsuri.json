@@ -1,0 +1,75 @@
+[
+  {
+    "learner": "行く！浴衣、着てみたい。",
+    "reply": "いいね！わたしの、貸してあげる。",
+    "translation": {
+      "de": "Super! Ich leih dir meinen.",
+      "en": "Great! I'll lend you mine."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "accept"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "何時に待ち合わせる？",
+    "reply": "六時に駅の前はどう？",
+    "translation": {
+      "de": "Um sechs vor dem Bahnhof?",
+      "en": "Six o'clock in front of the station?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "when"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "たこ焼き、食べてみたいな。",
+    "reply": "絶対おいしいよ！",
+    "translation": {
+      "de": "Die sind sicher lecker!",
+      "en": "They're definitely tasty!"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "food"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "たこ焼き、食べるてみたいな。",
+    "reply": "絶対おいしいよ！",
+    "translation": {
+      "de": "Die sind sicher lecker!",
+      "en": "They're definitely tasty!"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "food"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "食べるてみたい",
+          "better": "食べてみたい",
+          "explanation": "てみる hängt an der て-Form: 食べて + みたい.",
+          "also_possible": false
+        }
+      ]
+    }
+  }
+]

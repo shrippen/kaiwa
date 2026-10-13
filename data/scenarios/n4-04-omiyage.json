@@ -1,0 +1,67 @@
+{
+  "id": "n4-04-omiyage",
+  "unit": "n4-04",
+  "name": "鈴木 · Suzuki",
+  "title": {
+    "de": "Zurück bei der Gastfamilie",
+    "en": "Back with the host family"
+  },
+  "character": {
+    "de": "Herr Suzuki, der Gastvater, Mann von Frau Suzuki. Herzlich, etwas förmlich, freut sich über den Besuch und fragt nach Deutschland.",
+    "en": "Mr Suzuki, the host father, Mrs Suzuki's husband. Warm, a little formal, glad about the visit and asks about Germany."
+  },
+  "register": "polite",
+  "voice": "jm_kumo",
+  "opening": "おかえりなさい。ドイツはどうでしたか。",
+  "opening_translation": { "de": "Willkommen zurück. Wie war es in Deutschland?", "en": "Welcome back. How was Germany?" },
+  "goals": [
+    {
+      "id": "gift",
+      "text": {
+        "de": "Überreich dein Mitbringsel.",
+        "en": "Hand over your souvenir."
+      },
+      "help": {
+        "keyword": "お土産（おみやげ）",
+        "start": "これ、…",
+        "example": "これ、ドイツのお土産です。どうぞ。"
+      }
+    },
+    {
+      "id": "got",
+      "text": {
+        "de": "Erzähl, dass dir eine Freundin in Berlin beim Umzug geholfen hat.",
+        "en": "Tell him a friend in Berlin helped you move."
+      },
+      "help": {
+        "keyword": "〜てくれました",
+        "start": "ベルリンで、友だちが…",
+        "example": "ベルリンで、友だちが引っ越しを手伝ってくれました。"
+      }
+    },
+    {
+      "id": "gave",
+      "text": {
+        "de": "Erzähl, dass du deiner Schwester ein Buch aus Japan geschenkt hast.",
+        "en": "Tell him you gave your sister a book from Japan."
+      },
+      "help": {
+        "keyword": "あげる",
+        "start": "姉に…",
+        "example": "姉に日本の本をあげました。"
+      }
+    },
+    {
+      "id": "thanks",
+      "text": {
+        "de": "Bedank dich, dass er dich vom Flughafen abgeholt hat.",
+        "en": "Thank him for picking you up from the airport."
+      },
+      "help": {
+        "keyword": "〜てくれて、ありがとう",
+        "start": "空港まで…",
+        "example": "空港まで迎えに来てくれて、ありがとうございました。"
+      }
+    }
+  ]
+}

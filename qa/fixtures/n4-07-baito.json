@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "英語と、日本語が少し話せます。",
+    "reply": "そうですか。英語が話せると助かります。",
+    "translation": {
+      "de": "Gut. Englisch hilft uns sehr.",
+      "en": "Good. English is a great help to us."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "can"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "英語と、日本語が少し話されます。",
+    "reply": "そうですか。英語が話せると助かります。",
+    "translation": {
+      "de": "Gut. Englisch hilft uns sehr.",
+      "en": "Good. English is a great help to us."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "can"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "話されます",
+          "better": "話せます",
+          "explanation": "Können bei う-Verben: e-Laut + る, also 話せる. 話される ist Passiv oder Respekt.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "最近、漢字が読めるようになりました。",
+    "reply": "すごいですね。",
+    "translation": {
+      "de": "Toll.",
+      "en": "Great."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "progress"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "最近、漢字が読めるになりました。",
+    "reply": "すごいですね。",
+    "translation": {
+      "de": "Toll.",
+      "en": "Great."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "progress"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "omission",
+          "original": "読めるになりました",
+          "better": "読めるようになりました",
+          "explanation": "Eine Fähigkeit, die man erreicht hat: Verb + ようになりました.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "大学に通いながら、カフェでアルバイトをしていました。",
+    "reply": "じゃあ、レジもできますね。",
+    "translation": {
+      "de": "Dann können Sie auch kassieren.",
+      "en": "Then you can work the till too."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "while"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "勉強できるように、週に三回働きたいです。",
+    "reply": "分かりました。月、水、金はどうですか。",
+    "translation": {
+      "de": "In Ordnung. Wie wäre Montag, Mittwoch, Freitag?",
+      "en": "All right. How about Monday, Wednesday and Friday?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "shift"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

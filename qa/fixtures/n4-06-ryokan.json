@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "五月三日に、二人で一泊したいんですが。",
+    "reply": "五月三日、お二人様で一泊ですね。かしこまりました。",
+    "translation": {
+      "de": "Am 3. Mai, zwei Personen, eine Nacht. Sehr gern.",
+      "en": "3 May, two guests, one night. Certainly."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "book"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "もし遅くなったら、どうすればいいですか。",
+    "reply": "遅くなる場合は、お電話いただければ大丈夫です。駅を出て右に曲がると、すぐですよ。",
+    "translation": {
+      "de": "Wenn es später wird, rufen Sie einfach an. Vom Bahnhof rechts, dann sind Sie gleich da.",
+      "en": "If you're late, just call us. Turn right out of the station and you're there."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "late"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "もし遅くなるたら、どうすればいいですか。",
+    "reply": "遅くなる場合は、お電話いただければ大丈夫です。駅を出て右に曲がると、すぐですよ。",
+    "translation": {
+      "de": "Wenn es später wird, rufen Sie einfach an. Vom Bahnhof rechts, dann sind Sie gleich da.",
+      "en": "If you're late, just call us. Turn right out of the station and you're there."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "late"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "遅くなるたら",
+          "better": "遅くなったら",
+          "explanation": "たら hängt an der た-Form: 遅くなった + ら.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "お寺なら、どこがいいですか。",
+    "reply": "お寺なら、輪王寺がおすすめです。",
+    "translation": {
+      "de": "Für Tempel empfehle ich den Rinnō-ji.",
+      "en": "For temples, I recommend Rinnō-ji."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "recommend"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "それは何というお寺ですか。",
+    "reply": "りんのうじ、というお寺です。",
+    "translation": {
+      "de": "Er heißt Rinnō-ji.",
+      "en": "It's called Rinnō-ji."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "name"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "それは何とお寺ですか。",
+    "reply": "りんのうじ、というお寺です。",
+    "translation": {
+      "de": "Er heißt Rinnō-ji.",
+      "en": "It's called Rinnō-ji."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "name"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "omission",
+          "original": "何とお寺",
+          "better": "何というお寺",
+          "explanation": "„Wie heißt …?“: 何という + Nomen.",
+          "also_possible": false
+        }
+      ]
+    }
+  }
+]

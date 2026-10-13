@@ -1,0 +1,67 @@
+{
+  "id": "n4-02-byouin",
+  "unit": "n4-02",
+  "name": "石川先生 · Dr. Ishikawa",
+  "title": {
+    "de": "Beim Arzt",
+    "en": "At the doctor's"
+  },
+  "character": {
+    "de": "Dr. Ishikawa, Hausärztin in einer kleinen Praxis in Tokio. Ruhig und freundlich, fragt genau nach und gibt klare Ratschläge.",
+    "en": "Dr Ishikawa, a GP in a small practice in Tokyo. Calm and kind, asks precisely and gives clear advice."
+  },
+  "register": "polite",
+  "voice": "jf_tebukuro",
+  "opening": "こんにちは。どうしましたか。",
+  "opening_translation": { "de": "Guten Tag. Was fehlt Ihnen?", "en": "Hello. What seems to be the problem?" },
+  "goals": [
+    {
+      "id": "symptom",
+      "text": {
+        "de": "Sag, dass du Kopfschmerzen hast.",
+        "en": "Say that you have a headache."
+      },
+      "help": {
+        "keyword": "頭（あたま）",
+        "start": "頭が…",
+        "example": "頭が痛いんです。"
+      }
+    },
+    {
+      "id": "since",
+      "text": {
+        "de": "Sag, dass du seit drei Tagen Fieber hast und deshalb gekommen bist.",
+        "en": "Say that you've had a fever for three days and that's why you came."
+      },
+      "help": {
+        "keyword": "〜前から（まえから）",
+        "start": "三日前から…",
+        "example": "三日前から熱があるので、来ました。"
+      }
+    },
+    {
+      "id": "cause",
+      "text": {
+        "de": "Sag, was die Ursache sein könnte: zu viel Arbeit.",
+        "en": "Say what the cause might be: too much work."
+      },
+      "help": {
+        "keyword": "〜すぎる",
+        "start": "最近、…",
+        "example": "最近、仕事をしすぎました。"
+      }
+    },
+    {
+      "id": "must",
+      "text": {
+        "de": "Frag, ob du die Medizin nach dem Essen nehmen musst.",
+        "en": "Ask whether you have to take the medicine after meals."
+      },
+      "help": {
+        "keyword": "〜なければなりませんか",
+        "start": "薬は…",
+        "example": "薬は食後に飲まなければなりませんか。"
+      }
+    }
+  ]
+}

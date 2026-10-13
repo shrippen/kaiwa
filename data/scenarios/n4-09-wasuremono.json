@@ -1,0 +1,67 @@
+{
+  "id": "n4-09-wasuremono",
+  "unit": "n4-09",
+  "name": "林 · Hayashi",
+  "title": {
+    "de": "Im Fundbüro",
+    "en": "At lost property"
+  },
+  "character": {
+    "de": "Herr Hayashi, Beamter im Fundbüro eines großen Bahnhofs. Sachlich, höflich, fragt Schritt für Schritt nach.",
+    "en": "Mr Hayashi, an officer at the lost property office of a big station. Matter-of-fact, polite, asks step by step."
+  },
+  "register": "polite",
+  "voice": "jm_kumo",
+  "opening": "はい、どうされましたか。",
+  "opening_translation": { "de": "Ja, was ist passiert?", "en": "Yes, what happened?" },
+  "goals": [
+    {
+      "id": "lost",
+      "text": {
+        "de": "Sag, dass du dein Portemonnaie im Zug vergessen hast.",
+        "en": "Say you left your wallet on the train."
+      },
+      "help": {
+        "keyword": "〜てしまいました",
+        "start": "電車に…",
+        "example": "電車に財布を忘れてしまったんです。"
+      }
+    },
+    {
+      "id": "describe",
+      "text": {
+        "de": "Beschreib es: schwarz, klein, eine Karte steckt drin.",
+        "en": "Describe it: black, small, a card inside."
+      },
+      "help": {
+        "keyword": "入っている（はいっている）",
+        "start": "黒くて小さい…",
+        "example": "黒くて小さい財布で、中にカードが入っています。"
+      }
+    },
+    {
+      "id": "where",
+      "text": {
+        "de": "Sag, wann und in welchem Zug: gegen zehn Uhr, Richtung Shibuya.",
+        "en": "Say when and which train: around ten, towards Shibuya."
+      },
+      "help": {
+        "keyword": "〜行き（いき）",
+        "start": "十時ごろ、…",
+        "example": "十時ごろ、渋谷行きの電車でした。"
+      }
+    },
+    {
+      "id": "regret",
+      "text": {
+        "de": "Sag, dass du besser hättest aufpassen sollen.",
+        "en": "Say you should have been more careful."
+      },
+      "help": {
+        "keyword": "〜ばよかった",
+        "start": "もっと…",
+        "example": "もっと気をつければよかったです。"
+      }
+    }
+  ]
+}

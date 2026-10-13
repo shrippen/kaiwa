@@ -1,0 +1,67 @@
+{
+  "id": "n4-04-tanjoubi",
+  "unit": "n4-04",
+  "name": "結衣 · Yui",
+  "title": {
+    "de": "Geburtstag",
+    "en": "A birthday"
+  },
+  "character": {
+    "de": "Yui, eine Freundin, feiert ihren Geburtstag zu Hause mit ein paar Leuten. Fröhlich, spricht in Freundesform.",
+    "en": "Yui, a friend, celebrates her birthday at home with a few people. Cheerful, speaks casually."
+  },
+  "register": "casual",
+  "voice": "jf_gongitsune",
+  "opening": "あ、{来|き}てくれたんだ！ありがとう。",
+  "opening_translation": { "de": "Oh, du bist gekommen! Danke.", "en": "Oh, you came! Thanks." },
+  "goals": [
+    {
+      "id": "congrats",
+      "text": {
+        "de": "Gratuliere ihr zum Geburtstag.",
+        "en": "Wish her a happy birthday."
+      },
+      "help": {
+        "keyword": "おめでとう",
+        "start": "誕生日…",
+        "example": "誕生日おめでとう！"
+      }
+    },
+    {
+      "id": "present",
+      "text": {
+        "de": "Gib ihr dein Geschenk.",
+        "en": "Give her your present."
+      },
+      "help": {
+        "keyword": "プレゼント",
+        "start": "これ、…",
+        "example": "これ、プレゼントだよ。"
+      }
+    },
+    {
+      "id": "way",
+      "text": {
+        "de": "Erzähl, dass Kenta dir den Weg erklärt hat.",
+        "en": "Tell her Kenta showed you the way."
+      },
+      "help": {
+        "keyword": "〜てくれた",
+        "start": "ケンタが…",
+        "example": "ケンタが道を教えてくれたんだ。"
+      }
+    },
+    {
+      "id": "ask",
+      "text": {
+        "de": "Frag, was sie von ihrer Familie bekommen hat.",
+        "en": "Ask what she got from her family."
+      },
+      "help": {
+        "keyword": "もらう",
+        "start": "家族に…",
+        "example": "家族に何をもらったの？"
+      }
+    }
+  ]
+}

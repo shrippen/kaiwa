@@ -1,0 +1,67 @@
+{
+  "id": "n4-06-ryokan",
+  "unit": "n4-06",
+  "name": "小川 · Ogawa",
+  "title": {
+    "de": "Ryokan am Telefon",
+    "en": "Booking a ryokan by phone"
+  },
+  "character": {
+    "de": "Frau Ogawa, Wirtin eines kleinen Ryokan in Nikko, am Telefon. Sehr höflich, spricht festes Keigo, erklärt den Weg gern.",
+    "en": "Mrs Ogawa, owner of a small ryokan in Nikko, on the phone. Very polite, uses set keigo, happy to explain the way."
+  },
+  "register": "polite",
+  "voice": "jf_nezumi",
+  "opening": "お{電話|でんわ}ありがとうございます。{旅館|りょかん}おがわでございます。",
+  "opening_translation": { "de": "Danke für Ihren Anruf. Hier Ryokan Ogawa.", "en": "Thank you for calling. This is Ryokan Ogawa." },
+  "goals": [
+    {
+      "id": "book",
+      "text": {
+        "de": "Reserviere: am 3. Mai, zwei Personen, eine Nacht.",
+        "en": "Book: 3 May, two people, one night."
+      },
+      "help": {
+        "keyword": "一泊（いっぱく）",
+        "start": "五月三日に…",
+        "example": "五月三日に、二人で一泊したいんですが。"
+      }
+    },
+    {
+      "id": "late",
+      "text": {
+        "de": "Frag, was du tun sollst, wenn du spät ankommst.",
+        "en": "Ask what to do if you arrive late."
+      },
+      "help": {
+        "keyword": "〜たら",
+        "start": "もし遅くなったら…",
+        "example": "もし遅くなったら、どうすればいいですか。"
+      }
+    },
+    {
+      "id": "recommend",
+      "text": {
+        "de": "Frag, wo man hingehen sollte, wenn man Tempel mag.",
+        "en": "Ask where to go if you like temples."
+      },
+      "help": {
+        "keyword": "〜なら",
+        "start": "お寺なら…",
+        "example": "お寺なら、どこがいいですか。"
+      }
+    },
+    {
+      "id": "name",
+      "text": {
+        "de": "Frag nach dem Namen des Tempels.",
+        "en": "Ask for the name of the temple."
+      },
+      "help": {
+        "keyword": "〜という",
+        "start": "それは…",
+        "example": "それは何というお寺ですか。"
+      }
+    }
+  ]
+}

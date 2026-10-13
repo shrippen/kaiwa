@@ -1,0 +1,67 @@
+{
+  "id": "n4-01-keiken",
+  "unit": "n4-01",
+  "name": "森田 · Morita",
+  "title": {
+    "de": "Schon einmal?",
+    "en": "Ever done it?"
+  },
+  "character": {
+    "de": "Haruka Morita, um die dreißig, Tandempartnerin an einem Abend im Café in Tokio. Wandert gern, erzählt vom Fuji und fragt viel nach.",
+    "en": "Haruka Morita, around thirty, a tandem partner on an evening in a café in Tokyo. Likes hiking, talks about Mount Fuji and asks a lot."
+  },
+  "register": "polite",
+  "voice": "jf_nezumi",
+  "opening": "{富士山|ふじさん}に{登|のぼ}ったことがありますか。",
+  "opening_translation": { "de": "Bist du schon einmal auf den Fuji gestiegen?", "en": "Have you ever climbed Mount Fuji?" },
+  "goals": [
+    {
+      "id": "exp",
+      "text": {
+        "de": "Erzähl: Als Kind hast du einmal einen Kimono getragen.",
+        "en": "Tell her: as a child you once wore a kimono."
+      },
+      "help": {
+        "keyword": "着物（きもの）",
+        "start": "子どものとき、…",
+        "example": "子どものとき、一度着物を着たことがあります。"
+      }
+    },
+    {
+      "id": "tari",
+      "text": {
+        "de": "Sag, was du in Kyoto gemacht hast: zwei Dinge mit たり.",
+        "en": "Say what you did in Kyoto: two things with たり."
+      },
+      "help": {
+        "keyword": "〜たり〜たり",
+        "start": "京都で、…",
+        "example": "京都で、お寺を見たり、写真を撮ったりしました。"
+      }
+    },
+    {
+      "id": "ask",
+      "text": {
+        "de": "Frag sie, ob sie schon einmal in Deutschland war.",
+        "en": "Ask her whether she has ever been to Germany."
+      },
+      "help": {
+        "keyword": "〜たことがありますか",
+        "start": "森田さんは…",
+        "example": "森田さんはドイツに行ったことがありますか。"
+      }
+    },
+    {
+      "id": "how",
+      "text": {
+        "de": "Sag, wie Kyoto war, mit zwei Gründen.",
+        "en": "Say how Kyoto was, with two reasons."
+      },
+      "help": {
+        "keyword": "〜し、〜し",
+        "start": "お寺もきれいだし、…",
+        "example": "お寺もきれいだし、食べ物もおいしかったです。"
+      }
+    }
+  ]
+}

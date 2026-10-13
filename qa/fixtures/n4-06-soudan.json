@@ -1,0 +1,75 @@
+[
+  {
+    "learner": "天気がよかったら、鎌倉に行こうよ。",
+    "reply": "いいね！海も見たいな。",
+    "translation": {
+      "de": "Gute Idee! Ich will auch das Meer sehen.",
+      "en": "Good idea! I want to see the sea too."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "propose"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "天気がいいたら、鎌倉に行こうよ。",
+    "reply": "いいね！海も見たいな。",
+    "translation": {
+      "de": "Gute Idee! Ich will auch das Meer sehen.",
+      "en": "Good idea! I want to see the sea too."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "propose"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "いいたら",
+          "better": "よかったら",
+          "explanation": "いい bildet seine Formen von よい: よかった, よかったら.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "電車で行けば、どのぐらいかかる？",
+    "reply": "一時間ぐらいかな。",
+    "translation": {
+      "de": "Ungefähr eine Stunde, glaube ich.",
+      "en": "About an hour, I think."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "time"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "じゃあ、九時に駅で会おう。",
+    "reply": "オッケー。じゃあ、土曜日ね。",
+    "translation": {
+      "de": "Okay. Dann bis Samstag.",
+      "en": "OK. See you Saturday."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "meet"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

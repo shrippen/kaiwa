@@ -213,7 +213,17 @@ Vergleich (〜より, 〜のほうが, いちばん) und 〜がほしい kommen 
 
 Abweichungen bei der Umsetzung: n5-13 ohne 〜でもいいですか (kein Ziel dafür; kommt mit n5-16s 〜てもいいですか), n5-14 ohne 〜ている (Gewohnheit), dafür 〜時に; n5-15 mit 〜に住んでいます als festem Ausdruck; n5-16 spielt im Onsen eines Ryokan.
 
-### 2.4 N4: Einheitenliste (fertig zur Umsetzung als `n4.json`)
+### 2.4 N4: Einheitenliste (umgesetzt als `n4.json`)
+
+**Umgesetzt** (Q-06, Q-09, Q-14): 14 Einheiten, 22 Szenarien, 66 Grammatikpunkte in
+`data/grammar/n4.json`. Reihenfolge im Lernpfad: n4-01, 02, 03, 04, 05, 07, 06, 08, 13, 09, 10, 14,
+11, 12 (die Anzeige nummeriert nach Position). Szenarien in Freundesform (Q-09) für sieben
+Einheiten: `n4-02-kaze`, `n4-04-tanjoubi`, `n4-05-natsuyasumi`, `n4-06-soudan`, `n4-08-uwasa`,
+`n4-12-guchi`, `n4-13-matsuri`. Abweichungen vom Entwurf unten: n4-01 ohne Relativsatz als eigenen
+Punkt; n4-10 ohne 〜てほしい und 〜てもかまいませんか; n4-11 nennt Q-05 genau (申します, おります,
+伺います, お〜します aktiv, お〜ください und 尊敬語 zum Verstehen); n4-13 hat `n4-13-kisetsu`
+(Gastmutter) und `n4-13-matsuri` (Freundin), n4-14 `n4-14-henpin` (Kaufhaus); 〜てもらえますか
+kommt mit n4-14 in den Katalog. Alle Inhalte warten auf das Muttersprachler-Review (Q-08).
 
 Leitidee N4: von „Ich kann eine Situation bestehen“ zu „Ich kann begründen, erzählen, bitten und
 Probleme lösen“. Register werden bewusst gewechselt: jede zweite Einheit hat auch ein Szenario in

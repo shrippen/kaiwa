@@ -1,0 +1,67 @@
+{
+  "id": "n4-05-natsuyasumi",
+  "unit": "n4-05",
+  "name": "遠藤 · Endō",
+  "title": {
+    "de": "Sommerferien",
+    "en": "Summer holidays"
+  },
+  "character": {
+    "de": "Endō, Kollegin im gleichen Alter, in der Mittagspause. Locker, spricht unter Gleichaltrigen in Freundesform.",
+    "en": "Endō, a colleague of the same age, at lunch. Relaxed, speaks casually among peers."
+  },
+  "register": "casual",
+  "voice": "jf_gongitsune",
+  "opening": "もうすぐ{夏休|なつやす}みだね。{何|なに}か{予定|よてい}ある？",
+  "opening_translation": { "de": "Bald sind Sommerferien. Hast du was vor?", "en": "It's nearly the summer holidays. Any plans?" },
+  "goals": [
+    {
+      "id": "plan",
+      "text": {
+        "de": "Sag, dass du vorhast, nach Okinawa zu fahren.",
+        "en": "Say you're planning to go to Okinawa."
+      },
+      "help": {
+        "keyword": "〜ようと思う",
+        "start": "沖縄に…",
+        "example": "沖縄に行こうと思ってる。"
+      }
+    },
+    {
+      "id": "decided",
+      "text": {
+        "de": "Sag, dass du beschlossen hast, dieses Jahr allein zu reisen.",
+        "en": "Say you've decided to travel alone this year."
+      },
+      "help": {
+        "keyword": "〜ことにした",
+        "start": "今年は…",
+        "example": "今年は一人で行くことにしたんだ。"
+      }
+    },
+    {
+      "id": "deadline",
+      "text": {
+        "de": "Sag, dass du das Hotel bis nächste Woche buchen willst.",
+        "en": "Say you intend to book the hotel by next week."
+      },
+      "help": {
+        "keyword": "〜までに",
+        "start": "来週までに…",
+        "example": "来週までにホテルを予約するつもり。"
+      }
+    },
+    {
+      "id": "ask",
+      "text": {
+        "de": "Frag zurück, was sie vorhat.",
+        "en": "Ask her what she's planning."
+      },
+      "help": {
+        "keyword": "遠藤さんは？",
+        "start": "遠藤さんは…",
+        "example": "遠藤さんは？どこか行く？"
+      }
+    }
+  ]
+}
