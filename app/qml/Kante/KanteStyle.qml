@@ -91,6 +91,36 @@ QtObject {
         return f.pointSize > 0 ? f.pointSize * 4 / 3 : f.pixelSize
     }
 
+    /**
+     * Japanese text (Kante 1.34, Kaiwa): the first installed family of japaneseFamilies, else
+     * the default font's. Components that split Japanese into pieces use it (KanteRubyText per
+     * character, KantePitchCurve per mora, KanteDiffText per part): a lone 来 or 。 gives Qt no
+     * context, and under a non-Japanese locale its fallback took a Chinese face (other glyph
+     * forms, a lower baseline, a centred 。). Whole lines in a Text keep the default font.
+     */
+    readonly property var japaneseFamilies: [
+        "Noto Sans CJK JP", "Noto Sans JP", "Source Han Sans JP", "Source Han Sans",
+        "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo UI",
+        "Meiryo", "BIZ UDPGothic", "IPAexGothic", "IPAPGothic", "TakaoPGothic", "VL PGothic",
+        "MS PGothic"
+    ]
+    readonly property string japaneseFamily: {
+        var installed = Qt.fontFamilies()
+        for (var i = 0; i < japaneseFamilies.length; i++) {
+            if (installed.indexOf(japaneseFamilies[i]) >= 0) {
+                return japaneseFamilies[i]
+            }
+        }
+        return defaultFont.family
+    }
+    /** `base` (default: the default font) in the Japanese family, same size and weight. */
+    function japaneseFont(base) {
+        var b = base || defaultFont
+        return b.pointSize > 0
+            ? Qt.font({ family: japaneseFamily, pointSize: b.pointSize, bold: b.bold })
+            : Qt.font({ family: japaneseFamily, pixelSize: b.pixelSize, bold: b.bold })
+    }
+
     // ── Surfaces (System values match a plain Kirigami look) ─────────────
     readonly property color strongTextColor: themed ? palette.strongText : Kirigami.Theme.textColor
     readonly property color mutedTextColor: themed ? palette.mutedText : tint(Kirigami.Theme.textColor, 0.75)

@@ -23,6 +23,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "lena_download_announced" => download_announced(root),
         "mara_ptt" => push_to_talk(root),
         "lena_suggest_smaller" => suggest_smaller(root),
+        "mara_word_lookup" => word_lookup(root),
         _ => return None,
     };
     Some(match r {
@@ -48,7 +49,7 @@ fn demo(name: &str, lang: &str) -> Result<Backend> {
 }
 
 /// German in a text meant for English: umlauts, ß or common German words.
-fn german(s: &str) -> bool {
+pub(crate) fn german(s: &str) -> bool {
     const WORDS: &str = "und der die das den dem nicht mit ist ein eine für du dich dein deine \
         noch zum beim oder wird auf aber ohne sich wenn nur auch bei von im ich wir spricht \
         umstritten erledigt gesperrt offen jetzt weiter zurück fertig";
@@ -545,6 +546,7 @@ fn keyboard(root: &Path) -> Result<Option<String>> {
         "KantePath",
         "KanteCheckSkin",
         "KanteChip",
+        "KanteRubyText",
     ];
     let mut found = Vec::new();
     let mut used = std::collections::BTreeSet::new();
@@ -577,6 +579,82 @@ fn keyboard(root: &Path) -> Result<Option<String>> {
         let by_skin = skins.filter_map(|w| kante(w).ok()).any(|skin| draws(&skin));
         if !draws(&src) && !by_skin {
             found.push(format!("{t} draws no focus"));
+        }
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
+}
+
+/// /LF112/: in the character's line プロデューサーですか。… (recorded answer of the self
+/// introduction) プロデューサー is a word of its own; the lookup in the dictionary excerpt shows
+/// reading, meaning and part of speech, and the word goes into the review once, marked as from
+/// the lookup. From the source: the line's words are clickable (KanteRubyText `interactive`),
+/// and the popup can say the word and take it over. Hearing it needs the audio mode.
+fn word_lookup(root: &Path) -> Result<Option<String>> {
+    use kaiwa_backend::lookup;
+    let fixtures: Value = serde_json::from_str(&std::fs::read_to_string(
+        root.join("qa/fixtures/n5-02-jikoshoukai.json"),
+    )?)?;
+    let mut lines = Vec::new();
+    strings(&fixtures, &mut lines);
+    let Some(reply) = lines.iter().find(|l| l.starts_with("プロデューサーですか")) else {
+        return Ok(Some(
+            "no line with プロデューサー in the recorded answers".into(),
+        ));
+    };
+    let line = lookup::line(reply);
+    let words: Vec<kaiwa_lang::LineWord> = serde_json::from_value(line["words"].clone())?;
+    let Some(word) = words.iter().find(|w| w.text == "プロデューサー") else {
+        return Ok(Some(format!(
+            "プロデューサー is no word of its own: {words:?}"
+        )));
+    };
+    let mut found = Vec::new();
+    let b = demo("lookup", "de")?;
+    let dict = root.join("data/dict/kaiwa-dict-excerpt.sqlite");
+    let v = lookup::lookup_in(&dict, &b, word, "de");
+    if v["found"] != true {
+        return Ok(Some(format!("not found in the dictionary: {v}")));
+    }
+    for (field, what) in [
+        ("reading", "reading"),
+        ("senses", "meaning"),
+        ("pos", "part of speech"),
+    ] {
+        let empty = match &v[field] {
+            Value::String(s) => s.is_empty(),
+            Value::Array(a) => a.is_empty(),
+            _ => true,
+        };
+        if empty {
+            found.push(format!("no {what}"));
+        }
+    }
+    let now = kaiwa_backend::now();
+    let text = v["word"].as_str().unwrap_or_default();
+    if !lookup::remember(&b, text, Some("n5-02"), now)? {
+        found.push("not taken into the review".into());
+    }
+    if lookup::remember(&b, text, None, now)? {
+        found.push("taken into the review twice".into());
+    }
+    let from_lookup = b
+        .store
+        .items()?
+        .iter()
+        .any(|i| i.text == text && i.source == kaiwa_core::srs::Source::Lookup);
+    if !from_lookup {
+        found.push("the review item is not marked as from the lookup".into());
+    }
+    let page = std::fs::read_to_string(root.join("app/qml/ConversationPage.qml"))?;
+    for needle in [
+        "interactive: true",
+        "onWordActivated",
+        "conv.lookup(",
+        "conv.sayWord(",
+        "conv.remember(",
+    ] {
+        if !page.contains(needle) {
+            found.push(format!("the conversation page has no {needle}"));
         }
     }
     Ok((!found.is_empty()).then(|| found.join("; ")))

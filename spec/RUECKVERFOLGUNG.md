@@ -8,7 +8,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 46 | 22 | 8 | 3 | 0 |
+| Muss | 49 | 21 | 6 | 3 | 0 |
 | Soll | 7 | 11 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
@@ -18,7 +18,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LD020/ | M | Lernermodell | core, store | Code | – |
 | /LD030/ | M | Sitzungen | core, store | Code | – |
 | /LD040/ | M | Curriculum | core | Code | – |
-| /LD050/ | M | Sprachdaten | – | offen | – |
+| /LD050/ | M | Sprachdaten | lang | Code | – |
 | /LD060/ | S | Widersprüche | core, store | Code | – |
 | /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | app, speech, store | geprüft | 1 von 1 automatisch grün: `mara_ptt` |
 | /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, speech, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
@@ -26,7 +26,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
 | /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, store | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
-| /LF112/ | M | Ein Klick auf ein Wort zeigt Lesung, Bedeutung und Wortart und spielt … | core, store | Code | 0 von 1 automatisch grün: `mara_word_lookup` |
+| /LF112/ | M | Ein Klick auf ein Wort zeigt Lesung, Bedeutung und Wortart und spielt … | app, backend, core, lang, store | geprüft | 1 von 1 automatisch grün: `mara_word_lookup` |
 | /LF113/ | M | Das Transkript der eigenen Äußerung wird angezeigt (was die KI … | app, core | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LF114/ | M | Wer feststeckt, bekommt eine Hilfe in drei Stufen: Stichwort → … | core | geprüft | 1 von 1 automatisch grün: `mara_hint_offered` |
 | /LF115/ | M | Es gibt Szenarien mit Rolle, Ort, Ziel und Erfolgsbedingung (z. B. … | core | Code | 0 von 1 automatisch grün: `jonas_follow_up` |
@@ -49,7 +49,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF230/ | M | Wiederholung (SRS) für Wörter, Wendungen und Grammatikmuster aus … | app, backend, core, store | geprüft | 1 von 2 automatisch grün: `emi_srs_keigo`, `mara_srs_errors` |
 | /LF231/ | S | Wer eine Pause einlegt (≥ 7 Tage), steigt mit einer Auffrischung … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_comeback` |
 | /LF300/ | M | Nach jedem eigenen Zug bewertet das System Grammatik, Wortwahl … | – | geprüft | 1 von 2 automatisch grün: `emi_keigo_detect`, `selin_register_flag` |
-| /LF301/ | M | Jeder Vorschlag zeigt: eigene Form → bessere Form (als Diff), eine … | – | offen | 0 von 1 automatisch grün: `mara_diff_audio` |
+| /LF301/ | M | Jeder Vorschlag zeigt: eigene Form → bessere Form (als Diff), eine … | app | geprüft | 1 von 1 automatisch grün: `mara_diff_audio` |
 | /LF302/ | M | Vorschläge haben einen Schweregrad: *verhindert Verständnis* … | ai, core | geprüft | 1 von 2 automatisch grün: `emi_keigo_detect`, `selin_register_flag` |
 | /LF303/ | M | Bei korrekten Äußerungen gibt es keinen Verbesserungsvorschlag. | ai, core | geprüft | 1 von 3 automatisch grün: `selin_casual_ok`, `theo_fp`, `theo_pitch_no_nitpick` |
 | /LF304/ | M | Wie viel Feedback angezeigt wird, ist einstellbar: *wenig* (nur … | app, core | geprüft | 1 von 1 automatisch grün: `mara_little_feedback` |
@@ -111,7 +111,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL501/ | S | Windows 10/11 und macOS (aktuelle und vorige Version): App ohne … | – | offen | 0 von 1 automatisch grün: `selin_win_style` |
 | /LL502/ | K | Android (Kirigami), Mindestversion nach ADR. | – | Vorgabe | – |
 | /LL503/ | M | Eine Codebasis: Rust-Kern und Qt-6-QML-Oberfläche. | – | Vorgabe | – |
-| /LL504/ | M | Anbieter für STT, LLM und TTS sind austauschbar (Trait). | app, speech | Code | 0 von 1 automatisch grün: `jonas_local_switch` |
+| /LL504/ | M | Anbieter für STT, LLM und TTS sind austauschbar (Trait). | app, speech | geprüft | 1 von 1 automatisch grün: `jonas_local_switch` |
 | /LL505/ | M | Der Kern ist ohne GUI testbar (Headless-API, `kaiwa-sim`). | core | Vorgabe | – |
 | /LL506/ | M | Mehrsprachigkeit der UI über die KDE-Infrastruktur (ki18n/gettext). | store | geprüft | 1 von 1 automatisch grün: `theo_ui_en` |
 | /LL600/ | M | Jede Persona hat ein Startprofil, ein Lernverhalten, typische Fehler … | sim | Code | – |

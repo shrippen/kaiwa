@@ -1,4 +1,4 @@
-# Stand und Übergabe (2026-10-12)
+# Stand und Übergabe (2026-10-13)
 
 Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die nächste Session zuerst lesen, dann `ROADMAP.md`. Welche Anforderung wo umgesetzt und geprüft ist, zeigt [`RUECKVERFOLGUNG.md`](RUECKVERFOLGUNG.md) (erzeugt mit `cargo run -p kaiwa-sim -- trace --write`). Starten und prüfen: `./start.sh` (`demo`, `sim`, `check`).
 
@@ -11,10 +11,11 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | Profil (`kaiwa-store`) | SQLite, Fortsetzen, Export nach `spec/export.schema.json`, Import, vollständiges Löschen | #15 |
 | Backend (`kaiwa-backend`) | Ansichten als JSON, Tutor-Wahl, Kostenbremse, mehrere Profile, Aufnahmen mit Opt-in, Statistik, Erinnerungsregel | #17 |
 | KI (`kaiwa-ai`) | Anthropic und OpenAI-kompatibel, aufgezeichnete Antworten (Demo), Token-Zähler, Schlüsselbund, „Was verlässt das Gerät?“ | #6, #17 |
+| Sprachdaten (`kaiwa-lang`) | Wörter einer Zeile (lindera/IPADIC: Verb mit Endungen, Zahl mit Zählwort, お mit Nomen), Nachschlagen im Datenpaket [`kaiwa-data`](https://github.com/shrippen/kaiwa-data) (JMdict en/de, KANJIDIC2, Kanjium-Akzente; Release 0.1.0, Repo auf Gitea, Spiegel auf GitHub), Soll-Akzent; Auszug `data/dict/` für Demo und Tests; Inhalts-Check „jedes Wort steht im Wörterbuch“ | #31 |
 | Sprache (`kaiwa-speech`) | Push-to-Talk und Freisprechen (Ende per Pause), ReazonSpeech (sherpa-onnx), Übergangsstimme Kokoro ohne Pitch-Akzent, „Lauter“ und „Klar“, Moren-Prüfung, Modell-Download mit Prüfsumme; Erkennung und Stimme hinter Traits | #11, #12, #26, #27 |
-| App | Heute, Lernpfad, Freies Gespräch (4 Themen), Wiederholen, Profil mit Statistik und Wochenrückblick, Einstellungen (Modelle, Textgröße bis 200 %, Modelle entladen), Gespräch mit Bilanz, Widersprechen, „Falsch erkannt“, Hörhilfen (nochmal, langsamer, übersetzen), Moren-Hinweise (standardmäßig an), Einstufung; Deutsch und Englisch; Stile System, Kante, Kante Light | #7, #16, #17, #26, #27 |
+| App | Heute, Lernpfad, Freies Gespräch (4 Themen), Wiederholen, Profil mit Statistik und Wochenrückblick, Einstellungen (Modelle, Textgröße bis 200 %, Modelle entladen), Gespräch mit Bilanz, Widersprechen, „Falsch erkannt“, Hörhilfen (nochmal, langsamer, übersetzen), Moren-Hinweise (standardmäßig an), Einstufung, Wort nachschlagen (Klick auf ein Wort der Figur: Lesung, Wortart, Bedeutung, Soll-Akzent, Anhören, in die Wiederholung; Wörterbuch-Download nur nach Klick), bessere Form einer Korrektur anhören; Deutsch und Englisch; Stile System, Kante, Kante Light | #7, #16, #17, #26, #27, #31 |
 | Pakete | Symbol, Desktop-Datei, AppStream, PKGBUILD `kaiwa-git`, Flatpak-Manifest (App) | #17 |
-| QA | `kaiwa-sim`: 49 von 83 Prüfregeln automatisch (Textmodus, 30-Tage-Läufe, Profil, Engine, QML-Prüfungen) | laufend |
+| QA | `kaiwa-sim`: 52 von 83 Prüfregeln automatisch (Textmodus, 30-Tage-Läufe, Profil, Engine, QML-Prüfungen) | laufend |
 
 **Geparkt:** Plasmoid und Dienst `kaiwad` (M4) auf dem Zweig `later/plasmoid`, bis die App nahe 1.0 ist. Dort sind Kurzgespräch, fünf Wiederholungen, Sprechtaste über den Dienst und Erinnerungen gebaut. **Offen:** In der CI lädt `plasmoidviewer` das Plasmoid ohne QML-Fehler, aber sein `Today`-Aufruf kommt bei `kaiwad` nicht an (Lauf 1530, „plasmoid: no call reached kaiwad“). Ob das am Offscreen-Betrieb, an der Wartezeit (20 s) oder am D-Bus-Modul von Plasma liegt, ist beim Wiederaufnehmen als Erstes zu klären. Die Erinnerungs-Einstellung der App ist bis dahin ausgeblendet.
 
@@ -30,6 +31,17 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | I-08 | Kein Schutz für Profile | wie umgesetzt |
 | I-09 | `kaiwa-git` ins AUR mit 1.0 | `packaging/README.md` |
 | I-10 | Nächster Schwerpunkt: Spike 0.6 nach I-01 | Roadmap M3 |
+
+## Entscheidungen aus dem Tagplan (2026-10-13)
+
+| ID | Entscheidung | Wo |
+|---|---|---|
+| M-01 | Bedeutungen in der UI-Sprache, wo JMdict sie hat, sonst Englisch mit Hinweis | `kaiwa-lang::dict`, Wort-Popup |
+| M-02 | GitHub-Repo `kaiwa-data` (öffentlich), Push-Mirror von Gitea, Tag `v0.1.0` | ADR-007 |
+| M-03 | Wörterbuch nur nach Klick laden, angeboten im Wort-Popup und unter Einstellungen › Modelle | `kaiwa_speech::download::MODELS` |
+| M-04 | Soll-Akzent im Popup ohne Urteil (Kanjium) | `kaiwa-lang::accent`, `KantePitchCurve` |
+
+Offen dazu: [Fragenpaket 8](https://claude.ai/artifact/7LU4Pr5HzXW8zzfL43zfFW) (Q-01 bis Q-15: Inhaltsaufbau nach `spec/INHALT-ENTWURF.md`, Namen im Wörterbuch, Demo aus dem Release mit Tutor-Einrichtung in den Einstellungen).
 
 ## Entscheidungen aus Fragenpaket 7 (2026-10-12)
 
@@ -48,11 +60,19 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 1. **Moren-Prüfung** (ADR-005, Fragenpakete 5 und 6 entschieden): eigenes Kana-CTC-Modell trainiert (`spikes/s06-moren/finetune.py`, v1 base, v2 large), Test mit echten Stimmen (`real.py`, Common Voice mit hineingeschnittenen Fehlern): nur Kürzungen geprüft erkennt v2 61 % bei 4,8 % Fehlalarmen (v1 62 % bei 6,0 %; v3 mit ReazonSpeech dazu nicht besser, 59 % bei 5,1 %), alle Fehlerarten zusammen unter 25 %. Daten und Modelle liegen unter `target/` (Common Voice 8 GB, `kana-ctc-v1`, `kana-ctc-v2`), nicht im Repository. Rust: `kaiwa-speech::mora` (Varianten, CTC, `Checker` über ONNX Runtime, `G2p::pronounced`). v2 ist auf Hugging Face veröffentlicht ([`shrippen/kaiwa-kana-ctc`](https://huggingface.co/shrippen/kaiwa-kana-ctc), Apache-2.0, in `NOTICE`; Download-Adresse `kaiwa_speech::models::KANA_CTC_URL`, feste Revision). Die Hinweise sind in der App (nach einem gesprochenen Satz, höchstens einer, ohne Schweregrad), **standardmäßig an** (L-01): Auf dem App-Weg erkennen sie 59,7 % bei 4,8 % Fehlalarmen, das gilt als K-02 (ADR-005, „Umsetzung in der App“). Die Modelle (ReazonSpeech, Kokoro, kaiwa-kana-ctc) lassen sich in den Einstellungen unter „Modelle“ laden, nur nach Klick, mit Prüfsumme (N-04).
 2. **Pitch-Akzent** (/LF321/): Die Vorstudie an echten Stimmen (`spikes/s07-pitch/`) findet bei 5 % Fehlalarmen nur 25–35 % der falschen Akzente (Ziel 80 %). Damit gilt F-09: 1.0 ohne Pitch-Bewertung (L-02). Mit einer akzenttreuen Stimme die eigene Kurve neben der der Figur, ohne Urteil (L-03); Bewertung nach 1.0 mit eigenem Akzentmodell (L-04).
 3. **Lokaler Test** (`spec/LOKALER-TEST.md`): KI-Anbindung (Spike 0.5), VOICEVOX (H-01), Messwerte auf dem Framework 13, eigene Aufnahmen. Ergebnisse als PR nach `qa/local/<datum>/` (H-05).
-4. **34 Prüfregeln** sind noch nicht automatisch, meist Audio, GUI (AT-SPI, Tastatur) oder Verhalten des echten Tutors. Sie brauchen den gui- und audio-Modus von `kaiwa-sim` oder den lokalen Test.
+4. **31 Prüfregeln** sind noch nicht automatisch, meist Audio, GUI (AT-SPI, Tastatur) oder Verhalten des echten Tutors. Sie brauchen den gui- und audio-Modus von `kaiwa-sim` oder den lokalen Test.
 5. **Stimme:** H-01 (VOICEVOX) entscheidet die endgültige Stimme; bis dahin Kokoro als Übergang.
 6. **Secret `ANTHROPIC_API_KEY`** fehlt noch in der Cloud-Umgebung (G-04).
+7. **Demo im Release** (Q-15): Der Demo-Modus hängt nur an `KAIWA_DEMO`, und ohne `KAIWA_PROVIDER` antwortet die App mit den Aufzeichnungen. Vor dem ersten Paket braucht es eine Tutor-Einrichtung in den Einstellungen, dann ein Build-Feature `demo` (aus) und eine Prüfung im Paketbau.
+8. **Kanji in Stücken:** `KanteRubyText` setzt ein `Text` je Zeichen; unter deutscher Locale nahm Qt für ein einzelnes Kanji oder 。 eine chinesische Schrift (andere Zeichenformen, tiefere Grundlinie). Kante 1.34 (Kante #59) setzt eine japanische Schrift, die Kopie hier ist abgeglichen.
 
 ## Lessons learned
+
+- **Kante zuerst abgleichen, dann die App starten.** Nutzt eine Seite eine neue Eigenschaft einer Kante-Komponente, die die Kopie unter `app/qml/Kante` noch nicht hat, lädt die Seite nicht, und der Shot-Modus wartet stumm bis zum Timeout. `tools/sync-kante.sh` gegen den Kante-Zweig, dann gegen `main` nach dessen Merge.
+- **Qt schreibt ohne Terminal ins Journal.** Läuft die App mit umgeleiteter Ausgabe, landen QML-Fehler nicht in der Datei; `QT_FORCE_STDERR_LOGGING=1` holt sie zurück.
+- **`grabToImage` sieht keine Popups.** Sie liegen im Overlay des Fensters, das keine QML-Engine hat; der Shot-Modus nimmt bei offenem Wort-Popup dessen Inhalt auf (`--say 'lookup:L:W'`).
+- **Wörterbuch-Treffer an echten Sätzen prüfen.** Erst `examples/lookup.rs` über echte Zeilen zeigte, dass Partikeln gleichlautende Nomen trafen (は → 葉) und feste Ausdrücke als Verb nachgeschlagen wurden; die Wortart aus IPADIC als Hinweis und „erst wie geschrieben“ lösten beides.
+- **Eine Befehlskette mit `;` läuft weiter.** `cargo fmt --check && … ; git commit` committete trotz Formatfehler; lokal hilft der pre-commit-Hook mit `cargo fmt --all --check`.
 
 - **Vor jedem Commit `cargo fmt --all --check`.** Ein unformatierter Push kostet einen ganzen CI-Lauf. Lokal hilft ein pre-commit-Hook.
 - **Ein Runner, seriell.** Jeder Push stellt einen Lauf von etwa 12 Minuten in die Schlange; Läufe lassen sich über die API nicht abbrechen. Änderungen bündeln und selten pushen. Steht der Runner (wie am 2026-10-10 von 07:30 bis 07:55 UTC), wartet alles.

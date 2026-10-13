@@ -83,7 +83,7 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let free: Vec<Value> = st
         .scenarios
         .values()
-        .filter(|s| s.unit == "FREI")
+        .filter(|s| s.unit == "frei")
         .map(|s| {
             let topic = s.title.get(lang);
             let topic = topic.rsplit(": ").next().unwrap_or(topic);
@@ -168,6 +168,8 @@ pub fn review(st: &Backend, now: Moment, limit: usize) -> anyhow::Result<Value> 
                     "unit": i.unit,
                     "reps": i.reps,
                     "fromMistake": matches!(i.source, kaiwa_core::srs::Source::Correction { .. }),
+                    // Taken over from the word lookup (/LF112/).
+                    "fromLookup": i.source == kaiwa_core::srs::Source::Lookup,
                 })
             })
             .collect(),

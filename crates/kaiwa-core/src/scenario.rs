@@ -45,6 +45,7 @@ pub struct Goal {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Scenario {
     pub id: String,
+    /// The curriculum unit it belongs to, by its id (`n5-03`), or `frei` for free talk.
     pub unit: String,
     /// The character's name as the conversation shows it, e.g. "田中 · Tanaka".
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -84,7 +85,7 @@ mod tests {
             "../../../data/scenarios/n5-02-jikoshoukai.json"
         ))
         .unwrap();
-        assert_eq!(s.unit, "N5-02");
+        assert_eq!(s.unit, "n5-02");
         assert_eq!(s.register, Register::Polite);
         assert!(s.goals.len() >= 3);
         for g in &s.goals {

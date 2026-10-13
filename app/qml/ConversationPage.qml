@@ -20,6 +20,8 @@ Kirigami.ScrollablePage {
     property bool placement: false
     /** UI language of the profile, "de" or "en". */
     property string lang: "de"
+    /** The app object (models and their download, for the dictionary). */
+    property var kaiwa: null
     function t(de, en) { return lang === "en" ? en : de }
     /** Back to the start page (finished, or to continue later). */
     signal done()
@@ -129,21 +131,29 @@ Kirigami.ScrollablePage {
         }
 
         Repeater {
+            id: turnRepeater
             model: page.placementOver ? [] : page.turns
             delegate: KanteMessage {
                 id: msg
                 required property var modelData
                 required property int index
+                readonly property Item rubyLine: line
                 Layout.fillWidth: true
                 from: modelData.who === "learner" ? KanteMessage.From.Own : KanteMessage.From.Other
                 author: modelData.who === "learner" ? (modelData.typed ? page.t("Du · getippt", "You · typed") : page.t("Du", "You")) : conv.character
                 text: modelData.who === "learner" ? modelData.text : ""
 
+                // /LF112/: a click on a word (or Tab, arrows, Enter) looks it up.
                 KanteRubyText {
+                    id: line
                     visible: modelData.who === "character"
                     Layout.fillWidth: true
-                    markup: modelData.who === "character" ? modelData.markup : ""
+                    segments: modelData.who === "character" && modelData.segments ? modelData.segments : []
+                    markup: modelData.who === "character" && !modelData.segments ? modelData.markup : ""
                     density: KanteRubyText.Density.All
+                    interactive: true
+                    wordHint: page.t("Eingabe: nachschlagen", "Enter: look up")
+                    onWordActivated: function (word) { wordPopup.show(line, msg.index, word) }
                 }
                 // /LF111/: again, slower, translated; each counts as help (/LF212/).
                 RowLayout {
@@ -195,15 +205,27 @@ Kirigami.ScrollablePage {
                         titleItem: KanteDiffText { parts: modelData.parts }
                         text: modelData.explanation
                         meta: modelData.disputed ? modelData.meta + page.t(" · umstritten", " · disputed") : modelData.meta
-                        // /LF307/: the learner may say it was right; kept for the QA, no longer
-                        // counted as a mistake.
-                        KanteButton {
-                            size: KanteButton.Size.Small
-                            emphasis: KanteButton.Emphasis.Quiet
-                            text: modelData.disputed ? page.t("Widersprochen", "Disputed") : page.t("Widersprechen", "Dispute")
-                            enabled: !modelData.disputed
-                            Accessible.description: page.t("Der Satz war richtig: Kaiwa merkt sich den Widerspruch und zählt es nicht als Fehler.", "The sentence was right: Kaiwa keeps the dispute and does not count it as a mistake.")
-                            onClicked: conv.dispute(msg.index, modelData.better)
+                        RowLayout {
+                            spacing: KanteStyle.unit(6)
+                            // /LF301/: the better form to hear.
+                            KanteButton {
+                                size: KanteButton.Size.Small
+                                emphasis: KanteButton.Emphasis.Quiet
+                                text: page.t("Anhören", "Listen")
+                                enabled: conv.voice.length > 0 && conv.voiceOn
+                                Accessible.description: page.t("Die Figur sagt die bessere Form: ", "The character says the better form: ") + modelData.better
+                                onClicked: conv.sayText(modelData.better)
+                            }
+                            // /LF307/: the learner may say it was right; kept for the QA, no longer
+                            // counted as a mistake.
+                            KanteButton {
+                                size: KanteButton.Size.Small
+                                emphasis: KanteButton.Emphasis.Quiet
+                                text: modelData.disputed ? page.t("Widersprochen", "Disputed") : page.t("Widersprechen", "Dispute")
+                                enabled: !modelData.disputed
+                                Accessible.description: page.t("Der Satz war richtig: Kaiwa merkt sich den Widerspruch und zählt es nicht als Fehler.", "The sentence was right: Kaiwa keeps the dispute and does not count it as a mistake.")
+                                onClicked: conv.dispute(msg.index, modelData.better)
+                            }
                         }
                     }
                 }
@@ -504,6 +526,12 @@ Kirigami.ScrollablePage {
                 else if (next === "~") {}
                 else if (next.indexOf("read:") === 0) conv.finishPlacement(Number(next.charAt(5)), Number(next.charAt(6)))
                 else if (next.indexOf("translate:") === 0) conv.listen(Number(next.substring(10)), 2)
+                // "lookup:L:W" opens the lookup of word W in line L
+                else if (next.indexOf("lookup:") === 0) {
+                    var lw = next.substring(7).split(":")
+                    var m = turnRepeater.itemAt(Number(lw[0]))
+                    if (m) wordPopup.show(m.rubyLine, Number(lw[0]), Number(lw[1]))
+                }
                 else conv.say(next, true)
             } else {
                 stop()
@@ -521,6 +549,174 @@ Kirigami.ScrollablePage {
     Timer {
         id: grabber
         interval: 600
-        onTriggered: page.grabToImage(function (r) { r.saveToFile(page.shot); Qt.quit() })
+        // An open lookup lives in the window's overlay, which cannot be grabbed: then its content.
+        onTriggered: (wordPopup.opened ? wordPopup.contentItem : page).grabToImage(function (r) { r.saveToFile(page.shot); Qt.quit() })
+    }
+
+    // The word lookup (/LF112/): reading, meaning, part of speech and the target accent
+    // (M-04, without a judgement), say it, take it into the review. Without the dictionary
+    // the download is offered here, only after a click (M-03).
+    QQC2.Popup {
+        id: wordPopup
+        property int line: -1
+        property int word: -1
+        property var info: null
+        property bool added: false
+        readonly property bool missing: info !== null && info.missing === true
+        readonly property bool found: info !== null && info.found === true
+        readonly property bool loading: page.kaiwa !== null && info !== null && info.download !== undefined
+            && page.kaiwa.download.length > 0 && JSON.parse(page.kaiwa.download).dir === info.download.dir
+
+        function reload() {
+            info = JSON.parse(conv.lookup(line, word))
+            added = false
+        }
+        function show(anchor, lineIndex, wordIndex) {
+            line = lineIndex
+            word = wordIndex
+            reload()
+            var r = anchor.wordRect(wordIndex)
+            var p = anchor.mapToItem(parent, r.x, r.y + r.height)
+            x = Math.max(0, Math.min(p.x, parent.width - width))
+            y = p.y + KanteStyle.unit(4)
+            open()
+        }
+
+        parent: QQC2.Overlay.overlay
+        width: Math.min(KanteStyle.unit(420), parent ? parent.width - KanteStyle.unit(16) : KanteStyle.unit(420))
+        padding: KanteStyle.unit(14)
+        modal: false
+        focus: true
+        closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
+
+        Connections {
+            target: page.kaiwa
+            // The dictionary arrived: show the word now.
+            function onDownloadChanged() {
+                if (wordPopup.opened && wordPopup.missing && page.kaiwa.download.length === 0) wordPopup.reload()
+            }
+        }
+
+        contentItem: ColumnLayout {
+            spacing: KanteStyle.unit(8)
+            KantePopupSkin { popup: wordPopup }
+
+            KanteRubyText {
+                Layout.fillWidth: true
+                markup: !wordPopup.info ? "" : wordPopup.found && wordPopup.info.reading !== wordPopup.info.word
+                    ? "{" + wordPopup.info.word + "|" + wordPopup.info.reading + "}" : (wordPopup.found ? wordPopup.info.word : wordPopup.info.text)
+            }
+            Text {
+                visible: wordPopup.found && wordPopup.info.pos.length > 0
+                Layout.fillWidth: true
+                text: wordPopup.found ? wordPopup.info.pos.join(" · ") : ""
+                color: KanteStyle.mutedTextColor
+                font: KanteStyle.smallFont
+                wrapMode: Text.Wrap
+            }
+            Repeater {
+                model: wordPopup.found ? wordPopup.info.senses : []
+                delegate: Text {
+                    required property var modelData
+                    required property int index
+                    Layout.fillWidth: true
+                    text: (index + 1) + ". " + modelData.join(", ")
+                    color: KanteStyle.textColor
+                    font: KanteStyle.defaultFont
+                    wrapMode: Text.Wrap
+                }
+            }
+            Text {
+                visible: wordPopup.found && wordPopup.info.fallback === true
+                Layout.fillWidth: true
+                text: page.t("Auf Englisch: JMdict hat für dieses Wort keine deutsche Bedeutung.", "")
+                color: KanteStyle.mutedTextColor
+                font: KanteStyle.smallFont
+                wrapMode: Text.Wrap
+            }
+            KantePitchCurve {
+                visible: wordPopup.found && wordPopup.info.accent !== null && wordPopup.info.accent !== undefined
+                Layout.fillWidth: true
+                Layout.preferredHeight: KanteStyle.unit(130)
+                morae: visible ? wordPopup.info.accent.morae : []
+                target: visible ? wordPopup.info.accent.target : []
+                kernel: visible ? wordPopup.info.accent.kernel : -1
+                targetLabel: page.t("Akzent", "Accent")
+                kernelLabel: page.t("Akzentkern", "Accent kernel")
+                flatText: page.t("flach, ohne Abfall", "flat, no fall")
+                fallText: page.t("Abfall nach", "falls after")
+            }
+            Text {
+                visible: wordPopup.info !== null && wordPopup.info.found === false
+                Layout.fillWidth: true
+                text: page.t("Dieses Wort steht nicht im Wörterbuch.", "This word is not in the dictionary.")
+                color: KanteStyle.mutedTextColor
+                font: KanteStyle.defaultFont
+                wrapMode: Text.Wrap
+            }
+            Text {
+                visible: wordPopup.missing
+                Layout.fillWidth: true
+                text: wordPopup.missing && wordPopup.info.download
+                    ? page.t("Zum Nachschlagen braucht Kaiwa das Wörterbuch (" + wordPopup.info.download.name + ", " + wordPopup.info.download.licence + ", von " + wordPopup.info.download.origin + "): Download " + wordPopup.info.download.downloadMB + " MB, danach " + wordPopup.info.download.diskMB + " MB auf der Platte. Kaiwa lädt es nur, wenn du hier tippst; die Datei wird vor der Benutzung geprüft.",
+                             "To look words up, Kaiwa needs the dictionary (" + wordPopup.info.download.name + ", " + wordPopup.info.download.licence + ", from " + wordPopup.info.download.origin + "): download " + wordPopup.info.download.downloadMB + " MB, then " + wordPopup.info.download.diskMB + " MB on disk. Kaiwa downloads it only when you tap here; the file is checked before it is used.")
+                    : ""
+                color: KanteStyle.textColor
+                font: KanteStyle.defaultFont
+                wrapMode: Text.Wrap
+            }
+            KanteProgressBar {
+                visible: wordPopup.loading
+                Layout.fillWidth: true
+                value: {
+                    if (!wordPopup.loading) return 0
+                    var d = JSON.parse(page.kaiwa.download)
+                    return d.total > 0 ? d.done / d.total : 0
+                }
+                Accessible.name: page.t("Download des Wörterbuchs", "Download of the dictionary")
+            }
+            RowLayout {
+                spacing: KanteStyle.unit(8)
+                KanteButton {
+                    visible: wordPopup.found
+                    size: KanteButton.Size.Small
+                    text: page.t("Anhören", "Listen")
+                    enabled: conv.voice.length > 0 && conv.voiceOn
+                    Accessible.description: page.t("Die Figur sagt das Wort.", "The character says the word.")
+                    onClicked: conv.sayWord(wordPopup.line, wordPopup.word)
+                }
+                KanteButton {
+                    visible: wordPopup.found
+                    size: KanteButton.Size.Small
+                    emphasis: KanteButton.Emphasis.Primary
+                    enabled: wordPopup.found && !wordPopup.info.inReview && !wordPopup.added
+                    text: wordPopup.found && (wordPopup.info.inReview || wordPopup.added)
+                        ? page.t("In der Wiederholung", "In the review") : page.t("In die Wiederholung", "Add to review")
+                    onClicked: wordPopup.added = conv.remember(wordPopup.line, wordPopup.word) || wordPopup.added
+                }
+                KanteButton {
+                    visible: wordPopup.missing && !wordPopup.loading && page.kaiwa !== null
+                    size: KanteButton.Size.Small
+                    emphasis: KanteButton.Emphasis.Primary
+                    text: page.t("Wörterbuch herunterladen", "Download the dictionary")
+                    onClicked: page.kaiwa.downloadModel(wordPopup.info.download.dir)
+                }
+                KanteButton {
+                    visible: wordPopup.loading
+                    size: KanteButton.Size.Small
+                    emphasis: KanteButton.Emphasis.Quiet
+                    text: page.t("Abbrechen", "Stop")
+                    onClicked: page.kaiwa.stopDownload()
+                }
+            }
+            Text {
+                visible: wordPopup.found
+                Layout.fillWidth: true
+                text: "JMdict (EDRDG), Kanjium · CC BY-SA 4.0"
+                color: KanteStyle.mutedTextColor
+                font: KanteStyle.smallFont
+                wrapMode: Text.Wrap
+            }
+        }
     }
 }

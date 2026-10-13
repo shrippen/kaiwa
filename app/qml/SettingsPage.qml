@@ -239,8 +239,8 @@ QQC2.ScrollView {
             Layout.fillWidth: true
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
-            text: page.t("Modelle sind die Dateien, mit denen Kaiwa auf deinem Rechner Sprache erkennt, spricht und die Aussprache prüft. Kaiwa lädt eines nur, wenn du hier auf „Herunterladen“ tippst. Dabei geht nur die Anfrage an die genannte Quelle hinaus, keine Daten von dir. Jede Datei wird vor der Benutzung geprüft.",
-                         "Models are the files Kaiwa uses on your computer to recognise speech, to speak and to check pronunciation. Kaiwa downloads one only when you tap “Download” here. Only the request goes to the named source, none of your data. Every file is checked before it is used.")
+            text: page.t("Modelle sind die Dateien, mit denen Kaiwa auf deinem Rechner Sprache erkennt, spricht, die Aussprache prüft und Wörter nachschlägt. Kaiwa lädt eines nur, wenn du hier auf „Herunterladen“ tippst. Dabei geht nur die Anfrage an die genannte Quelle hinaus, keine Daten von dir. Jede Datei wird vor der Benutzung geprüft.",
+                         "Models are the files Kaiwa uses on your computer to recognise speech, to speak, to check pronunciation and to look words up. Kaiwa downloads one only when you tap “Download” here. Only the request goes to the named source, none of your data. Every file is checked before it is used.")
             wrapMode: Text.Wrap
             color: KanteStyle.mutedTextColor
             font: KanteStyle.smallFont

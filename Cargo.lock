@@ -1786,6 +1786,7 @@ dependencies = [
  "kaiwa-ai",
  "kaiwa-backend",
  "kaiwa-core",
+ "kaiwa-lang",
  "kaiwa-speech",
  "kaiwa-store",
  "serde",
@@ -1801,6 +1802,7 @@ dependencies = [
  "hound",
  "kaiwa-ai",
  "kaiwa-core",
+ "kaiwa-lang",
  "kaiwa-store",
  "serde",
  "serde_json",
@@ -1817,6 +1819,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "kaiwa-lang"
+version = "0.1.0"
+dependencies = [
+ "lindera",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "unicode-normalization",
+]
+
+[[package]]
 name = "kaiwa-sim"
 version = "0.1.0"
 dependencies = [
@@ -1826,6 +1840,7 @@ dependencies = [
  "kaiwa-ai",
  "kaiwa-backend",
  "kaiwa-core",
+ "kaiwa-lang",
  "kaiwa-store",
  "regex",
  "serde",
@@ -1839,6 +1854,7 @@ dependencies = [
  "bzip2 0.5.2",
  "cpal",
  "hound",
+ "kaiwa-lang",
  "lindera",
  "ort",
  "ort-sys",

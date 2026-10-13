@@ -14,6 +14,14 @@ user and are not part of the repository or the program.
 - sherpa-onnx (k2-fsa), Apache-2.0, with ONNX Runtime (Microsoft), MIT: linked in.
 - misaki (hexgrad), Apache-2.0, and cutlet (Paul O'Leary McCann), MIT: the kana to
   phoneme table and rules in crates/kaiwa-speech/src/g2p are derived from them.
+- kaiwa-data (github.com/shrippen/kaiwa-data), CC BY-SA 4.0: the dictionary for the
+  word lookup (downloaded, never part of the program). It is derived from JMdict and
+  KANJIDIC2, property of the Electronic Dictionary Research and Development Group
+  (EDRDG), used in conformance with the Group's licence
+  (https://www.edrdg.org/edrdg/licence.html), and from the Kanjium pitch accent data
+  by Uros Ozvatic (github.com/mifunetoshiro/kanjium), CC BY-SA 4.0. The excerpt in
+  data/dict (demo and tests, not part of the program) is a copy of rows of the same
+  package under the same licence, see data/dict/README.md.
 - mecab-ipadic-2.7.0-20070801 (NAIST), compiled into the program through lindera
   (MIT). Its notice follows.
 

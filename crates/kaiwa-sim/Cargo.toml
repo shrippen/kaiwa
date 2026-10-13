@@ -14,6 +14,7 @@ jsonschema = { version = "0.58.6", default-features = false }
 kaiwa-ai = { version = "0.1.0", path = "../kaiwa-ai" }
 kaiwa-backend = { version = "0.1.0", path = "../kaiwa-backend" }
 kaiwa-core = { version = "0.1.0", path = "../kaiwa-core" }
+kaiwa-lang = { version = "0.1.0", path = "../kaiwa-lang" }
 kaiwa-store = { version = "0.1.0", path = "../kaiwa-store" }
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }
