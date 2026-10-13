@@ -152,6 +152,12 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "sayWord"]
         fn say_word(self: Pin<&mut Conversation>, log_index: i32, word: i32);
+
+        /// Says a Japanese text with the character's voice, e.g. the better form of a
+        /// correction (/LF301/).
+        #[qinvokable]
+        #[cxx_name = "sayText"]
+        fn say_text(self: Pin<&mut Conversation>, text: &QString);
     }
 
     impl cxx_qt::Threading for Conversation {}
@@ -985,6 +991,14 @@ impl qobject::Conversation {
         self.as_mut().interrupt();
         let speed = self.speed();
         self.speak_at(&markup, speed, false);
+    }
+
+    fn say_text(mut self: Pin<&mut Self>, text: &QString) {
+        let text = text.to_string();
+        self.as_mut().wake();
+        self.as_mut().interrupt();
+        let speed = self.speed();
+        self.speak_at(&text, speed, false);
     }
 
     fn interrupt(mut self: Pin<&mut Self>) {

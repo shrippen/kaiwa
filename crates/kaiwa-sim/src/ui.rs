@@ -49,7 +49,7 @@ fn demo(name: &str, lang: &str) -> Result<Backend> {
 }
 
 /// German in a text meant for English: umlauts, ß or common German words.
-fn german(s: &str) -> bool {
+pub(crate) fn german(s: &str) -> bool {
     const WORDS: &str = "und der die das den dem nicht mit ist ein eine für du dich dein deine \
         noch zum beim oder wird auf aber ohne sich wenn nur auch bei von im ich wir spricht \
         umstritten erledigt gesperrt offen jetzt weiter zurück fertig";

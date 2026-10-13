@@ -282,6 +282,47 @@ pub fn check(id: &str, run: &Run) -> Option<Outcome> {
             }
             Some(Outcome::Pass)
         }
+        // /LF301/: every correction shown is a diff that spells out both forms, its
+        // explanation is German, and the page can play the better form. That it sounds needs
+        // the audio mode.
+        "mara_diff_audio" => {
+            use kaiwa_core::diff::PartKind;
+            let mut seen = 0;
+            for e in &run.events {
+                let Event::Turn { outcome, .. } = e else {
+                    continue;
+                };
+                for s in &outcome.shown {
+                    seen += 1;
+                    let c = &s.correction;
+                    let side = |skip: PartKind| -> String {
+                        s.parts
+                            .iter()
+                            .filter(|p| p.kind != skip)
+                            .map(|p| p.text.as_str())
+                            .collect()
+                    };
+                    if side(PartKind::Added) != c.original || side(PartKind::Removed) != c.better {
+                        return fail(format!(
+                            "the diff of '{}' does not give both forms",
+                            c.better
+                        ));
+                    }
+                    if !crate::ui::german(&c.explanation) {
+                        return fail(format!("explanation not German: '{}'", c.explanation));
+                    }
+                }
+            }
+            if seen == 0 {
+                return fail("no correction shown in the journey".into());
+            }
+            let page = std::fs::read_to_string(run.root.join("app/qml/ConversationPage.qml"))
+                .unwrap_or_default();
+            if !page.contains("conv.sayText(modelData.better)") {
+                return fail("the hint card cannot play the better form".into());
+            }
+            Some(Outcome::Pass)
+        }
         // /LF114/: help after 4 s of silence, three steps, the last a full sentence.
         "mara_hint_offered" => {
             let offered = run

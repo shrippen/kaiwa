@@ -205,15 +205,27 @@ Kirigami.ScrollablePage {
                         titleItem: KanteDiffText { parts: modelData.parts }
                         text: modelData.explanation
                         meta: modelData.disputed ? modelData.meta + page.t(" · umstritten", " · disputed") : modelData.meta
-                        // /LF307/: the learner may say it was right; kept for the QA, no longer
-                        // counted as a mistake.
-                        KanteButton {
-                            size: KanteButton.Size.Small
-                            emphasis: KanteButton.Emphasis.Quiet
-                            text: modelData.disputed ? page.t("Widersprochen", "Disputed") : page.t("Widersprechen", "Dispute")
-                            enabled: !modelData.disputed
-                            Accessible.description: page.t("Der Satz war richtig: Kaiwa merkt sich den Widerspruch und zählt es nicht als Fehler.", "The sentence was right: Kaiwa keeps the dispute and does not count it as a mistake.")
-                            onClicked: conv.dispute(msg.index, modelData.better)
+                        RowLayout {
+                            spacing: KanteStyle.unit(6)
+                            // /LF301/: the better form to hear.
+                            KanteButton {
+                                size: KanteButton.Size.Small
+                                emphasis: KanteButton.Emphasis.Quiet
+                                text: page.t("Anhören", "Listen")
+                                enabled: conv.voice.length > 0 && conv.voiceOn
+                                Accessible.description: page.t("Die Figur sagt die bessere Form: ", "The character says the better form: ") + modelData.better
+                                onClicked: conv.sayText(modelData.better)
+                            }
+                            // /LF307/: the learner may say it was right; kept for the QA, no longer
+                            // counted as a mistake.
+                            KanteButton {
+                                size: KanteButton.Size.Small
+                                emphasis: KanteButton.Emphasis.Quiet
+                                text: modelData.disputed ? page.t("Widersprochen", "Disputed") : page.t("Widersprechen", "Dispute")
+                                enabled: !modelData.disputed
+                                Accessible.description: page.t("Der Satz war richtig: Kaiwa merkt sich den Widerspruch und zählt es nicht als Fehler.", "The sentence was right: Kaiwa keeps the dispute and does not count it as a mistake.")
+                                onClicked: conv.dispute(msg.index, modelData.better)
+                            }
                         }
                     }
                 }
