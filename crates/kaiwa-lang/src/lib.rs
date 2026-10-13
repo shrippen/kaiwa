@@ -6,12 +6,38 @@ pub mod dict;
 pub mod pos;
 pub mod words;
 
+use std::path::PathBuf;
+
 use serde::Serialize;
 use thiserror::Error;
 
 pub use accent::Accent;
 pub use dict::{Dictionary, Entry};
 pub use words::{Word, Words};
+
+/// The directory of the data package release this Kaiwa reads (kaiwa-data, L-06): the
+/// archive's top directory, kept as it is under [`models_dir`].
+pub const PACKAGE: &str = "kaiwa-data-0.1.0";
+
+/// Where downloaded models and data live: `$KAIWA_MODELS`, else `$XDG_DATA_HOME/kaiwa/models`,
+/// else `~/.local/share/kaiwa/models`. Nothing of it goes into the repository or the binary.
+pub fn models_dir() -> PathBuf {
+    if let Some(dir) = std::env::var_os("KAIWA_MODELS") {
+        return PathBuf::from(dir);
+    }
+    let data = std::env::var_os("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")));
+    data.unwrap_or_else(|| PathBuf::from("."))
+        .join("kaiwa/models")
+}
+
+/// The dictionary: `$KAIWA_DICT` (the demo's excerpt, tests), else the downloaded package.
+pub fn dictionary_path() -> PathBuf {
+    std::env::var_os("KAIWA_DICT")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| models_dir().join(PACKAGE).join("kaiwa-dict.sqlite"))
+}
 
 #[derive(Debug, Error)]
 pub enum LangError {

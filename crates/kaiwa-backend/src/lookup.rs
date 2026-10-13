@@ -1,0 +1,185 @@
+//! The word lookup (/LF112/): the words of the character's lines, what a click shows, and
+//! taking a word over into the review (/LF230/). The dictionary is the data package kaiwa-data
+//! (L-06), downloaded only after the learner asks for it (M-03); without it the view says so
+//! and offers the download.
+
+use std::path::Path;
+use std::sync::{Mutex, OnceLock};
+
+use kaiwa_core::Moment;
+use kaiwa_core::srs::{Item, ItemKind, Source};
+use kaiwa_lang::{Dictionary, LineWord, Words, annotate, dictionary_path};
+use serde_json::{Value, json};
+
+use crate::Backend;
+
+/// The segmenter, loaded once (IPADIC is in the binary).
+pub fn words() -> &'static Words {
+    static WORDS: OnceLock<Words> = OnceLock::new();
+    WORDS.get_or_init(|| Words::new().expect("IPADIC is embedded"))
+}
+
+/// A character's line for KanteRubyText (Kante 1.33): `segments` with word numbers and the
+/// `words` behind them.
+pub fn line(markup: &str) -> Value {
+    let (segments, words) = annotate(words(), markup);
+    json!({ "segments": segments, "words": words })
+}
+
+/// The dictionary at `path`, opened once and again after a download.
+fn dictionary(
+    path: &Path,
+) -> Option<std::sync::MutexGuard<'static, Option<(std::path::PathBuf, Dictionary)>>> {
+    static DICT: Mutex<Option<(std::path::PathBuf, Dictionary)>> = Mutex::new(None);
+    let mut guard = DICT.lock().ok()?;
+    if guard.as_ref().is_none_or(|(p, _)| p != path) {
+        *guard = Dictionary::open(path).ok().map(|d| (path.to_path_buf(), d));
+    }
+    Some(guard)
+}
+
+/// Whether the dictionary is there (the package or `KAIWA_DICT`).
+pub fn available() -> bool {
+    let path = dictionary_path();
+    path.exists() && dictionary(&path).is_some_and(|g| g.is_some())
+}
+
+/// What a click on `word` shows, in the UI language `lang`: reading, meanings, part of speech,
+/// the target accent (M-04, without a judgement) and whether the word is in the review
+/// already. `{"missing": true}` without the dictionary, `{"found": false}` for a word it
+/// does not know.
+pub fn lookup(backend: &Backend, word: &LineWord, lang: &str) -> Value {
+    lookup_in(&dictionary_path(), backend, word, lang)
+}
+
+/// [`lookup`] in the dictionary at `path`.
+pub fn lookup_in(path: &Path, backend: &Backend, word: &LineWord, lang: &str) -> Value {
+    let entry = if path.exists() {
+        dictionary(path).and_then(|g| g.as_ref().map(|(_, d)| d.lookup_word(word, lang)))
+    } else {
+        None
+    };
+    let Some(entry) = entry else {
+        return json!({ "text": word.text, "missing": true });
+    };
+    match entry {
+        Ok(Some(e)) => {
+            let known = backend
+                .store
+                .items()
+                .map(|items| {
+                    items
+                        .iter()
+                        .any(|i| kaiwa_core::norm(&i.text) == kaiwa_core::norm(&e.word))
+                })
+                .unwrap_or(false);
+            let mut v = json!(e);
+            v["text"] = json!(word.text);
+            v["found"] = json!(true);
+            v["inReview"] = json!(known);
+            v
+        }
+        Ok(None) => json!({ "text": word.text, "found": false }),
+        Err(e) => {
+            eprintln!("kaiwa: lookup: {e}");
+            json!({ "text": word.text, "found": false })
+        }
+    }
+}
+
+/// Takes the looked-up word into the review (/LF112/, /LF230/); `false` when it is there
+/// already.
+pub fn remember(
+    backend: &Backend,
+    text: &str,
+    unit: Option<&str>,
+    now: Moment,
+) -> anyhow::Result<bool> {
+    let mut item = Item::new(text, ItemKind::Word, Source::Lookup, now);
+    item.unit = unit.map(str::to_string);
+    Ok(backend.store.add_item(&item)?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn excerpt() -> std::path::PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/dict/kaiwa-dict-excerpt.sqlite")
+    }
+
+    #[test]
+    fn a_line_gets_word_numbers() {
+        let v = line("{駅|えき}までは{歩|ある}いて{五分|ごふん}です。");
+        let words = v["words"].as_array().unwrap();
+        assert!(words.iter().any(|w| w["key"] == "歩く"));
+        assert_eq!(v["segments"][0]["word"], 0);
+        assert!(
+            v["segments"]
+                .as_array()
+                .unwrap()
+                .last()
+                .unwrap()
+                .get("word")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn the_dictionary_is_opened_once_per_path() {
+        let path = excerpt();
+        assert!(dictionary(&path).is_some_and(|g| g.is_some()));
+        let missing = Path::new("/nonexistent/kaiwa-dict.sqlite");
+        assert!(dictionary(missing).is_some_and(|g| g.is_none()));
+    }
+
+    fn backend(name: &str) -> Backend {
+        let dir = std::env::temp_dir().join(format!("kaiwa-lookup-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        Backend::open_at(dir.join("t.kaiwa"), false).unwrap()
+    }
+
+    fn word(markup: &str, i: usize) -> LineWord {
+        annotate(words(), markup).1.remove(i)
+    }
+
+    #[test]
+    fn a_click_shows_the_entry_and_the_word_goes_into_the_review_once() {
+        let b = backend("click");
+        let w = word("{駅|えき}までは", 0);
+        let v = lookup_in(&excerpt(), &b, &w, "de");
+        assert_eq!(v["found"], true);
+        assert_eq!(v["reading"], "えき");
+        assert_eq!(v["senses"][0][0], "Bahnhof");
+        assert_eq!(v["pos"][0], "Nomen");
+        assert_eq!(v["inReview"], false);
+        assert!(v["accent"]["target"].is_array());
+        let now = crate::now();
+        assert!(remember(&b, "駅", Some("n5-05"), now).unwrap());
+        assert!(!remember(&b, "駅", None, now).unwrap());
+        let item = b
+            .store
+            .items()
+            .unwrap()
+            .into_iter()
+            .find(|i| i.text == "駅")
+            .unwrap();
+        assert_eq!(item.source, Source::Lookup);
+        assert_eq!(item.unit.as_deref(), Some("n5-05"));
+        assert_eq!(lookup_in(&excerpt(), &b, &w, "de")["inReview"], true);
+    }
+
+    #[test]
+    fn without_the_dictionary_the_view_says_so() {
+        let b = backend("missing");
+        let v = lookup_in(
+            Path::new("/nonexistent/kaiwa-dict.sqlite"),
+            &b,
+            &word("駅", 0),
+            "de",
+        );
+        assert_eq!(v["missing"], true);
+        assert_eq!(v["text"], "駅");
+    }
+}

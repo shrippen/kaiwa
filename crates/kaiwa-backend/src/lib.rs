@@ -10,6 +10,7 @@
 
 pub mod cost;
 pub mod latency;
+pub mod lookup;
 pub mod profiles;
 pub mod recordings;
 pub mod reminder;

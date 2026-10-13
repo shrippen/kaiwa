@@ -103,8 +103,9 @@ const KOKORO_FILES: &[Remote] = &[
     },
 ];
 
-/// The three models: speech recognition, the interim voice, the mora check.
-pub const MODELS: [Model; 3] = [
+/// The models: speech recognition, the interim voice, the mora check, and the dictionary
+/// (kaiwa-data, L-06; not speech, but downloaded the same way, M-03).
+pub const MODELS: [Model; 4] = [
     Model {
         dir: REAZONSPEECH,
         name: "ReazonSpeech",
@@ -148,7 +149,26 @@ pub const MODELS: [Model; 3] = [
             files: KANA_CTC_FILES,
         },
     },
+    Model {
+        dir: kaiwa_lang::PACKAGE,
+        name: "kaiwa-data",
+        licence: "CC BY-SA 4.0",
+        origin: "github.com/shrippen/kaiwa-data",
+        disk_bytes: DICT_DISK,
+        source: Source::Archive {
+            archive: Remote {
+                name: "kaiwa-data-0.1.0.tar.bz2",
+                bytes: 25_925_931,
+                sha256: "0c64b74f0a19ff7fb655ef21806dea5c80c1b2eab3fc7af2535d7c54106e9eef",
+            },
+            url: "https://github.com/shrippen/kaiwa-data/releases/download/v0.1.0/kaiwa-data-0.1.0.tar.bz2",
+            keep: &["kaiwa-dict.sqlite", "NOTICE", "LICENSE-DATA"],
+        },
+    },
 ];
+
+/// The unpacked dictionary with its licence files.
+const DICT_DISK: u64 = 84_262_912 + 1_112 + 20_138;
 
 #[derive(Debug, thiserror::Error)]
 pub enum DownloadError {
@@ -352,6 +372,18 @@ mod tests {
             }
             assert!(m.download_bytes() > 0 && m.disk_bytes > 0, "{}", m.name);
         }
+    }
+
+    #[test]
+    fn the_dictionary_is_the_release_this_kaiwa_reads() {
+        let m = MODELS[3];
+        assert_eq!(m.dir, kaiwa_lang::PACKAGE);
+        let Source::Archive { archive, url, keep } = m.source else {
+            panic!("archive")
+        };
+        assert!(url.ends_with(&format!("/v0.1.0/{}", archive.name)), "{url}");
+        assert_eq!(archive.name, format!("{}.tar.bz2", kaiwa_lang::PACKAGE));
+        assert!(keep.contains(&"kaiwa-dict.sqlite") && keep.contains(&"NOTICE"));
     }
 
     #[test]
