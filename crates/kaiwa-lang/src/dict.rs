@@ -57,6 +57,16 @@ struct Sense {
     glosses: Vec<String>,
 }
 
+/// ASCII letters and digits to their full-width forms (T → Ｔ), as JMdict writes them.
+pub fn full_width(s: &str) -> String {
+    s.chars()
+        .map(|c| match c {
+            '0'..='9' | 'A'..='Z' | 'a'..='z' => char::from_u32(c as u32 + 0xFEE0).unwrap_or(c),
+            _ => c,
+        })
+        .collect()
+}
+
 fn json_list(s: Option<String>) -> Option<Vec<String>> {
     s.and_then(|s| serde_json::from_str(&s).ok())
 }
@@ -110,10 +120,17 @@ impl Dictionary {
         if let Some(e) = self.lookup_with(&w.key, w.reading.as_deref(), pos, lang)? {
             return Ok(Some(e));
         }
-        match &w.fallback {
-            Some(f) => self.lookup_with(f, None, pos, lang),
-            None => Ok(None),
+        if let Some(f) = &w.fallback
+            && let Some(e) = self.lookup_with(f, None, pos, lang)?
+        {
+            return Ok(Some(e));
         }
+        // JMdict writes latin letters in a word full width (Ｔシャツ).
+        let wide = full_width(&w.key);
+        if wide != w.key {
+            return self.lookup_with(&wide, None, pos, lang);
+        }
+        Ok(None)
     }
 
     /// Looks a word up: `key` as written or in its dictionary form, `reading` (kana) to choose

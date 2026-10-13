@@ -96,8 +96,24 @@ impl Words {
         let mut out: Vec<Word> = Vec::new();
         let mut prev: Option<(String, String)> = None;
         for t in self.tokens(text) {
-            if t.pos == "記号" || t.pos.is_empty() || t.surface.trim().is_empty() {
+            if t.pos == "記号" || t.pos.is_empty() || !t.surface.chars().any(japanese) {
                 prev = None;
+                continue;
+            }
+            // IPADIC cuts kana it does not know before a small kana (し・ゅみ for しゅみ); no
+            // word starts with one, so the piece and the token before are one unknown word.
+            if t.surface.starts_with(|c: char| SMALL.contains(c))
+                && let (Some(_), Some(w)) = (&prev, out.last_mut())
+                && w.end == t.start
+            {
+                w.surface.push_str(&t.surface);
+                w.end = t.end;
+                w.key = w.surface.clone();
+                w.reading = hiragana(&w.surface);
+                w.plain = true;
+                w.pos = "名詞".into();
+                w.fallback = None;
+                prev = Some((w.pos.clone(), String::new()));
                 continue;
             }
             let joins = match (&prev, out.last()) {
@@ -164,6 +180,14 @@ fn joins(prev_pos: &str, prev_sub: &str, t: &Token) -> bool {
     }
 }
 
+/// Small kana, which never start a word.
+const SMALL: &str = "ゃゅょぁぃぅぇぉゎっャュョァィゥェォヮッ";
+
+/// Kana or kanji: a token without any is no word to look up (latin letters, digits).
+fn japanese(c: char) -> bool {
+    matches!(c, '\u{3041}'..='\u{30ff}' | '\u{3400}'..='\u{9fff}' | '々')
+}
+
 /// Katakana to hiragana; everything else unchanged.
 pub fn hiragana(s: &str) -> String {
     s.chars()
@@ -207,6 +231,18 @@ mod tests {
         assert!(w.contains(&pair("です", "です")), "{w:?}");
         let w = surfaces("お弁当、温めますか。");
         assert!(w.contains(&pair("お弁当", "お弁当")), "{w:?}");
+    }
+
+    #[test]
+    fn kana_ipadic_does_not_know_stay_one_word() {
+        let w = surfaces("しゅみ、なに？");
+        assert_eq!(w[0], pair("しゅみ", "しゅみ"));
+    }
+
+    #[test]
+    fn latin_letters_are_no_words() {
+        let w = surfaces("Spricht man 「です」 in the café?");
+        assert_eq!(w, [pair("です", "です")]);
     }
 
     #[test]

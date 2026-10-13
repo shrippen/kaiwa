@@ -51,6 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for t in &texts {
         let (_, ws) = annotate(&words, t);
         for w in ws {
+            keys.insert(kaiwa_lang::dict::full_width(&w.key));
             keys.insert(w.key);
             keys.insert(w.text);
             keys.extend(w.fallback);
