@@ -243,7 +243,7 @@ fn print_seeds(root: &std::path::Path, persona: &str, journey: &str, n: u64) -> 
             let ok = !m.is_empty() && band.contains(&lo) && band.contains(&hi);
             held[i] += usize::from(ok);
             cols.push(format!(
-                "{lo:>4.2}  {hi:>4.2}  {}",
+                "{lo:>5.3}  {hi:>5.3}  {}",
                 if ok { "ok  " } else { "out " }
             ));
         }
