@@ -548,7 +548,8 @@ fn fade(e: &PlannedError, corrected: &BTreeMap<String, u32>) -> f64 {
     }
 }
 
-fn moving(sessions: &[SimSession], n: usize) -> Vec<f64> {
+/// The moving average of the success over `n` sessions.
+pub fn moving(sessions: &[SimSession], n: usize) -> Vec<f64> {
     sessions
         .windows(n)
         .map(|w| w.iter().map(|s| s.success).sum::<f64>() / n as f64)

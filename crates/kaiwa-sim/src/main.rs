@@ -52,6 +52,11 @@ enum Command {
         persona: String,
         #[arg(long)]
         journey: String,
+        /// Instead of the journey, play it with this many seeds (the script's and the ones
+        /// after it) and print per seed the lowest and highest moving success over 5 and over
+        /// 8 sessions against the band 65–92 % (/LF210/, Fragenpaket 10).
+        #[arg(long)]
+        seeds: Option<u64>,
     },
     /// Print each unit's content hash for its native speaker review (INHALT-ENTWURF 3.3):
     /// the reviewer enters it as `review.hash` together with `by` and `date`.
@@ -103,7 +108,22 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
-        Command::Days { persona, journey } => match print_days(&cli.root, &persona, &journey) {
+        Command::Days {
+            persona,
+            journey,
+            seeds: Some(n),
+        } => match print_seeds(&cli.root, &persona, &journey, n) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("error: {error:#}");
+                ExitCode::FAILURE
+            }
+        },
+        Command::Days {
+            persona,
+            journey,
+            seeds: None,
+        } => match print_days(&cli.root, &persona, &journey) {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
                 eprintln!("error: {error:#}");
@@ -199,6 +219,47 @@ fn run_all(
         std::fs::write(path, serde_json::to_string_pretty(&all)?)?;
     }
     Ok(fail == 0)
+}
+
+/// The success band over several seeds: one line per seed, then how many hold the band.
+fn print_seeds(root: &std::path::Path, persona: &str, journey: &str, n: u64) -> anyhow::Result<()> {
+    let p: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(
+        root.join(format!("qa/personas/{persona}.json")),
+    )?)?;
+    let script = days::script_for(root, journey)?
+        .ok_or_else(|| anyhow::anyhow!("{journey} has no day script"))?;
+    let band = 0.65..=0.92;
+    let mut held = [0usize; 2];
+    println!("seed  sessions  window 5: min  max  band   window 8: min  max  band");
+    for k in 0..n {
+        let mut s = script.clone();
+        s.seed = script.seed.wrapping_add(k);
+        let run = days::simulate(root, &p, &s)?;
+        let mut cols = Vec::new();
+        for (i, w) in [5usize, 8].into_iter().enumerate() {
+            let m = days::moving(&run.sessions, w);
+            let lo = m.iter().copied().fold(f64::INFINITY, f64::min);
+            let hi = m.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+            let ok = !m.is_empty() && band.contains(&lo) && band.contains(&hi);
+            held[i] += usize::from(ok);
+            cols.push(format!(
+                "{lo:>5.3}  {hi:>5.3}  {}",
+                if ok { "ok  " } else { "out " }
+            ));
+        }
+        println!(
+            "{:>4}  {:>8}       {}          {}",
+            s.seed,
+            run.sessions.len(),
+            cols[0],
+            cols[1]
+        );
+    }
+    println!(
+        "in the band: window 5 {} of {n}, window 8 {} of {n}",
+        held[0], held[1]
+    );
+    Ok(())
 }
 
 fn print_days(root: &std::path::Path, persona: &str, journey: &str) -> anyhow::Result<()> {
