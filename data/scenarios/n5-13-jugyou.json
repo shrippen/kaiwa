@@ -1,0 +1,67 @@
+{
+  "id": "n5-13-jugyou",
+  "unit": "n5-13",
+  "name": "山本先生 · Yamamoto",
+  "title": {
+    "de": "Im Unterricht",
+    "en": "In class"
+  },
+  "character": {
+    "de": "Frau Yamamoto, Lehrerin in einer Sprachschule in Tokio. Geduldig, spricht deutlich, fragt nach dem Alltag und wiederholt gern, wenn man nachfragt.",
+    "en": "Ms Yamamoto, a teacher at a language school in Tokyo. Patient, speaks clearly, asks about daily life and gladly repeats when asked."
+  },
+  "register": "polite",
+  "voice": "jf_tebukuro",
+  "opening": "では、{質問|しつもん}です。{週末|しゅうまつ}は{何|なに}をしますか。",
+  "opening_translation": { "de": "Also, eine Frage: Was machst du am Wochenende?", "en": "So, a question: what do you do at the weekend?" },
+  "goals": [
+    {
+      "id": "again",
+      "text": {
+        "de": "Bitte sie, die Frage zu wiederholen.",
+        "en": "Ask her to repeat the question."
+      },
+      "help": {
+        "keyword": "もう一度（もういちど）",
+        "start": "すみません、もう一度…",
+        "example": "すみません、もう一度おねがいします。"
+      }
+    },
+    {
+      "id": "slow",
+      "text": {
+        "de": "Bitte sie, langsamer zu sprechen.",
+        "en": "Ask her to speak more slowly."
+      },
+      "help": {
+        "keyword": "ゆっくり",
+        "start": "もう少し…",
+        "example": "もう少しゆっくり話してください。"
+      }
+    },
+    {
+      "id": "word",
+      "text": {
+        "de": "Frag, wie „Museum“ auf Japanisch heißt.",
+        "en": "Ask what “museum” is in Japanese."
+      },
+      "help": {
+        "keyword": "日本語で（にほんごで）",
+        "start": "「Museum」は…",
+        "example": "「Museum」は日本語で何ですか。"
+      }
+    },
+    {
+      "id": "answer",
+      "text": {
+        "de": "Antworte: Du gehst ins Museum.",
+        "en": "Answer: you go to the museum."
+      },
+      "help": {
+        "keyword": "美術館（びじゅつかん）",
+        "start": "週末は…",
+        "example": "週末は美術館に行きます。"
+      }
+    }
+  ]
+}

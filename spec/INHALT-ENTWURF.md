@@ -199,7 +199,7 @@ N5 (A1) ──► N4 (A2) ──► N3 (A2/B1) ──► N2 (B1/B2) ──► N1
   „〜は日本語で何ですか“. Für ein Sprechprogramm sind sie wichtiger als manche Grammatik und
   passen zu /LF122/ (Code-Switching).
 
-**Vorschlag: N5 um vier Einheiten erweitern** (Frage Q-02):
+**N5 um vier Einheiten erweitert** (Q-02, umgesetzt; Szenarien `n5-13-jugyou`, `n5-14-ichinichi`, `n5-15-sumai`, `n5-16-onsen`; im Lernpfad an ihrer Stelle einsortiert, die Anzeige nummeriert nach Position):
 
 | Einheit | Kann | Grammatik | Szenario, Figur, Register | requires |
 |---|---|---|---|---|
@@ -210,6 +210,8 @@ N5 (A1) ──► N4 (A2) ──► N3 (A2/B1) ──► N2 (B1/B2) ──► N1
 
 Vergleich (〜より, 〜のほうが, いちばん) und 〜がほしい kommen in n5-10 Einkaufen dazu,
 〜くなる und Wetter in n5-01. Abschluss von N5 ist dann n5-12 *und* n5-16.
+
+Abweichungen bei der Umsetzung: n5-13 ohne 〜でもいいですか (kein Ziel dafür; kommt mit n5-16s 〜てもいいですか), n5-14 ohne 〜ている (Gewohnheit), dafür 〜時に; n5-15 mit 〜に住んでいます als festem Ausdruck; n5-16 spielt im Onsen eines Ryokan.
 
 ### 2.4 N4: Einheitenliste (fertig zur Umsetzung als `n4.json`)
 

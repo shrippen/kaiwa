@@ -1,0 +1,67 @@
+{
+  "id": "n5-14-ichinichi",
+  "unit": "n5-14",
+  "name": "さくら · Sakura",
+  "title": {
+    "de": "Mein Tag",
+    "en": "My day"
+  },
+  "character": {
+    "de": "Sakura, Tandempartnerin, Studentin in Osaka. Neugierig, spricht höflich, vergleicht gern mit ihrem eigenen Tag.",
+    "en": "Sakura, a tandem partner, a student in Osaka. Curious, speaks politely, likes to compare with her own day."
+  },
+  "register": "polite",
+  "voice": "jf_alpha",
+  "opening": "{平日|へいじつ}は、どんな{一日|いちにち}ですか。",
+  "opening_translation": { "de": "Wie sieht bei dir ein Werktag aus?", "en": "What is a weekday like for you?" },
+  "goals": [
+    {
+      "id": "wake",
+      "text": {
+        "de": "Sag, wann du aufstehst.",
+        "en": "Say when you get up."
+      },
+      "help": {
+        "keyword": "起きる（おきる）",
+        "start": "毎朝…",
+        "example": "毎朝、六時に起きます。"
+      }
+    },
+    {
+      "id": "before",
+      "text": {
+        "de": "Sag, was du vor der Arbeit machst.",
+        "en": "Say what you do before work."
+      },
+      "help": {
+        "keyword": "前に（まえに）",
+        "start": "仕事の前に…",
+        "example": "仕事の前に、コーヒーを飲みます。"
+      }
+    },
+    {
+      "id": "after",
+      "text": {
+        "de": "Sag, was du nach dem Heimkommen machst.",
+        "en": "Say what you do after getting home."
+      },
+      "help": {
+        "keyword": "〜てから",
+        "start": "うちに帰ってから…",
+        "example": "うちに帰ってから、晩ご飯を作ります。"
+      }
+    },
+    {
+      "id": "often",
+      "text": {
+        "de": "Sag, wie oft du Tennis spielst.",
+        "en": "Say how often you play tennis."
+      },
+      "help": {
+        "keyword": "ときどき",
+        "start": "週末は…",
+        "example": "週末はときどきテニスをします。"
+      }
+    }
+  ]
+}

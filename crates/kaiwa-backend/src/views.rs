@@ -124,7 +124,14 @@ pub fn path(st: &Backend) -> anyhow::Result<Value> {
     let items = st.store.items()?;
     let today = crate::now().day();
     let mut nodes = Vec::new();
+    // Units are numbered by their place in the level, not by id: a unit added later (n5-13)
+    // sits where it belongs and the numbers stay in order (ADR-009).
+    let mut numbers: BTreeMap<String, usize> = BTreeMap::new();
     for unit in st.curriculum.path(&learning.course, lang) {
+        let prefix = unit.id.split('-').next().unwrap_or_default().to_string();
+        let n = numbers.entry(prefix.clone()).or_default();
+        *n += 1;
+        let number = format!("{}-{:02}", prefix.to_uppercase(), n);
         for sc in &unit.scenarios {
             let state = match sc.state {
                 NodeState::Done => "done",
@@ -133,8 +140,8 @@ pub fn path(st: &Backend) -> anyhow::Result<Value> {
                 NodeState::Locked => "locked",
             };
             let meta = match (&unit.locked_because, sc.state) {
-                (Some(why), NodeState::Locked) => format!("{} · {}", unit.id.to_uppercase(), why),
-                _ => format!("{} · {}", unit.id.to_uppercase(), unit.can_do),
+                (Some(why), NodeState::Locked) => format!("{number} · {why}"),
+                _ => format!("{number} · {}", unit.can_do),
             };
             nodes.push(json!({
                 "kind": "scenario",

@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "中野に住んでいます。",
+    "reply": "中野ですか。にぎやかですね。",
+    "translation": {
+      "de": "Nakano? Da ist viel los.",
+      "en": "Nakano? It's lively there."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "where"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "近くに公園があります。",
+    "reply": "いいですね。散歩しますか。",
+    "translation": {
+      "de": "Schön. Gehst du spazieren?",
+      "en": "Nice. Do you go for walks?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "near"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "近くに公園がいます。",
+    "reply": "いいですね。散歩しますか。",
+    "translation": {
+      "de": "Schön. Gehst du spazieren?",
+      "en": "Nice. Do you go for walks?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "near"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "word_choice",
+          "original": "公園がいます",
+          "better": "公園があります",
+          "explanation": "Für Dinge und Orte あります; います nur für Menschen und Tiere.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "部屋は小さいですが、静かです。",
+    "reply": "静かなのがいちばんですね。",
+    "translation": {
+      "de": "Ruhig ist das Wichtigste.",
+      "en": "Quiet is the best."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "room"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "部屋は小さいですが、静かなです。",
+    "reply": "静かなのがいちばんですね。",
+    "translation": {
+      "de": "Ruhig ist das Wichtigste.",
+      "en": "Quiet is the best."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "room"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "静かなです",
+          "better": "静かです",
+          "explanation": "Vor です steht das な-Adjektiv ohne な: 静かです.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "駅に近いですから、便利です。",
+    "reply": "それはいいですね。",
+    "translation": {
+      "de": "Das ist gut.",
+      "en": "That's good."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "reason"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

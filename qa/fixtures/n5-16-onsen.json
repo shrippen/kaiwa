@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "はい、初めてです。",
+    "reply": "そうですか。では、ご説明します。タオルはお湯に入れないでください。",
+    "translation": {
+      "de": "Gut. Dann erkläre ich es: Bitte das Handtuch nicht ins Wasser tun.",
+      "en": "I see. Then let me explain: please don't put your towel in the water."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "first"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "お風呂で写真を撮ってもいいですか。",
+    "reply": "すみません、お風呂では写真を撮らないでください。",
+    "translation": {
+      "de": "Entschuldigung, im Bad bitte keine Fotos.",
+      "en": "Sorry, please don't take photos in the bath."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "photo"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "お風呂で写真を撮るもいいですか。",
+    "reply": "すみません、お風呂では写真を撮らないでください。",
+    "translation": {
+      "de": "Entschuldigung, im Bad bitte keine Fotos.",
+      "en": "Sorry, please don't take photos in the bath."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "photo"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "撮るもいいですか",
+          "better": "撮ってもいいですか",
+          "explanation": "Um Erlaubnis bittet man mit der て-Form + もいいですか: 撮ってもいいですか.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "タオルはお湯に入れてはいけませんね。",
+    "reply": "はい、そのとおりです。",
+    "translation": {
+      "de": "Ja, genau.",
+      "en": "Yes, exactly."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "rule"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "タオルはここに置きましょうか。",
+    "reply": "はい、そちらに置いてください。",
+    "translation": {
+      "de": "Ja, legen Sie es bitte dort hin.",
+      "en": "Yes, please leave it there."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "towel"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "タオルはここに置いてましょうか。",
+    "reply": "はい、そちらに置いてください。",
+    "translation": {
+      "de": "Ja, legen Sie es bitte dort hin.",
+      "en": "Yes, please leave it there."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "towel"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "置いてましょうか",
+          "better": "置きましょうか",
+          "explanation": "ましょうか hängt am Verbstamm: 置き + ましょうか.",
+          "also_possible": false
+        }
+      ]
+    }
+  }
+]

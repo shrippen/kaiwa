@@ -1,0 +1,67 @@
+{
+  "id": "n5-16-onsen",
+  "unit": "n5-16",
+  "name": "宿の人 · Ryokan",
+  "title": {
+    "de": "Im Onsen",
+    "en": "At the onsen"
+  },
+  "character": {
+    "de": "Herr Ishida, Mitarbeiter eines Ryokan in Hakone. Ruhig und höflich, erklärt die Regeln im Bad Schritt für Schritt.",
+    "en": "Mr Ishida, staff at a ryokan in Hakone. Calm and polite, explains the bath rules step by step."
+  },
+  "register": "polite",
+  "voice": "jm_kumo",
+  "opening": "いらっしゃいませ。{温泉|おんせん}は{初|はじ}めてですか。",
+  "opening_translation": { "de": "Willkommen. Ist es dein erstes Mal im Onsen?", "en": "Welcome. Is this your first time at an onsen?" },
+  "goals": [
+    {
+      "id": "first",
+      "text": {
+        "de": "Antworte, dass es dein erstes Mal ist.",
+        "en": "Say that it is your first time."
+      },
+      "help": {
+        "keyword": "初めて（はじめて）",
+        "start": "はい、…",
+        "example": "はい、初めてです。"
+      }
+    },
+    {
+      "id": "photo",
+      "text": {
+        "de": "Frag, ob du im Bad fotografieren darfst.",
+        "en": "Ask whether you may take photos in the bath."
+      },
+      "help": {
+        "keyword": "写真（しゃしん）",
+        "start": "お風呂で写真を…",
+        "example": "お風呂で写真を撮ってもいいですか。"
+      }
+    },
+    {
+      "id": "rule",
+      "text": {
+        "de": "Wiederhole die Regel zum Handtuch, um sicherzugehen.",
+        "en": "Repeat the towel rule to make sure."
+      },
+      "help": {
+        "keyword": "入れてはいけません",
+        "start": "タオルは…",
+        "example": "タオルはお湯に入れてはいけませんね。"
+      }
+    },
+    {
+      "id": "towel",
+      "text": {
+        "de": "Frag, ob du dein Handtuch hier ablegen sollst.",
+        "en": "Ask whether you should leave your towel here."
+      },
+      "help": {
+        "keyword": "置く（おく）",
+        "start": "タオルは…",
+        "example": "タオルはここに置きましょうか。"
+      }
+    }
+  ]
+}

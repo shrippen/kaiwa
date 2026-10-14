@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "すみません、もう一度おねがいします。",
+    "reply": "はい。週末は、何をしますか。",
+    "translation": {
+      "de": "Gern. Was machst du am Wochenende?",
+      "en": "Sure. What do you do at the weekend?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "again"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "もう少しゆっくり話してください。",
+    "reply": "はい。しゅうまつは……なにを……しますか。",
+    "translation": {
+      "de": "Gern. Am Wochenende … was … machst du?",
+      "en": "Sure. At the weekend … what … do you do?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "slow"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "「Museum」は日本語で何ですか。",
+    "reply": "「美術館」です。",
+    "translation": {
+      "de": "„Bijutsukan“.",
+      "en": "“Bijutsukan”."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "word"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "「Museum」は日本語は何ですか。",
+    "reply": "「美術館」です。",
+    "translation": {
+      "de": "„Bijutsukan“.",
+      "en": "“Bijutsukan”."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "word"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "particle",
+          "original": "日本語は",
+          "better": "日本語で",
+          "explanation": "„Auf Japanisch“ heißt 日本語で: で nennt das Mittel.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "週末は美術館に行きます。",
+    "reply": "いいですね。どこの美術館ですか。",
+    "translation": {
+      "de": "Schön. Welches Museum?",
+      "en": "Nice. Which museum?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "answer"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "週末は美術館を行きます。",
+    "reply": "いいですね。どこの美術館ですか。",
+    "translation": {
+      "de": "Schön. Welches Museum?",
+      "en": "Nice. Which museum?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "answer"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "particle",
+          "original": "美術館を",
+          "better": "美術館に",
+          "explanation": "Das Ziel einer Bewegung bekommt に (oder へ): 美術館に行きます。",
+          "also_possible": false
+        }
+      ]
+    }
+  }
+]

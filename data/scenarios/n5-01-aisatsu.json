@@ -34,9 +34,9 @@
         "en": "Say something about the weather."
       },
       "help": {
-        "keyword": "そうですね",
-        "start": "そうですね、…",
-        "example": "そうですね。いい天気ですね。"
+        "keyword": "暖かい（あたたかい）",
+        "start": "そうですね。…",
+        "example": "そうですね。暖かくなりましたね。"
       }
     },
     {

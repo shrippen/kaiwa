@@ -2,7 +2,7 @@
 
 `kaiwa-dict-excerpt.sqlite` holds the rows of the data package
 [kaiwa-data](https://github.com/shrippen/kaiwa-data) 0.1.0 that the words of the scenarios, the
-recorded answers and the QA scripts look up (1,143 of 218,908 JMdict entries), in the same
+recorded answers and the QA scripts look up (1,252 of 218,908 JMdict entries), in the same
 schema. The demo (`./start.sh demo`, through `KAIWA_DICT`) and the tests read it; the program
 never contains it, and the learner downloads the full package in the settings (M-03).
 
