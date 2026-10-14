@@ -18,7 +18,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LD020/ | M | Lernermodell | core, store | Code | – |
 | /LD030/ | M | Sitzungen | core, store | Code | – |
 | /LD040/ | M | Curriculum | core | Code | – |
-| /LD050/ | M | Sprachdaten | lang | Code | – |
+| /LD050/ | M | Sprachdaten | app, backend, lang | Code | – |
 | /LD060/ | S | Widersprüche | core, store | Code | – |
 | /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | app, speech, store | geprüft | 1 von 1 automatisch grün: `mara_ptt` |
 | /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, speech, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |

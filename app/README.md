@@ -48,7 +48,7 @@ Spracherkennung, Stimme und Moren-Prüfung laufen lokal mit Modellen, die nicht 
 | ReazonSpeech (sherpa-onnx) | Spracherkennung | Apache-2.0 | 713 MB (Archiv, nur die int8-Dateien bleiben) | 160 MB |
 | Kokoro-82M (kokoro-onnx, int8) | Übergangsstimme der Figur | Apache-2.0 | 121 MB | 121 MB |
 | kaiwa-kana-ctc (huggingface.co/shrippen) | Moren-Hinweise | Apache-2.0 | 356 MB | 356 MB |
-| kaiwa-data 0.1.0 (github.com/shrippen) | Wörterbuch: Wort nachschlagen | CC BY-SA 4.0 | 26 MB | 84 MB |
+| kaiwa-data 0.2.0 (github.com/shrippen) | Wörterbuch: Wort und Namen nachschlagen | CC BY-SA 4.0 (tanos-Stufen CC BY) | 48 MB | 158 MB |
 
 Ohne Oberfläche: `cargo run -p kaiwa-speech --example fetch_models` (alle fehlenden, oder Namen als Argumente). Die Modelle liegen in `~/.local/share/kaiwa/models`, ein anderer Ort geht über `KAIWA_MODELS=/pfad`.
 

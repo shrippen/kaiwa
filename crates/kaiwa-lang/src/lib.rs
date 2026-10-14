@@ -17,7 +17,7 @@ pub use words::{Word, Words};
 
 /// The directory of the data package release this Kaiwa reads (kaiwa-data, L-06): the
 /// archive's top directory, kept as it is under [`models_dir`].
-pub const PACKAGE: &str = "kaiwa-data-0.1.0";
+pub const PACKAGE: &str = "kaiwa-data-0.2.0";
 
 /// Where downloaded models and data live: `$KAIWA_MODELS`, else `$XDG_DATA_HOME/kaiwa/models`,
 /// else `~/.local/share/kaiwa/models`. Nothing of it goes into the repository or the binary.

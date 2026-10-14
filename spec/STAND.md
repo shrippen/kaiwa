@@ -1,4 +1,4 @@
-# Stand und Übergabe (2026-10-13)
+# Stand und Übergabe (2026-10-14)
 
 Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die nächste Session zuerst lesen, dann `ROADMAP.md`. Welche Anforderung wo umgesetzt und geprüft ist, zeigt [`RUECKVERFOLGUNG.md`](RUECKVERFOLGUNG.md) (erzeugt mit `cargo run -p kaiwa-sim -- trace --write`). Starten und prüfen: `./start.sh` (`demo`, `sim`, `check`).
 
@@ -40,6 +40,17 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | M-02 | GitHub-Repo `kaiwa-data` (öffentlich), Push-Mirror von Gitea, Tag `v0.1.0` | ADR-007 |
 | M-03 | Wörterbuch nur nach Klick laden, angeboten im Wort-Popup und unter Einstellungen › Modelle | `kaiwa_speech::download::MODELS` |
 | M-04 | Soll-Akzent im Popup ohne Urteil (Kanjium) | `kaiwa-lang::accent`, `KantePitchCurve` |
+
+## Nacht zum 2026-10-14
+
+[Nachtbericht mit Fragenpaket 9](https://claude.ai/artifact/3t85sdQ6hZa4rGRsgvWHra). Umgesetzt: Curriculum-Format v2 (#33), N5 mit 16 Einheiten (#34), Tutor in den Einstellungen und Demo nur im Demo-Build (#35), N4 mit 14 Einheiten und Inhaltsprüfungen (#36), kaiwa-data 0.2.0 (Namen aus JMnedict, JLPT-Stufen von tanos) mit Namen im Wort-Popup und „Über Kaiwa“ (dieser PR). Offen in Fragenpaket 9:
+
+| ID | Frage | Vorschlag |
+|---|---|---|
+| R-01 | `mara_success_band` fällt mit 12 Seeds auf `main` 4-mal durch (oben, 0,93–0,94), mit den neuen Inhalten 5-mal; grün nur mit Seed 30 | über 12 Seeds prüfen (≥ 10 im Band), Regler zwei Schritte über 0,95 |
+| R-02 | `kaiwa-sim days` spielt fest n5-12, wenn alles gesperrt ist | stattdessen eine Wiederholungssitzung |
+| R-03 | Lernpfad nummeriert nach Position, Ids bleiben (n5-13 erscheint als N5-03) | so lassen |
+| R-04 | CI-Runner stundenlang mit Kontra belegt | Kontras Workflows gegen die Stapel-Regel prüfen, PR dort |
 
 ## Entscheidungen aus Fragenpaket 8 (2026-10-13)
 
@@ -88,6 +99,12 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
 8. **Kanji in Stücken:** `KanteRubyText` setzt ein `Text` je Zeichen; unter deutscher Locale nahm Qt für ein einzelnes Kanji oder 。 eine chinesische Schrift (andere Zeichenformen, tiefere Grundlinie). Kante 1.34 (Kante #59) setzt eine japanische Schrift, die Kopie hier ist abgeglichen.
 
 ## Lessons learned
+
+- **Eine Prüfung mit festem Seed ist nur eine Stichprobe.** `mara_success_band` war grün, fällt aber bei 4 von 12 Seeds durch. Vor dem Vertrauen in eine Simulations-Prüfung einmal über mehrere Seeds laufen lassen (`kaiwa-sim --root <Kopie>` mit geändertem `seed`).
+- **Inhalte von einer zweiten Instanz lesen lassen.** Ein Durchgang durch alle neuen Szenarien fand 17 Punkte, vier echte Fehler (eine falsche Erklärung zu くれる, eine unberechtigte Korrektur). Für neue Inhalte vor dem PR einplanen; das Muttersprachler-Review (Q-08) ersetzt es nicht und umgekehrt.
+- **Gestapelte Zweige mit `git rebase --onto`.** Ein einfaches `rebase` auf den neuen Basiszweig spielt die alten Commits noch einmal ab. Der Wörterbuch-Auszug ist binär: bei Konflikten eine Seite nehmen und danach neu bauen.
+- **IPADIC liest Zahl und Zählwort oft falsch** (三日 さんにち, 九時 きゅうじ, 七時 ななじ). Das Popup nimmt die Wörterbuch-Lesung; in Hilfesätzen Zeiten wählen, die eindeutig sind.
+- **tanos-Zellen trennen Varianten mit 、 ・ / und Leerzeichen.** Erst der Blick auf die Rohzeilen zeigte, warum 何 als N3 galt.
 
 - **Kante zuerst abgleichen, dann die App starten.** Nutzt eine Seite eine neue Eigenschaft einer Kante-Komponente, die die Kopie unter `app/qml/Kante` noch nicht hat, lädt die Seite nicht, und der Shot-Modus wartet stumm bis zum Timeout. `tools/sync-kante.sh` gegen den Kante-Zweig, dann gegen `main` nach dessen Merge.
 - **Qt schreibt ohne Terminal ins Journal.** Läuft die App mit umgeleiteter Ausgabe, landen QML-Fehler nicht in der Datei; `QT_FORCE_STDERR_LOGGING=1` holt sie zurück.

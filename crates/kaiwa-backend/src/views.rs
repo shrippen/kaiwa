@@ -390,6 +390,14 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "key": key_view(st, &p.ui_lang),
         "tutor": tutor_view(st, &p.ui_lang),
         "demoData": st.demo_data,
+        // "About" (/LD050/): the version, the licence and where the dictionary comes from.
+        "about": {
+            "version": env!("CARGO_PKG_VERSION"),
+            "sources": crate::lookup::sources()
+                .into_iter()
+                .map(|(name, licence, by)| json!({ "name": name, "licence": licence, "by": by }))
+                .collect::<Vec<_>>(),
+        },
     }))
 }
 

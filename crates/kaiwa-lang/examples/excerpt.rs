@@ -1,5 +1,5 @@
 //! Writes the dictionary excerpt for the demo and the tests (`data/dict/kaiwa-dict-excerpt.sqlite`):
-//! every entry a word of the scenarios, the recorded answers and the QA scripts can look up,
+//! every entry and name a word of the scenarios, the recorded answers and the QA scripts can look up,
 //! copied unchanged from the full package (same schema, CC BY-SA 4.0 as the package).
 //!
 //!   cargo run -p kaiwa-lang --example excerpt -- <kaiwa-dict.sqlite> [out]
@@ -53,6 +53,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for w in ws {
             keys.insert(kaiwa_lang::dict::full_width(&w.key));
             keys.insert(w.key);
+            for h in ["さん", "様", "さま", "くん", "ちゃん", "先生"] {
+                if let Some(bare) = w.text.strip_suffix(h).filter(|b| !b.is_empty()) {
+                    keys.insert(bare.to_string());
+                }
+            }
             keys.insert(w.text);
             keys.extend(w.fallback);
         }
@@ -85,6 +90,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
          INSERT INTO sense SELECT * FROM full.sense WHERE entry IN (SELECT id FROM ids);
          INSERT INTO accent SELECT * FROM full.accent
              WHERE word IN (SELECT text FROM form) OR reading IN (SELECT text FROM form WHERE kind = 'r');
+         INSERT INTO name SELECT * FROM full.name WHERE kanji IN (SELECT text FROM k)
+             OR (kanji IS NULL AND reading IN (SELECT text FROM k));
+         INSERT INTO jlpt SELECT * FROM full.jlpt WHERE word IN (SELECT text FROM form);
          INSERT INTO entity SELECT * FROM full.entity;
          INSERT INTO source SELECT * FROM full.source;
          INSERT INTO meta SELECT * FROM full.meta;
