@@ -342,7 +342,12 @@ impl qobject::Conversation {
                         end,
                         Some(&st.curriculum),
                     ) {
-                        Ok(r) => Some(recorded_json(&r, &guard, st.store.profile().ok(), &lang)),
+                        Ok(r) => {
+                            if let Err(e) = st.track_grammar(&guard, end) {
+                                eprintln!("kaiwa: {e:#}");
+                            }
+                            Some(recorded_json(&r, &guard, st.store.profile().ok(), &lang))
+                        }
                         Err(e) => {
                             eprintln!("kaiwa: {e}");
                             None

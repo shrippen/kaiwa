@@ -4,7 +4,7 @@
 //! it ([`crate::Curriculum::check_grammar`]). Each point's `pattern` drives the grammar lint
 //! (/LF221/, `tests/grammar_lint.rs`): coverage in its unit and no use before it.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -136,6 +136,105 @@ impl Catalogue {
     }
 }
 
+/// What the learner model knows about one grammar point (/LF201/, /LD020/): how often a turn
+/// used it without a mistake on it, how often a counted correction concerned it, and when it
+/// last came up.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PointState {
+    pub used: u32,
+    pub wrong: u32,
+    #[serde(default)]
+    pub last: Option<crate::clock::Day>,
+}
+
+impl PointState {
+    /// "firm" (used at least three times, at most one in five wrong), "practising" (a mistake
+    /// among the last uses) or "new".
+    pub fn status(&self) -> &'static str {
+        if self.wrong > 0 && self.wrong * 5 > self.used {
+            "practising"
+        } else if self.used >= 3 {
+            "firm"
+        } else {
+            "new"
+        }
+    }
+}
+
+/// The catalogue's patterns, compiled once.
+pub struct Matcher {
+    points: Vec<(String, regex::Regex)>,
+}
+
+impl Catalogue {
+    pub fn matcher(&self) -> Matcher {
+        Matcher {
+            points: self
+                .points
+                .iter()
+                .filter_map(|p| {
+                    let re = regex::Regex::new(p.pattern.as_deref()?).ok()?;
+                    Some((p.id.clone(), re))
+                })
+                .collect(),
+        }
+    }
+}
+
+impl Matcher {
+    /// The ids of the points a sentence uses.
+    pub fn ids<'a>(&'a self, text: &str) -> Vec<&'a str> {
+        self.points
+            .iter()
+            .filter(|(_, re)| re.is_match(text))
+            .map(|(id, _)| id.as_str())
+            .collect()
+    }
+
+    /// Counts a session's turns into `states`: a counted correction (/LF303/: not an
+    /// alternative, at least unnatural, not disputed or misrecognised) is a mistake on the
+    /// points its better form uses and the learner's words lack; the points a turn uses
+    /// without such a mistake count as used.
+    pub fn track(
+        &self,
+        states: &mut BTreeMap<String, PointState>,
+        turns: &[crate::session::TurnRecord],
+        day: crate::clock::Day,
+    ) {
+        for t in turns {
+            let mut wrong: BTreeSet<&str> = BTreeSet::new();
+            for c in crate::session::counted(t)
+                .iter()
+                .filter(|c| !c.also_possible && c.severity >= kaiwa_ai::Severity::Unnatural)
+            {
+                // Only what the correction changes: points in the better form that the
+                // learner's own words lack (を → が concerns 〜が好き, not 〜です).
+                let had = self.ids(&c.original);
+                wrong.extend(
+                    self.ids(&c.better)
+                        .into_iter()
+                        .filter(|id| !had.contains(id)),
+                );
+            }
+            for id in &wrong {
+                let s = states.entry((*id).to_string()).or_default();
+                s.wrong += 1;
+                s.last = Some(day);
+            }
+            if t.misrecognized {
+                continue;
+            }
+            for id in self.ids(&t.learner) {
+                if !wrong.contains(id) {
+                    let s = states.entry(id.to_string()).or_default();
+                    s.used += 1;
+                    s.last = Some(day);
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -181,6 +280,64 @@ mod tests {
         let b = Catalogue::merge(vec![file("n5", "ne"), file("n4", "tari")]);
         assert_eq!(a, b);
         assert_eq!(a.points[0].id, "ne");
+    }
+
+    #[test]
+    fn turns_count_into_each_points_state() {
+        use crate::session::{Input, TurnRecord};
+        use kaiwa_ai::{Correction, CorrectionKind, Severity};
+        let mut ga_suki = point("ga-suki", "〜が好きです");
+        ga_suki.pattern = Some("が好き".into());
+        let mut desu = point("desu", "〜です");
+        desu.pattern = Some("です".into());
+        let m = Catalogue {
+            points: vec![ga_suki, desu],
+        }
+        .matcher();
+        let turn = |learner: &str, better: Option<&str>| TurnRecord {
+            learner: learner.into(),
+            input: Input::Typed,
+            corrections: better
+                .map(|b| Correction {
+                    severity: Severity::Wrong,
+                    kind: CorrectionKind::Particle,
+                    original: learner.into(),
+                    better: b.into(),
+                    explanation: String::new(),
+                    also_possible: false,
+                })
+                .into_iter()
+                .collect(),
+            new_words: vec![],
+            understood: true,
+            aided: false,
+            from_help: false,
+            xp: 0,
+            reply: String::new(),
+            misrecognized: false,
+            disputed: vec![],
+        };
+        let mut states = BTreeMap::new();
+        let day = crate::clock::Day(10);
+        m.track(
+            &mut states,
+            &[
+                turn("アニメが好きです。", None),
+                turn("コーヒーを好きです。", Some("コーヒーが好きです。")),
+                turn("テニスが好きです。", None),
+                turn("音楽が好きです。", None),
+            ],
+            day,
+        );
+        let s = &states["ga-suki"];
+        assert_eq!((s.used, s.wrong), (3, 1));
+        assert_eq!(s.status(), "practising", "one in four wrong");
+        assert_eq!(
+            states["desu"].used, 4,
+            "the correction is about が, not です"
+        );
+        assert_eq!(states["desu"].wrong, 0);
+        assert_eq!(s.last, Some(day));
     }
 
     #[test]

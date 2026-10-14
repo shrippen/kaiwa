@@ -212,9 +212,32 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
         .iter()
         .map(|k| json!({ "word": k.word(lang), "step": d.get(*k), "steps": k.steps() }))
         .collect();
+    // Grammar points (/LF201/): how many sit, which are still practised, with the catalogue's
+    // explanation in the UI language.
+    let mut practising: Vec<(&String, &kaiwa_core::grammar::PointState)> = l
+        .grammar
+        .iter()
+        .filter(|(_, s)| s.status() == "practising")
+        .collect();
+    practising.sort_by_key(|(_, s)| std::cmp::Reverse((s.wrong, s.last)));
+    let grammar = json!({
+        "firm": l.grammar.values().filter(|s| s.status() == "firm").count(),
+        "seen": l.grammar.len(),
+        "practising": practising
+            .iter()
+            .take(5)
+            .filter_map(|(id, s)| st.grammar.get(id).map(|p| json!({
+                "label": p.label,
+                "explain": p.explain.get(lang),
+                "wrong": s.wrong,
+                "used": s.used,
+            })))
+            .collect::<Vec<_>>(),
+    });
     Ok(json!({
         "skills": skills,
         "weak": weak,
+        "grammar": grammar,
         "knobs": knobs,
         "speed": d.speed(),
         "offerSkip": l.regulator.offer_skip(),
@@ -530,6 +553,40 @@ mod tests {
         assert!(rows.as_array().unwrap().iter().all(|r| r["cloud"] == false));
         let (_, demo) = b.provider("n5-01-aisatsu");
         assert!(!demo, "a tutor set up is used, not the recordings");
+    }
+
+    #[test]
+    fn the_learner_view_lists_grammar_still_practised() {
+        let dir = std::env::temp_dir().join(format!("kaiwa-gstate-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let b = Backend::open_at(dir.join("g.kaiwa"), false).unwrap();
+        let mut l = b.store.learning().unwrap();
+        l.grammar.insert(
+            "ga-suki".into(),
+            kaiwa_core::grammar::PointState {
+                used: 2,
+                wrong: 2,
+                last: None,
+            },
+        );
+        l.grammar.insert(
+            "desu".into(),
+            kaiwa_core::grammar::PointState {
+                used: 9,
+                wrong: 0,
+                last: None,
+            },
+        );
+        b.store.set_learning(&l).unwrap();
+        let v = learner(&b).unwrap();
+        assert_eq!(v["grammar"]["firm"], 1);
+        assert_eq!(v["grammar"]["practising"][0]["label"], "〜が好きです");
+        assert!(
+            v["grammar"]["practising"][0]["explain"]
+                .as_str()
+                .unwrap()
+                .contains("好き")
+        );
     }
 
     #[test]

@@ -65,6 +65,38 @@ QQC2.ScrollView {
             }
         }
 
+        // Grammar points (/LF201/): how many sit, which are still practised, with explanations.
+        KanteSectionLabel {
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.topMargin: KanteStyle.unit(8)
+            visible: !!page.learner.grammar && page.learner.grammar.seen > 0
+            text: page.t("Grammatik", "Grammar")
+            rule: true
+        }
+        QQC2.Label {
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            Layout.fillWidth: true
+            visible: !!page.learner.grammar && page.learner.grammar.seen > 0
+            wrapMode: Text.Wrap
+            text: page.learner.grammar ? page.t(page.learner.grammar.firm + " von " + page.learner.grammar.seen + " benutzten Punkten sitzen.",
+                                                page.learner.grammar.firm + " of " + page.learner.grammar.seen + " points used are firm.") : ""
+            font: KanteStyle.defaultFont
+            color: KanteStyle.textColor
+        }
+        Repeater {
+            model: page.learner.grammar ? page.learner.grammar.practising : []
+            delegate: KanteListRow {
+                required property var modelData
+                Layout.fillWidth: true
+                Layout.leftMargin: KanteStyle.unit(18)
+                Layout.rightMargin: KanteStyle.unit(18)
+                text: modelData.label
+                subtitle: modelData.explain
+                meta: page.t(modelData.wrong + "× verbessert", modelData.wrong + "× corrected")
+            }
+        }
+
         KanteSectionLabel {
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.topMargin: KanteStyle.unit(8)

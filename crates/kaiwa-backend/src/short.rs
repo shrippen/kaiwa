@@ -110,6 +110,7 @@ impl ShortTalk {
                 let r =
                     b.store
                         .record(id, &self.session, self.started, now, Some(&b.curriculum))?;
+                b.track_grammar(&self.session, now)?;
                 recorded = json!({ "minutes": r.day.speaking_secs / 60, "newItems": r.new_items });
                 // XP only with gamification (/LF605/).
                 if b.store.profile()?.gamification {

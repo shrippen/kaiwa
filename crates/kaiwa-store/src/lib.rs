@@ -150,6 +150,9 @@ pub struct Learning {
     pub model: LearnerModel,
     pub regulator: Regulator,
     pub course: CourseProgress,
+    /// Each grammar point's state by catalogue id (/LF201/): used, wrong, last day.
+    #[serde(default)]
+    pub grammar: std::collections::BTreeMap<String, kaiwa_core::grammar::PointState>,
 }
 
 /// A session as listed (without its full state).
