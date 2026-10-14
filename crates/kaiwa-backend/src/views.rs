@@ -395,6 +395,28 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
     }))
 }
 
+/// The grammar of a scenario's unit (/LF220/, /LL112/): each point with its explanation in the
+/// UI language and examples in furigana markup, in the unit's order. Empty for free talk.
+pub fn grammar(st: &Backend, scenario: &str, lang: &str) -> Value {
+    let Some(unit) = st.curriculum.unit_of(scenario) else {
+        return json!([]);
+    };
+    let points: Vec<Value> = unit
+        .grammar
+        .iter()
+        .filter_map(|label| st.grammar.by_label(label))
+        .map(|p| {
+            json!({
+                "label": p.label,
+                "explain": p.explain.get(lang),
+                "examples": p.examples,
+                "level": p.level.to_uppercase(),
+            })
+        })
+        .collect();
+    json!(points)
+}
+
 /// The tutor set up in the settings (Q-15): provider, model and server as stored, what the
 /// environment overrides (local test), and whether a conversation can start.
 pub fn tutor_view(st: &Backend, lang: &str) -> Value {
@@ -508,6 +530,24 @@ mod tests {
         assert!(rows.as_array().unwrap().iter().all(|r| r["cloud"] == false));
         let (_, demo) = b.provider("n5-01-aisatsu");
         assert!(!demo, "a tutor set up is used, not the recordings");
+    }
+
+    #[test]
+    fn a_conversation_shows_its_units_grammar() {
+        let dir = std::env::temp_dir().join(format!("kaiwa-grammar-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let b = Backend::open_at(dir.join("g.kaiwa"), false).unwrap();
+        let g = grammar(&b, "n5-08-onsen", "de");
+        let labels: Vec<&str> = g
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|p| p["label"].as_str().unwrap())
+            .collect();
+        assert!(labels.contains(&"〜てもいいですか"), "{labels:?}");
+        assert!(g[0]["explain"].as_str().unwrap().len() > 10);
+        assert!(g[0]["examples"][0].as_str().unwrap().contains('{'));
+        assert_eq!(grammar(&b, "frei-shumi", "de"), json!([]));
     }
 
     #[test]

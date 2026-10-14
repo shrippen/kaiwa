@@ -1,10 +1,10 @@
 [
   {
     "learner": "電車に財布を忘れてしまったんです。",
-    "reply": "そうですか。どんな財布ですか。",
+    "reply": "そうですか。忘れ物ですね。どんな財布ですか。",
     "translation": {
-      "de": "Verstehe. Was für ein Portemonnaie?",
-      "en": "I see. What kind of wallet?"
+      "de": "Verstehe, etwas liegen gelassen. Was für ein Portemonnaie?",
+      "en": "I see, something left behind. What kind of wallet?"
     },
     "analysis": {
       "understood": true,

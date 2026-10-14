@@ -158,6 +158,11 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "sayText"]
         fn say_text(self: Pin<&mut Conversation>, text: &QString);
+
+        /// The grammar of this conversation's unit (/LF220/, /LL112/): JSON list of
+        /// {label, explain, examples, level}; empty for free talk and the placement.
+        #[qinvokable]
+        fn grammar(self: &Conversation) -> QString;
     }
 
     impl cxx_qt::Threading for Conversation {}
@@ -952,6 +957,12 @@ impl qobject::Conversation {
                 });
             }
         }
+        QString::from(&v.to_string())
+    }
+
+    fn grammar(&self) -> QString {
+        let st = state();
+        let v = kaiwa_backend::views::grammar(&st, &self.scenario().to_string(), &self.lang);
         QString::from(&v.to_string())
     }
 

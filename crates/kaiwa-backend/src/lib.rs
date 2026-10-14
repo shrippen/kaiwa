@@ -39,6 +39,11 @@ const CURRICULUM: &[&str] = &[
     include_str!("../../../data/curriculum/n5.json"),
     include_str!("../../../data/curriculum/n4.json"),
 ];
+/// The grammar catalogue (ADR-009): explanations for the grammar view of a conversation.
+const GRAMMAR: &[&str] = &[
+    include_str!("../../../data/grammar/n5.json"),
+    include_str!("../../../data/grammar/n4.json"),
+];
 const SCENARIOS: &[&str] = &[
     include_str!("../../../data/scenarios/n5-01-aisatsu.json"),
     include_str!("../../../data/scenarios/n5-02-jikoshoukai.json"),
@@ -255,6 +260,7 @@ pub struct Backend {
     pub store: Store,
     pub path: PathBuf,
     pub curriculum: Curriculum,
+    pub grammar: kaiwa_core::grammar::Catalogue,
     pub scenarios: BTreeMap<String, Scenario>,
     pub demo_data: bool,
 }
@@ -284,6 +290,7 @@ impl Backend {
         let fresh = !path.exists();
         let store = Store::open(&path)?;
         let curriculum = Curriculum::from_files(CURRICULUM)?;
+        let grammar = kaiwa_core::grammar::Catalogue::from_files(GRAMMAR)?;
         let scenarios = SCENARIOS
             .iter()
             .map(|j| Scenario::from_json(j).map(|s| (s.id.clone(), s)))
@@ -292,6 +299,7 @@ impl Backend {
             store,
             path,
             curriculum,
+            grammar,
             scenarios,
             demo_data: demo,
         };

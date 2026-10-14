@@ -470,12 +470,17 @@ Drei Stufen, jede als Test im Repo bzw. Gate im Release. Was automatisch geht, l
 
 ### 3.1 Niveau-Check gegen das Wörterbuch (automatisch, CI)
 
-**Stand 2026-10-14:** als Bericht `cargo run -p kaiwa-lang --example levels -- <kaiwa-dict.sqlite>`
-(Stufe aus dem Curriculum, sonst tanos; Namen und Partikeln ausgenommen). Über alle 30 Einheiten:
-1 566 Wörter, 127 über der Stufe ihrer Einheit, 135 ohne Stufe. Vieles davon sind Eigenheiten der
-tanos-Listen (ありがとう N3, はじめまして N2) und feste Laden- oder Telefonformeln, die verstanden,
-nicht gesprochen werden sollen. Bevor der Check die CI bricht, braucht es die Ausnahmeliste je
-Szenario (unten) und die Kalibrierung mit Häufigkeit (4.2).
+**Stand 2026-10-14:** Für die Hilfesätze (was Lernende sagen sollen) ist der Check ein Test
+(`crates/kaiwa-lang/tests/levels.rs`): jedes Wort liegt auf der Stufe seiner Einheit oder
+darunter, ist Kernwort der Einheit oder ihrer Vorgänger, oder steht begründet in
+`data/dict/level-exceptions.txt` (Grußformeln und Funktionswörter, die tanos hoch einstuft;
+Zählwörter für Personen; drei N5-Kernwort-Kandidaten). Neun N4-Wörter sind dafür Kernwörter
+ihrer Einheit geworden. Die 5-%-Regel für die Zeilen der Figur ist gemessen, aber noch keine Prüfung: Je Szenario liegen
+heute 0–69 % der bewerteten Wörter über der Stufe, fast alles tanos-Eigenheiten (そう, こんにちは,
+すぐ, 本当) und Laden-Höflichkeit zum Verstehen (いらっしゃる, 召し上がる, 少々); bei 5–35
+bewerteten Wörtern je Szenario schwankt der Anteil stark. Sie braucht erst die Kalibrierung mit
+Häufigkeit (4.2) und eine Ausnahmeliste je Szenario. Für alle Texte samt Antworten der Figur bleibt es beim Bericht
+`cargo run -p kaiwa-lang --example levels -- <kaiwa-dict.sqlite>` (`--learner` nur Hilfesätze).
 
 Für jeden japanischen Text in Curriculum und Szenarien (`opening`, `help.keyword/start/example`,
 Beispielsätze, später LLM-Vorlagen):
@@ -493,6 +498,15 @@ Beispielsätze, später LLM-Vorlagen):
 
 ### 3.2 Grammatik-Lint (automatisch, CI)
 
+**Stand 2026-10-14:** Abdeckung und Vorgriff laufen als Test `crates/kaiwa-core/tests/grammar_lint.rs`
+über Muster (`pattern`) im Katalog; 117 von 119 Punkten haben eines (ohne: einfache Form,
+Transitiv-Paare). Ein Treffer innerhalb eines längeren Treffers eines schon eingeführten Punkts
+zählt nicht als Vorgriff (ました in ありがとうございました). Der erste Lauf fand acht Punkte, die
+Beispielsätze vor ihrer Einheit nutzten; sie werden jetzt dort eingeführt, wo sie zuerst vorkommen
+(です, 〜で, い-Adjektive, 〜を二つください, 〜時に, 〜までに, 〜んですが, 〜てもらえますか),
+und ein Satz in n4-09 nutzt jetzt 〜てみたい statt 〜ていただけませんか. Register-Lint: Test in
+`kaiwa-core` (scenario.rs).
+
 - **Abdeckung:** Jeder Grammatikpunkt einer Einheit kommt in mindestens einem `help.example`
   ihrer Szenarien vor (Erkennung über das Morphologie-Muster im Katalog).
 - **Vorgriff:** Kein Beispielsatz nutzt einen Grammatikpunkt einer späteren Einheit oder Stufe,
@@ -509,7 +523,10 @@ Beispielsätze, später LLM-Vorlagen):
 
 **Stand 2026-10-14:** `cargo run -p kaiwa-sim -- review-hash` gibt je Einheit den Hash aus, den die
 Reviewerin mit `by` und `date` als `review` einträgt; ein Test bricht, wenn sich Einheit oder
-Szenario danach ändern. Wer reviewt, entscheidet Q-08 später.
+Szenario danach ändern. `cargo run -p kaiwa-sim -- review-sheet --out <dir>` schreibt je Einheit eine
+Prüfvorlage (Markdown: Kann-Satz, Grammatik mit Erklärungen, Kernwörter, Szenarien mit Hilfe und
+Aufzeichnungen samt eingebauten Fehlern, Checkliste de/en, der Hash zum Eintragen). Wer reviewt,
+entscheidet Q-08 später.
 
 - Je Einheit eine Checkliste: natürlich gesagt? Register passend zur Figur? Kulturell stimmig
   (Ryokan, Arzt, Firma)? Lesungen und Furigana richtig? Akzent der Kernwörter (Kanjium/UniDic)

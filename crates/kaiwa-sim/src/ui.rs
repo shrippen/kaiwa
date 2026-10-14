@@ -24,6 +24,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "mara_ptt" => push_to_talk(root),
         "lena_suggest_smaller" => suggest_smaller(root),
         "mara_word_lookup" => word_lookup(root),
+        "hinnerk_plain_words" => plain_words(root),
         _ => return None,
     };
     Some(match r {
@@ -74,6 +75,13 @@ fn strings(v: &Value, out: &mut Vec<String>) {
 /// literals outside any `t(…)`. A small lexer: comments skipped, calls tracked with their
 /// argument index, so concatenations and calls over several lines count too.
 fn qml_texts(src: &str) -> (Vec<String>, Vec<String>) {
+    let (_, english, bare) = qml_texts_all(src);
+    (english, bare)
+}
+
+/// [`qml_texts`] with the German halves of `t(de, en)` as well: (german, english, bare).
+fn qml_texts_all(src: &str) -> (Vec<String>, Vec<String>, Vec<String>) {
+    let mut german = Vec::new();
     let mut english = Vec::new();
     let mut bare = Vec::new();
     // (call name, argument index) per open parenthesis.
@@ -111,6 +119,7 @@ fn qml_texts(src: &str) -> (Vec<String>, Vec<String>) {
                     i += 1;
                 }
                 match calls.iter().rev().find(|(n, _)| n == "t") {
+                    Some((_, 0)) => german.push(lit),
                     Some((_, 1)) => english.push(lit),
                     Some(_) => {}
                     None if lit.chars().any(char::is_alphabetic) => bare.push(lit),
@@ -140,7 +149,50 @@ fn qml_texts(src: &str) -> (Vec<String>, Vec<String>) {
     }
     // import lines and the like are not shown.
     bare.retain(|s| !s.starts_with("qrc:") && !s.contains('/') || s.contains(' '));
-    (english, bare)
+    (german, english, bare)
+}
+
+/// Terms Hinnerk does not know (hinnerk_plain_words).
+const JARGON: [&str; 6] = ["VAD", "Token", "Latenz", "Modell", "API", "Prompt"];
+
+/// /LL112/, hinnerk_plain_words: no German text of the app uses a term of the block list
+/// unless the app explains it somewhere, in a sentence "<term> … ist/sind …" (Modelle sind
+/// die Dateien, …; Ein API-Schlüssel ist …). Whole words only: Sprachmodell is no Modell.
+fn plain_words(root: &Path) -> Result<Option<String>> {
+    let mut texts = Vec::new();
+    for e in std::fs::read_dir(root.join("app/qml"))? {
+        let p = e?.path();
+        if p.extension().is_some_and(|x| x == "qml") {
+            let (de, _, bare) = qml_texts_all(&std::fs::read_to_string(&p)?);
+            texts.extend(de);
+            texts.extend(bare.into_iter().filter(|s| german(s)));
+        }
+    }
+    let b = demo("plain-words", "de")?;
+    for v in [
+        views::today(&b, NOW)?,
+        views::path(&b)?,
+        views::review(&b, NOW, 10)?,
+        views::learner(&b)?,
+        views::stats(&b, NOW)?,
+        views::profile(&b)?,
+        views::privacy(&b, "de"),
+    ] {
+        strings(&v, &mut texts);
+    }
+    let mut unexplained = Vec::new();
+    for term in JARGON {
+        let used = regex::Regex::new(&format!(
+            r"(?:^|[^\p{{L}}]){term}(?:[^\p{{Ll}}]|e\b|en\b|s\b|$)"
+        ))?;
+        let defined = regex::Regex::new(&format!(r"{term}[\p{{L}}-]*\s+(ist|sind)\s"))?;
+        if let Some(t) = texts.iter().find(|t| used.is_match(t))
+            && !texts.iter().any(|t| defined.is_match(t))
+        {
+            unexplained.push(format!("{term} („{t}“)"));
+        }
+    }
+    Ok((!unexplained.is_empty()).then(|| format!("unexplained: {}", unexplained.join("; "))))
 }
 
 /// /LL506/: with the UI in English no German shows: the English half of every t(de, en), no

@@ -54,13 +54,13 @@
     {
       "id": "yukata",
       "text": {
-        "de": "Frag, ob du einen Yukata ausleihen kannst.",
-        "en": "Ask whether you could borrow a yukata."
+        "de": "Sag, dass du gern einmal einen Yukata tragen würdest.",
+        "en": "Say you would like to try wearing a yukata."
       },
       "help": {
         "keyword": "浴衣（ゆかた）",
         "start": "浴衣を…",
-        "example": "浴衣を貸していただけませんか。"
+        "example": "浴衣を着てみたいです。"
       }
     }
   ]

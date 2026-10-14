@@ -1,7 +1,8 @@
 //! The grammar catalogue (Q-07, ADR-009): every grammar point a unit names, with an id, the
 //! label the unit uses, its level, an explanation in Kaiwa's own words and examples. One file
 //! per level in `data/grammar/`. The level of a point is the level of the unit that introduces
-//! it ([`crate::Curriculum::check_grammar`]).
+//! it ([`crate::Curriculum::check_grammar`]). Each point's `pattern` drives the grammar lint
+//! (/LF221/, `tests/grammar_lint.rs`): coverage in its unit and no use before it.
 
 use std::collections::BTreeSet;
 
@@ -20,6 +21,11 @@ pub struct Point {
     pub level: String,
     /// Kaiwa's own explanation, short.
     pub explain: Text,
+    /// A regular expression (Rust `regex`) that finds the point in a sentence without
+    /// furigana markup, for the grammar lint (INHALT-ENTWURF 3.2); none where a pattern would
+    /// not be reliable (plain forms, transitivity pairs).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pattern: Option<String>,
     /// Example sentences in furigana markup (own or Tatoeba, CC BY).
     #[serde(default)]
     pub examples: Vec<String>,
@@ -50,8 +56,16 @@ pub enum GrammarError {
 }
 
 impl Catalogue {
-    /// The level files joined, each point with its file's level.
-    pub fn merge(files: Vec<File>) -> Catalogue {
+    /// The level files joined in course order (N5 first, as [`crate::curriculum::LEVELS`]),
+    /// each point with its file's level. The order of the files given does not matter.
+    pub fn merge(mut files: Vec<File>) -> Catalogue {
+        let rank = |l: &str| {
+            crate::curriculum::LEVELS
+                .iter()
+                .position(|x| *x == l)
+                .unwrap_or(crate::curriculum::LEVELS.len())
+        };
+        files.sort_by_key(|f| rank(&f.level));
         let mut points = Vec::new();
         for f in files {
             for mut p in f.points {
@@ -135,6 +149,7 @@ mod tests {
                 de: "x".into(),
                 en: "x".into(),
             },
+            pattern: None,
             examples: vec![],
         }
     }
@@ -154,6 +169,18 @@ mod tests {
         c.check().unwrap();
         assert_eq!(c.by_label("〜ね").unwrap().level, "n5");
         assert_eq!(c.get("tari").unwrap().level, "n4");
+    }
+
+    #[test]
+    fn files_join_in_course_order_whatever_order_they_come_in() {
+        let file = |level: &str, id: &str| File {
+            level: level.into(),
+            points: vec![point(id, id)],
+        };
+        let a = Catalogue::merge(vec![file("n4", "tari"), file("n5", "ne")]);
+        let b = Catalogue::merge(vec![file("n5", "ne"), file("n4", "tari")]);
+        assert_eq!(a, b);
+        assert_eq!(a.points[0].id, "ne");
     }
 
     #[test]

@@ -73,11 +73,11 @@
     }
   },
   {
-    "learner": "浴衣を貸していただけませんか。",
-    "reply": "もちろん。娘のがありますよ。",
+    "learner": "浴衣を着てみたいです。",
+    "reply": "いいですね。娘のを貸しましょうか。",
     "translation": {
-      "de": "Natürlich. Es gibt einen von meiner Tochter.",
-      "en": "Of course. There's one of my daughter's."
+      "de": "Schön. Soll ich dir einen von meiner Tochter leihen?",
+      "en": "Nice. Shall I lend you one of my daughter's?"
     },
     "analysis": {
       "understood": true,
@@ -86,6 +86,31 @@
       ],
       "new_words": [],
       "corrections": []
+    }
+  },
+  {
+    "learner": "浴衣を着るみたいです。",
+    "reply": "いいですね。娘のを貸しましょうか。",
+    "translation": {
+      "de": "Schön. Soll ich dir einen von meiner Tochter leihen?",
+      "en": "Nice. Shall I lend you one of my daughter's?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "yukata"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "着るみたいです",
+          "better": "着てみたいです",
+          "explanation": "Ausprobieren: て-Form + みたい: 着てみたいです. 着るみたい heißt „sieht aus, als ob ich ihn trage“.",
+          "also_possible": false
+        }
+      ]
     }
   }
 ]

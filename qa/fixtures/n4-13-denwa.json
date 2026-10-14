@@ -42,10 +42,10 @@
   },
   {
     "learner": "山口様はいらっしゃいますか。",
-    "reply": "申し訳ございません。山口はただいま席を外しております。",
+    "reply": "申し訳ございません。担当の山口はただいま席を外しております。",
     "translation": {
-      "de": "Es tut mir leid, Herr Yamaguchi ist gerade nicht am Platz.",
-      "en": "I'm sorry, Mr Yamaguchi is away from his desk at the moment."
+      "de": "Es tut mir leid, Herr Yamaguchi, der zuständig ist, ist gerade nicht am Platz.",
+      "en": "I'm sorry, Mr Yamaguchi, who handles this, is away from his desk at the moment."
     },
     "analysis": {
       "understood": true,
@@ -83,10 +83,10 @@
   },
   {
     "learner": "金曜日の会議は三時からだとお伝えください。",
-    "reply": "かしこまりました。金曜日の会議は三時から、と申し伝えます。",
+    "reply": "かしこまりました。ご伝言、確かに申し伝えます。金曜日の会議は三時から、ですね。",
     "translation": {
-      "de": "Sehr wohl. Ich richte aus, dass das Treffen am Freitag um drei beginnt.",
-      "en": "Certainly. I'll pass on that Friday's meeting starts at three."
+      "de": "Sehr wohl, ich richte die Nachricht aus: Das Treffen am Freitag beginnt um drei.",
+      "en": "Certainly, I'll pass on your message: Friday's meeting starts at three."
     },
     "analysis": {
       "understood": true,

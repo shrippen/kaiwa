@@ -1,14 +1,98 @@
 [
-  {"learner": "Tシャツをさがしています。", "reply": "こちらはいかがですか。",
-    "translation": { "de": "Wie wäre es mit diesem hier?", "en": "How about this one?" }, "analysis": {"understood": true, "goals_met": ["look"], "corrections": [], "new_words": []}},
-  {"learner": "青いのはありますか。", "reply": "はい、ございます。こちらです。",
-    "translation": { "de": "Ja, haben wir. Hier, bitte.", "en": "Yes, we do. Here it is." }, "analysis": {"understood": true, "goals_met": ["colour"], "corrections": [], "new_words": []}},
-  {"learner": "ちょっと小さいです。", "reply": "では、こちらのMサイズはいかがですか。",
-    "translation": { "de": "Dann vielleicht dieses in Größe M?", "en": "Then how about this one in size M?" }, "analysis": {"understood": true, "goals_met": ["size"], "corrections": [], "new_words": []}},
-  {"learner": "ちょっと小さいです。大きいのがほしいです。", "reply": "では、こちらのMサイズはいかがですか。",
-    "translation": { "de": "Dann vielleicht dieses in Größe M?", "en": "Then how about this one in size M?" }, "analysis": {"understood": true, "goals_met": ["size"], "corrections": [], "new_words": []}},
-  {"learner": "じゃあ、これにします。", "reply": "ありがとうございます。",
-    "translation": { "de": "Vielen Dank.", "en": "Thank you very much." }, "analysis": {"understood": true, "goals_met": ["buy"], "corrections": [], "new_words": []}},
-  {"learner": "こっちのほうがいいです。これにします。", "reply": "ありがとうございます。",
-    "translation": { "de": "Vielen Dank.", "en": "Thank you very much." }, "analysis": {"understood": true, "goals_met": ["buy"], "corrections": [], "new_words": []}}
+  {
+    "learner": "Tシャツをさがしています。",
+    "reply": "こちらはいかがですか。",
+    "translation": {
+      "de": "Wie wäre es mit diesem hier?",
+      "en": "How about this one?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "look"
+      ],
+      "corrections": [],
+      "new_words": []
+    }
+  },
+  {
+    "learner": "青いのはありますか。",
+    "reply": "はい、ございます。赤いのもありますよ。こちらです。",
+    "translation": {
+      "de": "Ja, haben wir. Es gibt auch Rot. Hier, bitte.",
+      "en": "Yes, we do. There's red too. Here it is."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "colour"
+      ],
+      "corrections": [],
+      "new_words": []
+    }
+  },
+  {
+    "learner": "ちょっと小さいです。",
+    "reply": "では、こちらのMサイズはいかがですか。",
+    "translation": {
+      "de": "Dann vielleicht dieses in Größe M?",
+      "en": "Then how about this one in size M?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "size"
+      ],
+      "corrections": [],
+      "new_words": []
+    }
+  },
+  {
+    "learner": "ちょっと小さいです。大きいのがほしいです。",
+    "reply": "では、こちらのMサイズはいかがですか。",
+    "translation": {
+      "de": "Dann vielleicht dieses in Größe M?",
+      "en": "Then how about this one in size M?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "size"
+      ],
+      "corrections": [],
+      "new_words": []
+    }
+  },
+  {
+    "learner": "じゃあ、これにします。",
+    "reply": "ありがとうございます。",
+    "translation": {
+      "de": "Vielen Dank.",
+      "en": "Thank you very much."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "buy"
+      ],
+      "corrections": [],
+      "new_words": []
+    }
+  },
+  {
+    "learner": "こっちのほうがいいです。これにします。",
+    "reply": "ありがとうございます。",
+    "translation": {
+      "de": "Vielen Dank.",
+      "en": "Thank you very much."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "buy"
+      ],
+      "corrections": [],
+      "new_words": []
+    }
+  }
 ]

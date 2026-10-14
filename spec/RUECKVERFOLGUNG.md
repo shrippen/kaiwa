@@ -8,7 +8,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 49 | 21 | 6 | 3 | 0 |
+| Muss | 49 | 22 | 5 | 3 | 0 |
 | Soll | 7 | 11 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
@@ -44,8 +44,8 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF213/ | M | Die Anpassung wirkt innerhalb einer Sitzung (sofort leichter nach … | core | geprüft | 1 von 1 automatisch grün: `jonas_scenario_stuck` |
 | /LF214/ | M | Die Schwierigkeit steigt schrittweise: Pro Sitzung ändert sich … | core | geprüft | 2 von 2 automatisch grün: `hinnerk_pace`, `mara_gradual` |
 | /LF215/ | S | Starke Unterforderung (z. B. Erfolg ≥ 95 % über drei Sitzungen) führt … | app, core | geprüft | 1 von 1 automatisch grün: `emi_skip` |
-| /LF220/ | M | Das Curriculum ist ein Graph aus Einheiten. | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_path` |
-| /LF221/ | M | Inhalte (Szenarien, Beispielsätze, Erklärungen) werden geprüft … | – | offen | – |
+| /LF220/ | M | Das Curriculum ist ein Graph aus Einheiten. | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_path` |
+| /LF221/ | M | Inhalte (Szenarien, Beispielsätze, Erklärungen) werden geprüft … | core, lang | Code | – |
 | /LF230/ | M | Wiederholung (SRS) für Wörter, Wendungen und Grammatikmuster aus … | app, backend, core, store | geprüft | 1 von 2 automatisch grün: `emi_srs_keigo`, `mara_srs_errors` |
 | /LF231/ | S | Wer eine Pause einlegt (≥ 7 Tage), steigt mit einer Auffrischung … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_comeback` |
 | /LF300/ | M | Nach jedem eigenen Zug bewertet das System Grammatik, Wortwahl … | – | geprüft | 1 von 2 automatisch grün: `emi_keigo_detect`, `selin_register_flag` |
@@ -95,7 +95,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL100/ | M | Die STT-Zeichenfehlerrate (CER) für Lernendensprache auf dem … | speech | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LL110/ | M | Fehlalarmrate der Verbesserungsvorschläge (Vorschlag bei korrekter … | core | Code | 0 von 1 automatisch grün: `theo_fp` |
 | /LL111/ | M | Trefferquote für eingebaute Fehler der Personas (Kap. 9) ≥ 85 % bei … | – | geprüft | 1 von 3 automatisch grün: `emi_keigo_detect`, `mara_recall`, `theo_tp` |
-| /LL112/ | M | Erklärungen stehen immer in der UI-Sprache und sind im Niveau der … | ai | geprüft | 1 von 4 automatisch grün: `emi_explain_examples`, `hinnerk_plain_words`, `mara_explain_de`, `theo_ui_en` |
+| /LL112/ | M | Erklärungen stehen immer in der UI-Sprache und sind im Niveau der … | ai, app, backend | geprüft | 2 von 4 automatisch grün: `emi_explain_examples`, `hinnerk_plain_words`, `mara_explain_de`, `theo_ui_en` |
 | /LL200/ | M | Vollständig per Tastatur bedienbar, mit sichtbarem Fokus (Kante … | – | geprüft | 1 von 1 automatisch grün: `theo_keyboard` |
 | /LL201/ | M | Screenreader: Alle Bedienelemente haben Accessible-Namen und -Rollen … | – | geprüft | 1 von 1 automatisch grün: `hinnerk_a11y_names` |
 | /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App … | app, store | geprüft | 1 von 2 automatisch grün: `hinnerk_font`, `hinnerk_targets` |

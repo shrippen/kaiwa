@@ -221,8 +221,8 @@ QQC2.ScrollView {
             Layout.fillWidth: true
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
-            text: page.t("Der Tutor ist das Sprachmodell, das die Figuren spielt und deine Sätze prüft. Lokal läuft er auf deinem Rechner (z. B. Ollama oder LM Studio, OpenAI-kompatibel); Anthropic Claude läuft in der Cloud und braucht einen API-Schlüssel.",
-                         "The tutor is the language model that plays the characters and checks your sentences. Locally it runs on your computer (e.g. Ollama or LM Studio, OpenAI-compatible); Anthropic Claude runs in the cloud and needs an API key.")
+            text: page.t("Der Tutor ist das Sprachmodell, das die Figuren spielt und deine Sätze prüft. Lokal läuft er auf deinem Rechner (z. B. Ollama oder LM Studio, OpenAI-kompatibel); Anthropic Claude läuft in der Cloud und braucht einen API-Schlüssel. Ein API-Schlüssel ist eine Art Passwort, mit dem Kaiwa den Dienst des Anbieters nutzen darf; du bekommst ihn in deinem Konto beim Anbieter.",
+                         "The tutor is the language model that plays the characters and checks your sentences. Locally it runs on your computer (e.g. Ollama or LM Studio, OpenAI-compatible); Anthropic Claude runs in the cloud and needs an API key. An API key is a kind of password that lets Kaiwa use the provider's service; you get it in your account with the provider.")
             wrapMode: Text.Wrap
             color: KanteStyle.mutedTextColor
             font: KanteStyle.smallFont

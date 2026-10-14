@@ -104,6 +104,15 @@ Kirigami.ScrollablePage {
                 toolTip: page.t("Hebt die Konsonanten an, für leichteres Verstehen", "Lifts the consonants, for easier understanding")
                 onClicked: conv.setSound(conv.louder, checked)
             }
+            // The grammar of the unit (/LF220/, /LL112/): explanations in the UI language,
+            // examples with readings.
+            KanteButton {
+                visible: !conv.placing && grammarDialog.points.length > 0
+                text: page.t("Grammatik", "Grammar")
+                emphasis: KanteButton.Emphasis.Quiet
+                Accessible.description: page.t("Zeigt die Grammatik dieser Einheit mit Erklärung und Beispielen.", "Shows this unit's grammar with explanations and examples.")
+                onClicked: grammarDialog.open()
+            }
             KanteButton {
                 visible: !conv.finished && !conv.placing
                 text: page.t("Später weiter", "Continue later")
@@ -527,6 +536,7 @@ Kirigami.ScrollablePage {
                 else if (next.indexOf("read:") === 0) conv.finishPlacement(Number(next.charAt(5)), Number(next.charAt(6)))
                 else if (next.indexOf("translate:") === 0) conv.listen(Number(next.substring(10)), 2)
                 // "lookup:L:W" opens the lookup of word W in line L
+                else if (next === "grammar") grammarDialog.open()
                 else if (next.indexOf("lookup:") === 0) {
                     var lw = next.substring(7).split(":")
                     var m = turnRepeater.itemAt(Number(lw[0]))
@@ -550,7 +560,62 @@ Kirigami.ScrollablePage {
         id: grabber
         interval: 600
         // An open lookup lives in the window's overlay, which cannot be grabbed: then its content.
-        onTriggered: (wordPopup.opened ? wordPopup.contentItem : page).grabToImage(function (r) { r.saveToFile(page.shot); Qt.quit() })
+        onTriggered: (wordPopup.opened ? wordPopup.contentItem : grammarDialog.opened ? grammarDialog.contentItem : page).grabToImage(function (r) { r.saveToFile(page.shot); Qt.quit() })
+    }
+
+    // The grammar of the unit: each point with its explanation and examples (ADR-009 catalogue).
+    KanteDialog {
+        id: grammarDialog
+        readonly property var points: {
+            var g = conv.scenario.length > 0 ? conv.grammar() : "[]"
+            return g.length > 0 ? JSON.parse(g) : []
+        }
+        title: page.t("Grammatik dieser Einheit", "This unit's grammar")
+        modal: true
+        anchors.centerIn: QQC2.Overlay.overlay
+        width: Math.min(page.width - KanteStyle.unit(32), KanteStyle.unit(560))
+        height: Math.min(page.height - KanteStyle.unit(48), KanteStyle.unit(640))
+        standardButtons: QQC2.Dialog.Close
+        contentItem: QQC2.ScrollView {
+            id: grammarScroll
+            contentWidth: availableWidth
+            ColumnLayout {
+                width: grammarScroll.availableWidth
+                spacing: KanteStyle.unit(14)
+                Repeater {
+                    model: grammarDialog.points
+                    delegate: ColumnLayout {
+                        id: point
+                        required property var modelData
+                        Layout.fillWidth: true
+                        spacing: KanteStyle.unit(4)
+                        Text {
+                            Layout.fillWidth: true
+                            text: point.modelData.label
+                            font: KanteStyle.japaneseFont(KanteStyle.headingFont(KanteStyle.defaultFont.pointSize * 1.1))
+                            color: KanteStyle.strongTextColor
+                            wrapMode: Text.Wrap
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: point.modelData.explain
+                            font: KanteStyle.defaultFont
+                            color: KanteStyle.textColor
+                            wrapMode: Text.Wrap
+                        }
+                        Repeater {
+                            model: point.modelData.examples
+                            delegate: KanteRubyText {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                markup: modelData
+                                density: KanteRubyText.Density.All
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // The word lookup (/LF112/): reading, meaning, part of speech and the target accent
