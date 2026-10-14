@@ -564,6 +564,11 @@ Darum führt `kaiwa-data` je Wort eine **Kaiwa-Stufe** (`n5` … `n1`, `ausser`)
 5. **Abweichungen** zwischen Curriculum, tanos und Häufigkeit über eine Stufe kommen in einen
    Bericht; ein Mensch entscheidet, die Entscheidung steht als Override-Datei im Repo.
 
+**Gemessen 2026-10-14:** JMdicts Häufigkeitsband `nf` (in kaiwa-data, aus Zeitungskorpora) trennt
+die Anfängerstufen nicht: Median nf je tanos-Stufe N5 8, N4 8, N3 6, N2 15, N1 13. Für Schritt 3
+braucht es gesprochene Häufigkeit (z. B. wordfreq aus Untertiteln, CC BY-SA 4.0) als neue Quelle
+in kaiwa-data.
+
 Falls tanos doch wegfällt, bleiben Schritte 1, 3, 4 und 5; die Kalibrierung erfolgt dann an den
 alten KANJIDIC2-Stufen und am Curriculum. In der App heißt es immer „orientiert an JLPT N4“, nie
 „JLPT-Wortschatz“, weil es keine offiziellen Listen gibt.

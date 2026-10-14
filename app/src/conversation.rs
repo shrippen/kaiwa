@@ -665,7 +665,8 @@ impl qobject::Conversation {
         };
         let log = log_of(&scenario, &state, &lang);
         let (provider, demo) = crate::state::state().provider(&scenario.id);
-        let session = Session::restore(scenario, provider, state);
+        let grammar = crate::state::state().unit_grammar(&scenario.id);
+        let session = Session::restore(scenario, provider, state).with_grammar(grammar);
         self.begin(session, Some(id), demo, log, lang);
     }
 
@@ -694,9 +695,11 @@ impl qobject::Conversation {
         };
         let (provider, demo) = state().provider(&scenario.id);
         let _ = state().arm_brake(now());
+        let grammar = state().unit_grammar(&scenario.id);
         let opening = scenario.opening.clone();
         let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
-            .with_difficulty(learning.regulator.difficulty.clone());
+            .with_difficulty(learning.regulator.difficulty.clone())
+            .with_grammar(grammar);
         let id = state().store.begin_session(&session.snapshot(), now()).ok();
         let log = vec![json!({ "who": "character", "markup": opening })];
         self.begin(session, id, demo, log, profile.ui_lang);

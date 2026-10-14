@@ -176,6 +176,9 @@ pub struct Session {
     aid_on_line: bool,
     stuck: u32,
     live: Live,
+    /// The grammar points of the scenario's unit, for the tutor's instructions; set by the
+    /// caller from the curriculum, not part of the saved state.
+    grammar: Vec<String>,
 }
 
 impl Session {
@@ -204,7 +207,20 @@ impl Session {
             aid_on_line: false,
             stuck: 0,
             live: Live::default(),
+            grammar: Vec::new(),
         }
+    }
+
+    /// The unit's grammar labels given with [`Session::with_grammar`].
+    pub fn grammar(&self) -> &[String] {
+        &self.grammar
+    }
+
+    /// The grammar of the scenario's unit (catalogue labels): the character uses it where it
+    /// fits, the analysis knows what the unit practises (/LF211/, ADR-009).
+    pub fn with_grammar(mut self, labels: Vec<String>) -> Self {
+        self.grammar = labels;
+        self
     }
 
     /// Plays the session at a difficulty: prompts, goals per scenario, help timing (/LF211/).
@@ -234,6 +250,7 @@ impl Session {
             aid_on_line: false,
             stuck: st.stuck,
             live: st.live,
+            grammar: Vec::new(),
         }
     }
 
@@ -354,7 +371,8 @@ impl Session {
     /// The learner's turn: analyse it, then let the character answer.
     pub fn turn(&mut self, text: &str, input: Input) -> Result<TurnOutcome, AiError> {
         self.messages.push(ChatMessage::user(text));
-        let analysis_request = self.request(analysis_system(&self.scenario, &self.lang));
+        let analysis_request =
+            self.request(analysis_system(&self.scenario, &self.lang, &self.grammar));
         let analysed = self.provider.analyse(&analysis_request);
         let mut analysis: Analysis = match analysed {
             Ok(a) => a,
@@ -377,6 +395,7 @@ impl Session {
             &self.scenario,
             &self.lang,
             &self.difficulty,
+            &self.grammar,
         ))) {
             Ok(r) => r,
             Err(e) => {

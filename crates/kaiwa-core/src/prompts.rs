@@ -54,10 +54,19 @@ fn level_words(s: &Scenario, d: &Difficulty) -> String {
 /// The character's reply: in role, back to the scene after something inappropriate (/LL302/),
 /// in standard Japanese up to N3 (Q-11: dialect only from N2, to listen), at the learner's level, recasting mistakes (/LF305/), giving the Japanese word when the
 /// learner asks in their own language (/LF122/).
-pub fn reply_system(s: &Scenario, lang: &str, d: &Difficulty) -> String {
+pub fn reply_system(s: &Scenario, lang: &str, d: &Difficulty, grammar: &[String]) -> String {
+    let grammar = if grammar.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "This unit practises: {}. Use these forms where they fit the scene, so the learner hears them; otherwise keep to simple structures.\n",
+            grammar.join(", ")
+        )
+    };
     format!(
         "You are a character in a Japanese speaking exercise. {character}\n\
          Speak only {register}, in standard Japanese (標準語) without any regional dialect. {level}\n\
+         {grammar}\
          When the learner makes a mistake, do not point it out: use the correct form naturally in your answer (recast).\n\
          When the learner switches to {lang_name} to ask for a word, give the Japanese word and ask them to say it.\n\
          Lead the conversation towards these goals, one at a time:\n{goals}\n\
@@ -73,10 +82,19 @@ pub fn reply_system(s: &Scenario, lang: &str, d: &Difficulty) -> String {
 
 /// The analysis of the learner's last turn: structured, strict about false alarms (/LL110/),
 /// fillers are no mistakes (/LF102/).
-pub fn analysis_system(s: &Scenario, lang: &str) -> String {
+pub fn analysis_system(s: &Scenario, lang: &str, grammar: &[String]) -> String {
+    let grammar = if grammar.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "The unit practises: {}; a mistake in one of these forms matters most.\n",
+            grammar.join(", ")
+        )
+    };
     format!(
         "You analyse the learner's last turn in a Japanese speaking exercise. The scene: {character} \
          The expected register is {register}.\n\
+         {grammar}\
          Report:\n\
          - understood: whether the character could understand what the learner meant;\n\
          - goals_met: ids of the goals the turn reached, from this list:\n{goals}\n\
@@ -104,12 +122,12 @@ mod tests {
             "../../../data/scenarios/n5-02-jikoshoukai.json"
         ))
         .unwrap();
-        let easy = reply_system(&s, "de", &Difficulty::default());
+        let easy = reply_system(&s, "de", &Difficulty::default(), &[]);
         assert!(easy.contains("at most 4 words") && easy.contains("no subordinate"));
         let mut d = Difficulty::default();
         d.set(Knob::Length, 4);
         d.set(Knob::Vocabulary, 3);
-        let hard = reply_system(&s, "de", &d);
+        let hard = reply_system(&s, "de", &d, &[]);
         assert!(hard.contains("at most 14 words") && hard.contains("3 %"));
         assert!(easy.contains("JLPT N5") && easy.contains("標準語"));
     }
@@ -118,7 +136,16 @@ mod tests {
     fn an_n4_scenario_speaks_at_n4_without_dialect() {
         let s =
             Scenario::from_json(include_str!("../../../data/scenarios/n4-14-guchi.json")).unwrap();
-        let p = reply_system(&s, "de", &Difficulty::default());
+        let p = reply_system(
+            &s,
+            "de",
+            &Difficulty::default(),
+            &["〜てしまいました".into()],
+        );
+        assert!(p.contains("This unit practises: 〜てしまいました."));
+        assert!(!reply_system(&s, "de", &Difficulty::default(), &[]).contains("practises"));
+        let a = analysis_system(&s, "de", &["〜てしまいました".into()]);
+        assert!(a.contains("The unit practises: 〜てしまいました"));
         assert!(p.contains("JLPT N4"), "{p}");
         assert!(p.contains("without any regional dialect"));
         assert!(p.contains("casual Japanese"));

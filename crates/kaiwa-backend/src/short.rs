@@ -37,7 +37,8 @@ impl ShortTalk {
             if let Some(sc) = b.scenarios.get(&state.scenario).cloned() {
                 let (p, demo) = b.provider(&sc.id);
                 return Ok(Self {
-                    session: Session::restore(sc, p, state),
+                    session: Session::restore(sc.clone(), p, state)
+                        .with_grammar(b.unit_grammar(&sc.id)),
                     id: Some(row.id),
                     started: now,
                     demo,
@@ -59,7 +60,10 @@ impl ShortTalk {
         b.arm_brake(now)?;
         let mut d = learning.regulator.difficulty.clone();
         d.set(Knob::Goals, 0);
-        let session = Session::new(sc, p, profile.feedback, &profile.ui_lang).with_difficulty(d);
+        let grammar = b.unit_grammar(&sc.id);
+        let session = Session::new(sc, p, profile.feedback, &profile.ui_lang)
+            .with_difficulty(d)
+            .with_grammar(grammar);
         let id = b.store.begin_session(&session.snapshot(), now).ok();
         Ok(Self {
             session,
@@ -159,6 +163,10 @@ mod tests {
         let now = Moment::new(1_791_100_000, 120);
         let mut t = ShortTalk::start(&b, now).unwrap();
         assert_eq!(t.session.goals().len(), 2);
+        assert!(
+            !t.session.grammar().is_empty(),
+            "the tutor knows the unit's grammar"
+        );
         let v = t.say(&b, "はい", true, now).unwrap();
         assert_eq!(v["turns"], 1);
         // The app finds the same session open (/LF507/).
@@ -166,6 +174,11 @@ mod tests {
         assert_eq!(Some(open.id), t.id);
         let again = ShortTalk::start(&b, now).unwrap();
         assert_eq!(again.session.turns().len(), 1);
+        assert_eq!(
+            again.session.grammar(),
+            t.session.grammar(),
+            "also after a restore"
+        );
     }
 
     #[test]
