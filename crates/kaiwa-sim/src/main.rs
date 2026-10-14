@@ -8,6 +8,7 @@
 mod days;
 mod engine;
 mod profile;
+mod review;
 mod run;
 mod trace;
 mod ui;
@@ -55,6 +56,16 @@ enum Command {
     /// Print each unit's content hash for its native speaker review (INHALT-ENTWURF 3.3):
     /// the reviewer enters it as `review.hash` together with `by` and `date`.
     ReviewHash,
+    /// Write a review sheet per unit (Markdown) for the native speaker review: texts, recorded
+    /// answers, grammar, checklist and the hash to enter (INHALT-ENTWURF 3.3).
+    ReviewSheet {
+        /// Directory for the sheets.
+        #[arg(long)]
+        out: PathBuf,
+        /// Only this unit.
+        #[arg(long)]
+        unit: Option<String>,
+    },
     /// Print the traceability table (requirement → code → checks).
     Trace {
         /// Write it to spec/RUECKVERFOLGUNG.md instead.
@@ -99,6 +110,18 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
+        Command::ReviewSheet { out, unit } => {
+            match review::write_sheets(&cli.root, &out, unit.as_deref()) {
+                Ok(n) => {
+                    println!("{n} review sheets in {}", out.display());
+                    ExitCode::SUCCESS
+                }
+                Err(error) => {
+                    eprintln!("error: {error:#}");
+                    ExitCode::FAILURE
+                }
+            }
+        }
         Command::ReviewHash => match review_hashes(&cli.root) {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {

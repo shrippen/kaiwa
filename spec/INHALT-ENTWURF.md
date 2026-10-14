@@ -519,7 +519,10 @@ und ein Satz in n4-09 nutzt jetzt 〜てみたい statt 〜ていただけませ
 
 **Stand 2026-10-14:** `cargo run -p kaiwa-sim -- review-hash` gibt je Einheit den Hash aus, den die
 Reviewerin mit `by` und `date` als `review` einträgt; ein Test bricht, wenn sich Einheit oder
-Szenario danach ändern. Wer reviewt, entscheidet Q-08 später.
+Szenario danach ändern. `cargo run -p kaiwa-sim -- review-sheet --out <dir>` schreibt je Einheit eine
+Prüfvorlage (Markdown: Kann-Satz, Grammatik mit Erklärungen, Kernwörter, Szenarien mit Hilfe und
+Aufzeichnungen samt eingebauten Fehlern, Checkliste de/en, der Hash zum Eintragen). Wer reviewt,
+entscheidet Q-08 später.
 
 - Je Einheit eine Checkliste: natürlich gesagt? Register passend zur Figur? Kulturell stimmig
   (Ryokan, Arzt, Firma)? Lesungen und Furigana richtig? Akzent der Kernwörter (Kanjium/UniDic)
