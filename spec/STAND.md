@@ -45,6 +45,10 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 [Nachtbericht mit Fragenpaket 9](https://claude.ai/artifact/3t85sdQ6hZa4rGRsgvWHra). Umgesetzt: Curriculum-Format v2 (#33), N5 mit 16 Einheiten (#34), Tutor in den Einstellungen und Demo nur im Demo-Build (#35), N4 mit 14 Einheiten und Inhaltsprüfungen (#36), kaiwa-data 0.2.0 (Namen aus JMnedict, JLPT-Stufen von tanos) mit Namen im Wort-Popup und „Über Kaiwa“ (#37).
 
+## Tag 2026-10-14
+
+[Tagesbericht](https://claude.ai/artifact/WygHfHhWkdQg18T8X9mZDi). Gemergt: #38 (R-02, R-03), #39 (Inhaltsprüfungen /LF221/, Grammatik im Gespräch, Review-Vorlagen, `hinnerk_plain_words`, PKGBUILD mit `!lto` und `NOTICE`), #40 (ein Zustand je Grammatikpunkt im Lernermodell, /LF201/; Profil), #41 (der Tutor kennt die Grammatik der Einheit), #42 (LOKALER-TEST), #43 (Muster für die einfache Form), #44 (`kaiwa-sim days --seeds`). Kontra #67 (Cargo-Cache im app-Job, R-04).
+
 ## Offen: Fragenpaket 10 (2026-10-14)
 
 [Fragenpaket 10](https://claude.ai/artifact/J9bfCbFdaHanLQEckNEtsC): S-01 `mara_success_band` mit Fenster 8 und 12 Seeds (Messung bei R-01 unten), S-02 drei N5-Kernwörter (チーズ, テニス, うち; bis dahin in `data/dict/level-exceptions.txt`), S-03 nächster Schwerpunkt (Vorschlag: erstes Paket, dann lokaler Test).
@@ -108,6 +112,8 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
 
 ## Lessons learned
 
+- **`read_dir` hat keine Reihenfolge.** Der Grammatik-Katalog war lokal n5-zuerst, im CI-Container n4-zuerst; ein Test hing daran. Alles, was aus Verzeichnissen zusammengesetzt wird, sortiert selbst.
+- **Ein echter Paketbau findet, was die CI nicht sieht.** `makepkg` scheiterte an LTO (`options=(!lto)`), und `NOTICE` fehlte im Paket.
 - **Eine Prüfung mit festem Seed ist nur eine Stichprobe.** `mara_success_band` war grün, fällt aber bei 4 von 12 Seeds durch. Vor dem Vertrauen in eine Simulations-Prüfung einmal über mehrere Seeds laufen lassen (`kaiwa-sim --root <Kopie>` mit geändertem `seed`).
 - **Inhalte von einer zweiten Instanz lesen lassen.** Ein Durchgang durch alle neuen Szenarien fand 17 Punkte, vier echte Fehler (eine falsche Erklärung zu くれる, eine unberechtigte Korrektur). Für neue Inhalte vor dem PR einplanen; das Muttersprachler-Review (Q-08) ersetzt es nicht und umgekehrt.
 - **Gestapelte Zweige mit `git rebase --onto`.** Ein einfaches `rebase` auf den neuen Basiszweig spielt die alten Commits noch einmal ab. Der Wörterbuch-Auszug ist binär: bei Konflikten eine Seite nehmen und danach neu bauen.
