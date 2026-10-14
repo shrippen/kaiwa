@@ -202,6 +202,7 @@
         "de": "Die einfache Form unter Freunden: Verben in der Wörterbuchform (行く, 食べる), Nomen ohne です oder mit だ. Klingt vertraut, gegenüber Fremden zu direkt.",
         "en": "The plain form among friends: verbs in the dictionary form (行く, 食べる), nouns without です or with だ. Sounds close, too direct with strangers."
       },
+      "pattern": "(する|る|く|う|つ|む|ぶ|ぬ|ぐ|す|た|だ|ない|好き|何)[？！]?$|(る|た|い|だ)よ[。！]?$",
       "examples": [
         "アニメが{好|す}き。",
         "{明日|あした}{行|い}く？"
