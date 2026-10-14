@@ -12,7 +12,12 @@ python3 -m venv .venv && . .venv/bin/activate && pip install -r spikes/requireme
 
 ## 1. KI-Anbindung (ADR-004, Spike 0.5)
 
-Wähle einen Anbieter oder beide:
+Wähle einen Anbieter oder beide. **In der App** geht das seit Q-15 ohne Umgebungsvariablen:
+`cargo run -p kaiwa-app`, dann Einstellungen › Tutor: „Lokal (OpenAI-kompatibel)“ mit Modell (z. B.
+`qwen3:14b`) und Server (leer ist Ollama auf diesem Rechner) oder „Anthropic Claude“ mit dem
+API-Schlüssel, der im Schlüsselbund landet. Ohne Tutor sagt die App, dass keiner eingerichtet ist.
+
+**Für `kaiwa-sim --live`** (kein Profil, keine Einstellungen) nimmt der Tutor die Umgebung:
 
 ```sh
 export KAIWA_PROVIDER=anthropic ANTHROPIC_API_KEY=…                 # Haiku antwortet, Sonnet analysiert
@@ -20,8 +25,11 @@ export KAIWA_PROVIDER=anthropic ANTHROPIC_API_KEY=…                 # Haiku an
 export KAIWA_PROVIDER=openai KAIWA_MODEL=qwen3:14b KAIWA_OPENAI_BASE=http://localhost:11434/v1
 ```
 
+Die Variablen überschreiben auch in der App die Einstellungen. Der Tutor bekommt die Grammatik der
+Einheit mit (#41): Achte darauf, ob die Figur sie benutzt und auf dem Niveau der Einheit bleibt.
+
 1. **Reisen automatisch:** `cargo run -p kaiwa-sim -- run --live --report qa/local/live.json`. Ergebnis: dieselben Prüfregeln wie in der CI, aber mit dem echten Tutor. Interessant sind `mara_recall` und `selin_register_flag` (Trefferquote, /LL111/), außerdem jede Korrektur bei korrekten Sätzen (Fehlalarm, /LL110/).
-2. **Von Hand:** `cargo run -p kaiwa-app`. Führ das Szenario „Sich vorstellen“ einmal richtig und einmal mit Fehlern (`qa/corpus/saetze.tsv` s01–s03). Notiere, was dir an Antworten, Korrekturen und Erklärungen auffällt.
+2. **Von Hand:** `cargo run -p kaiwa-app` (so, wie es ein Paket baut: ohne Demo). Führ das Szenario „Sich vorstellen“ einmal richtig und einmal mit Fehlern (`qa/corpus/saetze.tsv` s01–s03). Notiere, was dir an Antworten, Korrekturen und Erklärungen auffällt. Danach ein N4-Szenario, z. B. „Anruf in der Firma“ (n4-13, Keigo), über „Später weiter“ oder den Lernpfad nach dem Überspringen; der Knopf „Grammatik“ zeigt, was die Einheit übt.
 3. **Latenz:** Stopp die Zeit vom Senden bis zur Antwort, fünf Züge, notieren (Ziel /LL010/).
 4. **Sprechen und Stimme:** ReazonSpeech und Kokoro in den Einstellungen unter „Modelle“ laden (`app/README.md`, „Modelle“), dann mit Mikrofon und Lautsprecher spielen. Notiere: Wird verstanden, was du sagst? Klingt die Übergangsstimme verständlich, und stören falsche Lesarten oder Pausen? Die Zeit vom Loslassen des Knopfs bis zum ersten Ton der Figur gehört zur Latenz.
 
