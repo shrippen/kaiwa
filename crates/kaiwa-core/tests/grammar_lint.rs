@@ -149,11 +149,8 @@ fn only_a_few_points_go_without_a_pattern() {
         .filter(|p| p.pattern.is_none())
         .map(|p| p.id.as_str())
         .collect();
-    assert_eq!(
-        without,
-        ["futsuukei", "transitivity"],
-        "points without a pattern"
-    );
+    // Transitivity is about contrasting pairs; using one verb of a pair is no sign of it.
+    assert_eq!(without, ["transitivity"], "points without a pattern");
 }
 
 #[test]

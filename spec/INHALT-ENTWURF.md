@@ -499,8 +499,8 @@ Beispielsätze, später LLM-Vorlagen):
 ### 3.2 Grammatik-Lint (automatisch, CI)
 
 **Stand 2026-10-14:** Abdeckung und Vorgriff laufen als Test `crates/kaiwa-core/tests/grammar_lint.rs`
-über Muster (`pattern`) im Katalog; 117 von 119 Punkten haben eines (ohne: einfache Form,
-Transitiv-Paare). Ein Treffer innerhalb eines längeren Treffers eines schon eingeführten Punkts
+über Muster (`pattern`) im Katalog; 118 von 119 Punkten haben eines (ohne: die Transitiv-Paare,
+bei denen ein einzelnes Verb nichts über den Unterschied sagt). Ein Treffer innerhalb eines längeren Treffers eines schon eingeführten Punkts
 zählt nicht als Vorgriff (ました in ありがとうございました). Der erste Lauf fand acht Punkte, die
 Beispielsätze vor ihrer Einheit nutzten; sie werden jetzt dort eingeführt, wo sie zuerst vorkommen
 (です, 〜で, い-Adjektive, 〜を二つください, 〜時に, 〜までに, 〜んですが, 〜てもらえますか),
