@@ -43,5 +43,6 @@ Muttersprachler-Reviews.
   FNV-1a 64); `kaiwa-sim review-hash` listet ihn je Einheit, ein Test verlangt, dass ein
   eingetragener `review.hash` noch passt. Abdeckung: N5 und N4 erreichen die JF-Themen 1–13 (Test).
   Register-Lint der Hilfe-Sätze (INHALT-ENTWURF 3.2) als Test in `kaiwa-core`.
-- Noch nicht umgesetzt: Morphologie-Muster je Punkt (Grammatik-Abdeckung und Vorgriff,
-  INHALT-ENTWURF 3.2), das Release-Gate selbst (M7: jede Einheit reviewt).
+- Muster je Punkt (`pattern`, regulärer Ausdruck) für Abdeckung und Vorgriff (INHALT-ENTWURF 3.2,
+  Test `grammar_lint`).
+- Noch nicht umgesetzt: das Release-Gate selbst (M7: jede Einheit reviewt).

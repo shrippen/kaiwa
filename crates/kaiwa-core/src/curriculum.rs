@@ -673,6 +673,7 @@ mod bundled {
                 de: "x".into(),
                 en: "x".into(),
             },
+            pattern: None,
             examples: vec![],
         };
         c.check_grammar(&Catalogue {

@@ -8,6 +8,7 @@
         "de": "Am Satzende: sucht Zustimmung oder teilt ein Gefühl, etwa „nicht wahr?“ oder „was?“. Kurz und freundlich, sehr häufig im Gespräch.",
         "en": "At the end of a sentence: asks for agreement or shares a feeling, like “isn't it?”. Short and friendly, very common in talk."
       },
+      "pattern": "ね[。！？、]|ね$",
       "examples": [
         "いい{天気|てんき}ですね。"
       ]
@@ -19,6 +20,7 @@
         "de": "Dank in der Vergangenheitsform: für etwas, das abgeschlossen ist (nach dem Einkauf, nach einer Hilfe). Für etwas, das noch läuft, ありがとうございます.",
         "en": "Thanks in the past form: for something that is finished (after shopping, after help). For something still going on, ありがとうございます."
       },
+      "pattern": "ありがとうございました",
       "examples": [
         "どうもありがとうございました。"
       ]
@@ -30,6 +32,7 @@
         "de": "Höfliches „ist/bin/sind“ nach einem Nomen. Es gibt keine Unterscheidung nach Person; die Person sagt der Zusammenhang.",
         "en": "Polite “is/am/are” after a noun. There is no change by person; context says who is meant."
       },
+      "pattern": "です",
       "examples": [
         "ミラーです。",
         "{学生|がくせい}です。"
@@ -42,6 +45,7 @@
         "de": "„Ich komme aus …“: wörtlich „bin aus … gekommen“. So sagt man, woher man stammt.",
         "en": "“I'm from …”: literally “came from …”. The usual way to say where you come from."
       },
+      "pattern": "から来ました",
       "examples": [
         "ドイツから{来|き}ました。"
       ]
@@ -53,6 +57,7 @@
         "de": "„Ich mag …“: was man mag, steht vor が. 好き ist ein な-Adjektiv, kein Verb.",
         "en": "“I like …”: what you like goes before が. 好き is a な-adjective, not a verb."
       },
+      "pattern": "が好き(です|だ)?",
       "examples": [
         "アニメが{好|す}きです。"
       ]
@@ -64,6 +69,7 @@
         "de": "„… brauche ich nicht“: lehnt höflich etwas ab, das angeboten wird (Tüte, Quittung). いります heißt „brauchen“.",
         "en": "“I don't need …”: politely declines something on offer (bag, receipt). いります means “to need”."
       },
+      "pattern": "はいりません",
       "examples": [
         "{袋|ふくろ}はいりません。"
       ]
@@ -75,6 +81,7 @@
         "de": "„Wie viel kostet das?“ Die Antwort ist eine Zahl mit 円.",
         "en": "“How much is it?” The answer is a number with 円."
       },
+      "pattern": "いくら",
       "examples": [
         "これはいくらですか。",
         "{三百円|さんびゃくえん}です。"
@@ -87,6 +94,7 @@
         "de": "Zahlen: いち, に, さん … じゅう, dann 百 (ひゃく), 千 (せん), 万 (まん). Achtung auf Lautwechsel wie さんびゃく, ろっぴゃく, はっせん.",
         "en": "Numbers: いち, に, さん … じゅう, then 百 (ひゃく), 千 (せん), 万 (まん). Watch the sound changes like さんびゃく, ろっぴゃく, はっせん."
       },
+      "pattern": "[一二三四五六七八九十百千万]",
       "examples": [
         "{六百五十円|ろっぴゃくごじゅうえん}です。"
       ]
@@ -98,6 +106,7 @@
         "de": "„Geben Sie mir bitte …“: bestellt oder verlangt eine Sache. Die Sache steht vor を.",
         "en": "“Please give me …”: orders or asks for a thing. The thing goes before を."
       },
+      "pattern": "をください",
       "examples": [
         "コーヒーをください。"
       ]
@@ -109,6 +118,7 @@
         "de": "Wie 〜をください, etwas weicher und auch für Dienste: „… bitte“.",
         "en": "Like 〜をください, a little softer and also for services: “… please”."
       },
+      "pattern": "を(おねがい|お願い)します",
       "examples": [
         "{紅茶|こうちゃ}をおねがいします。"
       ]
@@ -120,6 +130,7 @@
         "de": "Allgemeine Zählwörter für Dinge bis zehn: ひとつ, ふたつ, みっつ … とお. Passen, wenn man das genaue Zählwort nicht weiß.",
         "en": "General counters for things up to ten: ひとつ, ふたつ, みっつ … とお. They fit when you don't know the exact counter."
       },
+      "pattern": "(ひと|ふた|みっ|よっ|いつ|むっ|なな|やっ|ここの|[一二三四五六七八九])つ",
       "examples": [
         "ケーキをひとつください。"
       ]
@@ -131,6 +142,7 @@
         "de": "„bis …“, für Ort und Zeit: wohin die Fahrt geht, bis wann etwas dauert.",
         "en": "“to …, until …”, for place and time: where the trip goes, how long something lasts."
       },
+      "pattern": "まで",
       "examples": [
         "{京都|きょうと}までおねがいします。"
       ]
@@ -142,6 +154,7 @@
         "de": "„Wie spät?“ / „Um wie viel Uhr?“ Uhrzeiten mit 〜時 (じ) und 〜分 (ふん/ぷん).",
         "en": "“What time?” Times with 〜時 (じ) and 〜分 (ふん/ぷん)."
       },
+      "pattern": "何時",
       "examples": [
         "{電車|でんしゃ}は{何時|なんじ}ですか。"
       ]
@@ -153,6 +166,7 @@
         "de": "Zählwort für flache Dinge: Fahrkarten, Papier, Hemden.",
         "en": "Counter for flat things: tickets, paper, shirts."
       },
+      "pattern": "枚",
       "examples": [
         "{切符|きっぷ}を{二枚|にまい}ください。"
       ]
@@ -164,6 +178,7 @@
         "de": "„Wo ist …?“ Der Ort, nach dem man fragt, steht vor は.",
         "en": "“Where is …?” The place you ask about goes before は."
       },
+      "pattern": "はどこ",
       "examples": [
         "{郵便局|ゆうびんきょく}はどこですか。"
       ]
@@ -175,6 +190,7 @@
         "de": "Die て-Form verbindet Handlungen in ihrer Reihenfolge: „… und dann …“. Die Zeit (Gegenwart, Vergangenheit) sagt erst das letzte Verb.",
         "en": "The て-form joins actions in order: “… and then …”. Only the last verb carries the tense."
       },
+      "pattern": "[てで]、",
       "examples": [
         "まっすぐ{行|い}って、{右|みぎ}に{曲|ま}がります。"
       ]
@@ -198,6 +214,7 @@
         "de": "よ bringt neue Information („weißt du“), ね sucht Zustimmung. よね verbindet beides: „…, oder?“",
         "en": "よ gives new information (“you know”), ね asks for agreement. よね joins both: “…, right?”"
       },
+      "pattern": "よね|よ[。！]",
       "examples": [
         "おいしいよ。",
         "{楽|たの}しいよね。"
@@ -210,6 +227,7 @@
         "de": "Unter Freunden mit steigender Stimme: „Wollen wir nicht …?“ Die einfache Form von 〜ませんか.",
         "en": "Among friends with a rising voice: “Shall we …?” The plain form of 〜ませんか."
       },
+      "pattern": "ない？",
       "examples": [
         "こんど、いっしょに{行|い}かない？"
       ]
@@ -221,6 +239,7 @@
         "de": "Höfliche Einladung: „Wollen wir nicht …?“ Lässt der anderen Person Raum zum Ablehnen.",
         "en": "Polite invitation: “Won't you …?” Leaves the other person room to say no."
       },
+      "pattern": "ませんか",
       "examples": [
         "{週末|しゅうまつ}、{映画|えいが}を{見|み}ませんか。"
       ]
@@ -232,6 +251,7 @@
         "de": "„Ich möchte …“: Verbstamm + たい. Für eigene Wünsche; nach Wünschen anderer fragt man vorsichtiger.",
         "en": "“I want to …”: verb stem + たい. For your own wishes; ask about others' wishes more carefully."
       },
+      "pattern": "たい",
       "examples": [
         "{美術館|びじゅつかん}に{行|い}きたいです。"
       ]
@@ -243,6 +263,7 @@
         "de": "„… treffen“: die Person steht vor に, nicht vor を.",
         "en": "“to meet …”: the person goes before に, not を."
       },
+      "pattern": "に会い",
       "examples": [
         "{駅|えき}で{友|とも}だちに{会|あ}います。"
       ]
@@ -254,6 +275,7 @@
         "de": "Zählwort für Menschen: ひとり, ふたり, dann さんにん, よにん … Im Restaurant hört man 〜名様 (めいさま).",
         "en": "Counter for people: ひとり, ふたり, then さんにん, よにん … In restaurants you hear 〜名様 (めいさま)."
       },
+      "pattern": "ひとり|ふたり|[一二三四五六七八九十何]人",
       "examples": [
         "{二人|ふたり}です。"
       ]
@@ -265,6 +287,7 @@
         "de": "Die Menge steht nach dem Ding und seiner Partikel, direkt vor dem Verb: „Ramen を ふたつ ください“.",
         "en": "The amount comes after the thing and its particle, right before the verb: “ラーメンを ふたつ ください”."
       },
+      "pattern": "を(ひと|ふた|みっ|[一二三四五])つ(ください|おねがい)",
       "examples": [
         "ラーメンを{二|ふた}つください。"
       ]
@@ -276,6 +299,7 @@
         "de": "Adjektive auf い (大きい, 青い) stehen direkt vor dem Nomen oder vor です. Sie verändern selbst ihre Form (Verneinung, Vergangenheit).",
         "en": "Adjectives ending in い (大きい, 青い) go straight before the noun or before です. They change their own form (negative, past)."
       },
+      "pattern": "い(です|の[はをが])",
       "examples": [
         "{青|あお}いTシャツ",
         "これは{小|ちい}さいです。"
@@ -288,6 +312,7 @@
         "de": "„Haben Sie … (in einer anderen Art)?“ の ersetzt das Ding: „ein kleineres“, „ein blaues“.",
         "en": "“Do you have one that's …?” の stands for the thing: “a smaller one”, “a blue one”."
       },
+      "pattern": "のはありますか",
       "examples": [
         "{小|ちい}さいのはありますか。"
       ]
@@ -299,6 +324,7 @@
         "de": "„Ich nehme …“: sagt die Entscheidung beim Auswählen.",
         "en": "“I'll take …”: states your choice when picking."
       },
+      "pattern": "にします",
       "examples": [
         "これにします。"
       ]
@@ -310,6 +336,7 @@
         "de": "„Wir sind eine Familie aus … Personen“: Zahl + 人家族.",
         "en": "“We are a family of …”: number + 人家族."
       },
+      "pattern": "人家族",
       "examples": [
         "{四人家族|よにんかぞく}です。"
       ]
@@ -321,6 +348,7 @@
         "de": "„Es gibt …/Ich habe …“ für Menschen und Tiere (いる). Für Dinge あります.",
         "en": "“There is …/I have …” for people and animals (いる). For things あります."
       },
+      "pattern": "が(\\p{Han}{1,3}|ひとり|ふたり)?います",
       "examples": [
         "{兄|あに}がいます。"
       ]
@@ -332,6 +360,7 @@
         "de": "Die eigene Familie nennt man nach außen schlicht (母, 父, 兄), die Familie anderer und die eigene in der Anrede höflich (お母さん, お父さん, お兄さん).",
         "en": "Your own family you name plainly to others (母, 父, 兄); the family of others, and your own when you address them, politely (お母さん, お父さん, お兄さん)."
       },
+      "pattern": "[母父兄姉弟妹]",
       "examples": [
         "{母|はは}は{先生|せんせい}です。",
         "お{母|かあ}さんはお{元気|げんき}ですか。"
@@ -344,6 +373,7 @@
         "de": "Höfliche Vergangenheit der Verben: 〜ます wird 〜ました, verneint 〜ませんでした.",
         "en": "Polite past of verbs: 〜ます becomes 〜ました, negative 〜ませんでした."
       },
+      "pattern": "ました",
       "examples": [
         "きのう、{映画|えいが}を{見|み}ました。"
       ]
@@ -355,6 +385,7 @@
         "de": "Vergangenheit der い-Adjektive: い fällt weg, dafür かった (おもしろい → おもしろかったです). いい wird よかったです.",
         "en": "Past of い-adjectives: い drops, かった comes in (おもしろい → おもしろかったです). いい becomes よかったです."
       },
+      "pattern": "かったです",
       "examples": [
         "とてもおもしろかったです。"
       ]
@@ -366,6 +397,7 @@
         "de": "で nennt den Ort, an dem etwas geschieht: „im Kino sehen“, „im Café essen“. Für den Ort, an dem etwas ist, に.",
         "en": "で marks where an action happens: “watch at the cinema”, “eat at the café”. For where something is, に."
       },
+      "pattern": "[\\p{Han}\\p{Katakana}]で[^すしきもは、何]",
       "examples": [
         "{駅|えき}で{会|あ}いました。"
       ]
@@ -377,6 +409,7 @@
         "de": "と nach einer Person: „mit …“. Oft mit いっしょに.",
         "en": "と after a person: “with …”. Often with いっしょに."
       },
+      "pattern": "と(いっしょ|一緒|行き|会い)|だちと",
       "examples": [
         "{友|とも}だちと{行|い}きました。"
       ]
@@ -388,6 +421,7 @@
         "de": "„Noch einmal, bitte.“ Die wichtigste Bitte im Gespräch: wer nachfragt, bleibt im Gespräch.",
         "en": "“Once more, please.” The most useful request in a conversation: asking again keeps you in it."
       },
+      "pattern": "もう一度",
       "examples": [
         "すみません、もう{一度|いちど}おねがいします。"
       ]
@@ -399,6 +433,7 @@
         "de": "Bitte um eine Handlung: て-Form + ください („bitte …“). Höflich, aber direkt; weicher ist 〜てくださいませんか.",
         "en": "Asking someone to do something: て-form + ください (“please …”). Polite but direct; softer is 〜てくださいませんか."
       },
+      "pattern": "[てで]ください",
       "examples": [
         "ゆっくり{話|はな}してください。"
       ]
@@ -410,6 +445,7 @@
         "de": "„Wie heißt … auf Japanisch?“ で nennt das Mittel, hier die Sprache.",
         "en": "“What is … in Japanese?” で names the means, here the language."
       },
+      "pattern": "日本語で",
       "examples": [
         "「Museum」は{日本語|にほんご}で{何|なん}ですか。"
       ]
@@ -421,6 +457,7 @@
         "de": "Uhrzeiten und Daten bekommen に (七時に, 五月三日に), Wochentage meist auch (月曜日に). Ohne に bleiben Wörter wie 毎朝, きょう, あした, 週末.",
         "en": "Clock times and dates take に (七時に, 五月三日に), weekdays usually too (月曜日に). Words like 毎朝, きょう, あした, 週末 go without に."
       },
+      "pattern": "時に",
       "examples": [
         "{七時|しちじ}に{起|お}きます。"
       ]
@@ -432,6 +469,7 @@
         "de": "„vor …“ zeitlich: Nomen + の前に, Verb in Wörterbuchform + 前に.",
         "en": "“before …” in time: noun + の前に, verb in dictionary form + 前に."
       },
+      "pattern": "前に",
       "examples": [
         "{仕事|しごと}の{前|まえ}に、コーヒーを{飲|の}みます。"
       ]
@@ -443,6 +481,7 @@
         "de": "„nachdem …, dann …“: て-Form + から. Das Erste ist abgeschlossen, bevor das Zweite beginnt.",
         "en": "“after …, then …”: て-form + から. The first is finished before the second starts."
       },
+      "pattern": "[てで]から",
       "examples": [
         "うちに{帰|かえ}ってから、{晩|ばん}ご{飯|はん}を{作|つく}ります。"
       ]
@@ -454,6 +493,7 @@
         "de": "Wie oft: よく (oft), ときどき (manchmal), あまり + Verneinung (selten), ぜんぜん + Verneinung (nie). Das Wort steht vor dem Verb.",
         "en": "How often: よく (often), ときどき (sometimes), あまり + negative (rarely), ぜんぜん + negative (never). The word goes before the verb."
       },
+      "pattern": "よく|ときどき|あまり",
       "examples": [
         "ときどきテニスをします。",
         "あまりしません。"
@@ -466,6 +506,7 @@
         "de": "„Ich wohne in …“: Wohnen ist ein Zustand, darum 住んでいます, und der Ort bekommt に.",
         "en": "“I live in …”: living is a state, so 住んでいます, and the place takes に."
       },
+      "pattern": "に住んで",
       "examples": [
         "{中野|なかの}に{住|す}んでいます。"
       ]
@@ -477,6 +518,7 @@
         "de": "„In/bei … gibt es …“: der Ort mit に zuerst, dann das Ding mit が und あります.",
         "en": "“At … there is …”: the place with に first, then the thing with が and あります."
       },
+      "pattern": "に[^、。]*が(あります|います)",
       "examples": [
         "{近|ちか}くに{公園|こうえん}があります。"
       ]
@@ -488,6 +530,7 @@
         "de": "な-Adjektive (静か, 便利, 好き) bekommen vor einem Nomen な (静かな部屋), vor です nichts (静かです).",
         "en": "な-adjectives (静か, 便利, 好き) take な before a noun (静かな部屋), nothing before です (静かです)."
       },
+      "pattern": "(静か|便利|好き|きれい|にぎやか|元気|大丈夫|大変)(な|です|だ)",
       "examples": [
         "{静|しず}かな{部屋|へや}です。"
       ]
@@ -499,6 +542,7 @@
         "de": "が zwischen zwei Sätzen heißt „aber“: der zweite Teil steht dem ersten entgegen.",
         "en": "が between two clauses means “but”: the second part goes against the first."
       },
+      "pattern": "(です|ます|い)が、",
       "examples": [
         "{小|ちい}さいですが、{静|しず}かです。"
       ]
@@ -510,6 +554,7 @@
         "de": "から nach einem Satz nennt den Grund: „weil …“. Der Grund steht zuerst.",
         "en": "から after a clause gives the reason: “because …”. The reason comes first."
       },
+      "pattern": "(です|ます|い|だ|る|た)から[、。]",
       "examples": [
         "{駅|えき}に{近|ちか}いですから、{便利|べんり}です。"
       ]
@@ -521,6 +566,7 @@
         "de": "Um Erlaubnis bitten: て-Form + もいいですか („darf ich …?“).",
         "en": "Asking for permission: て-form + もいいですか (“may I …?”)."
       },
+      "pattern": "[てで]もいいですか",
       "examples": [
         "{写真|しゃしん}を{撮|と}ってもいいですか。"
       ]
@@ -532,6 +578,7 @@
         "de": "Bitte, etwas nicht zu tun: ない-Form + でください.",
         "en": "Asking someone not to do something: ない-form + でください."
       },
+      "pattern": "ないでください",
       "examples": [
         "タオルを{入|い}れないでください。"
       ]
@@ -543,6 +590,7 @@
         "de": "Verbot: て-Form + はいけません („man darf nicht …“). Auf Schildern und von Personal oft zu hören.",
         "en": "Prohibition: て-form + はいけません (“you must not …”). Often heard from staff and on signs."
       },
+      "pattern": "[てで]はいけません",
       "examples": [
         "お{湯|ゆ}に{入|い}れてはいけません。"
       ]
@@ -554,6 +602,7 @@
         "de": "Anbieten oder vorschlagen: „Soll ich …?“ / „Sollen wir …?“",
         "en": "Offering or suggesting: “Shall I …?” / “Shall we …?”"
       },
+      "pattern": "ましょうか",
       "examples": [
         "{窓|まど}を{開|あ}けましょうか。"
       ]
@@ -565,6 +614,7 @@
         "de": "Veränderung bei い-Adjektiven: い wird く + なります („wird …“). Beim Wetter oft in der Vergangenheit: 暖かくなりましたね.",
         "en": "Change with い-adjectives: い becomes く + なります (“becomes …”). For the weather often in the past: 暖かくなりましたね."
       },
+      "pattern": "くな(る|ります|りました|った)",
       "examples": [
         "{暖|あたた}かくなりましたね。"
       ]
@@ -576,6 +626,7 @@
         "de": "Vergleich: „… ist mehr …“. Mit より: これよりそれのほうが大きいです.",
         "en": "Comparison: “… is more …”. With より: これよりそれのほうが大きいです."
       },
+      "pattern": "のほうが",
       "examples": [
         "こっちのほうがいいです。"
       ]
@@ -587,6 +638,7 @@
         "de": "„Ich hätte gern …“ für Dinge: was man möchte, steht vor が.",
         "en": "“I'd like …” for things: what you want goes before が."
       },
+      "pattern": "がほしい",
       "examples": [
         "もっと{大|おお}きいのがほしいです。"
       ]

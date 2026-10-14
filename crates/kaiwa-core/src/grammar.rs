@@ -20,6 +20,11 @@ pub struct Point {
     pub level: String,
     /// Kaiwa's own explanation, short.
     pub explain: Text,
+    /// A regular expression (Rust `regex`) that finds the point in a sentence without
+    /// furigana markup, for the grammar lint (INHALT-ENTWURF 3.2); none where a pattern would
+    /// not be reliable (plain forms, transitivity pairs).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pattern: Option<String>,
     /// Example sentences in furigana markup (own or Tatoeba, CC BY).
     #[serde(default)]
     pub examples: Vec<String>,
@@ -135,6 +140,7 @@ mod tests {
                 de: "x".into(),
                 en: "x".into(),
             },
+            pattern: None,
             examples: vec![],
         }
     }
