@@ -1,10 +1,82 @@
 [
-  {"learner": "コーヒーをください。", "reply": "サイズはどうしますか。",
-    "translation": { "de": "Welche Größe möchten Sie?", "en": "Which size would you like?" }, "analysis": {"understood": true, "goals_met": ["drink"], "corrections": [], "new_words": []}},
-  {"learner": "大きいのをおねがいします。", "reply": "かしこまりました。ほかに何かいかがですか。",
-    "translation": { "de": "Sehr gern. Darf es noch etwas sein?", "en": "Certainly. Would you like anything else?" }, "analysis": {"understood": true, "goals_met": ["size"], "corrections": [], "new_words": []}},
-  {"learner": "それと、チーズケーキをひとつください。", "reply": "店内でお召し上がりですか。",
-    "translation": { "de": "Zum Hieressen?", "en": "Is that for here?" }, "analysis": {"understood": true, "goals_met": ["food"], "corrections": [], "new_words": []}},
-  {"learner": "ここで食べます。", "reply": "かしこまりました。少々お待ちください。",
-    "translation": { "de": "Sehr gern. Einen Moment bitte.", "en": "Certainly. One moment, please." }, "analysis": {"understood": true, "goals_met": ["here"], "corrections": [], "new_words": []}}
+  {
+    "learner": "コーヒーをください。",
+    "reply": "サイズはどうしますか。",
+    "translation": {
+      "de": "Welche Größe möchten Sie?",
+      "en": "Which size would you like?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "drink"
+      ],
+      "corrections": [],
+      "new_words": []
+    }
+  },
+  {
+    "learner": "大きいのをおねがいします。",
+    "reply": "かしこまりました。ほかに何かいかがですか。",
+    "translation": {
+      "de": "Sehr gern. Darf es noch etwas sein?",
+      "en": "Certainly. Would you like anything else?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "size"
+      ],
+      "corrections": [],
+      "new_words": []
+    }
+  },
+  {
+    "learner": "それと、チーズケーキをひとつください。",
+    "reply": "店内でお召し上がりですか。",
+    "translation": {
+      "de": "Zum Hieressen?",
+      "en": "Is that for here?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "food"
+      ],
+      "corrections": [],
+      "new_words": []
+    }
+  },
+  {
+    "learner": "ここで食べます。",
+    "reply": "かしこまりました。少々お待ちください。",
+    "translation": {
+      "de": "Sehr gern. Einen Moment bitte.",
+      "en": "Certainly. One moment, please."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "here"
+      ],
+      "corrections": [],
+      "new_words": []
+    }
+  },
+  {
+    "learner": "紅茶をください。",
+    "reply": "紅茶ですね。サイズはどうしますか。",
+    "translation": {
+      "de": "Einen Tee. Welche Größe?",
+      "en": "A tea. What size?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "drink"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
 ]

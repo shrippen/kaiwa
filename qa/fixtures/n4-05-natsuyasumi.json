@@ -42,10 +42,10 @@
   },
   {
     "learner": "今年は一人で行くことにしたんだ。",
-    "reply": "へえ、すごい。一人旅、楽しそう。",
+    "reply": "へえ、もう決めたんだ。一人旅、楽しそう。",
     "translation": {
-      "de": "Wow, mutig. Allein reisen klingt toll.",
-      "en": "Wow, cool. Travelling alone sounds fun."
+      "de": "Wow, schon entschieden? Allein reisen klingt toll.",
+      "en": "Wow, decided already? Travelling alone sounds fun."
     },
     "analysis": {
       "understood": true,

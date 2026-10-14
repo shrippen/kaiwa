@@ -58,10 +58,10 @@
   },
   {
     "learner": "土曜日に家にいるかどうか、教えてくださいませんか。",
-    "reply": "土曜日は午前中だけ出かけますが、午後はいますよ。",
+    "reply": "土曜日は午前中だけ出かけますが、午後なら都合がいいですよ。",
     "translation": {
-      "de": "Am Samstag bin ich nur vormittags weg, nachmittags bin ich da.",
-      "en": "On Saturday I'm only out in the morning; I'm home in the afternoon."
+      "de": "Am Samstag bin ich nur vormittags weg, nachmittags passt es mir gut.",
+      "en": "On Saturday I'm only out in the morning; the afternoon suits me fine."
     },
     "analysis": {
       "understood": true,

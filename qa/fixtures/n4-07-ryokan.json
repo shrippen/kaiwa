@@ -1,10 +1,10 @@
 [
   {
     "learner": "五月三日に、二人で一泊したいんですが。",
-    "reply": "五月三日、お二人様で一泊ですね。かしこまりました。",
+    "reply": "五月三日、お二人様で一泊ですね。かしこまりました。到着は何時ごろですか。",
     "translation": {
-      "de": "Am 3. Mai, zwei Personen, eine Nacht. Sehr gern.",
-      "en": "3 May, two guests, one night. Certainly."
+      "de": "Am 3. Mai, zwei Personen, eine Nacht. Sehr gern. Wann kommen Sie etwa an?",
+      "en": "3 May, two guests, one night. Certainly. Around what time will you arrive?"
     },
     "analysis": {
       "understood": true,
@@ -17,10 +17,10 @@
   },
   {
     "learner": "もし遅くなったら、どうすればいいですか。",
-    "reply": "遅くなる場合は、お電話いただければ大丈夫です。駅を出て右に曲がると、すぐですよ。",
+    "reply": "到着が遅れる場合は、お電話いただければ大丈夫です。駅を出て右に曲がると、すぐですよ。",
     "translation": {
-      "de": "Wenn es später wird, rufen Sie einfach an. Vom Bahnhof rechts, dann sind Sie gleich da.",
-      "en": "If you're late, just call us. Turn right out of the station and you're there."
+      "de": "Wenn Sie später ankommen, rufen Sie einfach an. Vom Bahnhof rechts, dann sind Sie gleich da.",
+      "en": "If your arrival is late, just call us. Turn right out of the station and you're there."
     },
     "analysis": {
       "understood": true,
@@ -58,10 +58,10 @@
   },
   {
     "learner": "お寺なら、どこがいいですか。",
-    "reply": "お寺なら、輪王寺がおすすめです。",
+    "reply": "お寺なら、輪王寺がおすすめです。日光の名所の一つですよ。",
     "translation": {
-      "de": "Für Tempel empfehle ich den Rinnō-ji.",
-      "en": "For temples, I recommend Rinnō-ji."
+      "de": "Für Tempel empfehle ich den Rinnō-ji. Er gehört zu den Sehenswürdigkeiten von Nikko.",
+      "en": "For temples, I recommend Rinnō-ji. It's one of Nikko's famous sights."
     },
     "analysis": {
       "understood": true,
@@ -74,10 +74,10 @@
   },
   {
     "learner": "それは何というお寺ですか。",
-    "reply": "りんのうじ、というお寺です。",
+    "reply": "りんのうじ、というお寺です。うちに泊まるお客様は、よく行かれますよ。",
     "translation": {
-      "de": "Er heißt Rinnō-ji.",
-      "en": "It's called Rinnō-ji."
+      "de": "Er heißt Rinnō-ji. Unsere Gäste gehen oft dorthin.",
+      "en": "It's called Rinnō-ji. Guests who stay with us often go there."
     },
     "analysis": {
       "understood": true,

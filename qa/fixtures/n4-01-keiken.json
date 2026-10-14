@@ -1,10 +1,10 @@
 [
   {
     "learner": "子どものとき、一度着物を着たことがあります。",
-    "reply": "へえ、いいですね。どこで着ましたか。",
+    "reply": "へえ、珍しいですね。どこで着ましたか。",
     "translation": {
-      "de": "Oh, schön. Wo hast du ihn getragen?",
-      "en": "Oh, nice. Where did you wear it?"
+      "de": "Oh, das ist selten. Wo hast du ihn getragen?",
+      "en": "Oh, that's unusual. Where did you wear it?"
     },
     "analysis": {
       "understood": true,

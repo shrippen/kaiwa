@@ -1,10 +1,10 @@
 [
   {
     "learner": "天気がよかったら、鎌倉に行こうよ。",
-    "reply": "いいね！海も見たいな。",
+    "reply": "いいね！海も見たいな。じゃあ、あとで相談しよう。",
     "translation": {
-      "de": "Gute Idee! Ich will auch das Meer sehen.",
-      "en": "Good idea! I want to see the sea too."
+      "de": "Gute Idee! Ich will auch das Meer sehen. Lass uns das nachher besprechen.",
+      "en": "Good idea! I want to see the sea too. Let's talk it over later."
     },
     "analysis": {
       "understood": true,

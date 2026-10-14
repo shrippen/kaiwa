@@ -1,10 +1,10 @@
 [
   {
     "learner": "通勤のために、駅から近くて静かな部屋がいいです。",
-    "reply": "かしこまりました。では、こちらの二つはいかがですか。",
+    "reply": "かしこまりました。では、こちらの二つはいかがですか。家賃はどちらも八万円です。",
     "translation": {
-      "de": "Sehr gern. Wie wären dann diese beiden?",
-      "en": "Certainly. Then how about these two?"
+      "de": "Sehr gern. Wie wären diese beiden? Die Miete ist bei beiden 80.000 Yen.",
+      "en": "Certainly. How about these two? The rent is 80,000 yen for both."
     },
     "analysis": {
       "understood": true,
@@ -42,10 +42,10 @@
   },
   {
     "learner": "こちらのほうが駅から行きやすいですね。",
-    "reply": "そうですね。駅から歩いて五分です。",
+    "reply": "そうですね。駅から歩いて五分です。あちらのほうが少し広いですが。",
     "translation": {
-      "de": "Ja, fünf Minuten zu Fuß vom Bahnhof.",
-      "en": "Yes, five minutes' walk from the station."
+      "de": "Ja, fünf Minuten zu Fuß vom Bahnhof. Die andere ist etwas größer.",
+      "en": "Yes, five minutes' walk from the station. The other one is a little bigger, though."
     },
     "analysis": {
       "understood": true,
@@ -83,10 +83,10 @@
   },
   {
     "learner": "ごみの出し方はどこに書いてありますか。",
-    "reply": "この紙に書いてあります。燃えるごみは月曜日と木曜日です。",
+    "reply": "規則はこの紙に書いてあります。燃えるごみは月曜日と木曜日です。",
     "translation": {
-      "de": "Das steht auf diesem Blatt. Brennbarer Müll ist montags und donnerstags.",
-      "en": "It's written on this sheet. Burnable rubbish is on Mondays and Thursdays."
+      "de": "Die Regeln stehen auf diesem Blatt. Brennbarer Müll ist montags und donnerstags.",
+      "en": "The rules are on this sheet. Burnable rubbish is on Mondays and Thursdays."
     },
     "analysis": {
       "understood": true,

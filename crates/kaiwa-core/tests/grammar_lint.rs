@@ -160,3 +160,59 @@ fn only_a_few_points_go_without_a_pattern() {
 fn plain_drops_the_readings() {
     assert_eq!(plain("{駅|えき}まで{歩|ある}く"), "駅まで歩く");
 }
+
+/// INHALT-ENTWURF 3.1: every core word of a unit occurs in one of its scenarios or recorded
+/// answers, as written, in kana (the reading of its furigana) or with its last kana dropped
+/// (住む → 住んで). A core word the learner never meets is no core word.
+#[test]
+fn core_words_occur_in_their_unit() {
+    let c = Curriculum::from_dir(&root().join("data/curriculum")).unwrap();
+    let readings = |s: &str| {
+        // {漢字|かな} → かな
+        let mut out = String::new();
+        let mut rest = s;
+        while let Some(i) = rest.find('{') {
+            out.push_str(&rest[..i]);
+            let tail = &rest[i + 1..];
+            match (tail.find('|'), tail.find('}')) {
+                (Some(bar), Some(end)) if bar < end => {
+                    out.push_str(&tail[bar + 1..end]);
+                    rest = &tail[end + 1..];
+                }
+                _ => rest = tail,
+            }
+        }
+        out + rest
+    };
+    let mut missing = Vec::new();
+    for u in &c.units {
+        let mut raw = String::new();
+        for id in &u.scenarios {
+            raw +=
+                &std::fs::read_to_string(root().join(format!("data/scenarios/{id}.json"))).unwrap();
+            raw += &std::fs::read_to_string(root().join(format!("qa/fixtures/{id}.json")))
+                .unwrap_or_default();
+        }
+        let text = plain(&raw) + &readings(&raw);
+        for w in &u.words {
+            let stem: String = {
+                let mut cs: Vec<char> = w.chars().collect();
+                if cs.len() > 1
+                    && cs
+                        .last()
+                        .is_some_and(|c| "うくぐすつぬぶむるい".contains(*c))
+                {
+                    cs.pop();
+                }
+                cs.into_iter().collect()
+            };
+            if !text.contains(w.as_str()) && !text.contains(&stem) {
+                missing.push(format!("{}: {w}", u.id));
+            }
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "core words never used in their unit: {missing:#?}"
+    );
+}
