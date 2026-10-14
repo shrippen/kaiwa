@@ -351,10 +351,35 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                 xp += XP_REVIEW;
             }
 
-            // The conversation.
-            let scenario = curriculum
-                .next_scenario(&course)
-                .unwrap_or_else(|| "n5-16-kinou".into());
+            // The conversation. When everything open waits for its reviews (/LF220/: a unit
+            // unlocks only when the reviews of the units before it go well), the learner
+            // reviews instead (R-02): items with a unit, due or not, ten at most.
+            let Some(scenario) = curriculum.next_scenario(&course) else {
+                let shaky: Vec<String> = items
+                    .iter()
+                    .filter(|i| i.unit.is_some())
+                    .map(|i| i.text.clone())
+                    .take(10)
+                    .collect();
+                let mut extra = 0;
+                for text in &shaky {
+                    let Some(item) = items.iter_mut().find(|i| &i.text == text) else {
+                        continue;
+                    };
+                    let right = rng.chance(0.45 + 0.5 * item.retrievability(at));
+                    item.review(Grade::of(right, false, false), at);
+                    if let Some(unit) = &item.unit {
+                        course.reviewed(unit, right);
+                    }
+                    extra += 1;
+                    xp += XP_REVIEW;
+                }
+                let rec = records.entry(at.day()).or_default();
+                rec.reviews_done += reviews + extra;
+                rec.xp += xp;
+                last_practice = Some(at.plus_secs((minutes * 60.0) as i64));
+                continue;
+            };
             let unit = curriculum.unit_of(&scenario).map(|u| u.id.clone());
             let d = regulator.difficulty.clone();
             let (lis, con) = (d.listening_level(), d.content_level());

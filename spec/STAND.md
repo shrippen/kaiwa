@@ -43,14 +43,18 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 ## Nacht zum 2026-10-14
 
-[Nachtbericht mit Fragenpaket 9](https://claude.ai/artifact/3t85sdQ6hZa4rGRsgvWHra). Umgesetzt: Curriculum-Format v2 (#33), N5 mit 16 Einheiten (#34), Tutor in den Einstellungen und Demo nur im Demo-Build (#35), N4 mit 14 Einheiten und Inhaltsprüfungen (#36), kaiwa-data 0.2.0 (Namen aus JMnedict, JLPT-Stufen von tanos) mit Namen im Wort-Popup und „Über Kaiwa“ (dieser PR). Offen in Fragenpaket 9:
+[Nachtbericht mit Fragenpaket 9](https://claude.ai/artifact/3t85sdQ6hZa4rGRsgvWHra). Umgesetzt: Curriculum-Format v2 (#33), N5 mit 16 Einheiten (#34), Tutor in den Einstellungen und Demo nur im Demo-Build (#35), N4 mit 14 Einheiten und Inhaltsprüfungen (#36), kaiwa-data 0.2.0 (Namen aus JMnedict, JLPT-Stufen von tanos) mit Namen im Wort-Popup und „Über Kaiwa“ (#37).
 
-| ID | Frage | Vorschlag |
+## Entscheidungen aus Fragenpaket 9 (2026-10-14)
+
+Allgemein (gilt für alle Projekte, `../CLAUDE.md`): Vor dem ersten Release sind Breaking Changes in Ordnung, migrieren statt um alte Ids herum bauen.
+
+| ID | Entscheidung | Stand |
 |---|---|---|
-| R-01 | `mara_success_band` fällt mit 12 Seeds auf `main` 4-mal durch (oben, 0,93–0,94), mit den neuen Inhalten 5-mal; grün nur mit Seed 30 | über 12 Seeds prüfen (≥ 10 im Band), Regler zwei Schritte über 0,95 |
-| R-02 | `kaiwa-sim days` spielt fest n5-16, wenn alles gesperrt ist | stattdessen eine Wiederholungssitzung |
-| R-03 | Lernpfad nummeriert nach Position, Ids bleiben (n5-03 erscheint als N5-04) | so lassen |
-| R-04 | CI-Runner stundenlang mit Kontra belegt | Kontras Workflows gegen die Stapel-Regel prüfen, PR dort |
+| R-01 | `mara_success_band` über 12 Seeds prüfen (≥ 10 im Band), Regler zwei Schritte über 0,95 | **Nicht umgesetzt, neue Frage:** gemessen hält das Band mit Fenster 5 nur 7 von 12 Seeds; zwei Schritte über 0,95 verschlechtern auf 4 von 12 (überschießt), ein Mittel über zwei Sitzungen bringt 8 von 12. Mit Fenster 8 halten alle Varianten das Band: Bei 3–4 Zielen je Sitzung schwankt der Erfolg in Schritten von 0,25, fünf Sitzungen sind dafür zu wenig. Das ändert die Prüfregel und braucht deine Entscheidung. Bis dahin bleibt die Prüfung bei Seed 30. |
+| R-02 | Simulation wiederholt, wenn alles gesperrt ist | `kaiwa-sim` (days): bis zu zehn Elemente statt einer gesperrten Einheit |
+| R-03 | Ids müssen nicht stabil sein | Einheiten und Szenarien tragen Ids in Pfad-Reihenfolge; Store-Migration 2 schreibt alte Profile um |
+| R-04 | Kontras CI anpassen | Kontra #67: Rust-Build im app-Job cachen (der Qt-Cache greift meist schon; die Stapel-Regeln hält Kontra ein) |
 
 ## Entscheidungen aus Fragenpaket 8 (2026-10-13)
 
