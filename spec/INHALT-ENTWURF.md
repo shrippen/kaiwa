@@ -475,7 +475,11 @@ Drei Stufen, jede als Test im Repo bzw. Gate im Release. Was automatisch geht, l
 darunter, ist Kernwort der Einheit oder ihrer Vorgänger, oder steht begründet in
 `data/dict/level-exceptions.txt` (Grußformeln und Funktionswörter, die tanos hoch einstuft;
 Zählwörter für Personen; drei N5-Kernwort-Kandidaten). Neun N4-Wörter sind dafür Kernwörter
-ihrer Einheit geworden. Für alle Texte samt Antworten der Figur bleibt es beim Bericht
+ihrer Einheit geworden. Die 5-%-Regel für die Zeilen der Figur ist gemessen, aber noch keine Prüfung: Je Szenario liegen
+heute 0–69 % der bewerteten Wörter über der Stufe, fast alles tanos-Eigenheiten (そう, こんにちは,
+すぐ, 本当) und Laden-Höflichkeit zum Verstehen (いらっしゃる, 召し上がる, 少々); bei 5–35
+bewerteten Wörtern je Szenario schwankt der Anteil stark. Sie braucht erst die Kalibrierung mit
+Häufigkeit (4.2) und eine Ausnahmeliste je Szenario. Für alle Texte samt Antworten der Figur bleibt es beim Bericht
 `cargo run -p kaiwa-lang --example levels -- <kaiwa-dict.sqlite>` (`--learner` nur Hilfesätze).
 
 Für jeden japanischen Text in Curriculum und Szenarien (`opening`, `help.keyword/start/example`,
