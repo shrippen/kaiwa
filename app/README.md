@@ -108,6 +108,7 @@ cargo run -p kaiwa-app --features demo -- --shot out.png --view talk --resume   
 KAIWA_DICT=data/dict/kaiwa-dict-excerpt.sqlite \
   cargo run -p kaiwa-app --features demo -- --shot out.png --view talk --say 'lookup:0:3' # Wort 3 der Zeile 0 nachschlagen: das Bild zeigt nur das Popup
 cargo run -p kaiwa-app --features demo -- --shot out.png --view place --say '…|read:21'  # Einstufung; "read:KK" beantwortet die Lesefragen
+cargo run -p kaiwa-app --features demo -- --shot out.png --view talk --scenario n5-08-onsen --say 'grammar' # die Grammatik der Einheit (nur der Dialog)
 ```
 
 ## Wort nachschlagen
