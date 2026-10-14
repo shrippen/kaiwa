@@ -673,7 +673,7 @@ pub fn mistake_kinds(t: &TurnRecord) -> Vec<String> {
 }
 
 /// The corrections of a turn that still count: none for a misrecognised turn, none disputed.
-fn counted(t: &TurnRecord) -> Vec<Correction> {
+pub(crate) fn counted(t: &TurnRecord) -> Vec<Correction> {
     if t.misrecognized {
         return Vec::new();
     }

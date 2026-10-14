@@ -176,6 +176,7 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
         let started = now.plus_secs(-days_ago * 86_400 - 3600);
         st.store
             .put_finished_session(&s.snapshot(), started, started.plus_secs(420), 0.8)?;
+        st.track_grammar(&s, started)?;
     }
     Ok(())
 }

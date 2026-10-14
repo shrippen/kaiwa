@@ -261,6 +261,8 @@ pub struct Backend {
     pub path: PathBuf,
     pub curriculum: Curriculum,
     pub grammar: kaiwa_core::grammar::Catalogue,
+    /// The catalogue's patterns, compiled once (grammar points in the learner model).
+    pub grammar_matcher: kaiwa_core::grammar::Matcher,
     pub scenarios: BTreeMap<String, Scenario>,
     pub demo_data: bool,
 }
@@ -299,6 +301,7 @@ impl Backend {
             store,
             path,
             curriculum,
+            grammar_matcher: grammar.matcher(),
             grammar,
             scenarios,
             demo_data: demo,
@@ -325,6 +328,16 @@ pub const DEMO: bool = cfg!(any(test, feature = "demo"));
 static DEMO_MARKER: [u8; 16] = *b"kaiwa:demo-build";
 
 impl Backend {
+    /// After a recorded session: each grammar point the learner used or got corrected on
+    /// (/LF201/), into the learner model of the profile.
+    pub fn track_grammar(&self, session: &kaiwa_core::Session, now: Moment) -> anyhow::Result<()> {
+        let mut l = self.store.learning()?;
+        self.grammar_matcher
+            .track(&mut l.grammar, session.turns(), now.day());
+        self.store.set_learning(&l)?;
+        Ok(())
+    }
+
     /// The tutor of the profile (Q-15).
     pub fn tutor(&self) -> kaiwa_ai::Tutor {
         self.store.profile().map(|p| p.tutor).unwrap_or_default()
