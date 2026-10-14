@@ -256,6 +256,29 @@ impl Curriculum {
         Self::from_files(&refs).map_err(std::io::Error::other)
     }
 
+    /// What the native speaker review (INHALT-ENTWURF 3.3, `review.hash`) is about: the unit
+    /// without its review and the files of its scenarios, as FNV-1a 64 in hex. Any change to the
+    /// unit or a scenario changes it, so a review no longer matches (release gate, M7). A change
+    /// detector, not a signature.
+    pub fn content_hash(unit: &Unit, scenarios: &[&str]) -> String {
+        let mut u = unit.clone();
+        u.review = None;
+        u.level = None;
+        let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+        let mut eat = |bytes: &[u8]| {
+            for b in bytes {
+                h ^= u64::from(*b);
+                h = h.wrapping_mul(0x0000_0100_0000_01b3);
+            }
+        };
+        eat(serde_json::to_string(&u).unwrap_or_default().as_bytes());
+        for s in scenarios {
+            eat(b"\n");
+            eat(s.as_bytes());
+        }
+        format!("{h:016x}")
+    }
+
     /// The grammar points of the units against the catalogue: every point is in it, and its
     /// level is the level of the first unit that uses it.
     pub fn check_grammar(
@@ -443,21 +466,29 @@ impl Curriculum {
     }
 
     /// After the placement (/LF200/, /LF215/): the units below the learner's level, to offer
-    /// skipping at once. A learner who speaks and understands at N4 or above (heritage speakers,
-    /// false beginners) does not have to start with N5 greetings.
+    /// skipping at once, in path order. A learner who speaks and understands at N4 or above
+    /// (heritage speakers, false beginners) does not have to start with N5 greetings; at N3 or
+    /// above the N4 units go too. The offer stops at the first unit the learner is not ready
+    /// for: one above the level, or one with keigo (`keigo`) while the register lacks it.
     pub fn placement_skip(
         &self,
         m: &crate::learner::LearnerModel,
         p: &CourseProgress,
+        keigo: impl Fn(&Unit) -> bool,
     ) -> Vec<String> {
-        use crate::learner::Skill;
-        let n4 = crate::learner::level_index("n4").unwrap_or(5.0);
-        if m.level(Skill::Speaking) < n4 || m.level(Skill::Listening) < n4 {
-            return Vec::new();
-        }
+        use crate::learner::{Skill, level_index};
+        let level = m.level(Skill::Speaking).min(m.level(Skill::Listening));
+        let at = |name: &str| level_index(name).unwrap_or(f64::MAX);
+        let ready = |u: &Unit| match u.id.split('-').next() {
+            Some("n5") => level >= at("n4"),
+            Some("n4") => level >= at("n3"),
+            _ => false,
+        };
+        let keigo_ok = m.level(Skill::Register) >= at("keigo_basic");
         self.units
             .iter()
-            .filter(|u| u.id.starts_with("n5") && !self.unit_done(u, p))
+            .take_while(|u| ready(u) && (keigo_ok || !keigo(u)))
+            .filter(|u| !self.unit_done(u, p))
             .map(|u| u.id.clone())
             .collect()
     }
@@ -661,6 +692,91 @@ mod bundled {
             }),
             Err(CurriculumError::UnknownGrammar(_, _))
         ));
+    }
+
+    /// A recorded review still matches its unit and scenarios (INHALT-ENTWURF 3.3).
+    #[test]
+    fn recorded_reviews_match_the_content() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let c = Curriculum::from_dir(&root.join("data/curriculum")).unwrap();
+        for u in &c.units {
+            let texts: Vec<String> = u
+                .scenarios
+                .iter()
+                .map(|s| {
+                    std::fs::read_to_string(root.join(format!("data/scenarios/{s}.json"))).unwrap()
+                })
+                .collect();
+            let refs: Vec<&str> = texts.iter().map(String::as_str).collect();
+            let now = Curriculum::content_hash(u, &refs);
+            if let Some(h) = u.review.as_ref().and_then(|r| r.hash.as_deref()) {
+                assert_eq!(h, now, "{} changed after its review", u.id);
+            }
+            let mut changed = texts.clone();
+            changed[0].push(' ');
+            let refs: Vec<&str> = changed.iter().map(String::as_str).collect();
+            assert_ne!(Curriculum::content_hash(u, &refs), now);
+        }
+    }
+
+    /// Q-07: N5 and N4 together reach every everyday topic of the JF Standard (1 self and
+    /// family … 13 language and culture); 14 media and 15 science belong to the B levels.
+    #[test]
+    fn the_a_levels_cover_the_everyday_topics() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let c = Curriculum::from_dir(&root.join("data/curriculum")).unwrap();
+        let covered: BTreeSet<u8> = c
+            .units
+            .iter()
+            .filter(|u| u.id.starts_with("n5") || u.id.starts_with("n4"))
+            .flat_map(|u| u.topics.iter().copied())
+            .collect();
+        let missing: Vec<u8> = (1..=13).filter(|t| !covered.contains(t)).collect();
+        assert!(missing.is_empty(), "JF topics without a unit: {missing:?}");
+        assert!(
+            c.units.iter().all(|u| !u.topics.is_empty()),
+            "every unit names its topics"
+        );
+    }
+
+    #[test]
+    fn a_native_speaker_skips_up_to_keigo() {
+        use crate::learner::{LearnerModel, Skill, level_index};
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let c = Curriculum::from_dir(&root.join("data/curriculum")).unwrap();
+        let mut m = LearnerModel::default();
+        for s in [Skill::Speaking, Skill::Listening] {
+            m.set(s, level_index("native_casual").unwrap());
+        }
+        m.set(
+            Skill::Register,
+            level_index("desu_masu_and_casual").unwrap(),
+        );
+        let keigo = |u: &Unit| u.id == "n4-11";
+        let offer = c.placement_skip(&m, &CourseProgress::default(), keigo);
+        assert!(offer.contains(&"n5-01".to_string()));
+        assert!(offer.contains(&"n4-14".to_string()));
+        assert!(
+            !offer.contains(&"n4-11".to_string()),
+            "keigo is where she starts"
+        );
+        assert!(
+            !offer.contains(&"n4-12".to_string()),
+            "nothing after the keigo unit"
+        );
+        // With keigo she may skip it too.
+        m.set(Skill::Register, level_index("keigo_basic").unwrap());
+        assert!(
+            c.placement_skip(&m, &CourseProgress::default(), keigo)
+                .contains(&"n4-12".to_string())
+        );
+        // At N4 only the N5 units.
+        for s in [Skill::Speaking, Skill::Listening] {
+            m.set(s, level_index("n4").unwrap());
+        }
+        let offer = c.placement_skip(&m, &CourseProgress::default(), keigo);
+        assert!(offer.iter().all(|u| u.starts_with("n5")));
+        assert_eq!(offer.len(), 16);
     }
 
     #[test]

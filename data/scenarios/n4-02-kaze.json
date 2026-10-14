@@ -1,0 +1,67 @@
+{
+  "id": "n4-02-kaze",
+  "unit": "n4-02",
+  "name": "美咲 · Misaki",
+  "title": {
+    "de": "Krank absagen",
+    "en": "Cancelling sick"
+  },
+  "character": {
+    "de": "Misaki, eine Freundin, ruft am Abend an, weil ihr morgen ins Kino wollt. Locker, besorgt, spricht in Freundesform.",
+    "en": "Misaki, a friend, calls in the evening because you're going to the cinema tomorrow. Relaxed, caring, speaks casually."
+  },
+  "register": "casual",
+  "voice": "jf_nezumi",
+  "opening": "もしもし？{明日|あした}の{映画|えいが}、{何時|なんじ}に{会|あ}う？",
+  "opening_translation": { "de": "Hallo? Wann treffen wir uns morgen fürs Kino?", "en": "Hello? What time shall we meet for the film tomorrow?" },
+  "goals": [
+    {
+      "id": "sick",
+      "text": {
+        "de": "Sag, dass du dich erkältet hast.",
+        "en": "Say that you've caught a cold."
+      },
+      "help": {
+        "keyword": "風邪（かぜ）",
+        "start": "ごめん、…",
+        "example": "ごめん、風邪をひいたんだ。"
+      }
+    },
+    {
+      "id": "cancel",
+      "text": {
+        "de": "Sag ab und nenn den Grund.",
+        "en": "Cancel and give the reason."
+      },
+      "help": {
+        "keyword": "〜から",
+        "start": "熱があるから、…",
+        "example": "熱があるから、明日はだめなんだ。"
+      }
+    },
+    {
+      "id": "again",
+      "text": {
+        "de": "Schlag einen anderen Tag vor.",
+        "en": "Suggest another day."
+      },
+      "help": {
+        "keyword": "来週（らいしゅう）",
+        "start": "来週の…",
+        "example": "来週の土曜日はどう？"
+      }
+    },
+    {
+      "id": "thanks",
+      "text": {
+        "de": "Bedank dich, dass sie sich sorgt.",
+        "en": "Thank her for caring."
+      },
+      "help": {
+        "keyword": "ありがとう",
+        "start": "ありがとう。…",
+        "example": "ありがとう。ゆっくり休むね。"
+      }
+    }
+  ]
+}

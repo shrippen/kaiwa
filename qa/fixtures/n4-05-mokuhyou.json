@@ -1,0 +1,75 @@
+[
+  {
+    "learner": "来年、日本語の試験を受けるつもりです。",
+    "reply": "いいですね。がんばってください。",
+    "translation": {
+      "de": "Schön. Viel Erfolg.",
+      "en": "Great. Good luck."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "exam"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "毎日三十分勉強することにしました。",
+    "reply": "毎日続けるのは大切ですね。",
+    "translation": {
+      "de": "Jeden Tag dranbleiben ist wichtig.",
+      "en": "Keeping at it every day matters."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "daily"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "毎日三十分勉強することをしました。",
+    "reply": "毎日続けるのは大切ですね。",
+    "translation": {
+      "de": "Jeden Tag dranbleiben ist wichtig.",
+      "en": "Keeping at it every day matters."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "daily"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "particle",
+          "original": "ことをしました",
+          "better": "ことにしました",
+          "explanation": "Eine Entscheidung: Wörterbuchform + ことにしました.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "夏に日本へ留学しようと思っています。",
+    "reply": "それはすばらしいですね。どこの学校ですか。",
+    "translation": {
+      "de": "Wunderbar. An welcher Schule?",
+      "en": "Wonderful. Which school?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "study"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

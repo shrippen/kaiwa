@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "帰りに雨に降られて、びしょびしょだよ。",
+    "reply": "うわ、大変だったね。",
+    "translation": {
+      "de": "Oh je, das war hart.",
+      "en": "Oh no, that was rough."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "rain"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "遅刻して、部長に怒られた。",
+    "reply": "それは災難だったね。",
+    "translation": {
+      "de": "Pech gehabt.",
+      "en": "That was bad luck."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "scolded"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "遅刻して、部長が怒られた。",
+    "reply": "それは災難だったね。",
+    "translation": {
+      "de": "Pech gehabt.",
+      "en": "That was bad luck."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "scolded"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "particle",
+          "original": "部長が怒られた",
+          "better": "部長に怒られた",
+          "explanation": "Im Passiv steht der Handelnde mit に: 部長に怒られた. 部長が怒られた heißt, der Chef wurde ausgeschimpft.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "それに、部長に残業させられたんだ。",
+    "reply": "ひどいね。でも、がんばってるね。",
+    "translation": {
+      "de": "Gemein. Aber du gibst nicht auf.",
+      "en": "That's harsh. But you keep going."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "overtime"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "それに、部長に残業させたんだ。",
+    "reply": "ひどいね。でも、がんばってるね。",
+    "translation": {
+      "de": "Gemein. Aber du gibst nicht auf.",
+      "en": "That's harsh. But you keep going."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "overtime"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "残業させた",
+          "better": "残業させられた",
+          "explanation": "Wer etwas tun musste: Kausativ-Passiv 〜させられた. 〜させた heißt, du hast jemanden etwas tun lassen.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "今日はわたしに払わせて。",
+    "reply": "え、いいの？ありがとう！",
+    "translation": {
+      "de": "Echt? Danke!",
+      "en": "Really? Thanks!"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "pay"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

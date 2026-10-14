@@ -52,6 +52,9 @@ enum Command {
         #[arg(long)]
         journey: String,
     },
+    /// Print each unit's content hash for its native speaker review (INHALT-ENTWURF 3.3):
+    /// the reviewer enters it as `review.hash` together with `by` and `date`.
+    ReviewHash,
     /// Print the traceability table (requirement → code → checks).
     Trace {
         /// Write it to spec/RUECKVERFOLGUNG.md instead.
@@ -90,6 +93,13 @@ fn main() -> ExitCode {
             }
         },
         Command::Days { persona, journey } => match print_days(&cli.root, &persona, &journey) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("error: {error:#}");
+                ExitCode::FAILURE
+            }
+        },
+        Command::ReviewHash => match review_hashes(&cli.root) {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
                 eprintln!("error: {error:#}");
@@ -211,5 +221,27 @@ fn print_days(root: &std::path::Path, persona: &str, journey: &str) -> anyhow::R
         println!("  {skill:?}: {words}");
     }
     println!("errors (corrected, reviewed while open): {:?}", run.errors);
+    Ok(())
+}
+
+/// One line per unit: id, content hash, and whether a recorded review still matches.
+fn review_hashes(root: &std::path::Path) -> anyhow::Result<()> {
+    use kaiwa_core::curriculum::Curriculum;
+    let c = Curriculum::from_dir(&root.join("data/curriculum"))?;
+    for u in &c.units {
+        let texts = u
+            .scenarios
+            .iter()
+            .map(|s| std::fs::read_to_string(root.join(format!("data/scenarios/{s}.json"))))
+            .collect::<Result<Vec<_>, _>>()?;
+        let refs: Vec<&str> = texts.iter().map(String::as_str).collect();
+        let hash = Curriculum::content_hash(u, &refs);
+        let state = match u.review.as_ref().and_then(|r| r.hash.as_deref()) {
+            None => "not reviewed",
+            Some(h) if h == hash => "reviewed",
+            Some(_) => "changed since the review",
+        };
+        println!("{}\t{hash}\t{state}", u.id);
+    }
     Ok(())
 }

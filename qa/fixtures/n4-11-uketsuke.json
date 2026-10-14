@@ -1,0 +1,75 @@
+[
+  {
+    "learner": "ミュラーと申します。二時に小野様とお約束しております。",
+    "reply": "ミュラー様ですね。少々お待ちください。どうぞ、おかけください。",
+    "translation": {
+      "de": "Herr/Frau Müller. Einen Moment bitte. Nehmen Sie doch Platz.",
+      "en": "Mr/Ms Müller. One moment, please. Please have a seat."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "appointment"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "ミュラーと申します。二時に小野様とお約束しています。",
+    "reply": "ミュラー様ですね。少々お待ちください。どうぞ、おかけください。",
+    "translation": {
+      "de": "Herr/Frau Müller. Einen Moment bitte. Nehmen Sie doch Platz.",
+      "en": "Mr/Ms Müller. One moment, please. Please have a seat."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "appointment"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "style",
+          "kind": "register",
+          "original": "お約束しています",
+          "better": "お約束しております",
+          "explanation": "Am Empfang bescheidener: 〜ております.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "ありがとうございます。失礼します。",
+    "reply": "小野はすぐに参ります。",
+    "translation": {
+      "de": "Frau Ono kommt sofort.",
+      "en": "Ms Ono will be with you shortly."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "sit"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "このあと、森様のところにも伺います。",
+    "reply": "かしこまりました。森にも申し伝えます。",
+    "translation": {
+      "de": "Sehr wohl. Ich gebe auch Herrn Mori Bescheid.",
+      "en": "Certainly. I'll let Mr Mori know as well."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "visit"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

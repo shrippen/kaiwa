@@ -1,0 +1,141 @@
+[
+  {
+    "learner": "子どものとき、一度着物を着たことがあります。",
+    "reply": "へえ、いいですね。どこで着ましたか。",
+    "translation": {
+      "de": "Oh, schön. Wo hast du ihn getragen?",
+      "en": "Oh, nice. Where did you wear it?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "exp"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "子どものとき、一度着物を着ることがあります。",
+    "reply": "へえ、いいですね。どこで着ましたか。",
+    "translation": {
+      "de": "Oh, schön. Wo hast du ihn getragen?",
+      "en": "Oh, nice. Where did you wear it?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "exp"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "tense",
+          "original": "着ることがあります",
+          "better": "着たことがあります",
+          "explanation": "Eine Erfahrung: た-Form + ことがあります. Mit der Wörterbuchform heißt es „es kommt vor, dass …“.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "京都で、お寺を見たり、写真を撮ったりしました。",
+    "reply": "京都はいいですよね。わたしも去年行きました。",
+    "translation": {
+      "de": "Kyoto ist schön, nicht? Ich war letztes Jahr auch da.",
+      "en": "Kyoto is lovely, isn't it? I went last year too."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "tari"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "京都で、お寺を見たり、写真を撮りました。",
+    "reply": "京都はいいですよね。わたしも去年行きました。",
+    "translation": {
+      "de": "Kyoto ist schön, nicht? Ich war letztes Jahr auch da.",
+      "en": "Kyoto is lovely, isn't it? I went last year too."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "tari"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "unnatural",
+          "kind": "omission",
+          "original": "写真を撮りました",
+          "better": "写真を撮ったりしました",
+          "explanation": "たり steht bei jeder Handlung, am Ende folgt します: 見たり、撮ったりしました.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "森田さんはドイツに行ったことがありますか。",
+    "reply": "いいえ、まだありません。でも、一度行ってみたいです。",
+    "translation": {
+      "de": "Nein, noch nicht. Aber ich möchte einmal hin.",
+      "en": "No, not yet. But I'd like to go once."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "ask"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "お寺もきれいだし、食べ物もおいしかったです。",
+    "reply": "いいですね。富士山に登ったときも、景色がすごかったですよ。",
+    "translation": {
+      "de": "Schön. Als ich auf den Fuji gestiegen bin, war die Aussicht auch toll.",
+      "en": "Nice. When I climbed Mount Fuji, the view was amazing too."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "how"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "お寺もきれいし、食べ物もおいしかったです。",
+    "reply": "いいですね。富士山に登ったときも、景色がすごかったですよ。",
+    "translation": {
+      "de": "Schön. Als ich auf den Fuji gestiegen bin, war die Aussicht auch toll.",
+      "en": "Nice. When I climbed Mount Fuji, the view was amazing too."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "how"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "きれいし",
+          "better": "きれいだし",
+          "explanation": "きれい ist ein な-Adjektiv: vor し steht だ, also きれいだし.",
+          "also_possible": false
+        }
+      ]
+    }
+  }
+]

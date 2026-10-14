@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "きのうこのジャケットを買ったんですが、穴が開いていたんです。",
+    "reply": "大変申し訳ございません。拝見してもよろしいですか。",
+    "translation": {
+      "de": "Das tut mir sehr leid. Darf ich sie mir ansehen?",
+      "en": "I'm very sorry. May I have a look?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "problem"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "きのうこのジャケットを買ったんですが、穴が開けていたんです。",
+    "reply": "大変申し訳ございません。拝見してもよろしいですか。",
+    "translation": {
+      "de": "Das tut mir sehr leid. Darf ich sie mir ansehen?",
+      "en": "I'm very sorry. May I have a look?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "problem"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "穴が開けていた",
+          "better": "穴が開いていた",
+          "explanation": "Mit が das intransitive Verb: 穴が開く → 穴が開いていた.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "交換してもらえますか。",
+    "reply": "はい、同じサイズをお持ちします。",
+    "translation": {
+      "de": "Ja, ich hole Ihnen dieselbe Größe.",
+      "en": "Yes, I'll bring you the same size."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "exchange"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "レシートは持ってきました。",
+    "reply": "ありがとうございます。",
+    "translation": {
+      "de": "Vielen Dank.",
+      "en": "Thank you."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "receipt"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "同じものがなければ、返金してもらえますか。",
+    "reply": "はい、その場合はご返金いたします。",
+    "translation": {
+      "de": "Ja, in dem Fall erstatten wir den Betrag.",
+      "en": "Yes, in that case we'll refund you."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "refund"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "同じものがないければ、返金してもらえますか。",
+    "reply": "はい、その場合はご返金いたします。",
+    "translation": {
+      "de": "Ja, in dem Fall erstatten wir den Betrag.",
+      "en": "Yes, in that case we'll refund you."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "refund"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "ないければ",
+          "better": "なければ",
+          "explanation": "ない wird wie ein い-Adjektiv gebeugt: なければ.",
+          "also_possible": false
+        }
+      ]
+    }
+  }
+]

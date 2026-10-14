@@ -1,0 +1,55 @@
+{
+  "id": "n4-13-matsuri",
+  "unit": "n4-13",
+  "name": "あおい · Aoi",
+  "title": {
+    "de": "Zum Fest?",
+    "en": "Going to the festival?"
+  },
+  "character": {
+    "de": "Aoi, eine Freundin, lädt zum Sommerfest ein. Fröhlich, spricht in Freundesform.",
+    "en": "Aoi, a friend, invites you to the summer festival. Cheerful, speaks casually."
+  },
+  "register": "casual",
+  "voice": "jf_alpha",
+  "opening": "お{祭|まつ}り、{一緒|いっしょ}に{行|い}かない？",
+  "opening_translation": { "de": "Kommst du mit zum Fest?", "en": "Want to come to the festival with me?" },
+  "goals": [
+    {
+      "id": "accept",
+      "text": {
+        "de": "Sag zu und dass du gern mal einen Yukata tragen würdest.",
+        "en": "Say yes and that you'd like to try wearing a yukata."
+      },
+      "help": {
+        "keyword": "〜てみたい",
+        "start": "行く！浴衣、…",
+        "example": "行く！浴衣、着てみたい。"
+      }
+    },
+    {
+      "id": "when",
+      "text": {
+        "de": "Frag, wann ihr euch trefft.",
+        "en": "Ask when you'll meet."
+      },
+      "help": {
+        "keyword": "待ち合わせ（まちあわせ）",
+        "start": "何時に…",
+        "example": "何時に待ち合わせる？"
+      }
+    },
+    {
+      "id": "food",
+      "text": {
+        "de": "Sag, dass du Takoyaki probieren willst.",
+        "en": "Say you want to try takoyaki."
+      },
+      "help": {
+        "keyword": "〜てみたい",
+        "start": "たこ焼き、…",
+        "example": "たこ焼き、食べてみたいな。"
+      }
+    }
+  ]
+}

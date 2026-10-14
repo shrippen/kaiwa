@@ -1,0 +1,67 @@
+{
+  "id": "n4-08-tenki",
+  "unit": "n4-08",
+  "name": "西田 · Nishida",
+  "title": {
+    "de": "Morgens im Büro",
+    "en": "Morning at the office"
+  },
+  "character": {
+    "de": "Herr Nishida, Kollege, am Morgen im Büro. Höflich, plaudert gern über Wetter und Neuigkeiten, streut manchmal Freundesform ein (〜らしいよ).",
+    "en": "Mr Nishida, a colleague, in the office in the morning. Polite, likes to chat about the weather and news, sometimes slips into casual speech (〜らしいよ)."
+  },
+  "register": "polite",
+  "voice": "jm_kumo",
+  "opening": "おはようございます。{空|そら}が{暗|くら}いですね。",
+  "opening_translation": { "de": "Guten Morgen. Der Himmel ist ganz dunkel.", "en": "Good morning. The sky is dark." },
+  "goals": [
+    {
+      "id": "guess",
+      "text": {
+        "de": "Vermute: Es sieht nach Regen aus.",
+        "en": "Guess: it looks like rain."
+      },
+      "help": {
+        "keyword": "降りそう（ふりそう）",
+        "start": "雨が…",
+        "example": "雨が降りそうですね。"
+      }
+    },
+    {
+      "id": "forecast",
+      "text": {
+        "de": "Gib den Wetterbericht weiter: Am Nachmittag soll ein Taifun kommen.",
+        "en": "Pass on the forecast: a typhoon is supposed to come in the afternoon."
+      },
+      "help": {
+        "keyword": "〜によると、〜そうです",
+        "start": "天気予報によると、…",
+        "example": "天気予報によると、午後から台風が来るそうです。"
+      }
+    },
+    {
+      "id": "rumour",
+      "text": {
+        "de": "Sag, dass Herr Kimura anscheinend umzieht (auf seinem Tisch stehen Umzugskartons).",
+        "en": "Say Mr Kimura seems to be moving (there are moving boxes on his desk)."
+      },
+      "help": {
+        "keyword": "〜みたいです",
+        "start": "木村さん、…",
+        "example": "木村さんが引っ越すみたいですよ。"
+      }
+    },
+    {
+      "id": "maybe",
+      "text": {
+        "de": "Sag, dass die Züge vielleicht nicht fahren.",
+        "en": "Say the trains might stop."
+      },
+      "help": {
+        "keyword": "〜かもしれません",
+        "start": "電車が…",
+        "example": "電車が止まるかもしれませんね。"
+      }
+    }
+  ]
+}

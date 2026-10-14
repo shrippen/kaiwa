@@ -1,0 +1,735 @@
+{
+  "level": "n4",
+  "points": [
+    {
+      "id": "ta-koto-ga-aru",
+      "label": "〜たことがあります",
+      "explain": {
+        "de": "Erfahrung: た-Form + ことがあります („ich habe schon einmal …“). Verneint: 〜たことがありません („noch nie“).",
+        "en": "Experience: た-form + ことがあります (“I have … before”). Negative: 〜たことがありません (“never”)."
+      },
+      "examples": [
+        "{富士山|ふじさん}に{登|のぼ}ったことがあります。"
+      ]
+    },
+    {
+      "id": "tari",
+      "label": "〜たり〜たりします",
+      "explain": {
+        "de": "Beispiele aufzählen, nicht alles: た-Form + り bei jeder Handlung, am Ende します.",
+        "en": "Listing examples, not everything: た-form + り for each action, します at the end."
+      },
+      "examples": [
+        "{週末|しゅうまつ}は{本|ほん}を{読|よ}んだり、{映画|えいが}を{見|み}たりします。"
+      ]
+    },
+    {
+      "id": "shi",
+      "label": "〜し、〜し",
+      "explain": {
+        "de": "Mehrere Gründe nebeneinander: Satz + し („und außerdem“). Bei Nomen und な-Adjektiven だし.",
+        "en": "Several reasons side by side: clause + し (“and what's more”). With nouns and な-adjectives だし."
+      },
+      "examples": [
+        "{安|やす}いし、おいしいし、よく{行|い}きます。"
+      ]
+    },
+    {
+      "id": "toki",
+      "label": "〜とき",
+      "explain": {
+        "de": "„als …“ / „wenn …“: Nomen + のとき, Verb oder Adjektiv + とき.",
+        "en": "“when …”: noun + のとき, verb or adjective + とき."
+      },
+      "examples": [
+        "{子|こ}どものとき、{京都|きょうと}に{住|す}んでいました。"
+      ]
+    },
+    {
+      "id": "n-desu",
+      "label": "〜んです",
+      "explain": {
+        "de": "Erklären oder nach einer Erklärung fragen: Satz in einfacher Form + んです (bei Nomen und な-Adjektiven なんです). Unter Freunden 〜んだ, als Frage 〜の？",
+        "en": "Explaining or asking for an explanation: plain-form clause + んです (nouns and な-adjectives: なんです). Among friends 〜んだ, as a question 〜の？"
+      },
+      "examples": [
+        "{頭|あたま}が{痛|いた}いんです。",
+        "どうしたんですか。"
+      ]
+    },
+    {
+      "id": "node",
+      "label": "〜ので",
+      "explain": {
+        "de": "Grund, sachlicher und weicher als から: einfache Form + ので (Nomen und な-Adjektive: なので). Gut für Entschuldigungen und Bitten.",
+        "en": "Reason, more neutral and softer than から: plain form + ので (nouns and な-adjectives: なので). Good for apologies and requests."
+      },
+      "examples": [
+        "{熱|ねつ}があるので、{休|やす}みます。"
+      ]
+    },
+    {
+      "id": "sugiru",
+      "label": "〜すぎる",
+      "explain": {
+        "de": "„zu viel / zu sehr“: Verbstamm oder Adjektiv ohne い + すぎる. 食べすぎる, 高すぎる.",
+        "en": "“too much / too”: verb stem or adjective without い + すぎる. 食べすぎる, 高すぎる."
+      },
+      "examples": [
+        "{昨日|きのう}は{食|た}べすぎました。"
+      ]
+    },
+    {
+      "id": "ta-hou-ga-ii",
+      "label": "〜たほうがいい",
+      "explain": {
+        "de": "Rat: た-Form + ほうがいい („du solltest besser …“), verneint ない-Form + ほうがいい.",
+        "en": "Advice: た-form + ほうがいい (“you'd better …”), negative ない-form + ほうがいい."
+      },
+      "examples": [
+        "{少|すこ}し{休|やす}んだほうがいいですよ。"
+      ]
+    },
+    {
+      "id": "nakereba",
+      "label": "〜なければなりません",
+      "explain": {
+        "de": "Pflicht: ない-Form ohne い + ければなりません („muss“). Im Gespräch oft 〜なきゃ.",
+        "en": "Obligation: ない-form without い + ければなりません (“must”). In talk often 〜なきゃ."
+      },
+      "examples": [
+        "{毎日|まいにち}{薬|くすり}を{飲|の}まなければなりません。"
+      ]
+    },
+    {
+      "id": "nakute-mo-ii",
+      "label": "〜なくてもいいです",
+      "explain": {
+        "de": "Keine Pflicht: ない-Form ohne い + くてもいいです („muss nicht“).",
+        "en": "No obligation: ない-form without い + くてもいいです (“don't have to”)."
+      },
+      "examples": [
+        "{明日|あした}は{来|こ}なくてもいいです。"
+      ]
+    },
+    {
+      "id": "yasui-nikui",
+      "label": "〜やすい・〜にくい",
+      "explain": {
+        "de": "„leicht zu …“ / „schwer zu …“: Verbstamm + やすい oder にくい. Die Form beugt sich wie ein い-Adjektiv.",
+        "en": "“easy to …” / “hard to …”: verb stem + やすい or にくい. It inflects like an い-adjective."
+      },
+      "examples": [
+        "この{本|ほん}は{読|よ}みやすいです。"
+      ]
+    },
+    {
+      "id": "te-aru",
+      "label": "〜てあります",
+      "explain": {
+        "de": "Ein Zustand, den jemand absichtlich hergestellt hat: transitives Verb in て-Form + あります. Das Ding steht vor が.",
+        "en": "A state someone made on purpose: transitive verb in the て-form + あります. The thing goes before が."
+      },
+      "examples": [
+        "{名前|なまえ}が{書|か}いてあります。"
+      ]
+    },
+    {
+      "id": "te-oku",
+      "label": "〜ておきます",
+      "explain": {
+        "de": "Im Voraus oder für später erledigen: て-Form + おきます. Im Gespräch oft 〜とく.",
+        "en": "Doing something in advance or for later: て-form + おきます. In talk often 〜とく."
+      },
+      "examples": [
+        "{旅行|りょこう}の{前|まえ}に、ホテルを{予約|よやく}しておきます。"
+      ]
+    },
+    {
+      "id": "tame-ni",
+      "label": "〜ために",
+      "explain": {
+        "de": "Zweck: Nomen + のために oder Verb (Wörterbuchform) + ために („um zu …“, „für …“). Beide Teile hängen vom Willen derselben Person ab.",
+        "en": "Purpose: noun + のために or verb (dictionary form) + ために (“in order to …”, “for …”). Both parts depend on the same person's will."
+      },
+      "examples": [
+        "{日本|にほん}で{働|はたら}くために、{日本語|にほんご}を{勉強|べんきょう}しています。"
+      ]
+    },
+    {
+      "id": "ageru-kureru-morau",
+      "label": "あげる・くれる・もらう",
+      "explain": {
+        "de": "Geben und Bekommen hängt an der Richtung: あげる (ich oder meine Seite geben weg), くれる (jemand gibt mir oder meiner Seite), もらう (jemand, oft ich, bekommt von jemandem: 〜に／〜から).",
+        "en": "Giving and receiving depend on direction: あげる (I or my side give away), くれる (someone gives to me or my side), もらう (someone, often I, receives from someone: 〜に／〜から)."
+      },
+      "examples": [
+        "{友|とも}だちが{本|ほん}をくれました。",
+        "{母|はは}にかばんをもらいました。"
+      ]
+    },
+    {
+      "id": "te-kureru",
+      "label": "〜てくれる・〜てもらう・〜てあげる",
+      "explain": {
+        "de": "Dieselben Richtungen für Gefälligkeiten: て-Form + くれる / もらう / あげる. 〜てあげる direkt zu Höhergestellten klingt herablassend.",
+        "en": "The same directions for favours: て-form + くれる / もらう / あげる. 〜てあげる said straight to a superior sounds condescending."
+      },
+      "examples": [
+        "{友|とも}だちが{手伝|てつだ}ってくれました。"
+      ]
+    },
+    {
+      "id": "te-kurete-arigatou",
+      "label": "〜てくれてありがとう",
+      "explain": {
+        "de": "Dank für eine Gefälligkeit: て-Form + くれて + ありがとう(ございました).",
+        "en": "Thanks for a favour: て-form + くれて + ありがとう(ございました)."
+      },
+      "examples": [
+        "{来|き}てくれて、ありがとう。"
+      ]
+    },
+    {
+      "id": "te-yokatta",
+      "label": "〜てよかった",
+      "explain": {
+        "de": "Erleichterung oder Freude über etwas, das geschehen ist: て-Form + よかった („wie gut, dass …“).",
+        "en": "Relief or joy about something that happened: て-form + よかった (“I'm glad that …”)."
+      },
+      "examples": [
+        "{会|あ}えてよかったです。"
+      ]
+    },
+    {
+      "id": "volitional",
+      "label": "意向形 (〜よう)",
+      "explain": {
+        "de": "Die Volitionalform: „lass uns …“ unter Freunden und Grundlage für Vorhaben. る-Verben: 食べよう; う-Verben: 行こう, 飲もう; する → しよう, 来る → 来よう.",
+        "en": "The volitional form: “let's …” among friends and the base for plans. る-verbs: 食べよう; う-verbs: 行こう, 飲もう; する → しよう, 来る → 来よう."
+      },
+      "examples": [
+        "{一緒|いっしょ}に{行|い}こう。"
+      ]
+    },
+    {
+      "id": "you-to-omou",
+      "label": "〜ようと思っています",
+      "explain": {
+        "de": "Ein Vorhaben, über das man nachdenkt: Volitionalform + と思っています (unter Freunden 〜と思ってる).",
+        "en": "A plan you are thinking about: volitional + と思っています (casually 〜と思ってる)."
+      },
+      "examples": [
+        "{来年|らいねん}、{留学|りゅうがく}しようと{思|おも}っています。"
+      ]
+    },
+    {
+      "id": "tsumori",
+      "label": "〜つもりです",
+      "explain": {
+        "de": "Feste Absicht: Wörterbuchform (oder ない-Form) + つもりです. Etwas bestimmter als 〜ようと思っています.",
+        "en": "Firm intention: dictionary form (or ない-form) + つもりです. A little more definite than 〜ようと思っています."
+      },
+      "examples": [
+        "{夏|なつ}に{帰国|きこく}するつもりです。"
+      ]
+    },
+    {
+      "id": "yotei",
+      "label": "〜予定です",
+      "explain": {
+        "de": "Ein festgelegter Plan, oft mit anderen abgestimmt: Wörterbuchform oder Nomen + の + 予定です.",
+        "en": "A fixed schedule, often arranged with others: dictionary form or noun + の + 予定です."
+      },
+      "examples": [
+        "{三時|さんじ}に{着|つ}く{予定|よてい}です。"
+      ]
+    },
+    {
+      "id": "koto-ni-suru",
+      "label": "〜ことにしました",
+      "explain": {
+        "de": "Eigene Entscheidung: Wörterbuchform (oder ない-Form) + ことにしました. Für Entscheidungen anderer oder Regeln 〜ことになりました.",
+        "en": "Your own decision: dictionary form (or ない-form) + ことにしました. For decisions by others or rules 〜ことになりました."
+      },
+      "examples": [
+        "{毎朝|まいあさ}{走|はし}ることにしました。"
+      ]
+    },
+    {
+      "id": "made-ni",
+      "label": "〜までに",
+      "explain": {
+        "de": "Frist: „bis spätestens …“. Im Unterschied zu まで (die ganze Zeit bis …) passiert die Handlung einmal vor dem Zeitpunkt.",
+        "en": "Deadline: “by …”. Unlike まで (the whole time until …), the action happens once before that point."
+      },
+      "examples": [
+        "{金曜日|きんようび}までに{出|だ}してください。"
+      ]
+    },
+    {
+      "id": "tara",
+      "label": "〜たら",
+      "explain": {
+        "de": "„wenn / falls …“ und „als …“: た-Form + ら. Die vielseitigste Bedingung, im Gespräch sehr häufig.",
+        "en": "“if …” and “when …”: た-form + ら. The most versatile condition, very common in talk."
+      },
+      "examples": [
+        "{雨|あめ}が{降|ふ}ったら、{行|い}きません。"
+      ]
+    },
+    {
+      "id": "ba",
+      "label": "〜ば",
+      "explain": {
+        "de": "Bedingung „wenn …, dann …“: う-Verben: 行けば, る-Verben: 食べれば, い-Adjektive: 安ければ. Oft in Fragen wie どうすればいいですか.",
+        "en": "Condition “if …, then …”: う-verbs: 行けば, る-verbs: 食べれば, い-adjectives: 安ければ. Often in questions like どうすればいいですか."
+      },
+      "examples": [
+        "どうすればいいですか。"
+      ]
+    },
+    {
+      "id": "to-conditional",
+      "label": "〜と (自然)",
+      "explain": {
+        "de": "Immer wenn das eine passiert, folgt das andere: Wörterbuchform + と. Für Wegbeschreibungen, Geräte und Naturgesetze, nicht für Wünsche.",
+        "en": "Whenever one thing happens, the other follows: dictionary form + と. For directions, machines and nature, not for wishes."
+      },
+      "examples": [
+        "{右|みぎ}に{曲|ま}がると、{駅|えき}があります。"
+      ]
+    },
+    {
+      "id": "nara",
+      "label": "〜なら",
+      "explain": {
+        "de": "„Wenn es um … geht“: greift auf, was der andere gesagt hat, und gibt Rat oder Empfehlung.",
+        "en": "“If it's … you mean”: picks up what the other person said and gives advice or a recommendation."
+      },
+      "examples": [
+        "{京都|きょうと}なら、{秋|あき}がいいですよ。"
+      ]
+    },
+    {
+      "id": "to-iu",
+      "label": "〜という",
+      "explain": {
+        "de": "„… namens …“: Name + という + Nomen. Für Unbekanntes: 何という〜ですか.",
+        "en": "“… called …”: name + という + noun. For something unknown: 何という〜ですか."
+      },
+      "examples": [
+        "「さくら」という{店|みせ}を{知|し}っていますか。"
+      ]
+    },
+    {
+      "id": "potential",
+      "label": "可能形",
+      "explain": {
+        "de": "Können: う-Verben e-Laut + る (話せる, 読める), る-Verben られる (食べられる, im Gespräch oft 食べれる), する → できる, 来る → 来られる. Das Gekonnte steht oft vor が.",
+        "en": "Ability: う-verbs e-sound + る (話せる, 読める), る-verbs られる (食べられる, casually often 食べれる), する → できる, 来る → 来られる. What you can do often takes が."
+      },
+      "examples": [
+        "{日本語|にほんご}が{話|はな}せます。"
+      ]
+    },
+    {
+      "id": "you-ni-naru",
+      "label": "〜ようになりました",
+      "explain": {
+        "de": "Eine Veränderung, die erreicht ist: Verb (oft Potentialform) + ようになりました („ich kann jetzt …“, „ich … inzwischen“).",
+        "en": "A change you have reached: verb (often potential) + ようになりました (“I can now …”, “I've come to …”)."
+      },
+      "examples": [
+        "{泳|およ}げるようになりました。"
+      ]
+    },
+    {
+      "id": "you-ni",
+      "label": "〜ように",
+      "explain": {
+        "de": "Zweck bei Zuständen und Fähigkeiten: Potentialform oder ない-Form + ように („damit …“).",
+        "en": "Purpose with states and abilities: potential or ない-form + ように (“so that …”)."
+      },
+      "examples": [
+        "{忘|わす}れないように、メモします。"
+      ]
+    },
+    {
+      "id": "nagara",
+      "label": "〜ながら",
+      "explain": {
+        "de": "Zwei Handlungen gleichzeitig: Verbstamm + ながら. Die Hauptsache steht am Ende.",
+        "en": "Two actions at once: verb stem + ながら. The main action comes last."
+      },
+      "examples": [
+        "{音楽|おんがく}を{聞|き}きながら、{勉強|べんきょう}します。"
+      ]
+    },
+    {
+      "id": "sou-looks",
+      "label": "〜そうです (様態)",
+      "explain": {
+        "de": "Was man sieht oder spürt: Verbstamm oder Adjektiv ohne い + そう („sieht aus, als ob …“). いい wird よさそう.",
+        "en": "What you see or sense: verb stem or adjective without い + そう (“looks like …”). いい becomes よさそう."
+      },
+      "examples": [
+        "{雨|あめ}が{降|ふ}りそうです。",
+        "おいしそうですね。"
+      ]
+    },
+    {
+      "id": "sou-hearsay",
+      "label": "〜そうです (伝聞)",
+      "explain": {
+        "de": "Was man gehört oder gelesen hat: einfache Form + そうです. Die Quelle mit 〜によると.",
+        "en": "What you heard or read: plain form + そうです. The source with 〜によると."
+      },
+      "examples": [
+        "{天気予報|てんきよほう}によると、{明日|あした}は{雪|ゆき}だそうです。"
+      ]
+    },
+    {
+      "id": "mitai-you",
+      "label": "〜みたいです・〜ようです",
+      "explain": {
+        "de": "Vermutung aus Anzeichen: einfache Form + みたいです (Gespräch) oder ようです (förmlicher). Nomen: 〜みたい / 〜のよう.",
+        "en": "Guess from signs: plain form + みたいです (spoken) or ようです (more formal). Nouns: 〜みたい / 〜のよう."
+      },
+      "examples": [
+        "{誰|だれ}もいないみたいです。"
+      ]
+    },
+    {
+      "id": "kamoshirenai",
+      "label": "〜かもしれません",
+      "explain": {
+        "de": "„vielleicht“: einfache Form + かもしれません (unter Freunden かもしれない, kurz かも). Nomen und な-Adjektive ohne だ.",
+        "en": "“maybe”: plain form + かもしれません (casually かもしれない, short かも). Nouns and な-adjectives without だ."
+      },
+      "examples": [
+        "{明日|あした}は{雨|あめ}かもしれません。"
+      ]
+    },
+    {
+      "id": "deshou",
+      "label": "〜でしょう",
+      "explain": {
+        "de": "Vermutung oder Rückfrage: einfache Form + でしょう. Im Wetterbericht ständig; mit steigender Stimme „…, oder?“.",
+        "en": "Guess or confirmation: plain form + でしょう. Constant in weather forecasts; with rising voice “…, right?”."
+      },
+      "examples": [
+        "{明日|あした}は{晴|は}れるでしょう。"
+      ]
+    },
+    {
+      "id": "hazu",
+      "label": "〜はずです",
+      "explain": {
+        "de": "Erwartung mit gutem Grund: einfache Form + はずです („müsste eigentlich …“). Nomen: 〜のはず.",
+        "en": "Expectation with good reason: plain form + はずです (“should be …”). Nouns: 〜のはず."
+      },
+      "examples": [
+        "{会議|かいぎ}は{三時|さんじ}に{終|お}わるはずです。"
+      ]
+    },
+    {
+      "id": "tte",
+      "label": "〜って (伝聞)",
+      "explain": {
+        "de": "Unter Freunden für Gehörtes: einfache Form + って („sagt man“, „soll …“). Oft 〜んだって.",
+        "en": "Among friends for something heard: plain form + って (“they say”, “apparently”). Often 〜んだって."
+      },
+      "examples": [
+        "{田中|たなか}さん、{来|こ}ないって。"
+      ]
+    },
+    {
+      "id": "te-kita",
+      "label": "〜てきました (変化)",
+      "explain": {
+        "de": "Eine Veränderung, die bis jetzt allmählich gekommen ist: て-Form + きました. Oft mit だんだん.",
+        "en": "A change that has gradually come about up to now: て-form + きました. Often with だんだん."
+      },
+      "examples": [
+        "だんだん{暖|あたた}かくなってきました。"
+      ]
+    },
+    {
+      "id": "ba-hodo",
+      "label": "〜ば〜ほど",
+      "explain": {
+        "de": "„Je …, desto …“: ば-Form + dasselbe Wort + ほど.",
+        "en": "“The more …, the more …”: ば-form + the same word + ほど."
+      },
+      "examples": [
+        "{練習|れんしゅう}すればするほど、{上手|じょうず}になります。"
+      ]
+    },
+    {
+      "id": "te-miru",
+      "label": "〜てみる",
+      "explain": {
+        "de": "Etwas ausprobieren: て-Form + みる. „Ich möchte mal …“: 〜てみたい.",
+        "en": "Trying something out: て-form + みる. “I'd like to try …”: 〜てみたい."
+      },
+      "examples": [
+        "{一度|いちど}{着物|きもの}を{着|き}てみたいです。"
+      ]
+    },
+    {
+      "id": "te-shimau",
+      "label": "〜てしまいました",
+      "explain": {
+        "de": "Etwas ist passiert, oft ungewollt oder ärgerlich, oder ganz erledigt: て-Form + しまいました. Im Gespräch 〜ちゃった / 〜じゃった.",
+        "en": "Something happened, often unintended or annoying, or got completely done: て-form + しまいました. Casually 〜ちゃった / 〜じゃった."
+      },
+      "examples": [
+        "{傘|かさ}を{忘|わす}れてしまいました。"
+      ]
+    },
+    {
+      "id": "transitivity",
+      "label": "自動詞・他動詞",
+      "explain": {
+        "de": "Verbpaare: transitiv mit を (jemand tut es: ドアを開ける, エアコンをつける), intransitiv mit が (es geschieht: ドアが開く, エアコンがつく).",
+        "en": "Verb pairs: transitive with を (someone does it: ドアを開ける, エアコンをつける), intransitive with が (it happens: ドアが開く, エアコンがつく)."
+      },
+      "examples": [
+        "ドアが{開|あ}きました。",
+        "ドアを{開|あ}けました。"
+      ]
+    },
+    {
+      "id": "te-iru-result",
+      "label": "〜ている (結果)",
+      "explain": {
+        "de": "Ein Zustand als Ergebnis einer Veränderung: intransitives Verb in て-Form + いる (窓が開いている, カードが入っている).",
+        "en": "A state that results from a change: intransitive verb in the て-form + いる (窓が開いている, カードが入っている)."
+      },
+      "examples": [
+        "{窓|まど}が{開|あ}いています。"
+      ]
+    },
+    {
+      "id": "noni",
+      "label": "〜のに",
+      "explain": {
+        "de": "„obwohl …“ mit Enttäuschung oder Ärger: einfache Form + のに (Nomen und な-Adjektive: なのに).",
+        "en": "“even though …” with disappointment or annoyance: plain form + のに (nouns and な-adjectives: なのに)."
+      },
+      "examples": [
+        "{勉強|べんきょう}したのに、{分|わ}かりませんでした。"
+      ]
+    },
+    {
+      "id": "ba-yokatta",
+      "label": "〜ばよかった",
+      "explain": {
+        "de": "Bedauern: ば-Form + よかった („hätte ich doch …“). Verneint: 〜なければよかった.",
+        "en": "Regret: ば-form + よかった (“I should have …”). Negative: 〜なければよかった."
+      },
+      "examples": [
+        "{早|はや}く{来|く}ればよかったです。"
+      ]
+    },
+    {
+      "id": "te-moraemasu-ka",
+      "label": "〜てもらえますか",
+      "explain": {
+        "de": "Bitte um eine Gefälligkeit: て-Form + もらえますか („könnten Sie …?“). Höflicher: 〜ていただけますか.",
+        "en": "Asking a favour: て-form + もらえますか (“could you …?”). More polite: 〜ていただけますか."
+      },
+      "examples": [
+        "{写真|しゃしん}を{撮|と}ってもらえますか。"
+      ]
+    },
+    {
+      "id": "te-itadakemasen-ka",
+      "label": "〜ていただけませんか",
+      "explain": {
+        "de": "Sehr höfliche Bitte: て-Form + いただけませんか („wären Sie so freundlich …?“). Für Bitten, die Mühe machen.",
+        "en": "Very polite request: て-form + いただけませんか (“would you be so kind as to …?”). For requests that take effort."
+      },
+      "examples": [
+        "もう{一度|いちど}{説明|せつめい}していただけませんか。"
+      ]
+    },
+    {
+      "id": "te-kudasaimasen-ka",
+      "label": "〜てくださいませんか",
+      "explain": {
+        "de": "Höfliche Bitte, weicher als 〜てください: て-Form + くださいませんか.",
+        "en": "Polite request, softer than 〜てください: て-form + くださいませんか."
+      },
+      "examples": [
+        "{少|すこ}し{待|ま}ってくださいませんか。"
+      ]
+    },
+    {
+      "id": "ka-dou-ka",
+      "label": "〜かどうか",
+      "explain": {
+        "de": "Eine Ja-Nein-Frage im Satz („ob …“): einfache Form + かどうか, dann 分かりません, 教えてください usw.",
+        "en": "A yes-no question inside a sentence (“whether …”): plain form + かどうか, then 分かりません, 教えてください etc."
+      },
+      "examples": [
+        "{来|く}るかどうか{分|わ}かりません。"
+      ]
+    },
+    {
+      "id": "embedded-question",
+      "label": "〜か分かりません (埋め込み)",
+      "explain": {
+        "de": "Eine W-Frage im Satz: Fragewort + einfache Form + か, dann 分かりません, 知っていますか usw.",
+        "en": "A wh-question inside a sentence: question word + plain form + か, then 分かりません, 知っていますか etc."
+      },
+      "examples": [
+        "{何時|なんじ}に{始|はじ}まるか{知|し}っていますか。"
+      ]
+    },
+    {
+      "id": "n-desu-ga",
+      "label": "〜んですが (前置き)",
+      "explain": {
+        "de": "Ein Anliegen einleiten: Satz + んですが, dann folgt die Bitte oder bleibt unausgesprochen. Klingt höflich und nicht fordernd.",
+        "en": "Leading into a request: clause + んですが, then the request follows or is left unsaid. Sounds polite, not demanding."
+      },
+      "examples": [
+        "ちょっとお{聞|き}きしたいんですが。"
+      ]
+    },
+    {
+      "id": "to-moushimasu",
+      "label": "〜と申します",
+      "explain": {
+        "de": "Bescheiden den eigenen Namen nennen: Name + と申します. Gegenüber Kunden, am Telefon, bei der Vorstellung.",
+        "en": "Giving your own name humbly: name + と申します. With customers, on the phone, when introducing yourself."
+      },
+      "examples": [
+        "ミュラーと{申|もう}します。"
+      ]
+    },
+    {
+      "id": "te-orimasu",
+      "label": "〜ております",
+      "explain": {
+        "de": "Bescheidene Form von 〜ています: für sich selbst und die eigene Firma. Feste Formel: いつもお世話になっております.",
+        "en": "Humble form of 〜ています: for yourself and your own company. Set phrase: いつもお世話になっております."
+      },
+      "examples": [
+        "お{待|ま}ちしております。"
+      ]
+    },
+    {
+      "id": "ukagaimasu",
+      "label": "伺います",
+      "explain": {
+        "de": "Bescheiden für „besuchen“ und „fragen“: 伺います. Man erniedrigt die eigene Handlung, um den anderen zu ehren.",
+        "en": "Humble for “visit” and “ask”: 伺います. You lower your own action to honour the other person."
+      },
+      "examples": [
+        "{明日|あした}、{事務所|じむしょ}に{伺|うかが}います。"
+      ]
+    },
+    {
+      "id": "o-shimasu",
+      "label": "お〜します",
+      "explain": {
+        "de": "Bescheidene Form für eigene Handlungen zugunsten anderer: お + Verbstamm + します (いたします). Bei する-Verben ご〜します (ご連絡します), bei 電話 お電話します.",
+        "en": "Humble form for your own actions for others: お + verb stem + します (いたします). With する-verbs ご〜します (ご連絡します), with 電話 お電話します."
+      },
+      "examples": [
+        "お{荷物|にもつ}をお{持|も}ちします。"
+      ]
+    },
+    {
+      "id": "o-kudasai-honorific",
+      "label": "お〜ください",
+      "explain": {
+        "de": "Höfliche Aufforderung, die man vor allem hört: お + Verbstamm + ください (お待ちください, おかけください).",
+        "en": "Polite instruction you mostly hear: お + verb stem + ください (お待ちください, おかけください)."
+      },
+      "examples": [
+        "{少々|しょうしょう}お{待|ま}ちください。"
+      ]
+    },
+    {
+      "id": "sonkeigo",
+      "label": "尊敬語 (いらっしゃる・お〜になる)",
+      "explain": {
+        "de": "Respektsprache für die Handlungen anderer, auf N4 vor allem zum Verstehen: いらっしゃる (sein, kommen, gehen), おっしゃる (sagen), お + Verbstamm + になる. Aktiv: 〜様はいらっしゃいますか.",
+        "en": "Respect language for others' actions, at N4 mainly to understand: いらっしゃる (be, come, go), おっしゃる (say), お + verb stem + になる. Active: 〜様はいらっしゃいますか."
+      },
+      "examples": [
+        "{部長|ぶちょう}はいらっしゃいますか。"
+      ]
+    },
+    {
+      "id": "to-otsutae",
+      "label": "〜とお伝えください",
+      "explain": {
+        "de": "Eine Nachricht hinterlassen: Inhalt in einfacher Form + とお伝えください („richten Sie bitte aus, dass …“).",
+        "en": "Leaving a message: content in plain form + とお伝えください (“please tell them that …”)."
+      },
+      "examples": [
+        "{明日|あした}は{休|やす}むとお{伝|つた}えください。"
+      ]
+    },
+    {
+      "id": "passive",
+      "label": "受身",
+      "explain": {
+        "de": "Passiv: う-Verben a-Laut + れる (言われる), る-Verben られる (見られる), する → される, 来る → 来られる. Der Handelnde steht mit に.",
+        "en": "Passive: う-verbs a-sound + れる (言われる), る-verbs られる (見られる), する → される, 来る → 来られる. The doer takes に."
+      },
+      "examples": [
+        "{先生|せんせい}にほめられました。"
+      ]
+    },
+    {
+      "id": "suffering-passive",
+      "label": "迷惑の受身",
+      "explain": {
+        "de": "Passiv für etwas, das einem unangenehm widerfährt, auch bei intransitiven Verben: 雨に降られた („ich bin in den Regen gekommen“).",
+        "en": "Passive for something unpleasant that happens to you, even with intransitive verbs: 雨に降られた (“I got rained on”)."
+      },
+      "examples": [
+        "{電車|でんしゃ}で{足|あし}を{踏|ふ}まれました。"
+      ]
+    },
+    {
+      "id": "causative",
+      "label": "使役 (〜させる)",
+      "explain": {
+        "de": "Kausativ: jemanden etwas tun lassen oder machen lassen. う-Verben a-Laut + せる (行かせる), る-Verben させる, する → させる, 来る → 来させる. „Lass mich …“: 〜させてください, unter Freunden 〜させて.",
+        "en": "Causative: making or letting someone do something. う-verbs a-sound + せる (行かせる), る-verbs させる, する → させる, 来る → 来させる. “Let me …”: 〜させてください, casually 〜させて."
+      },
+      "examples": [
+        "{少|すこ}し{考|かんが}えさせてください。"
+      ]
+    },
+    {
+      "id": "causative-passive",
+      "label": "使役受身 (〜させられる)",
+      "explain": {
+        "de": "Etwas tun müssen, weil jemand es verlangt: る-Verben させられる, する → させられる, う-Verben a-Laut + せられる oder kurz + される (待たされる; nicht bei Verben auf す: 話させられる).",
+        "en": "Being made to do something: る-verbs させられる, する → させられる, う-verbs a-sound + せられる or short + される (待たされる; not for verbs ending in す: 話させられる)."
+      },
+      "examples": [
+        "{一時間|いちじかん}も{待|ま}たされました。"
+      ]
+    },
+    {
+      "id": "te-mo",
+      "label": "〜ても",
+      "explain": {
+        "de": "„auch wenn …“: て-Form + も. Nomen und な-Adjektive: でも.",
+        "en": "“even if …”: て-form + も. Nouns and な-adjectives: でも."
+      },
+      "examples": [
+        "{雨|あめ}が{降|ふ}っても、{行|い}きます。"
+      ]
+    }
+  ]
+}

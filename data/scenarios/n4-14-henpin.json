@@ -1,0 +1,67 @@
+{
+  "id": "n4-14-henpin",
+  "unit": "n4-14",
+  "name": "小林 · Kobayashi",
+  "title": {
+    "de": "Etwas umtauschen",
+    "en": "Exchanging something"
+  },
+  "character": {
+    "de": "Frau Kobayashi, Verkäuferin in einem Kaufhaus. Höflich, entschuldigt sich, erklärt die Regeln für Umtausch und Erstattung.",
+    "en": "Ms Kobayashi, a shop assistant in a department store. Polite, apologises, explains the rules for exchanges and refunds."
+  },
+  "register": "polite",
+  "voice": "jf_nezumi",
+  "opening": "いらっしゃいませ。",
+  "opening_translation": { "de": "Willkommen.", "en": "Welcome." },
+  "goals": [
+    {
+      "id": "problem",
+      "text": {
+        "de": "Sag, dass die Jacke, die du gestern gekauft hast, ein Loch hat.",
+        "en": "Say the jacket you bought yesterday has a hole."
+      },
+      "help": {
+        "keyword": "〜んですが",
+        "start": "きのうこのジャケットを買ったんですが、…",
+        "example": "きのうこのジャケットを買ったんですが、穴が開いていたんです。"
+      }
+    },
+    {
+      "id": "exchange",
+      "text": {
+        "de": "Frag, ob man sie umtauschen kann.",
+        "en": "Ask whether they can exchange it."
+      },
+      "help": {
+        "keyword": "交換（こうかん）",
+        "start": "交換して…",
+        "example": "交換してもらえますか。"
+      }
+    },
+    {
+      "id": "receipt",
+      "text": {
+        "de": "Sag, dass du die Quittung mitgebracht hast.",
+        "en": "Say you've brought the receipt."
+      },
+      "help": {
+        "keyword": "レシート",
+        "start": "レシートは…",
+        "example": "レシートは持ってきました。"
+      }
+    },
+    {
+      "id": "refund",
+      "text": {
+        "de": "Frag, ob du dein Geld zurückbekommst, falls es keine gleiche mehr gibt.",
+        "en": "Ask for a refund in case there isn't another one."
+      },
+      "help": {
+        "keyword": "返金（へんきん）",
+        "start": "同じものがなければ、…",
+        "example": "同じものがなければ、返金してもらえますか。"
+      }
+    }
+  ]
+}

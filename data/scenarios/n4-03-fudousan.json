@@ -1,0 +1,67 @@
+{
+  "id": "n4-03-fudousan",
+  "unit": "n4-03",
+  "name": "岡田 · Okada",
+  "title": {
+    "de": "Beim Makler",
+    "en": "At the estate agent's"
+  },
+  "character": {
+    "de": "Herr Okada, Makler in einem kleinen Büro am Bahnhof. Geschäftlich höflich, benutzt Laden-Keigo (ご案内します), erklärt geduldig.",
+    "en": "Mr Okada, an estate agent in a small office by the station. Businesslike and polite, uses shop keigo (ご案内します), explains patiently."
+  },
+  "register": "polite",
+  "voice": "jm_kumo",
+  "opening": "いらっしゃいませ。どんなお{部屋|へや}をお{探|さが}しですか。",
+  "opening_translation": { "de": "Willkommen. Was für eine Wohnung suchen Sie?", "en": "Welcome. What kind of flat are you looking for?" },
+  "goals": [
+    {
+      "id": "wish",
+      "text": {
+        "de": "Sag, was du suchst: wegen des Arbeitswegs nah am Bahnhof und ruhig.",
+        "en": "Say what you want: close to the station for commuting, and quiet."
+      },
+      "help": {
+        "keyword": "〜ために",
+        "start": "通勤のために、…",
+        "example": "通勤のために、駅から近くて静かな部屋がいいです。"
+      }
+    },
+    {
+      "id": "compare",
+      "text": {
+        "de": "Sag, dass die zweite Wohnung vom Bahnhof leichter zu erreichen ist.",
+        "en": "Say that the second flat is easier to reach from the station."
+      },
+      "help": {
+        "keyword": "〜やすい",
+        "start": "こちらのほうが…",
+        "example": "こちらのほうが駅から行きやすいですね。"
+      }
+    },
+    {
+      "id": "rule",
+      "text": {
+        "de": "Frag, wo die Regeln für den Müll stehen.",
+        "en": "Ask where the rules for rubbish are written."
+      },
+      "help": {
+        "keyword": "書いてある（かいてある）",
+        "start": "ごみの…",
+        "example": "ごみの出し方はどこに書いてありますか。"
+      }
+    },
+    {
+      "id": "prepare",
+      "text": {
+        "de": "Sag, dass du die Unterlagen bis nächste Woche vorbereitest.",
+        "en": "Say that you'll get the papers ready by next week."
+      },
+      "help": {
+        "keyword": "準備（じゅんび）",
+        "start": "じゃあ、来週までに…",
+        "example": "じゃあ、来週までに書類を準備しておきます。"
+      }
+    }
+  ]
+}

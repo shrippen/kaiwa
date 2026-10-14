@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "沖縄に行こうと思ってる。",
+    "reply": "いいね！海、きれいだよね。",
+    "translation": {
+      "de": "Super! Das Meer ist so schön.",
+      "en": "Nice! The sea is beautiful."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "plan"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "沖縄に行くと思ってる。",
+    "reply": "いいね！海、きれいだよね。",
+    "translation": {
+      "de": "Super! Das Meer ist so schön.",
+      "en": "Nice! The sea is beautiful."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "plan"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "行くと思ってる",
+          "better": "行こうと思ってる",
+          "explanation": "Für ein Vorhaben die Volitionalform: 行こうと思ってる. 行くと思う heißt „ich glaube, ich fahre“.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "今年は一人で行くことにしたんだ。",
+    "reply": "へえ、すごい。一人旅、楽しそう。",
+    "translation": {
+      "de": "Wow, mutig. Allein reisen klingt toll.",
+      "en": "Wow, cool. Travelling alone sounds fun."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "decided"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "来週までにホテルを予約するつもり。",
+    "reply": "早く予約したほうがいいよ。夏は高いから。",
+    "translation": {
+      "de": "Buch lieber früh, im Sommer wird es teuer.",
+      "en": "Better book early, it gets pricey in summer."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "deadline"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "来週にホテルを予約するつもり。",
+    "reply": "早く予約したほうがいいよ。夏は高いから。",
+    "translation": {
+      "de": "Buch lieber früh, im Sommer wird es teuer.",
+      "en": "Better book early, it gets pricey in summer."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "deadline"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "unnatural",
+          "kind": "particle",
+          "original": "来週に",
+          "better": "来週までに",
+          "explanation": "Eine Frist („bis spätestens“) heißt までに. に allein nennt nur den Zeitpunkt.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "遠藤さんは？どこか行く？",
+    "reply": "わたしは実家に帰る予定。",
+    "translation": {
+      "de": "Ich fahre zu meinen Eltern.",
+      "en": "I'm going back to my parents'."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "ask"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

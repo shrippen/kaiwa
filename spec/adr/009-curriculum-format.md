@@ -19,7 +19,9 @@ Muttersprachler-Reviews.
    Gesamtgraphen (unbekannte Einheiten, doppelte Ids, Zyklen, Themen 1–15).
 2. **Neue Felder je Einheit, alle optional** (Q-07): `topics` (JF-Themen 1–15),
    `jf_can_do` (Ids der JF-Can-do-Datenbank, Q-10: nur die Ids als Verweis, der Kann-Satz bleibt
-   eigene Formulierung), `review` (`by`, `date`, `hash`, siehe INHALT-ENTWURF 3.3). Eine Datei im
+   eigene Formulierung; Quelle der Nummern: Spalte „JFS type/reference number“ der Liste
+   [JF Can-do for Life in Japan](https://www.jpf.go.jp/e/urawa/e_rsorcs/seikatsu.html), Stand
+   Oktober 2023, nur Einträge zum Sprechen und zur Interaktion), `review` (`by`, `date`, `hash`, siehe INHALT-ENTWURF 3.3). Eine Datei im
    alten Format liest sich unverändert.
 3. **Grammatik-Katalog** `data/grammar/<stufe>.json` (Q-07): je Punkt `id` (ASCII), `label` (so
    steht er in der Einheit, japanisch), eigene Erklärung de/en und Beispiele in Furigana-Markup.
@@ -37,5 +39,9 @@ Muttersprachler-Reviews.
   stehen im Katalog), „遠い・近い“ ist kein Grammatikpunkt mehr.
 - App und `kaiwad` binden die Stufendateien ein (`kaiwa-backend::CURRICULUM`), `kaiwa-sim` liest
   `data/curriculum/` als Verzeichnis.
-- Noch nicht umgesetzt: Morphologie-Muster je Punkt (für den Grammatik-Lint, INHALT-ENTWURF 3.2),
-  Prüfung des Review-Hashs im Release-Gate (M7), Abdeckung der JF-Themen je Stufe.
+- Review-Nachweis: `Curriculum::content_hash` (Einheit ohne `review` plus ihre Szenariodateien,
+  FNV-1a 64); `kaiwa-sim review-hash` listet ihn je Einheit, ein Test verlangt, dass ein
+  eingetragener `review.hash` noch passt. Abdeckung: N5 und N4 erreichen die JF-Themen 1–13 (Test).
+  Register-Lint der Hilfe-Sätze (INHALT-ENTWURF 3.2) als Test in `kaiwa-core`.
+- Noch nicht umgesetzt: Morphologie-Muster je Punkt (Grammatik-Abdeckung und Vorgriff,
+  INHALT-ENTWURF 3.2), das Release-Gate selbst (M7: jede Einheit reviewt).

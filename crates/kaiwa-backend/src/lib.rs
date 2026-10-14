@@ -35,7 +35,10 @@ use kaiwa_core::curriculum::Curriculum;
 use kaiwa_store::Store;
 
 /// The level files of the curriculum (ADR-009), joined by [`Curriculum::from_files`].
-const CURRICULUM: &[&str] = &[include_str!("../../../data/curriculum/n5.json")];
+const CURRICULUM: &[&str] = &[
+    include_str!("../../../data/curriculum/n5.json"),
+    include_str!("../../../data/curriculum/n4.json"),
+];
 const SCENARIOS: &[&str] = &[
     include_str!("../../../data/scenarios/n5-01-aisatsu.json"),
     include_str!("../../../data/scenarios/n5-02-jikoshoukai.json"),
@@ -53,6 +56,28 @@ const SCENARIOS: &[&str] = &[
     include_str!("../../../data/scenarios/n5-14-ichinichi.json"),
     include_str!("../../../data/scenarios/n5-15-sumai.json"),
     include_str!("../../../data/scenarios/n5-16-onsen.json"),
+    include_str!("../../../data/scenarios/n4-01-keiken.json"),
+    include_str!("../../../data/scenarios/n4-02-byouin.json"),
+    include_str!("../../../data/scenarios/n4-02-kaze.json"),
+    include_str!("../../../data/scenarios/n4-03-fudousan.json"),
+    include_str!("../../../data/scenarios/n4-04-omiyage.json"),
+    include_str!("../../../data/scenarios/n4-04-tanjoubi.json"),
+    include_str!("../../../data/scenarios/n4-05-mokuhyou.json"),
+    include_str!("../../../data/scenarios/n4-05-natsuyasumi.json"),
+    include_str!("../../../data/scenarios/n4-06-ryokan.json"),
+    include_str!("../../../data/scenarios/n4-06-soudan.json"),
+    include_str!("../../../data/scenarios/n4-07-baito.json"),
+    include_str!("../../../data/scenarios/n4-08-tenki.json"),
+    include_str!("../../../data/scenarios/n4-08-uwasa.json"),
+    include_str!("../../../data/scenarios/n4-09-hoteru.json"),
+    include_str!("../../../data/scenarios/n4-09-wasuremono.json"),
+    include_str!("../../../data/scenarios/n4-10-tonari.json"),
+    include_str!("../../../data/scenarios/n4-11-denwa.json"),
+    include_str!("../../../data/scenarios/n4-11-uketsuke.json"),
+    include_str!("../../../data/scenarios/n4-12-guchi.json"),
+    include_str!("../../../data/scenarios/n4-13-kisetsu.json"),
+    include_str!("../../../data/scenarios/n4-13-matsuri.json"),
+    include_str!("../../../data/scenarios/n4-14-henpin.json"),
     // Free talk on a topic, outside the path (/LF116/).
     include_str!("../../../data/scenarios/frei-shumi.json"),
     include_str!("../../../data/scenarios/frei-tabemono.json"),
@@ -125,6 +150,94 @@ const FIXTURES: &[(&str, &str)] = &[
     (
         "n5-16-onsen",
         include_str!("../../../qa/fixtures/n5-16-onsen.json"),
+    ),
+    (
+        "n4-01-keiken",
+        include_str!("../../../qa/fixtures/n4-01-keiken.json"),
+    ),
+    (
+        "n4-02-byouin",
+        include_str!("../../../qa/fixtures/n4-02-byouin.json"),
+    ),
+    (
+        "n4-02-kaze",
+        include_str!("../../../qa/fixtures/n4-02-kaze.json"),
+    ),
+    (
+        "n4-03-fudousan",
+        include_str!("../../../qa/fixtures/n4-03-fudousan.json"),
+    ),
+    (
+        "n4-04-omiyage",
+        include_str!("../../../qa/fixtures/n4-04-omiyage.json"),
+    ),
+    (
+        "n4-04-tanjoubi",
+        include_str!("../../../qa/fixtures/n4-04-tanjoubi.json"),
+    ),
+    (
+        "n4-05-mokuhyou",
+        include_str!("../../../qa/fixtures/n4-05-mokuhyou.json"),
+    ),
+    (
+        "n4-05-natsuyasumi",
+        include_str!("../../../qa/fixtures/n4-05-natsuyasumi.json"),
+    ),
+    (
+        "n4-06-ryokan",
+        include_str!("../../../qa/fixtures/n4-06-ryokan.json"),
+    ),
+    (
+        "n4-06-soudan",
+        include_str!("../../../qa/fixtures/n4-06-soudan.json"),
+    ),
+    (
+        "n4-07-baito",
+        include_str!("../../../qa/fixtures/n4-07-baito.json"),
+    ),
+    (
+        "n4-08-tenki",
+        include_str!("../../../qa/fixtures/n4-08-tenki.json"),
+    ),
+    (
+        "n4-08-uwasa",
+        include_str!("../../../qa/fixtures/n4-08-uwasa.json"),
+    ),
+    (
+        "n4-09-hoteru",
+        include_str!("../../../qa/fixtures/n4-09-hoteru.json"),
+    ),
+    (
+        "n4-09-wasuremono",
+        include_str!("../../../qa/fixtures/n4-09-wasuremono.json"),
+    ),
+    (
+        "n4-10-tonari",
+        include_str!("../../../qa/fixtures/n4-10-tonari.json"),
+    ),
+    (
+        "n4-11-denwa",
+        include_str!("../../../qa/fixtures/n4-11-denwa.json"),
+    ),
+    (
+        "n4-11-uketsuke",
+        include_str!("../../../qa/fixtures/n4-11-uketsuke.json"),
+    ),
+    (
+        "n4-12-guchi",
+        include_str!("../../../qa/fixtures/n4-12-guchi.json"),
+    ),
+    (
+        "n4-13-kisetsu",
+        include_str!("../../../qa/fixtures/n4-13-kisetsu.json"),
+    ),
+    (
+        "n4-13-matsuri",
+        include_str!("../../../qa/fixtures/n4-13-matsuri.json"),
+    ),
+    (
+        "n4-14-henpin",
+        include_str!("../../../qa/fixtures/n4-14-henpin.json"),
     ),
 ];
 

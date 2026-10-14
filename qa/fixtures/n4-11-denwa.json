@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "わたくし、ベルリン大学のミュラーと申します。",
+    "reply": "ミュラー様ですね。いつもお世話になっております。",
+    "translation": {
+      "de": "Herr/Frau Müller, guten Tag. Vielen Dank für die gute Zusammenarbeit.",
+      "en": "Mr/Ms Müller, hello. Thank you for your continued support."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "intro"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "わたし、ベルリン大学のミュラーと言います。",
+    "reply": "ミュラー様ですね。いつもお世話になっております。",
+    "translation": {
+      "de": "Herr/Frau Müller, guten Tag. Vielen Dank für die gute Zusammenarbeit.",
+      "en": "Mr/Ms Müller, hello. Thank you for your continued support."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "intro"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "unnatural",
+          "kind": "register",
+          "original": "ミュラーと言います",
+          "better": "ミュラーと申します",
+          "explanation": "Am Telefon mit einer Firma: 〜と申します (bescheiden), dazu わたくし.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "山口様はいらっしゃいますか。",
+    "reply": "申し訳ございません。山口はただいま席を外しております。",
+    "translation": {
+      "de": "Es tut mir leid, Herr Yamaguchi ist gerade nicht am Platz.",
+      "en": "I'm sorry, Mr Yamaguchi is away from his desk at the moment."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "ask"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "山口さんはいますか。",
+    "reply": "申し訳ございません。山口はただいま席を外しております。",
+    "translation": {
+      "de": "Es tut mir leid, Herr Yamaguchi ist gerade nicht am Platz.",
+      "en": "I'm sorry, Mr Yamaguchi is away from his desk at the moment."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "ask"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "unnatural",
+          "kind": "register",
+          "original": "山口さんはいますか",
+          "better": "山口様はいらっしゃいますか",
+          "explanation": "Für Menschen der anderen Firma das Respektwort: いらっしゃいますか, dazu 様.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "金曜日の会議は三時からだとお伝えください。",
+    "reply": "かしこまりました。金曜日の会議は三時から、と申し伝えます。",
+    "translation": {
+      "de": "Sehr wohl. Ich richte aus, dass das Treffen am Freitag um drei beginnt.",
+      "en": "Certainly. I'll pass on that Friday's meeting starts at three."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "message"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "では、また後ほどお電話いたします。",
+    "reply": "はい、お待ちしております。失礼いたします。",
+    "translation": {
+      "de": "Ja, wir freuen uns auf Ihren Anruf. Auf Wiederhören.",
+      "en": "Yes, we look forward to your call. Goodbye."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "again"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

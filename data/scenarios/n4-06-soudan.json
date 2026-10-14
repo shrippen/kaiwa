@@ -1,0 +1,55 @@
+{
+  "id": "n4-06-soudan",
+  "unit": "n4-06",
+  "name": "大輝 · Daiki",
+  "title": {
+    "de": "Ausflug planen",
+    "en": "Planning a day out"
+  },
+  "character": {
+    "de": "Daiki, ein Freund aus dem Sportverein. Spontan, plant gern Ausflüge, spricht in Freundesform.",
+    "en": "Daiki, a friend from the sports club. Spontaneous, likes planning trips, speaks casually."
+  },
+  "register": "casual",
+  "voice": "jm_kumo",
+  "opening": "{週末|しゅうまつ}、どこか{行|い}かない？",
+  "opening_translation": { "de": "Wollen wir am Wochenende irgendwo hin?", "en": "Shall we go somewhere at the weekend?" },
+  "goals": [
+    {
+      "id": "propose",
+      "text": {
+        "de": "Schlag vor: Wenn das Wetter gut ist, nach Kamakura.",
+        "en": "Suggest: Kamakura if the weather is good."
+      },
+      "help": {
+        "keyword": "〜たら",
+        "start": "天気がよかったら…",
+        "example": "天気がよかったら、鎌倉に行こうよ。"
+      }
+    },
+    {
+      "id": "time",
+      "text": {
+        "de": "Frag, wie lange es mit dem Zug dauert.",
+        "en": "Ask how long it takes by train."
+      },
+      "help": {
+        "keyword": "〜ば",
+        "start": "電車で行けば…",
+        "example": "電車で行けば、どのぐらいかかる？"
+      }
+    },
+    {
+      "id": "meet",
+      "text": {
+        "de": "Mach aus, wann und wo ihr euch trefft.",
+        "en": "Arrange when and where to meet."
+      },
+      "help": {
+        "keyword": "会おう（あおう）",
+        "start": "じゃあ、…",
+        "example": "じゃあ、九時に駅で会おう。"
+      }
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "id": "n4-05-mokuhyou",
+  "unit": "n4-05",
+  "name": "山本先生 · Yamamoto",
+  "title": {
+    "de": "Lernziele",
+    "en": "Learning goals"
+  },
+  "character": {
+    "de": "Frau Yamamoto, Lehrerin in der Sprachschule, im Gespräch über das nächste Jahr. Geduldig, ermutigend, höflich.",
+    "en": "Ms Yamamoto, the language school teacher, talking about next year. Patient, encouraging, polite."
+  },
+  "register": "polite",
+  "voice": "jf_tebukuro",
+  "opening": "{来年|らいねん}の{目標|もくひょう}は{何|なん}ですか。",
+  "opening_translation": { "de": "Was ist dein Ziel für nächstes Jahr?", "en": "What's your goal for next year?" },
+  "goals": [
+    {
+      "id": "exam",
+      "text": {
+        "de": "Sag, dass du vorhast, nächstes Jahr die Japanischprüfung zu machen.",
+        "en": "Say that you intend to take the Japanese exam next year."
+      },
+      "help": {
+        "keyword": "〜つもり",
+        "start": "来年、…",
+        "example": "来年、日本語の試験を受けるつもりです。"
+      }
+    },
+    {
+      "id": "daily",
+      "text": {
+        "de": "Sag, dass du beschlossen hast, jeden Tag dreißig Minuten zu lernen.",
+        "en": "Say you've decided to study thirty minutes every day."
+      },
+      "help": {
+        "keyword": "〜ことにしました",
+        "start": "毎日…",
+        "example": "毎日三十分勉強することにしました。"
+      }
+    },
+    {
+      "id": "study",
+      "text": {
+        "de": "Sag, dass du daran denkst, im Sommer in Japan zu studieren.",
+        "en": "Say you're thinking of studying in Japan in the summer."
+      },
+      "help": {
+        "keyword": "留学（りゅうがく）",
+        "start": "夏に…",
+        "example": "夏に日本へ留学しようと思っています。"
+      }
+    }
+  ]
+}

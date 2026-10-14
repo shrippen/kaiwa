@@ -1,0 +1,116 @@
+[
+  {
+    "learner": "これ、ドイツのお土産です。どうぞ。",
+    "reply": "わあ、ありがとう。チョコレートですか。家族みんなでいただきます。",
+    "translation": {
+      "de": "Oh, danke. Schokolade? Die essen wir mit der ganzen Familie.",
+      "en": "Oh, thank you. Chocolate? We'll share it with the whole family."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "gift"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "ベルリンで、友だちが引っ越しを手伝ってくれました。",
+    "reply": "いい友だちですね。",
+    "translation": {
+      "de": "Was für gute Freunde.",
+      "en": "What good friends."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "got"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "ベルリンで、友だちが引っ越しを手伝ってあげました。",
+    "reply": "いい友だちですね。",
+    "translation": {
+      "de": "Was für gute Freunde.",
+      "en": "What good friends."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "got"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "word_choice",
+          "original": "手伝ってあげました",
+          "better": "手伝ってくれました",
+          "explanation": "Tut jemand etwas für dich: 〜てくれました. 〜てあげました heißt, du tust es für andere.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "姉に日本の本をあげました。",
+    "reply": "お姉さん、喜んだでしょう。",
+    "translation": {
+      "de": "Deine Schwester hat sich sicher gefreut.",
+      "en": "Your sister must have been pleased."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "gave"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "姉に日本の本をくれました。",
+    "reply": "お姉さん、喜んだでしょう。",
+    "translation": {
+      "de": "Deine Schwester hat sich sicher gefreut.",
+      "en": "Your sister must have been pleased."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "gave"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "word_choice",
+          "original": "くれました",
+          "better": "あげました",
+          "explanation": "くれる nur, wenn jemand dir oder deiner Seite gibt. Gibst du: あげました.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "空港まで迎えに来てくれて、ありがとうございました。",
+    "reply": "いえいえ。無事に帰ってきてよかったです。",
+    "translation": {
+      "de": "Gern geschehen. Schön, dass du gut angekommen bist.",
+      "en": "Not at all. I'm glad you got back safely."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "thanks"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

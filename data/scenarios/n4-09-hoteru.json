@@ -1,0 +1,55 @@
+{
+  "id": "n4-09-hoteru",
+  "unit": "n4-09",
+  "name": "中島 · Nakajima",
+  "title": {
+    "de": "Die Klimaanlage",
+    "en": "The air conditioner"
+  },
+  "character": {
+    "de": "Frau Nakajima an der Rezeption eines Business-Hotels, am Telefon. Sehr höflich, entschuldigt sich schnell, schickt Hilfe.",
+    "en": "Ms Nakajima at the front desk of a business hotel, on the phone. Very polite, apologises quickly, sends help."
+  },
+  "register": "polite",
+  "voice": "jf_nezumi",
+  "opening": "はい、フロントでございます。",
+  "opening_translation": { "de": "Ja, Rezeption.", "en": "Yes, front desk." },
+  "goals": [
+    {
+      "id": "problem",
+      "text": {
+        "de": "Sag, dass die Klimaanlage in deinem Zimmer nicht angeht.",
+        "en": "Say the air conditioner in your room won't come on."
+      },
+      "help": {
+        "keyword": "つかない",
+        "start": "部屋のエアコンが…",
+        "example": "部屋のエアコンがつかないんですが。"
+      }
+    },
+    {
+      "id": "tried",
+      "text": {
+        "de": "Sag, dass du den Schalter gedrückt hast und sie trotzdem nicht läuft.",
+        "en": "Say you pressed the switch and it still doesn't work."
+      },
+      "help": {
+        "keyword": "〜のに",
+        "start": "スイッチを押したのに、…",
+        "example": "スイッチを押したのに、動きません。"
+      }
+    },
+    {
+      "id": "ask",
+      "text": {
+        "de": "Bitte darum, dass jemand nachsehen kommt.",
+        "en": "Ask for someone to come and look."
+      },
+      "help": {
+        "keyword": "〜てもらえますか",
+        "start": "見に…",
+        "example": "見に来てもらえますか。"
+      }
+    }
+  ]
+}

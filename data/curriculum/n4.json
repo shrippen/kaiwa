@@ -1,0 +1,556 @@
+{
+  "id": "n4",
+  "level": {
+    "jlpt": "N4",
+    "cefr": "A2"
+  },
+  "units": [
+    {
+      "id": "n4-01",
+      "title": {
+        "de": "Erfahrungen",
+        "en": "Experiences"
+      },
+      "can_do": {
+        "de": "Ich kann erzählen, was ich schon einmal gemacht habe, und nachfragen, wie es war.",
+        "en": "I can say what I have done before and ask how it was."
+      },
+      "grammar": [
+        "〜たことがあります",
+        "〜たり〜たりします",
+        "〜し、〜し",
+        "〜とき"
+      ],
+      "words": [
+        "一度",
+        "着物",
+        "登る",
+        "景色",
+        "お寺",
+        "珍しい"
+      ],
+      "scenarios": [
+        "n4-01-keiken"
+      ],
+      "requires": [
+        "n5-12"
+      ],
+      "topics": [
+        3,
+        13
+      ],
+      "jf_can_do": [
+        503,
+        518,
+        254
+      ]
+    },
+    {
+      "id": "n4-02",
+      "title": {
+        "de": "Beim Arzt",
+        "en": "At the doctor's"
+      },
+      "can_do": {
+        "de": "Ich kann sagen, was mir fehlt und seit wann, und Ratschläge verstehen.",
+        "en": "I can say what is wrong with me and since when, and understand advice."
+      },
+      "grammar": [
+        "〜んです",
+        "〜ので",
+        "〜すぎる",
+        "〜たほうがいい",
+        "〜なければなりません",
+        "〜なくてもいいです"
+      ],
+      "words": [
+        "頭",
+        "熱",
+        "薬",
+        "痛い",
+        "無理",
+        "風邪"
+      ],
+      "scenarios": [
+        "n4-02-byouin",
+        "n4-02-kaze"
+      ],
+      "requires": [
+        "n5-14",
+        "n5-16"
+      ],
+      "topics": [
+        7
+      ],
+      "jf_can_do": [
+        428,
+        403
+      ]
+    },
+    {
+      "id": "n4-03",
+      "title": {
+        "de": "Wohnung suchen",
+        "en": "Flat hunting"
+      },
+      "can_do": {
+        "de": "Ich kann Wünsche an eine Wohnung nennen, Wohnungen vergleichen und nach Hausregeln fragen.",
+        "en": "I can say what I want in a flat, compare flats and ask about house rules."
+      },
+      "grammar": [
+        "〜のほうが〜",
+        "〜やすい・〜にくい",
+        "〜てあります",
+        "〜ておきます",
+        "〜ために"
+      ],
+      "words": [
+        "家賃",
+        "通勤",
+        "規則",
+        "書類",
+        "準備",
+        "広い"
+      ],
+      "scenarios": [
+        "n4-03-fudousan"
+      ],
+      "requires": [
+        "n5-15"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "id": "n4-04",
+      "title": {
+        "de": "Geschenke und Gefälligkeiten",
+        "en": "Gifts and favours"
+      },
+      "can_do": {
+        "de": "Ich kann sagen, wer wem etwas gegeben oder für wen getan hat, und mich dafür bedanken.",
+        "en": "I can say who gave what to whom or did something for whom, and say thank you for it."
+      },
+      "grammar": [
+        "あげる・くれる・もらう",
+        "〜てくれる・〜てもらう・〜てあげる",
+        "〜てくれてありがとう",
+        "〜てよかった"
+      ],
+      "words": [
+        "お土産",
+        "手伝う",
+        "引っ越し",
+        "迎える",
+        "空港",
+        "喜ぶ"
+      ],
+      "scenarios": [
+        "n4-04-omiyage",
+        "n4-04-tanjoubi"
+      ],
+      "requires": [
+        "n5-11"
+      ],
+      "topics": [
+        11
+      ],
+      "jf_can_do": [
+        495,
+        13
+      ]
+    },
+    {
+      "id": "n4-05",
+      "title": {
+        "de": "Vorhaben",
+        "en": "Plans"
+      },
+      "can_do": {
+        "de": "Ich kann sagen, was ich vorhabe und beschlossen habe, und bis wann.",
+        "en": "I can say what I plan and have decided to do, and by when."
+      },
+      "grammar": [
+        "意向形 (〜よう)",
+        "〜ようと思っています",
+        "〜つもりです",
+        "〜予定です",
+        "〜ことにしました",
+        "〜までに"
+      ],
+      "words": [
+        "夏休み",
+        "予約",
+        "決める",
+        "目標",
+        "試験",
+        "留学"
+      ],
+      "scenarios": [
+        "n4-05-natsuyasumi",
+        "n4-05-mokuhyou"
+      ],
+      "requires": [
+        "n4-01"
+      ],
+      "topics": [
+        4,
+        3
+      ],
+      "jf_can_do": [
+        208,
+        526
+      ]
+    },
+    {
+      "id": "n4-07",
+      "title": {
+        "de": "Was ich kann",
+        "en": "What I can do"
+      },
+      "can_do": {
+        "de": "Ich kann sagen, was ich kann, was ich inzwischen gelernt habe und wann ich arbeiten kann.",
+        "en": "I can say what I can do, what I have learnt by now and when I can work."
+      },
+      "grammar": [
+        "可能形",
+        "〜ようになりました",
+        "〜ように",
+        "〜ながら"
+      ],
+      "words": [
+        "アルバイト",
+        "英語",
+        "漢字",
+        "通う",
+        "週に",
+        "働く"
+      ],
+      "scenarios": [
+        "n4-07-baito"
+      ],
+      "requires": [
+        "n4-01"
+      ],
+      "topics": [
+        12,
+        5
+      ],
+      "jf_can_do": [
+        426,
+        462
+      ]
+    },
+    {
+      "id": "n4-06",
+      "title": {
+        "de": "Reise planen",
+        "en": "Planning a trip"
+      },
+      "can_do": {
+        "de": "Ich kann Bedingungen nennen, nach Empfehlungen fragen und Vorschläge machen, wenn ich eine Reise plane.",
+        "en": "I can state conditions, ask for recommendations and make suggestions when planning a trip."
+      },
+      "grammar": [
+        "〜たら",
+        "〜ば",
+        "〜と (自然)",
+        "〜なら",
+        "〜という"
+      ],
+      "words": [
+        "一泊",
+        "泊まる",
+        "遅れる",
+        "到着",
+        "名所",
+        "相談"
+      ],
+      "scenarios": [
+        "n4-06-ryokan",
+        "n4-06-soudan"
+      ],
+      "requires": [
+        "n5-05",
+        "n4-05"
+      ],
+      "topics": [
+        6
+      ],
+      "jf_can_do": [
+        251,
+        513
+      ]
+    },
+    {
+      "id": "n4-08",
+      "title": {
+        "de": "Wetter und Gerüchte",
+        "en": "Weather and rumours"
+      },
+      "can_do": {
+        "de": "Ich kann Vermutungen äußern und weitergeben, was ich gehört oder gesehen habe.",
+        "en": "I can make guesses and pass on what I have heard or seen."
+      },
+      "grammar": [
+        "〜そうです (様態)",
+        "〜そうです (伝聞)",
+        "〜みたいです・〜ようです",
+        "〜かもしれません",
+        "〜でしょう",
+        "〜はずです",
+        "〜って (伝聞)"
+      ],
+      "words": [
+        "天気予報",
+        "台風",
+        "引っ越す",
+        "結婚",
+        "傘",
+        "止まる"
+      ],
+      "scenarios": [
+        "n4-08-tenki",
+        "n4-08-uwasa"
+      ],
+      "requires": [
+        "n4-02"
+      ],
+      "topics": [
+        10,
+        11
+      ],
+      "jf_can_do": [
+        492,
+        554,
+        545
+      ]
+    },
+    {
+      "id": "n4-13",
+      "title": {
+        "de": "Feste und Jahreszeiten",
+        "en": "Festivals and seasons"
+      },
+      "can_do": {
+        "de": "Ich kann über die Jahreszeit und ein Fest sprechen, Veränderungen beschreiben und sagen, was ich ausprobieren möchte.",
+        "en": "I can talk about the season and a festival, describe changes and say what I would like to try."
+      },
+      "grammar": [
+        "〜てきました (変化)",
+        "〜ば〜ほど",
+        "〜てみる"
+      ],
+      "words": [
+        "お祭り",
+        "浴衣",
+        "涼しい",
+        "花火",
+        "屋台",
+        "だんだん"
+      ],
+      "scenarios": [
+        "n4-13-kisetsu",
+        "n4-13-matsuri"
+      ],
+      "requires": [
+        "n4-08"
+      ],
+      "topics": [
+        13,
+        10
+      ],
+      "jf_can_do": [
+        524,
+        491,
+        549
+      ]
+    },
+    {
+      "id": "n4-09",
+      "title": {
+        "de": "Pech gehabt",
+        "en": "Bad luck"
+      },
+      "can_do": {
+        "de": "Ich kann melden, dass etwas verloren oder kaputt ist, und beschreiben, wie es passiert ist.",
+        "en": "I can report that something is lost or broken and describe how it happened."
+      },
+      "grammar": [
+        "〜てしまいました",
+        "自動詞・他動詞",
+        "〜ている (結果)",
+        "〜のに",
+        "〜ばよかった"
+      ],
+      "words": [
+        "財布",
+        "忘れ物",
+        "気をつける",
+        "エアコン",
+        "動く",
+        "押す"
+      ],
+      "scenarios": [
+        "n4-09-wasuremono",
+        "n4-09-hoteru"
+      ],
+      "requires": [
+        "n4-03",
+        "n4-06"
+      ],
+      "topics": [
+        6,
+        8
+      ],
+      "jf_can_do": [
+        401
+      ]
+    },
+    {
+      "id": "n4-10",
+      "title": {
+        "de": "Höflich bitten",
+        "en": "Asking politely"
+      },
+      "can_do": {
+        "de": "Ich kann jemanden höflich um etwas bitten, das Mühe macht, und nachfragen, ob es geht.",
+        "en": "I can politely ask someone for something that takes effort and check whether it is possible."
+      },
+      "grammar": [
+        "〜ていただけませんか",
+        "〜てくださいませんか",
+        "〜かどうか",
+        "〜か分かりません (埋め込み)"
+      ],
+      "words": [
+        "荷物",
+        "預かる",
+        "留守",
+        "迷惑",
+        "届く",
+        "都合"
+      ],
+      "scenarios": [
+        "n4-10-tonari"
+      ],
+      "requires": [
+        "n4-04"
+      ],
+      "topics": [
+        11,
+        2
+      ]
+    },
+    {
+      "id": "n4-14",
+      "title": {
+        "de": "Umtausch",
+        "en": "Returns"
+      },
+      "can_do": {
+        "de": "Ich kann eine Reklamation vorbringen, ein Problem erklären und um Umtausch oder Erstattung bitten.",
+        "en": "I can make a complaint, explain a problem and ask for an exchange or a refund."
+      },
+      "grammar": [
+        "〜んですが (前置き)",
+        "〜てもらえますか"
+      ],
+      "words": [
+        "交換",
+        "返金",
+        "穴",
+        "レシート",
+        "ジャケット",
+        "同じ"
+      ],
+      "scenarios": [
+        "n4-14-henpin"
+      ],
+      "requires": [
+        "n4-09",
+        "n4-10"
+      ],
+      "topics": [
+        8
+      ]
+    },
+    {
+      "id": "n4-11",
+      "title": {
+        "de": "Keigo am Telefon",
+        "en": "Keigo on the phone"
+      },
+      "can_do": {
+        "de": "Ich kann mich am Telefon und am Empfang einer Firma vorstellen, nach jemandem fragen und eine Nachricht hinterlassen.",
+        "en": "I can introduce myself on the phone and at a company's reception, ask for someone and leave a message."
+      },
+      "grammar": [
+        "〜と申します",
+        "〜ております",
+        "伺います",
+        "お〜します",
+        "お〜ください",
+        "尊敬語 (いらっしゃる・お〜になる)",
+        "〜とお伝えください"
+      ],
+      "words": [
+        "会社",
+        "担当",
+        "伝言",
+        "少々",
+        "約束",
+        "失礼します"
+      ],
+      "scenarios": [
+        "n4-11-denwa",
+        "n4-11-uketsuke"
+      ],
+      "requires": [
+        "n4-07",
+        "n4-10"
+      ],
+      "topics": [
+        5
+      ]
+    },
+    {
+      "id": "n4-12",
+      "title": {
+        "de": "Was mir passiert ist",
+        "en": "What happened to me"
+      },
+      "can_do": {
+        "de": "Ich kann erzählen, was mir passiert ist, was ich tun musste und was ich selbst tun möchte.",
+        "en": "I can tell what happened to me, what I was made to do and what I would like to do myself."
+      },
+      "grammar": [
+        "受身",
+        "迷惑の受身",
+        "使役 (〜させる)",
+        "使役受身 (〜させられる)",
+        "〜ても"
+      ],
+      "words": [
+        "怒る",
+        "残業",
+        "部長",
+        "遅刻",
+        "払う",
+        "びしょびしょ"
+      ],
+      "scenarios": [
+        "n4-12-guchi"
+      ],
+      "requires": [
+        "n4-08",
+        "n4-09"
+      ],
+      "topics": [
+        4,
+        11
+      ]
+    }
+  ]
+}

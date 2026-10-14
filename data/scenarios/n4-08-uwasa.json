@@ -1,0 +1,55 @@
+{
+  "id": "n4-08-uwasa",
+  "unit": "n4-08",
+  "name": "美咲 · Misaki",
+  "title": {
+    "de": "Hast du gehört?",
+    "en": "Did you hear?"
+  },
+  "character": {
+    "de": "Misaki, eine Freundin, hat Neuigkeiten über eine gemeinsame Freundin. Aufgeregt, spricht in Freundesform.",
+    "en": "Misaki, a friend, has news about a mutual friend. Excited, speaks casually."
+  },
+  "register": "casual",
+  "voice": "jf_nezumi",
+  "opening": "ねえ、{聞|き}いた？",
+  "opening_translation": { "de": "Hey, hast du schon gehört?", "en": "Hey, did you hear?" },
+  "goals": [
+    {
+      "id": "what",
+      "text": {
+        "de": "Frag, was passiert ist.",
+        "en": "Ask what happened."
+      },
+      "help": {
+        "keyword": "何かあったの？",
+        "start": "え、…",
+        "example": "え、何かあったの？"
+      }
+    },
+    {
+      "id": "news",
+      "text": {
+        "de": "Gib weiter, was du selbst gehört hast: Aoi heiratet.",
+        "en": "Pass on what you heard yourself: Aoi is getting married."
+      },
+      "help": {
+        "keyword": "〜って",
+        "start": "アオイ、…",
+        "example": "アオイ、結婚するんだって。"
+      }
+    },
+    {
+      "id": "looked",
+      "text": {
+        "de": "Sag, dass sie in letzter Zeit glücklich aussah.",
+        "en": "Say she has looked happy recently."
+      },
+      "help": {
+        "keyword": "〜そう",
+        "start": "最近、…",
+        "example": "最近、うれしそうだったよね。"
+      }
+    }
+  ]
+}

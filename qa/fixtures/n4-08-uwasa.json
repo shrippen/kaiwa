@@ -1,0 +1,91 @@
+[
+  {
+    "learner": "え、何かあったの？",
+    "reply": "アオイのこと、知ってる？",
+    "translation": {
+      "de": "Weißt du das von Aoi?",
+      "en": "Do you know about Aoi?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "what"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "アオイ、結婚するんだって。",
+    "reply": "そうそう！びっくりしたよ。",
+    "translation": {
+      "de": "Genau! Ich war total überrascht.",
+      "en": "Yes! I was so surprised."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "news"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "アオイ、結婚するって。",
+    "reply": "そうそう！びっくりしたよ。",
+    "translation": {
+      "de": "Genau! Ich war total überrascht.",
+      "en": "Yes! I was so surprised."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "news"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "最近、うれしそうだったよね。",
+    "reply": "うん、そうだったね。お祝いしよう！",
+    "translation": {
+      "de": "Ja, stimmt. Lass uns feiern!",
+      "en": "Yes, true. Let's celebrate!"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "looked"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "最近、うれしいそうだったよね。",
+    "reply": "うん、そうだったね。お祝いしよう！",
+    "translation": {
+      "de": "Ja, stimmt. Lass uns feiern!",
+      "en": "Yes, true. Let's celebrate!"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "looked"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "うれしいそう",
+          "better": "うれしそう",
+          "explanation": "Für das Aussehen fällt das い weg: うれしい → うれしそう.",
+          "also_possible": false
+        }
+      ]
+    }
+  }
+]

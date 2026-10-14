@@ -1,0 +1,67 @@
+{
+  "id": "n4-07-baito",
+  "unit": "n4-07",
+  "name": "藤井 · Fujii",
+  "title": {
+    "de": "Vorstellung im Café",
+    "en": "A job interview at a café"
+  },
+  "character": {
+    "de": "Frau Fujii, Leiterin eines Cafés, führt ein kurzes Gespräch für einen Aushilfsjob. Freundlich, sachlich, höflich.",
+    "en": "Ms Fujii, manager of a café, holds a short interview for a part-time job. Friendly, matter-of-fact, polite."
+  },
+  "register": "polite",
+  "voice": "jf_gongitsune",
+  "opening": "では、{自己紹介|じこしょうかい}をお{願|ねが}いします。",
+  "opening_translation": { "de": "Dann stellen Sie sich bitte vor.", "en": "Please introduce yourself, then." },
+  "goals": [
+    {
+      "id": "can",
+      "text": {
+        "de": "Sag, dass du Englisch sprechen kannst und auch ein bisschen Japanisch.",
+        "en": "Say you can speak English, and a little Japanese too."
+      },
+      "help": {
+        "keyword": "話せる（はなせる）",
+        "start": "英語が話せます。日本語も…",
+        "example": "英語が話せます。日本語も少し話せます。"
+      }
+    },
+    {
+      "id": "progress",
+      "text": {
+        "de": "Sag, dass du inzwischen Kanji lesen kannst.",
+        "en": "Say you can read kanji by now."
+      },
+      "help": {
+        "keyword": "〜ようになりました",
+        "start": "最近、…",
+        "example": "最近、漢字が読めるようになりました。"
+      }
+    },
+    {
+      "id": "while",
+      "text": {
+        "de": "Sag, dass du neben dem Studium in einem Café gejobbt hast.",
+        "en": "Say you worked in a café while studying."
+      },
+      "help": {
+        "keyword": "〜ながら",
+        "start": "大学に通いながら、…",
+        "example": "大学に通いながら、カフェでアルバイトをしていました。"
+      }
+    },
+    {
+      "id": "shift",
+      "text": {
+        "de": "Sag, dass du dreimal pro Woche arbeiten möchtest, damit Zeit zum Lernen bleibt.",
+        "en": "Say you'd like to work three times a week so you have time to study."
+      },
+      "help": {
+        "keyword": "〜ように",
+        "start": "勉強できるように、…",
+        "example": "勉強できるように、週に三回働きたいです。"
+      }
+    }
+  ]
+}

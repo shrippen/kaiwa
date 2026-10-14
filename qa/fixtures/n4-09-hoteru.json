@@ -1,0 +1,75 @@
+[
+  {
+    "learner": "部屋のエアコンがつかないんですが。",
+    "reply": "大変申し訳ございません。お部屋は何号室ですか。",
+    "translation": {
+      "de": "Das tut mir sehr leid. Welche Zimmernummer haben Sie?",
+      "en": "I'm very sorry. What is your room number?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "problem"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "部屋のエアコンをつかないんですが。",
+    "reply": "大変申し訳ございません。お部屋は何号室ですか。",
+    "translation": {
+      "de": "Das tut mir sehr leid. Welche Zimmernummer haben Sie?",
+      "en": "I'm very sorry. What is your room number?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "problem"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "particle",
+          "original": "エアコンをつかない",
+          "better": "エアコンがつかない",
+          "explanation": "つく ist intransitiv (geht an): エアコンがつく. Selbst anschalten: エアコンをつける.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "スイッチを押したのに、動きません。",
+    "reply": "そうですか。すぐに係の者が参ります。",
+    "translation": {
+      "de": "Verstehe. Es kommt sofort jemand.",
+      "en": "I see. Someone will come right away."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "tried"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "見に来てもらえますか。",
+    "reply": "はい、五分ほどで伺います。",
+    "translation": {
+      "de": "Ja, in etwa fünf Minuten ist jemand bei Ihnen.",
+      "en": "Yes, someone will be there in about five minutes."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "ask"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

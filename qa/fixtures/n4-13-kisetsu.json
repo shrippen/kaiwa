@@ -1,0 +1,91 @@
+[
+  {
+    "learner": "そうですね。朝と夜は寒くなってきました。",
+    "reply": "ええ。もうすぐ秋ですね。",
+    "translation": {
+      "de": "Ja. Bald ist Herbst.",
+      "en": "Yes. Autumn's nearly here."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "change"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "そうですね。朝と夜は寒いになってきました。",
+    "reply": "ええ。もうすぐ秋ですね。",
+    "translation": {
+      "de": "Ja. Bald ist Herbst.",
+      "en": "Yes. Autumn's nearly here."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "change"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "寒いになって",
+          "better": "寒くなって",
+          "explanation": "い-Adjektive: い wird く vor なる: 寒くなってきました.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "お祭りでは、何をするんですか。",
+    "reply": "おどったり、屋台で食べたりします。夜は花火もありますよ。",
+    "translation": {
+      "de": "Man tanzt, isst an den Ständen, und abends gibt es Feuerwerk.",
+      "en": "People dance and eat at the stalls, and there are fireworks at night."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "ask"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "聞けば聞くほど、好きになります。",
+    "reply": "うれしいですね。",
+    "translation": {
+      "de": "Das freut mich.",
+      "en": "I'm glad to hear it."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "more"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "浴衣を貸していただけませんか。",
+    "reply": "もちろん。娘のがありますよ。",
+    "translation": {
+      "de": "Natürlich. Es gibt einen von meiner Tochter.",
+      "en": "Of course. There's one of my daughter's."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "yukata"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

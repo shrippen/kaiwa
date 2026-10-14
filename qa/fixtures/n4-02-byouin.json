@@ -1,0 +1,141 @@
+[
+  {
+    "learner": "頭が痛いんです。",
+    "reply": "そうですか。いつからですか。",
+    "translation": {
+      "de": "Verstehe. Seit wann?",
+      "en": "I see. Since when?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "symptom"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "頭を痛いんです。",
+    "reply": "そうですか。いつからですか。",
+    "translation": {
+      "de": "Verstehe. Seit wann?",
+      "en": "I see. Since when?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "symptom"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "particle",
+          "original": "頭を痛い",
+          "better": "頭が痛い",
+          "explanation": "Was weh tut, steht vor が: 頭が痛い.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "三日前から熱があるので、来ました。",
+    "reply": "熱は何度ぐらいですか。",
+    "translation": {
+      "de": "Wie hoch ist das Fieber?",
+      "en": "How high is the fever?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "since"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "三日前に熱があるので、来ました。",
+    "reply": "熱は何度ぐらいですか。",
+    "translation": {
+      "de": "Wie hoch ist das Fieber?",
+      "en": "How high is the fever?"
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "since"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "particle",
+          "original": "三日前に",
+          "better": "三日前から",
+          "explanation": "„Seit“ heißt から: 三日前から.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "最近、仕事をしすぎました。",
+    "reply": "そうですか。少し休んだほうがいいですね。",
+    "translation": {
+      "de": "Verstehe. Sie sollten sich etwas ausruhen.",
+      "en": "I see. You should rest a little."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "cause"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  },
+  {
+    "learner": "最近、仕事をしすぎりました。",
+    "reply": "そうですか。少し休んだほうがいいですね。",
+    "translation": {
+      "de": "Verstehe. Sie sollten sich etwas ausruhen.",
+      "en": "I see. You should rest a little."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "cause"
+      ],
+      "new_words": [],
+      "corrections": [
+        {
+          "severity": "wrong",
+          "kind": "conjugation",
+          "original": "しすぎりました",
+          "better": "しすぎました",
+          "explanation": "すぎる ist ein る-Verb: しすぎます, しすぎました.",
+          "also_possible": false
+        }
+      ]
+    }
+  },
+  {
+    "learner": "薬は食後に飲まなければなりませんか。",
+    "reply": "いいえ、食後じゃなくてもいいですよ。でも、一日三回飲んでください。",
+    "translation": {
+      "de": "Nein, nicht unbedingt nach dem Essen. Aber nehmen Sie es dreimal am Tag.",
+      "en": "No, it doesn't have to be after meals. But take it three times a day."
+    },
+    "analysis": {
+      "understood": true,
+      "goals_met": [
+        "must"
+      ],
+      "new_words": [],
+      "corrections": []
+    }
+  }
+]

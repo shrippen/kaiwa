@@ -308,15 +308,46 @@ fn misrecognition(root: &Path) -> Result<Option<String>> {
         .then(|| "the correction still goes into the review".into()))
 }
 
-/// /LF215/: after Emi's placement, skipping is offered at once; not so for a beginner.
+/// /LF215/: after Emi's placement, skipping is offered at once, up to the keigo path (the first
+/// unit with a keigo scenario, n4-11); not so for a beginner.
 fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
     let c = Curriculum::from_dir(&root.join("data/curriculum"))?;
-    let emi = c.placement_skip(&placed(p), &CourseProgress::default());
-    let mara = c.placement_skip(&placed(&persona(root, "mara")?), &CourseProgress::default());
+    let mut keigo_units = std::collections::BTreeSet::new();
+    for u in &c.units {
+        for s in &u.scenarios {
+            let text = std::fs::read_to_string(root.join(format!("data/scenarios/{s}.json")))?;
+            if kaiwa_core::Scenario::from_json(&text)?.register
+                == kaiwa_core::scenario::Register::Keigo
+            {
+                keigo_units.insert(u.id.clone());
+            }
+        }
+    }
+    let keigo = |u: &kaiwa_core::curriculum::Unit| keigo_units.contains(&u.id);
+    let emi = c.placement_skip(&placed(p), &CourseProgress::default(), keigo);
+    let mara = c.placement_skip(
+        &placed(&persona(root, "mara")?),
+        &CourseProgress::default(),
+        keigo,
+    );
     if emi.is_empty() {
         return Ok(Some("no skip offered after the placement".into()));
     }
-    Ok((!mara.is_empty()).then(|| "a beginner is offered to skip".into()))
+    if !mara.is_empty() {
+        return Ok(Some("a beginner is offered to skip".into()));
+    }
+    // The offer ends right before the first keigo unit on the path.
+    let first_keigo = c.units.iter().position(keigo);
+    let last = c.units.iter().position(|u| Some(&u.id) == emi.last());
+    Ok(match (first_keigo, last) {
+        (Some(k), Some(l)) if l + 1 == k => None,
+        (Some(k), _) => Some(format!(
+            "the offer ends at {:?}, not right before the keigo unit {}",
+            emi.last(),
+            c.units[k].id
+        )),
+        (None, _) => None,
+    })
 }
 
 /// /LF711/: only local parts: nothing leaves the device.
