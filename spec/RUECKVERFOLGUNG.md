@@ -8,7 +8,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 49 | 21 | 6 | 3 | 0 |
+| Muss | 49 | 22 | 5 | 3 | 0 |
 | Soll | 7 | 11 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
@@ -45,7 +45,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF214/ | M | Die Schwierigkeit steigt schrittweise: Pro Sitzung ändert sich … | core | geprüft | 2 von 2 automatisch grün: `hinnerk_pace`, `mara_gradual` |
 | /LF215/ | S | Starke Unterforderung (z. B. Erfolg ≥ 95 % über drei Sitzungen) führt … | app, core | geprüft | 1 von 1 automatisch grün: `emi_skip` |
 | /LF220/ | M | Das Curriculum ist ein Graph aus Einheiten. | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_path` |
-| /LF221/ | M | Inhalte (Szenarien, Beispielsätze, Erklärungen) werden geprüft … | – | offen | – |
+| /LF221/ | M | Inhalte (Szenarien, Beispielsätze, Erklärungen) werden geprüft … | core, lang | Code | – |
 | /LF230/ | M | Wiederholung (SRS) für Wörter, Wendungen und Grammatikmuster aus … | app, backend, core, store | geprüft | 1 von 2 automatisch grün: `emi_srs_keigo`, `mara_srs_errors` |
 | /LF231/ | S | Wer eine Pause einlegt (≥ 7 Tage), steigt mit einer Auffrischung … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_comeback` |
 | /LF300/ | M | Nach jedem eigenen Zug bewertet das System Grammatik, Wortwahl … | – | geprüft | 1 von 2 automatisch grün: `emi_keigo_detect`, `selin_register_flag` |

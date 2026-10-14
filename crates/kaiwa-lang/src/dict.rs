@@ -197,7 +197,8 @@ impl Dictionary {
     }
 
     /// The JLPT level of a word in the tanos lists (5 = N5 … 1 = N1), the easiest if it has
-    /// several; an estimate, one source for Kaiwa's own level (Q-01). A word in kana also
+    /// several; an estimate, one source for Kaiwa's own level (Q-01) and the level check
+    /// (/LF221/, `tests/levels.rs`). A word in kana also
     /// matches the reading of a kanji spelling (いる → 居る).
     pub fn jlpt(&self, word: &str, reading: &str) -> Result<Option<u8>, LangError> {
         Ok(self

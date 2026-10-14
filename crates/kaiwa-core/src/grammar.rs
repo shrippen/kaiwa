@@ -1,7 +1,8 @@
 //! The grammar catalogue (Q-07, ADR-009): every grammar point a unit names, with an id, the
 //! label the unit uses, its level, an explanation in Kaiwa's own words and examples. One file
 //! per level in `data/grammar/`. The level of a point is the level of the unit that introduces
-//! it ([`crate::Curriculum::check_grammar`]).
+//! it ([`crate::Curriculum::check_grammar`]). Each point's `pattern` drives the grammar lint
+//! (/LF221/, `tests/grammar_lint.rs`): coverage in its unit and no use before it.
 
 use std::collections::BTreeSet;
 

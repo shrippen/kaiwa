@@ -97,7 +97,7 @@ mod tests {
         }
     }
 
-    /// Grammar lint, register (INHALT-ENTWURF 3.2): in a polite or keigo scenario every
+    /// Grammar lint, register (INHALT-ENTWURF 3.2, /LF221/): in a polite or keigo scenario every
     /// sentence of the help ends in a です/ます form, in a casual one none does. Set phrases
     /// (どうぞ) and short questions ending in は？ count for both.
     #[test]
