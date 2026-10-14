@@ -15,7 +15,7 @@ Muttersprachler-Reviews.
 1. **Eine Datei je Stufe** (Q-04): `data/curriculum/n5.json`, `n4.json`, … Jede Datei trägt
    `level: {jlpt, cefr}`. `Curriculum::merge` fügt die Dateien in der Reihenfolge N5, N4, N3, N2,
    N1 zu einem Graphen zusammen, jede Einheit behält die Stufe ihrer Datei. `requires` darf auf
-   Einheiten anderer Stufen zeigen (`n4-01` → `n5-12`); `Curriculum::check` prüft den
+   Einheiten anderer Stufen zeigen (`n4-01` → `n5-16`); `Curriculum::check` prüft den
    Gesamtgraphen (unbekannte Einheiten, doppelte Ids, Zyklen, Themen 1–15).
 2. **Neue Felder je Einheit, alle optional** (Q-07): `topics` (JF-Themen 1–15),
    `jf_can_do` (Ids der JF-Can-do-Datenbank, Q-10: nur die Ids als Verweis, der Kann-Satz bleibt

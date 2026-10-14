@@ -194,7 +194,7 @@ mod tests {
         assert_eq!(v["inReview"], false);
         assert!(v["accent"]["target"].is_array());
         let now = crate::now();
-        assert!(remember(&b, "駅", Some("n5-05"), now).unwrap());
+        assert!(remember(&b, "駅", Some("n5-06"), now).unwrap());
         assert!(!remember(&b, "駅", None, now).unwrap());
         let item = b
             .store
@@ -204,7 +204,7 @@ mod tests {
             .find(|i| i.text == "駅")
             .unwrap();
         assert_eq!(item.source, Source::Lookup);
-        assert_eq!(item.unit.as_deref(), Some("n5-05"));
+        assert_eq!(item.unit.as_deref(), Some("n5-06"));
         assert_eq!(lookup_in(&excerpt(), &b, &w, "de")["inReview"], true);
         // The next day it is due, marked as looked up.
         let due = crate::views::review(&b, now.plus_secs(86_400), 10).unwrap();

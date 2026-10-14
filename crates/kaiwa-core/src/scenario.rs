@@ -45,7 +45,7 @@ pub struct Goal {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Scenario {
     pub id: String,
-    /// The curriculum unit it belongs to, by its id (`n5-03`), or `frei` for free talk.
+    /// The curriculum unit it belongs to, by its id (`n5-04`), or `frei` for free talk.
     pub unit: String,
     /// The character's name as the conversation shows it, e.g. "田中 · Tanaka".
     #[serde(default, skip_serializing_if = "Option::is_none")]

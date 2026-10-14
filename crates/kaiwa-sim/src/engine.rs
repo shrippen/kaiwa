@@ -118,7 +118,7 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
 /// /LF603/: one-word answers, rōmaji, repeats and reading out help earn at most half the XP of
 /// a normally spoken session, and the summary says why.
 fn xp_fair(root: &Path) -> Result<Option<String>> {
-    let mut mara = session(root, "n5-05-eki")?;
+    let mut mara = session(root, "n5-06-eki")?;
     let examples: Vec<String> = mara
         .scenario
         .goals
@@ -128,7 +128,7 @@ fn xp_fair(root: &Path) -> Result<Option<String>> {
     for e in &examples {
         mara.turn(e, Input::Spoken)?;
     }
-    let mut jonas = session(root, "n5-05-eki")?;
+    let mut jonas = session(root, "n5-06-eki")?;
     jonas.turn("はい", Input::Spoken)?;
     jonas.turn("いいですね", Input::Spoken)?;
     jonas.turn(&romaji::to_kana("kyouto made"), Input::Typed)?;
@@ -149,7 +149,7 @@ fn xp_fair(root: &Path) -> Result<Option<String>> {
 
 /// /LF213/: after three evasive answers the task gets easier (help with a sentence start).
 fn stuck(root: &Path) -> Result<Option<String>> {
-    let mut s = session(root, "n5-05-eki")?;
+    let mut s = session(root, "n5-06-eki")?;
     s.turn("はい", Input::Spoken)?;
     s.turn("いいですね", Input::Spoken)?;
     let third = s.turn("ええと", Input::Spoken)?;
@@ -166,7 +166,7 @@ fn typed(root: &Path) -> Result<Option<String>> {
     if romaji::has_romaji(&kana) {
         return Ok(Some(format!("rōmaji left in {kana}")));
     }
-    let mut s = session(root, "n5-05-eki")?;
+    let mut s = session(root, "n5-06-eki")?;
     s.turn(&kana, Input::Typed)?;
     let st = s.stats();
     if st.typed_turns != 1 || st.speaking_secs != 0 {
@@ -309,7 +309,7 @@ fn misrecognition(root: &Path) -> Result<Option<String>> {
 }
 
 /// /LF215/: after Emi's placement, skipping is offered at once, up to the keigo path (the first
-/// unit with a keigo scenario, n4-11); not so for a beginner.
+/// unit with a keigo scenario, n4-13); not so for a beginner.
 fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
     let c = Curriculum::from_dir(&root.join("data/curriculum"))?;
     let mut keigo_units = std::collections::BTreeSet::new();
@@ -424,7 +424,7 @@ fn ceiling(p: &Value) -> Result<Option<String>> {
 /// /LF303/: between friends the plain form is right: a register correction that only asks
 /// for politeness is no mistake there (the recorded tutor flags it anyway, on purpose).
 fn casual_ok(root: &Path) -> Result<Option<String>> {
-    let mut s = session(root, "n5-07-tomodachi")?;
+    let mut s = session(root, "n5-09-tomodachi")?;
     let out = s.turn("うん、行く！", Input::Spoken)?;
     if !s.stats().mistakes.is_empty() {
         return Ok(Some(format!("counted: {:?}", s.stats().mistakes)));
