@@ -338,6 +338,15 @@ impl Backend {
         Ok(())
     }
 
+    /// The grammar labels of a scenario's unit, for the tutor's instructions; none for free
+    /// talk.
+    pub fn unit_grammar(&self, scenario: &str) -> Vec<String> {
+        self.curriculum
+            .unit_of(scenario)
+            .map(|u| u.grammar.clone())
+            .unwrap_or_default()
+    }
+
     /// The tutor of the profile (Q-15).
     pub fn tutor(&self) -> kaiwa_ai::Tutor {
         self.store.profile().map(|p| p.tutor).unwrap_or_default()
