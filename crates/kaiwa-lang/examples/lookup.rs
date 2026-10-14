@@ -26,7 +26,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if e.fallback { " (en)" } else { "" },
                 e.accent.map(|a| a.pattern)
             ),
-            None => println!("{} → ({}) not found", w.text, w.key),
+            None => match dict.lookup_name(&w)? {
+                Some(n) => println!(
+                    "{} → {} 【{}】 {} | {:?}",
+                    w.text,
+                    n.word,
+                    n.reading,
+                    kaiwa_lang::pos::name_label(&n.kinds, lang),
+                    n.trans
+                ),
+                None => println!("{} → ({}) not found", w.text, w.key),
+            },
         }
     }
     Ok(())

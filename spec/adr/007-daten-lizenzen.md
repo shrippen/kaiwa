@@ -27,7 +27,7 @@
 ## Umsetzung (2026-10-13)
 
 - Repo `kaiwa-data` (Gitea, Spiegel `github.com/shrippen/kaiwa-data`, M-02): `build.py` (nur Standardbibliothek) baut aus JMdict (Englisch und Deutsch, M-01), KANJIDIC2 und Kanjium eine SQLite-Datei mit Lizenz-Tabelle, Schema 1 (README dort). Release `v0.1.0`: 25,9 MB Download, 84,3 MB entpackt; gebaut von GitHub Actions, nur Tag und Notiz auf Gitea.
-- Kaiwa lädt das Paket nur nach Klick (Wort-Popup oder Einstellungen › Modelle, M-03) mit fester Größe und SHA-256 (`kaiwa_speech::download::MODELS`), nach `<Modelle>/kaiwa-data-0.1.0/`. Der Auszug für Demo und Tests liegt unter `data/dict/` (CC BY-SA, eigenes README), nie im Programm. Ein Test prüft, dass jedes Wort der Szenarien und Aufzeichnungen darin steht (/LF221/, bewusste Lücken wie Namen in `data/dict/known-gaps.txt`).
+- Kaiwa lädt das Paket nur nach Klick (Wort-Popup oder Einstellungen › Modelle, M-03) mit fester Größe und SHA-256 (`kaiwa_speech::download::MODELS`), nach `<Modelle>/kaiwa-data-0.2.0/` (seit 0.2 mit Schema 2; 0.1.0 liest diese Version nicht mehr, das Paket wird neu geladen). Der Auszug für Demo und Tests liegt unter `data/dict/` (CC BY-SA, eigenes README), nie im Programm. Ein Test prüft, dass jedes Wort der Szenarien und Aufzeichnungen darin steht (/LF221/, Namen über JMnedict, bewusste Lücken in `data/dict/known-gaps.txt`).
 - Lesen: `kaiwa-lang` (Wörter einer Zeile mit lindera/IPADIC, Nachschlagen, Soll-Akzent aus Kanjium).
 
 - **F-02:** Code unter **MIT** (wie Kante). Abhängigkeiten müssen dazu passen: keine (A)GPL-Bibliotheken im ausgelieferten Programm, LGPL (Qt, Kirigami) nur dynamisch gelinkt. `cargo deny` prüft das ab M1.

@@ -157,18 +157,18 @@ pub const MODELS: [Model; 4] = [
         disk_bytes: DICT_DISK,
         source: Source::Archive {
             archive: Remote {
-                name: "kaiwa-data-0.1.0.tar.bz2",
-                bytes: 25_925_931,
-                sha256: "0c64b74f0a19ff7fb655ef21806dea5c80c1b2eab3fc7af2535d7c54106e9eef",
+                name: "kaiwa-data-0.2.0.tar.bz2",
+                bytes: 47_794_085,
+                sha256: "c9cb6effe946f7ab3ffec021b9e18127571cb057a03da28efbf12e29474e63df",
             },
-            url: "https://github.com/shrippen/kaiwa-data/releases/download/v0.1.0/kaiwa-data-0.1.0.tar.bz2",
+            url: "https://github.com/shrippen/kaiwa-data/releases/download/v0.2.0/kaiwa-data-0.2.0.tar.bz2",
             keep: &["kaiwa-dict.sqlite", "NOTICE", "LICENSE-DATA"],
         },
     },
 ];
 
 /// The unpacked dictionary with its licence files.
-const DICT_DISK: u64 = 84_262_912 + 1_112 + 20_138;
+const DICT_DISK: u64 = 158_474_240 + 1_442 + 20_138;
 
 #[derive(Debug, thiserror::Error)]
 pub enum DownloadError {
@@ -381,7 +381,11 @@ mod tests {
         let Source::Archive { archive, url, keep } = m.source else {
             panic!("archive")
         };
-        assert!(url.ends_with(&format!("/v0.1.0/{}", archive.name)), "{url}");
+        let version = kaiwa_lang::PACKAGE.trim_start_matches("kaiwa-data-");
+        assert!(
+            url.ends_with(&format!("/v{version}/{}", archive.name)),
+            "{url}"
+        );
         assert_eq!(archive.name, format!("{}.tar.bz2", kaiwa_lang::PACKAGE));
         assert!(keep.contains(&"kaiwa-dict.sqlite") && keep.contains(&"NOTICE"));
     }
