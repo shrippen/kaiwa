@@ -1,7 +1,7 @@
 {
   "journey": "selin_register",
-  "scenario": "n5-03-konbini",
-  "fixtures": "n5-03-konbini",
+  "scenario": "n5-04-konbini",
+  "fixtures": "n5-04-konbini",
   "note": "Text mode with recorded answers: the register rules and the recast reach the learner. selin_casual_ok needs a casual scenario and waits for it.",
   "steps": [
     { "say": "はい、おねがいします。", "input": "spoken" },

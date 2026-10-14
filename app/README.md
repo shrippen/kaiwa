@@ -102,7 +102,7 @@ Nur im Demo-Build (`--features demo`, oder `./start.sh demo`): `KAIWA_DEMO=1` st
 ```sh
 export KAIWA_DEMO=1 KAIWA_NOW=1792478400:120
 cargo run -p kaiwa-app --features demo -- --shot out.png --view path --kind 1           # start, path, review, profile, settings
-cargo run -p kaiwa-app --features demo -- --shot out.png --view talk --scenario n5-03-konbini --kind 1 \
+cargo run -p kaiwa-app --features demo -- --shot out.png --view talk --scenario n5-04-konbini --kind 1 \
   --say 'はい、おねがいします。|袋はいりません。'                        # "?" Hilfe, "!" Sprechhilfe, "wav:datei", "~" wartet auf die Stimme
 cargo run -p kaiwa-app --features demo -- --shot out.png --view talk --resume           # die unterbrochene Sitzung
 KAIWA_DICT=data/dict/kaiwa-dict-excerpt.sqlite \

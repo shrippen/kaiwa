@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn an_n4_scenario_speaks_at_n4_without_dialect() {
         let s =
-            Scenario::from_json(include_str!("../../../data/scenarios/n4-12-guchi.json")).unwrap();
+            Scenario::from_json(include_str!("../../../data/scenarios/n4-14-guchi.json")).unwrap();
         let p = reply_system(&s, "de", &Difficulty::default());
         assert!(p.contains("JLPT N4"), "{p}");
         assert!(p.contains("without any regional dialect"));

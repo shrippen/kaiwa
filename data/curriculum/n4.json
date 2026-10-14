@@ -33,7 +33,7 @@
         "n4-01-keiken"
       ],
       "requires": [
-        "n5-12"
+        "n5-16"
       ],
       "topics": [
         3,
@@ -76,8 +76,8 @@
         "n4-02-kaze"
       ],
       "requires": [
-        "n5-14",
-        "n5-16"
+        "n5-11",
+        "n5-08"
       ],
       "topics": [
         7
@@ -151,7 +151,7 @@
         "n4-04-tanjoubi"
       ],
       "requires": [
-        "n5-11"
+        "n5-14"
       ],
       "topics": [
         11
@@ -204,7 +204,7 @@
       ]
     },
     {
-      "id": "n4-07",
+      "id": "n4-06",
       "title": {
         "de": "Was ich kann",
         "en": "What I can do"
@@ -228,7 +228,7 @@
         "働く"
       ],
       "scenarios": [
-        "n4-07-baito"
+        "n4-06-baito"
       ],
       "requires": [
         "n4-01"
@@ -243,7 +243,7 @@
       ]
     },
     {
-      "id": "n4-06",
+      "id": "n4-07",
       "title": {
         "de": "Reise planen",
         "en": "Planning a trip"
@@ -268,11 +268,11 @@
         "相談"
       ],
       "scenarios": [
-        "n4-06-ryokan",
-        "n4-06-soudan"
+        "n4-07-ryokan",
+        "n4-07-soudan"
       ],
       "requires": [
-        "n5-05",
+        "n5-06",
         "n4-05"
       ],
       "topics": [
@@ -328,7 +328,7 @@
       ]
     },
     {
-      "id": "n4-13",
+      "id": "n4-09",
       "title": {
         "de": "Feste und Jahreszeiten",
         "en": "Festivals and seasons"
@@ -351,8 +351,8 @@
         "だんだん"
       ],
       "scenarios": [
-        "n4-13-kisetsu",
-        "n4-13-matsuri"
+        "n4-09-kisetsu",
+        "n4-09-matsuri"
       ],
       "requires": [
         "n4-08"
@@ -368,7 +368,7 @@
       ]
     },
     {
-      "id": "n4-09",
+      "id": "n4-10",
       "title": {
         "de": "Pech gehabt",
         "en": "Bad luck"
@@ -393,12 +393,12 @@
         "押す"
       ],
       "scenarios": [
-        "n4-09-wasuremono",
-        "n4-09-hoteru"
+        "n4-10-wasuremono",
+        "n4-10-hoteru"
       ],
       "requires": [
         "n4-03",
-        "n4-06"
+        "n4-07"
       ],
       "topics": [
         6,
@@ -409,7 +409,7 @@
       ]
     },
     {
-      "id": "n4-10",
+      "id": "n4-11",
       "title": {
         "de": "Höflich bitten",
         "en": "Asking politely"
@@ -433,7 +433,7 @@
         "都合"
       ],
       "scenarios": [
-        "n4-10-tonari"
+        "n4-11-tonari"
       ],
       "requires": [
         "n4-04"
@@ -444,7 +444,7 @@
       ]
     },
     {
-      "id": "n4-14",
+      "id": "n4-12",
       "title": {
         "de": "Umtausch",
         "en": "Returns"
@@ -466,18 +466,18 @@
         "同じ"
       ],
       "scenarios": [
-        "n4-14-henpin"
+        "n4-12-henpin"
       ],
       "requires": [
-        "n4-09",
-        "n4-10"
+        "n4-10",
+        "n4-11"
       ],
       "topics": [
         8
       ]
     },
     {
-      "id": "n4-11",
+      "id": "n4-13",
       "title": {
         "de": "Keigo am Telefon",
         "en": "Keigo on the phone"
@@ -504,19 +504,19 @@
         "失礼します"
       ],
       "scenarios": [
-        "n4-11-denwa",
-        "n4-11-uketsuke"
+        "n4-13-denwa",
+        "n4-13-uketsuke"
       ],
       "requires": [
-        "n4-07",
-        "n4-10"
+        "n4-06",
+        "n4-11"
       ],
       "topics": [
         5
       ]
     },
     {
-      "id": "n4-12",
+      "id": "n4-14",
       "title": {
         "de": "Was mir passiert ist",
         "en": "What happened to me"
@@ -541,11 +541,11 @@
         "びしょびしょ"
       ],
       "scenarios": [
-        "n4-12-guchi"
+        "n4-14-guchi"
       ],
       "requires": [
         "n4-08",
-        "n4-09"
+        "n4-10"
       ],
       "topics": [
         4,

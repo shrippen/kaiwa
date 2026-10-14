@@ -18,9 +18,9 @@ use crate::session::Stats;
 /// The stages: scenario and level of the material (learner model scale, 0–8).
 pub const STAGES: [(&str, f64); 4] = [
     ("n5-02-jikoshoukai", 1.5),
-    ("n5-08-yotei", 3.0),
-    ("n5-12-kinou", 4.5),
-    ("n5-12-kinou", 6.5),
+    ("n5-10-yotei", 3.0),
+    ("n5-16-kinou", 4.5),
+    ("n5-16-kinou", 6.5),
 ];
 pub const TURNS_PER_STAGE: u32 = 4;
 /// Keep going while a stage goes at least this well.

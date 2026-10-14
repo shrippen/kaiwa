@@ -77,7 +77,7 @@
       ]
     },
     {
-      "id": "n5-13",
+      "id": "n5-03",
       "title": {
         "de": "Im Unterricht",
         "en": "In class"
@@ -99,7 +99,7 @@
         "質問"
       ],
       "scenarios": [
-        "n5-13-jugyou"
+        "n5-03-jugyou"
       ],
       "requires": [
         "n5-02"
@@ -109,7 +109,7 @@
       ]
     },
     {
-      "id": "n5-03",
+      "id": "n5-04",
       "title": {
         "de": "An der Konbini",
         "en": "At the konbini"
@@ -131,7 +131,7 @@
         "おねがいします"
       ],
       "scenarios": [
-        "n5-03-konbini"
+        "n5-04-konbini"
       ],
       "requires": [
         "n5-02"
@@ -141,7 +141,7 @@
       ]
     },
     {
-      "id": "n5-04",
+      "id": "n5-05",
       "title": {
         "de": "Im Café",
         "en": "At a café"
@@ -164,7 +164,7 @@
         "ここで"
       ],
       "scenarios": [
-        "n5-04-kafe"
+        "n5-05-kafe"
       ],
       "requires": [
         "n5-02"
@@ -177,7 +177,7 @@
       ]
     },
     {
-      "id": "n5-05",
+      "id": "n5-06",
       "title": {
         "de": "Am Bahnhof",
         "en": "At the station"
@@ -199,10 +199,10 @@
         "つぎ"
       ],
       "scenarios": [
-        "n5-05-eki"
+        "n5-06-eki"
       ],
       "requires": [
-        "n5-03"
+        "n5-04"
       ],
       "topics": [
         6
@@ -212,7 +212,7 @@
       ]
     },
     {
-      "id": "n5-06",
+      "id": "n5-07",
       "title": {
         "de": "Nach dem Weg fragen",
         "en": "Asking the way"
@@ -234,10 +234,10 @@
         "遠い"
       ],
       "scenarios": [
-        "n5-06-michi"
+        "n5-07-michi"
       ],
       "requires": [
-        "n5-05"
+        "n5-06"
       ],
       "topics": [
         6
@@ -247,7 +247,7 @@
       ]
     },
     {
-      "id": "n5-16",
+      "id": "n5-08",
       "title": {
         "de": "Darf ich?",
         "en": "May I?"
@@ -271,11 +271,11 @@
         "置く"
       ],
       "scenarios": [
-        "n5-16-onsen"
+        "n5-08-onsen"
       ],
       "requires": [
-        "n5-06",
-        "n5-13"
+        "n5-07",
+        "n5-03"
       ],
       "topics": [
         6,
@@ -286,7 +286,7 @@
       ]
     },
     {
-      "id": "n5-07",
+      "id": "n5-09",
       "title": {
         "de": "Mit Freunden reden",
         "en": "Talking with friends"
@@ -308,7 +308,7 @@
         "アニメ"
       ],
       "scenarios": [
-        "n5-07-tomodachi"
+        "n5-09-tomodachi"
       ],
       "requires": [
         "n5-02"
@@ -318,7 +318,7 @@
       ]
     },
     {
-      "id": "n5-08",
+      "id": "n5-10",
       "title": {
         "de": "Verabredungen",
         "en": "Making plans"
@@ -340,10 +340,10 @@
         "前"
       ],
       "scenarios": [
-        "n5-08-yotei"
+        "n5-10-yotei"
       ],
       "requires": [
-        "n5-07"
+        "n5-09"
       ],
       "topics": [
         3
@@ -354,7 +354,7 @@
       ]
     },
     {
-      "id": "n5-14",
+      "id": "n5-11",
       "title": {
         "de": "Mein Tag",
         "en": "My day"
@@ -378,10 +378,10 @@
         "平日"
       ],
       "scenarios": [
-        "n5-14-ichinichi"
+        "n5-11-ichinichi"
       ],
       "requires": [
-        "n5-08"
+        "n5-10"
       ],
       "topics": [
         4
@@ -392,7 +392,7 @@
       ]
     },
     {
-      "id": "n5-09",
+      "id": "n5-12",
       "title": {
         "de": "Im Restaurant",
         "en": "At a restaurant"
@@ -413,10 +413,10 @@
         "飲み物"
       ],
       "scenarios": [
-        "n5-09-resutoran"
+        "n5-12-resutoran"
       ],
       "requires": [
-        "n5-04"
+        "n5-05"
       ],
       "topics": [
         9
@@ -427,7 +427,7 @@
       ]
     },
     {
-      "id": "n5-10",
+      "id": "n5-13",
       "title": {
         "de": "Einkaufen",
         "en": "Shopping"
@@ -451,11 +451,11 @@
         "さがす"
       ],
       "scenarios": [
-        "n5-10-kaimono"
+        "n5-13-kaimono"
       ],
       "requires": [
-        "n5-03",
-        "n5-07"
+        "n5-04",
+        "n5-09"
       ],
       "topics": [
         8
@@ -466,7 +466,7 @@
       ]
     },
     {
-      "id": "n5-11",
+      "id": "n5-14",
       "title": {
         "de": "Familie",
         "en": "Family"
@@ -489,7 +489,7 @@
         "先生"
       ],
       "scenarios": [
-        "n5-11-kazoku"
+        "n5-14-kazoku"
       ],
       "requires": [
         "n5-02"
@@ -530,14 +530,14 @@
         "n5-15-sumai"
       ],
       "requires": [
-        "n5-11"
+        "n5-14"
       ],
       "topics": [
         2
       ]
     },
     {
-      "id": "n5-12",
+      "id": "n5-16",
       "title": {
         "de": "Was gestern war",
         "en": "What happened yesterday"
@@ -560,11 +560,11 @@
         "とても"
       ],
       "scenarios": [
-        "n5-12-kinou"
+        "n5-16-kinou"
       ],
       "requires": [
-        "n5-06",
-        "n5-08"
+        "n5-07",
+        "n5-10"
       ],
       "topics": [
         4

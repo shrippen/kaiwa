@@ -135,7 +135,7 @@ beides: die Einheit ist eine Situation (Szenario), ihre Grammatik folgt der obig
 1. **Eine Stufe = eine Datei** `data/curriculum/<stufe>.json` im heutigen Format (`id`, `units[]`
    mit `id`, `title`, `can_do`, `grammar`, `words`, `scenarios`, `requires`). Neue Felder nur optional,
    damit `Unit` in `kaiwa-core` ohne Bruch weiterliest (siehe 2.6).
-2. **Ein Graph über alle Stufen.** `n4-01` darf `n5-12` voraussetzen. Der Lader fügt die Dateien
+2. **Ein Graph über alle Stufen.** `n4-01` darf `n5-16` voraussetzen. Der Lader fügt die Dateien
    zusammen und prüft den Gesamtgraphen (`Curriculum::check` heute nur je Datei, siehe Frage Q-04).
 3. **Einheit = Situation mit Kann-Ziel.** Jede Einheit hat 1–2 Szenarien (eines höflich, bei Bedarf
    eines in Freundesform), 3–4 Ziele je Szenario wie heute, 2–5 Grammatikpunkte, 15–25 Kernwörter.
@@ -173,16 +173,16 @@ N5 (A1) ──► N4 (A2) ──► N3 (A2/B1) ──► N2 (B1/B2) ──► N1
 |---|---|---|---|
 | n5-01 Grüßen und danken | 11 Beziehungen | 〜ね, 〜ました (Dank) | Nachbar Yamada, höflich |
 | n5-02 Sich vorstellen | 1 Ich | 〜です, 〜から来ました, 〜が好きです | Gastgeberin Tanaka, höflich |
-| n5-03 Konbini | 8 Einkaufen | 〜はいりません, いくらですか, Zahlen | Kassiererin, höflich (Laden-Keigo hören) |
-| n5-04 Café | 9 Essen | 〜をください, 〜をおねがいします, 〜つ | Kellner, höflich |
-| n5-05 Bahnhof | 6 Reisen | 〜まで, 何時, 〜枚 | Schalter, höflich |
-| n5-06 Weg fragen | 6 Reisen | 〜はどこですか, 〜て、〜 (Reihenfolge), 遠い・近い | Passantin, höflich |
-| n5-07 Mit Freunden | 3 Freizeit | einfache Form, 〜よ・〜ね, 〜ない？ | Aoi, **Freundesform** |
-| n5-08 Verabredungen | 3 Freizeit | 〜ませんか, 〜たいです, 〜に会います | Kollege Kimura, höflich |
-| n5-09 Restaurant | 9 Essen | 〜人, 〜を二つください | Kellnerin, höflich |
-| n5-10 Einkaufen | 8 Einkaufen | い-Adjektive, 〜のはありますか, 〜にします | Verkäufer, höflich |
-| n5-11 Familie | 1 Ich | 〜人家族, 〜がいます, Familienwörter | Gastmutter Suzuki, höflich |
-| n5-12 Gestern | 4 Alltag | 〜ました, 〜かったです, 〜で, 〜と | Lehrer Tanaka, höflich |
+| n5-04 Konbini | 8 Einkaufen | 〜はいりません, いくらですか, Zahlen | Kassiererin, höflich (Laden-Keigo hören) |
+| n5-05 Café | 9 Essen | 〜をください, 〜をおねがいします, 〜つ | Kellner, höflich |
+| n5-06 Bahnhof | 6 Reisen | 〜まで, 何時, 〜枚 | Schalter, höflich |
+| n5-07 Weg fragen | 6 Reisen | 〜はどこですか, 〜て、〜 (Reihenfolge), 遠い・近い | Passantin, höflich |
+| n5-09 Mit Freunden | 3 Freizeit | einfache Form, 〜よ・〜ね, 〜ない？ | Aoi, **Freundesform** |
+| n5-10 Verabredungen | 3 Freizeit | 〜ませんか, 〜たいです, 〜に会います | Kollege Kimura, höflich |
+| n5-12 Restaurant | 9 Essen | 〜人, 〜を二つください | Kellnerin, höflich |
+| n5-13 Einkaufen | 8 Einkaufen | い-Adjektive, 〜のはありますか, 〜にします | Verkäufer, höflich |
+| n5-14 Familie | 1 Ich | 〜人家族, 〜がいます, Familienwörter | Gastmutter Suzuki, höflich |
+| n5-16 Gestern | 4 Alltag | 〜ました, 〜かったです, 〜で, 〜と | Lehrer Tanaka, höflich |
 
 **Lücken gegenüber dem üblichen N5-Umfang:**
 
@@ -199,31 +199,31 @@ N5 (A1) ──► N4 (A2) ──► N3 (A2/B1) ──► N2 (B1/B2) ──► N1
   „〜は日本語で何ですか“. Für ein Sprechprogramm sind sie wichtiger als manche Grammatik und
   passen zu /LF122/ (Code-Switching).
 
-**N5 um vier Einheiten erweitert** (Q-02, umgesetzt; Szenarien `n5-13-jugyou`, `n5-14-ichinichi`, `n5-15-sumai`, `n5-16-onsen`; im Lernpfad an ihrer Stelle einsortiert, die Anzeige nummeriert nach Position):
+**N5 um vier Einheiten erweitert** (Q-02, umgesetzt; Szenarien `n5-03-jugyou`, `n5-11-ichinichi`, `n5-15-sumai`, `n5-08-onsen`; im Lernpfad an ihrer Stelle einsortiert; seit R-03 folgen die Ids der Reihenfolge im Pfad):
 
 | Einheit | Kann | Grammatik | Szenario, Figur, Register | requires |
 |---|---|---|---|---|
-| n5-13 Im Unterricht | Ich kann nachfragen, um Wiederholung bitten und fragen, wie etwas auf Japanisch heißt. | 〜は日本語で何ですか, もう一度〜, 〜てください (Bitte), 〜でもいいですか | Sprachkurs, Lehrerin, höflich | n5-02 |
-| n5-14 Mein Tag | Ich kann meinen Tagesablauf mit Uhrzeiten und Häufigkeit beschreiben. | Uhrzeit/Wochentage, 〜前に, 〜てから, よく/ときどき/あまり〜ない, 〜ている (Gewohnheit) | Tandempartnerin, höflich (ersetzt nicht `frei-mainichi`) | n5-08 |
-| n5-15 Meine Wohnung | Ich kann sagen, wo ich wohne, was es in der Nähe gibt und wie die Wohnung ist. | 〜に〜があります/います, な-Adjektive, Adjektiv-Verneinung, 〜が (aber), 〜から (Grund) | Nachbarin oder Kollegin, höflich | n5-11 |
-| n5-16 Darf ich? | Ich kann um Erlaubnis bitten und Verbote verstehen (Tempel, Museum, Onsen). | 〜てもいいですか, 〜てはいけません, 〜ないでください, 〜ましょうか | Aufsicht im Museum oder Onsen-Personal, höflich | n5-06, n5-13 |
+| n5-03 Im Unterricht | Ich kann nachfragen, um Wiederholung bitten und fragen, wie etwas auf Japanisch heißt. | 〜は日本語で何ですか, もう一度〜, 〜てください (Bitte), 〜でもいいですか | Sprachkurs, Lehrerin, höflich | n5-02 |
+| n5-11 Mein Tag | Ich kann meinen Tagesablauf mit Uhrzeiten und Häufigkeit beschreiben. | Uhrzeit/Wochentage, 〜前に, 〜てから, よく/ときどき/あまり〜ない, 〜ている (Gewohnheit) | Tandempartnerin, höflich (ersetzt nicht `frei-mainichi`) | n5-10 |
+| n5-15 Meine Wohnung | Ich kann sagen, wo ich wohne, was es in der Nähe gibt und wie die Wohnung ist. | 〜に〜があります/います, な-Adjektive, Adjektiv-Verneinung, 〜が (aber), 〜から (Grund) | Nachbarin oder Kollegin, höflich | n5-14 |
+| n5-08 Darf ich? | Ich kann um Erlaubnis bitten und Verbote verstehen (Tempel, Museum, Onsen). | 〜てもいいですか, 〜てはいけません, 〜ないでください, 〜ましょうか | Aufsicht im Museum oder Onsen-Personal, höflich | n5-07, n5-03 |
 
-Vergleich (〜より, 〜のほうが, いちばん) und 〜がほしい kommen in n5-10 Einkaufen dazu,
-〜くなる und Wetter in n5-01. Abschluss von N5 ist dann n5-12 *und* n5-16.
+Vergleich (〜より, 〜のほうが, いちばん) und 〜がほしい kommen in n5-13 Einkaufen dazu,
+〜くなる und Wetter in n5-01. Abschluss von N5 ist dann n5-16 *und* n5-08.
 
-Abweichungen bei der Umsetzung: n5-13 ohne 〜でもいいですか (kein Ziel dafür; kommt mit n5-16s 〜てもいいですか), n5-14 ohne 〜ている (Gewohnheit), dafür 〜時に; n5-15 mit 〜に住んでいます als festem Ausdruck; n5-16 spielt im Onsen eines Ryokan.
+Abweichungen bei der Umsetzung: n5-03 ohne 〜でもいいですか (kein Ziel dafür; kommt mit n5-08s 〜てもいいですか), n5-11 ohne 〜ている (Gewohnheit), dafür 〜時に; n5-15 mit 〜に住んでいます als festem Ausdruck; n5-08 spielt im Onsen eines Ryokan.
 
 ### 2.4 N4: Einheitenliste (umgesetzt als `n4.json`)
 
 **Umgesetzt** (Q-06, Q-09, Q-14): 14 Einheiten, 22 Szenarien, 66 Grammatikpunkte in
-`data/grammar/n4.json`. Reihenfolge im Lernpfad: n4-01, 02, 03, 04, 05, 07, 06, 08, 13, 09, 10, 14,
-11, 12 (die Anzeige nummeriert nach Position). Szenarien in Freundesform (Q-09) für sieben
-Einheiten: `n4-02-kaze`, `n4-04-tanjoubi`, `n4-05-natsuyasumi`, `n4-06-soudan`, `n4-08-uwasa`,
-`n4-12-guchi`, `n4-13-matsuri`. Abweichungen vom Entwurf unten: n4-01 ohne Relativsatz als eigenen
-Punkt; n4-10 ohne 〜てほしい und 〜てもかまいませんか; n4-11 nennt Q-05 genau (申します, おります,
-伺います, お〜します aktiv, お〜ください und 尊敬語 zum Verstehen); n4-13 hat `n4-13-kisetsu`
-(Gastmutter) und `n4-13-matsuri` (Freundin), n4-14 `n4-14-henpin` (Kaufhaus); 〜てもらえますか
-kommt mit n4-14 in den Katalog. Alle Inhalte warten auf das Muttersprachler-Review (Q-08).
+`data/grammar/n4.json`. Die Ids folgen der Reihenfolge im Lernpfad (R-03,
+Fragenpaket 9; die Tabellen unten sind auf die neuen Ids umgeschrieben). Szenarien in Freundesform (Q-09) für sieben
+Einheiten: `n4-02-kaze`, `n4-04-tanjoubi`, `n4-05-natsuyasumi`, `n4-07-soudan`, `n4-08-uwasa`,
+`n4-14-guchi`, `n4-09-matsuri`. Abweichungen vom Entwurf unten: n4-01 ohne Relativsatz als eigenen
+Punkt; n4-11 ohne 〜てほしい und 〜てもかまいませんか; n4-13 nennt Q-05 genau (申します, おります,
+伺います, お〜します aktiv, お〜ください und 尊敬語 zum Verstehen); n4-09 hat `n4-09-kisetsu`
+(Gastmutter) und `n4-09-matsuri` (Freundin), n4-12 `n4-12-henpin` (Kaufhaus); 〜てもらえますか
+kommt mit n4-12 in den Katalog. Alle Inhalte warten auf das Muttersprachler-Review (Q-08).
 
 Leitidee N4: von „Ich kann eine Situation bestehen“ zu „Ich kann begründen, erzählen, bitten und
 Probleme lösen“. Register werden bewusst gewechselt: jede zweite Einheit hat auch ein Szenario in
@@ -234,7 +234,7 @@ gewählt; Lernende aus der Demowelt (Studio Weber) treten nur als Personas auf, 
 
 ---
 
-**n4-01 Erfahrungen** · JF 3 Freizeit, 13 Kultur · requires `n5-12`
+**n4-01 Erfahrungen** · JF 3 Freizeit, 13 Kultur · requires `n5-16`
 
 - Kann: Ich kann erzählen, was ich schon einmal gemacht habe, und nachfragen, wie es war.
 - Grammatik: 〜たことがあります, 〜たり〜たりします, 〜し、〜し (Gründe aufzählen), 〜とき
@@ -243,7 +243,7 @@ gewählt; Lernende aus der Demowelt (Studio Weber) treten nur als Personas auf, 
   nachfragen (〜たことがありますか); sagen, wie es war, mit zwei Gründen (し).
 - Kernwörter: 一度, 富士山, 登る, 着物, 経験, 〜ことがある, 景色, 珍しい …
 
-**n4-02 Beim Arzt** · JF 7 Gesundheit · requires `n5-14`, `n5-16`
+**n4-02 Beim Arzt** · JF 7 Gesundheit · requires `n5-11`, `n5-08`
 
 - Kann: Ich kann sagen, was mir fehlt und seit wann, und Ratschläge verstehen.
 - Grammatik: 〜んです (Erklärung), 〜ので, 〜すぎる, 〜たほうがいい / 〜ないほうがいい,
@@ -265,12 +265,12 @@ gewählt; Lernende aus der Demowelt (Studio Weber) treten nur als Personas auf, 
   nach Regeln fragen (ペットは); sagen, was man vorher erledigt (〜ておきます).
 - Kernwörter: 部屋, 家賃, 駅から〜分, 広い, 静か, 便利, ごみ, 規則, 契約 …
 
-**n4-04 Geschenke und Gefälligkeiten** · JF 11 Beziehungen · requires `n5-11`
+**n4-04 Geschenke und Gefälligkeiten** · JF 11 Beziehungen · requires `n5-14`
 
 - Kann: Ich kann sagen, wer wem etwas gegeben oder für wen getan hat, und mich angemessen bedanken.
 - Grammatik: あげる / くれる / もらう, 〜てあげる / 〜てくれる / 〜てもらう, 〜てくれてありがとう,
   〜てよかった
-- Szenario `n4-04-omiyage`: Rückkehr zur Gastfamilie, Gastvater Suzuki (Ehemann aus n5-11),
+- Szenario `n4-04-omiyage`: Rückkehr zur Gastfamilie, Gastvater Suzuki (Ehemann aus n5-14),
   höflich-herzlich. Ziele: Mitbringsel übergeben (つまらないものですが …); erzählen, wer geholfen hat;
   danken für eine Gefälligkeit.
 - Zweites Szenario `n4-04-tanjoubi`: Geburtstag einer Freundin, Freundesform (〜てくれた, 〜もらった).
@@ -287,23 +287,23 @@ gewählt; Lernende aus der Demowelt (Studio Weber) treten nur als Personas auf, 
 - Zweites Szenario `n4-05-mokuhyou`: Gespräch mit der Lehrerin über Lernziele, höflich.
 - Kernwörter: 夏休み, 計画, 決める, 予約, 貯金, 留学, 〜年後 …
 
-**n4-06 Reise planen** · JF 6 Reisen · requires `n5-05`, `n4-05`
+**n4-07 Reise planen** · JF 6 Reisen · requires `n5-06`, `n4-05`
 
 - Kann: Ich kann Bedingungen nennen und Vorschläge machen, wenn ich eine Reise plane.
 - Grammatik: 〜たら, 〜ば, 〜と (Automatismus: 右に曲がると …), 〜なら (Empfehlung), 〜という (名前)
-- Szenario `n4-06-ryokan`: Reservierung am Telefon mit einem Ryokan, Wirtin Ogawa, höflich mit
+- Szenario `n4-07-ryokan`: Reservierung am Telefon mit einem Ryokan, Wirtin Ogawa, höflich mit
   festem Keigo zum Verstehen. Ziele: Datum und Personen; fragen, was man tun soll, wenn man spät
   ankommt (〜たら); Empfehlung erfragen (〜なら、どこがいいですか); Name eines Ortes erfragen
   (〜という所).
 - Kernwörter: 予約, 泊まる, 一泊, 温泉, 到着, 遅れる, 案内, 名所 …
 - Passt zu Persona Selin („im Ryokan einchecken“).
 
-**n4-07 Was ich kann** · JF 12 Bildung, 5 Arbeit · requires `n4-01`
+**n4-06 Was ich kann** · JF 12 Bildung, 5 Arbeit · requires `n4-01`
 
 - Kann: Ich kann sagen, was ich kann und was ich inzwischen gelernt habe.
 - Grammatik: Potentialform (〜られる, 話せる), 〜ことができる (Wiederholung), 〜ようになりました,
   〜ように (damit), 〜ながら
-- Szenario `n4-07-baito`: Vorstellung für einen Aushilfsjob in einem Café, Leiterin Fujii, höflich.
+- Szenario `n4-06-baito`: Vorstellung für einen Aushilfsjob in einem Café, Leiterin Fujii, höflich.
   Ziele: Fähigkeiten nennen; Fortschritt (〜ようになりました); zwei Dinge gleichzeitig (〜ながら);
   Arbeitszeiten absprechen.
 - Kernwörter: 運転, 料理, 英語, 〜が話せる, 経験, アルバイト, シフト, 週に〜回 …
@@ -318,61 +318,61 @@ gewählt; Lernende aus der Demowelt (Studio Weber) treten nur als Personas auf, 
   weitergeben (〜そうです); Unsicherheit ausdrücken (〜かもしれません).
 - Kernwörter: 天気予報, 台風, 曇り, 雪, 〜によると, 噂, 引っ越す, 結婚する …
 
-**n4-09 Pech gehabt** · JF 6 Reisen, 8 Einkaufen · requires `n4-03`, `n4-06`
+**n4-10 Pech gehabt** · JF 6 Reisen, 8 Einkaufen · requires `n4-03`, `n4-07`
 
 - Kann: Ich kann melden, dass etwas verloren oder kaputt ist, und beschreiben, wie es passiert ist.
 - Grammatik: 〜てしまいました / 〜ちゃった, transitive und intransitive Verbpaare (開ける/開く,
   壊す/壊れる), 〜ている (Zustand nach Veränderung), 〜のに, 〜ばよかった
-- Szenario `n4-09-wasuremono`: Fundbüro am Bahnhof, Beamter Hayashi, sachlich höflich.
+- Szenario `n4-10-wasuremono`: Fundbüro am Bahnhof, Beamter Hayashi, sachlich höflich.
   Ziele: Verlust melden; Gegenstand beschreiben (Farbe, Größe, was darin ist); sagen, wo und wann.
-- Zweites Szenario `n4-09-hoteru`: Hotelzimmer, Klimaanlage geht nicht (つかない, 壊れている), höflich.
+- Zweites Szenario `n4-10-hoteru`: Hotelzimmer, Klimaanlage geht nicht (つかない, 壊れている), höflich.
 - Kernwörter: 財布, 忘れ物, 落とす, 壊れる, 止まる, 開かない, 届く, 確認 …
 
-**n4-10 Höflich bitten** · JF 11 Beziehungen, 2 Wohnung · requires `n4-04`
+**n4-11 Höflich bitten** · JF 11 Beziehungen, 2 Wohnung · requires `n4-04`
 
 - Kann: Ich kann jemanden höflich um etwas bitten, das ihm Mühe macht, und nachfragen, ob etwas geht.
 - Grammatik: 〜ていただけませんか, 〜てくださいませんか, 〜てほしい, 〜かどうか, eingebettete
   Fragen (何時に来るか分かりません), 〜てもかまいませんか
-- Szenario `n4-10-tonari`: Nachbarin Matsumoto, man bittet, ein Paket anzunehmen und zu sagen,
+- Szenario `n4-11-tonari`: Nachbarin Matsumoto, man bittet, ein Paket anzunehmen und zu sagen,
   ob sie am Samstag zu Hause ist. Höflich. Ziele: Bitte stellen; Grund nennen; nachfragen, ob es
   geht (〜かどうか); danken.
 - Kernwörter: 荷物, 預かる, 留守, 届ける, 迷惑, お願い, 都合 …
 
-**n4-11 Keigo am Telefon** · JF 5 Arbeit · requires `n4-07`, `n4-10`
+**n4-13 Keigo am Telefon** · JF 5 Arbeit · requires `n4-06`, `n4-11`
 
 - Kann: Ich kann mich am Telefon in einer Firma vorstellen, nach jemandem fragen und eine Nachricht hinterlassen.
 - Grammatik: 謙譲語-Formeln (申します, おります, 伺います, お〜します), 尊敬語 verstehen
   (いらっしゃいます, お〜になる, おっしゃる), 〜とお伝えください, 〜させていただきます (Formel)
-- Szenario `n4-11-denwa`: Empfang einer Firma in Osaka, Frau Takeda, **Keigo**. Ziele: sich mit
+- Szenario `n4-13-denwa`: Empfang einer Firma in Osaka, Frau Takeda, **Keigo**. Ziele: sich mit
   Firma und Namen melden; nach Herrn X fragen; Rückruf erbitten; Nachricht hinterlassen.
-- Zweites Szenario `n4-11-uketsuke`: Besuch am Empfang (Termin um 14 Uhr), Keigo.
+- Zweites Szenario `n4-13-uketsuke`: Besuch am Empfang (Termin um 14 Uhr), Keigo.
 - Kernwörter: 会社, 担当, 席を外す, 折り返し, 伝言, 少々, 失礼します …
 - Passt zu Persona Emi (Ziel Keigo) und Mara (Visitenkarten).
 
-**n4-12 Was mir passiert ist** · JF 4 Alltag, 11 Beziehungen · requires `n4-08`, `n4-09`
+**n4-14 Was mir passiert ist** · JF 4 Alltag, 11 Beziehungen · requires `n4-08`, `n4-10`
 
 - Kann: Ich kann erzählen, was mir angetan wurde, was ich tun musste und was ich tun durfte.
 - Grammatik: Passiv (auch Leidenspassiv: 雨に降られた), Kausativ (〜させる, 〜させてください),
   Kausativ-Passiv (〜させられた), 〜ても
-- Szenario `n4-12-guchi`: Abends mit Freund Kenta im Izakaya, Freundesform, man beklagt sich über
+- Szenario `n4-14-guchi`: Abends mit Freund Kenta im Izakaya, Freundesform, man beklagt sich über
   den Tag. Ziele: etwas Unangenehmes im Passiv erzählen; sagen, was man tun musste (させられた);
   um Erlaubnis bitten (〜させてください); trösten oder relativieren (〜ても).
 - Kernwörter: 怒る, 叱る, 踏む, 盗む, 残業, 部長, 褒める, 手伝わせる …
 
 **Optional, falls der Umfang reicht (Frage Q-06):**
 
-- n4-13 **Feste und Jahreszeiten** (JF 13): Ausdrücke für Wandel (〜くなってきた), 〜ば〜ほど (N4/N3
+- n4-09 **Feste und Jahreszeiten** (JF 13): Ausdrücke für Wandel (〜くなってきた), 〜ば〜ほど (N4/N3
   Grenze), Figur Gastmutter, höflich.
-- n4-14 **Einkaufen mit Reklamation** (JF 8): Umtausch, 〜てもらえますか, 〜のですが, Verkäuferin, höflich.
+- n4-12 **Einkaufen mit Reklamation** (JF 8): Umtausch, 〜てもらえますか, 〜のですが, Verkäuferin, höflich.
 
 **Graph N4:**
 
 ```
-n5-12 ─► n4-01 Erfahrungen ─┬─► n4-05 Vorhaben ─► n4-06 Reise ─┐
-                            └─► n4-07 Können ─────┐            │
-n5-14,16 ─► n4-02 Arzt ─► n4-08 Wetter ───────────┼────────────┼─► n4-12 Passiert
-n5-15 ─► n4-03 Wohnung ───────────────────────────┼─► n4-09 Pech ┘
-n5-11 ─► n4-04 Geschenke ─► n4-10 Bitten ─────────┴─► n4-11 Keigo
+n5-16 ─► n4-01 Erfahrungen ─┬─► n4-05 Vorhaben ─► n4-07 Reise ─┐
+                            └─► n4-06 Können ─────┐            │
+n5-11,16 ─► n4-02 Arzt ─► n4-08 Wetter ───────────┼────────────┼─► n4-14 Passiert
+n5-15 ─► n4-03 Wohnung ───────────────────────────┼─► n4-10 Pech ┘
+n5-14 ─► n4-04 Geschenke ─► n4-11 Bitten ─────────┴─► n4-13 Keigo
 ```
 
 **N4-Grammatik vollständig nach Einheit** (zum Abhaken gegen den Katalog):
@@ -384,13 +384,13 @@ n5-11 ─► n4-04 Geschenke ─► n4-10 Bitten ─────────┴�
 | n4-03 | やすい/にくい, てある, ておく, ために |
 | n4-04 | あげる/くれる/もらう, てあげる/てくれる/てもらう, てよかった |
 | n4-05 | Volitional, ようと思う, つもり, 予定, ことにする/ことになる, までに |
-| n4-06 | たら, ば, と, なら, という |
-| n4-07 | Potential, ようになる, ように, ながら |
+| n4-07 | たら, ば, と, なら, という |
+| n4-06 | Potential, ようになる, ように, ながら |
 | n4-08 | そう (Aussehen), そうだ (Hörensagen), ようだ/みたい, かもしれない, でしょう, はず, って |
-| n4-09 | てしまう/ちゃう, Transitiv/Intransitiv, ている (Ergebnis), のに, ばよかった |
-| n4-10 | ていただけませんか, てくださいませんか, てほしい, かどうか, eingebettete Fragen, てもかまわない |
-| n4-11 | 謙譲語-Formeln, 尊敬語 verstehen, お〜ください, させていただく (Formel) |
-| n4-12 | Passiv, Kausativ, Kausativ-Passiv, ても |
+| n4-10 | てしまう/ちゃう, Transitiv/Intransitiv, ている (Ergebnis), のに, ばよかった |
+| n4-11 | ていただけませんか, てくださいませんか, てほしい, かどうか, eingebettete Fragen, てもかまわない |
+| n4-13 | 謙譲語-Formeln, 尊敬語 verstehen, お〜ください, させていただく (Formel) |
+| n4-14 | Passiv, Kausativ, Kausativ-Passiv, ても |
 
 Das sind gut 60 Punkte; mit den Wiederholungen aus N5 und kleinen Mustern (〜方, 〜始める,
 〜終わる, 〜出す, 〜なさい, 〜こと/〜の als Nominalisierung) kommt der Katalog auf ~100, im
@@ -444,7 +444,7 @@ Alle neuen Felder mit `#[serde(default)]`, damit `n5.json` unverändert gültig 
       "grammar": ["〜たことがあります", "〜たり〜たりします", "〜し、〜し", "〜とき"],
       "words": ["一度", "登る", "着物", "経験", "景色", "珍しい"],
       "scenarios": ["n4-01-keiken"],
-      "requires": ["n5-12"],
+      "requires": ["n5-16"],
       "topics": [3, 13],
       "review": { "by": null, "date": null, "hash": null }
     }
@@ -458,7 +458,7 @@ Alle neuen Felder mit `#[serde(default)]`, damit `n5.json` unverändert gültig 
 - Grammatik-Katalog `data/grammar/n4.json` (neu): `{ "id": "tari", "label": "〜たり〜たりします",
   "level": "n4", "explain": {de,en}, "pattern": "<Morphologie-Muster>", "examples": [...] }`.
 
-Hinweis nebenbei: Die Szenarien tragen `"unit": "N5-03"` (groß), die Einheiten `"id": "n5-03"`
+Hinweis nebenbei: Die Szenarien tragen `"unit": "N5-04"` (groß), die Einheiten `"id": "n5-04"`
 (klein). Für N4 einheitlich schreiben (Vorschlag: klein, wie die Ids).
 
 ---
@@ -503,7 +503,7 @@ Beispielsätze, später LLM-Vorlagen):
 - **Form:** de und en vorhanden, Ziele 3–4, Hilfe in drei Stufen (/LF114/), `requires` ohne Zyklus
   über alle Stufen (heutiger `check()` auf den zusammengefügten Graphen).
 - **QA-Personas:** Für jede neue Einheit läuft mindestens eine Persona-Reise (`kaiwa-sim`), z. B.
-  Theo durch N4, Emi springt per /LF215/ bis n4-11 und scheitert dort ohne Keigo nicht still.
+  Theo durch N4, Emi springt per /LF215/ bis n4-13 und scheitert dort ohne Keigo nicht still.
 
 ### 3.3 Muttersprachler-Review (manuell, Release-Gate)
 
@@ -565,12 +565,12 @@ dient als Gegenprobe.
 
 | Persona | Start | Was sie im neuen Inhalt prüft |
 |---|---|---|
-| Hinnerk, Mara | A0 | N5 inklusive n5-13 (Nachfragen) und n5-16; keine Überforderung durch neue Einheiten |
+| Hinnerk, Mara | A0 | N5 inklusive n5-03 (Nachfragen) und n5-08; keine Überforderung durch neue Einheiten |
 | Jonas | N5 niedrig | Tippen statt Sprechen, Freundesform-Szenarien in N4 |
-| Lena | N5 | Übergang n5-12/n5-16 → n4-01, て-Form unsicher → n5-16 als Brücke |
-| Selin | Hören N4, Sprechen N5, nur Freundesform | Register-Korrektur in N4-Einheiten mit zwei Registern, n4-06 Ryokan |
+| Lena | N5 | Übergang n5-16/n5-08 → n4-01, て-Form unsicher → n5-08 als Brücke |
+| Selin | Hören N4, Sprechen N5, nur Freundesform | Register-Korrektur in N4-Einheiten mit zwei Registern, n4-07 Ryokan |
 | Theo | N4 | Einstufung direkt in N4, Pitch der N4-Kernwörter |
-| Emi | Hören/Sprechen fließend, kein Keigo | Überspringen bis n4-10, dann n4-11 Keigo als echte Hürde |
+| Emi | Hören/Sprechen fließend, kein Keigo | Überspringen bis n4-11, dann n4-13 Keigo als echte Hürde |
 
 ---
 
@@ -579,17 +579,17 @@ dient als Gegenprobe.
 | Id | Frage | Vorschlag | Entscheidung |
 |---|---|---|---|
 | Q-01 | tanos-Listen übernehmen, da die CC-BY-Lizenz im Webarchiv bestätigt ist (L-09)? | **Ja**, als eine Quelle neben Häufigkeit und Curriculum (Abschnitt 4.2); Snapshot-URLs in ADR-007, Namensnennung in `NOTICE` und „Über“. | Wie vorgeschlagen; Namensnennung in `NOTICE` und „Über“. |
-| Q-02 | N5-Lücken schließen: N5 um vier Einheiten (n5-13 bis n5-16) erweitern oder die fehlende Grammatik an den Anfang von N4 legen? | **N5 auf 16 Einheiten erweitern.** Die て-Form-Bitten und Gesprächsstrategien gehören an den Anfang, und M2 bleibt bei „N5 als Graph“. | Wie vorgeschlagen: N5 auf 16 Einheiten. |
+| Q-02 | N5-Lücken schließen: N5 um vier Einheiten (n5-03 bis n5-08) erweitern oder die fehlende Grammatik an den Anfang von N4 legen? | **N5 auf 16 Einheiten erweitern.** Die て-Form-Bitten und Gesprächsstrategien gehören an den Anfang, und M2 bleibt bei „N5 als Graph“. | Wie vorgeschlagen: N5 auf 16 Einheiten. |
 | Q-03 | Wie heißt die Stufe in der App: „N4“, „Stufe 4“ oder „A2“? | „N4 · A2“ mit dem Hinweis „orientiert an JLPT und JF-Standard“, nie „JLPT-Kurs“; keine Bestehensversprechen. | Wie vorgeschlagen: „N4 · A2“, ohne Bestehensversprechen. |
 | Q-04 | Eine Datei je Stufe mit stufenübergreifendem `requires`, oder eine große Datei? | **Eine Datei je Stufe**; der Lader fügt zusammen und prüft den Gesamtgraphen. | Wie vorgeschlagen: eine Datei je Stufe, der Lader prüft den Gesamtgraphen. |
 | Q-05 | Wie tief geht Keigo in N4? | Feste Formeln aktiv (申します, おります, 伺います, お〜ください), 尊敬語 nur verstehen; aktives Keigo in N3. Emi bekommt ihren Weg über das Überspringen. | Wie vorgeschlagen; aktives Keigo ab N3. |
-| Q-06 | Bleibt N4 bei 12 Einheiten, oder kommen n4-13 (Feste) und n4-14 (Reklamation) für 1.0 dazu? | 12 für 1.0, die zwei als erste Inhalte von 1.1; Aufwand für Review spricht dagegen. | **Abweichend:** 14 Einheiten schon für 1.0 (n4-13 und n4-14 gehören dazu). |
+| Q-06 | Bleibt N4 bei 12 Einheiten, oder kommen n4-09 (Feste) und n4-12 (Reklamation) für 1.0 dazu? | 12 für 1.0, die zwei als erste Inhalte von 1.1; Aufwand für Review spricht dagegen. | **Abweichend:** 14 Einheiten schon für 1.0 (n4-09 und n4-12 gehören dazu). |
 | Q-07 | Neue optionale Felder (`level`, `topics`, `review`) und ein Grammatik-Katalog `data/grammar/`? | **Ja**, alle optional, ein Lauf von `check()` prüft sie; ADR „Curriculum-Format v2“. | Wie vorgeschlagen; ADR „Curriculum-Format v2“. |
 | Q-08 | Wer macht das Muttersprachler-Review (F-05), und wann? | Bezahltes Lektorat je Einheit, beauftragt zu Beginn von M6, N5 zuerst; Budget für 30–40 h. | **Offen:** später entscheiden. |
 | Q-09 | Zwei Register je Einheit (höflich und Freundesform) als Regel für N4? | Für jede zweite N4-Einheit, wo es im Leben vorkommt (Arzt nicht, Freunde ja), siehe 2.4. | Wie vorgeschlagen: jede zweite N4-Einheit bekommt zusätzlich ein Szenario in Freundesform, wo es im Leben vorkommt. |
 | Q-10 | Sollen Kann-Sätze auf JF-Can-do-Ids verweisen? | Nein im Datensatz (Nutzungsbedingungen unklar für Weitergabe), nur die Themennummer `topics` und eigene Formulierung. | **Abweichend:** Ja, Can-do-Ids im Datensatz (nur die Ids als Verweis, Kann-Sätze bleiben eigene Formulierung). |
 | Q-11 | Ab welcher Stufe dürfen KI-Figuren Dialekt sprechen? | Erst N2 (nur Hören), N1 aktiv verstehen; bis dahin Standardsprache (標準語). | Wie vorgeschlagen: Dialekt ab N2 nur zum Hören, ab N1 aktiv verstehen. |
-| Q-12 | Schreibweise `unit` in Szenarien (`N5-03`) an die Einheiten-Id (`n5-03`) angleichen? | Ja, mit N4 einheitlich klein; N5 in einem kleinen PR nachziehen. | Umgesetzt (Szenarien tragen `n5-0x`, PR #31). |
+| Q-12 | Schreibweise `unit` in Szenarien (`N5-04`) an die Einheiten-Id (`n5-04`) angleichen? | Ja, mit N4 einheitlich klein; N5 in einem kleinen PR nachziehen. | Umgesetzt (Szenarien tragen `n5-0x`, PR #31). |
 
 ---
 

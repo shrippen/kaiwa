@@ -207,3 +207,53 @@ fn deleting_a_profile_leaves_no_file() {
         "no database, no side files"
     );
 }
+
+#[test]
+fn migration_2_moves_old_unit_ids_to_path_order() {
+    let db = rusqlite::Connection::open_in_memory().unwrap();
+    db.execute_batch(super::MIGRATIONS[0]).unwrap();
+    db.pragma_update(None, "user_version", 1).unwrap();
+    db.execute(
+        "INSERT INTO learning VALUES (1, ?1)",
+        [r#"{"course":{"scenarios_done":["n5-13-jugyou","n5-03-konbini"],"skipped_units":["n5-12"],"reviews":{"n4-11":[3,2]}}}"#],
+    )
+    .unwrap();
+    db.execute(
+        "INSERT INTO sessions (scenario, started, offset_min, state) VALUES ('n5-16-onsen', 0, 0, '{\"scenario\":\"n5-16-onsen\"}')",
+        [],
+    )
+    .unwrap();
+    db.execute(
+        "INSERT INTO items VALUES ('駅', 0, '{\"text\":\"駅\",\"unit\":\"n5-10\"}')",
+        [],
+    )
+    .unwrap();
+    let store = Store::init(db).unwrap();
+    assert_eq!(store.schema_version().unwrap(), super::MIGRATIONS.len());
+    let l: String = store
+        .db
+        .query_row("SELECT value FROM learning", [], |r| r.get(0))
+        .unwrap();
+    assert!(
+        l.contains("\"n5-03-jugyou\"") && l.contains("\"n5-04-konbini\""),
+        "{l}"
+    );
+    assert!(l.contains("\"n5-16\"") && l.contains("\"n4-13\""), "{l}");
+    let (sc, state): (String, String) = store
+        .db
+        .query_row("SELECT scenario, state FROM sessions", [], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
+        .unwrap();
+    assert_eq!(sc, "n5-08-onsen");
+    assert!(state.contains("n5-08-onsen"));
+    let item: String = store
+        .db
+        .query_row("SELECT value FROM items", [], |r| r.get(0))
+        .unwrap();
+    assert!(item.contains("\"n5-13\""), "{item}");
+    assert_eq!(
+        super::renamed("2026-10-13 n5-131 an5-13"),
+        "2026-10-13 n5-131 an5-13"
+    );
+}

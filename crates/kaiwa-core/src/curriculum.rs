@@ -752,23 +752,23 @@ mod bundled {
             Skill::Register,
             level_index("desu_masu_and_casual").unwrap(),
         );
-        let keigo = |u: &Unit| u.id == "n4-11";
+        let keigo = |u: &Unit| u.id == "n4-13";
         let offer = c.placement_skip(&m, &CourseProgress::default(), keigo);
         assert!(offer.contains(&"n5-01".to_string()));
-        assert!(offer.contains(&"n4-14".to_string()));
+        assert!(offer.contains(&"n4-12".to_string()));
         assert!(
-            !offer.contains(&"n4-11".to_string()),
+            !offer.contains(&"n4-13".to_string()),
             "keigo is where she starts"
         );
         assert!(
-            !offer.contains(&"n4-12".to_string()),
+            !offer.contains(&"n4-14".to_string()),
             "nothing after the keigo unit"
         );
         // With keigo she may skip it too.
         m.set(Skill::Register, level_index("keigo_basic").unwrap());
         assert!(
             c.placement_skip(&m, &CourseProgress::default(), keigo)
-                .contains(&"n4-12".to_string())
+                .contains(&"n4-14".to_string())
         );
         // At N4 only the N5 units.
         for s in [Skill::Speaking, Skill::Listening] {

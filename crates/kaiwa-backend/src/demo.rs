@@ -69,7 +69,7 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
     learning
         .course
         .completions
-        .insert("n5-03-konbini".into(), 1);
+        .insert("n5-04-konbini".into(), 1);
     st.store.set_learning(&learning)?;
     // Days: practised on 13 of the last 14 (one gap, covered by a freeze), two minutes today.
     let minutes = [6, 5, 0, 7, 5, 12, 6, 5, 6, 5, 8, 5, 6, 7];
@@ -108,14 +108,14 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
             "ビールを二つください",
             ItemKind::Pattern,
             Some("counter"),
-            "n5-03",
+            "n5-04",
         ),
         ("おはようございます", ItemKind::Phrase, None, "n5-01"),
         ("天気", ItemKind::Word, None, "n5-01"),
         ("仕事", ItemKind::Word, None, "n5-02"),
-        ("袋", ItemKind::Word, None, "n5-03"),
-        ("温める", ItemKind::Word, None, "n5-03"),
-        ("いくら", ItemKind::Word, None, "n5-03"),
+        ("袋", ItemKind::Word, None, "n5-04"),
+        ("温める", ItemKind::Word, None, "n5-04"),
+        ("いくら", ItemKind::Word, None, "n5-04"),
     ];
     for (n, (w, kind, corr, unit)) in words.iter().enumerate() {
         let added = Day(today.0 - 9 + n as i64)

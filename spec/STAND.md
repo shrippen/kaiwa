@@ -48,22 +48,22 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | ID | Frage | Vorschlag |
 |---|---|---|
 | R-01 | `mara_success_band` fällt mit 12 Seeds auf `main` 4-mal durch (oben, 0,93–0,94), mit den neuen Inhalten 5-mal; grün nur mit Seed 30 | über 12 Seeds prüfen (≥ 10 im Band), Regler zwei Schritte über 0,95 |
-| R-02 | `kaiwa-sim days` spielt fest n5-12, wenn alles gesperrt ist | stattdessen eine Wiederholungssitzung |
-| R-03 | Lernpfad nummeriert nach Position, Ids bleiben (n5-13 erscheint als N5-03) | so lassen |
+| R-02 | `kaiwa-sim days` spielt fest n5-16, wenn alles gesperrt ist | stattdessen eine Wiederholungssitzung |
+| R-03 | Lernpfad nummeriert nach Position, Ids bleiben (n5-03 erscheint als N5-04) | so lassen |
 | R-04 | CI-Runner stundenlang mit Kontra belegt | Kontras Workflows gegen die Stapel-Regel prüfen, PR dort |
 
 ## Entscheidungen aus Fragenpaket 8 (2026-10-13)
 
-[Fragenpaket 8](https://claude.ai/artifact/7LU4Pr5HzXW8zzfL43zfFW); Q-01 bis Q-12 auch in `spec/INHALT-ENTWURF.md`, Abschnitt 6. Umgesetzt: Q-03, Q-04, Q-07 (ADR-009, #33), Q-02 (N5 mit 16 Einheiten, #34), Q-05, Q-06, Q-09 und Q-14 (N4); Q-10 (JF-Can-do-Ids bei 21 von 30 Einheiten, aus „JF Can-do for Life in Japan“; für n5-03, n5-07, n5-13, n5-15, n4-03, n4-10, n4-11, n4-12 und n4-14 gibt es dort keinen passenden Eintrag zum Sprechen).
+[Fragenpaket 8](https://claude.ai/artifact/7LU4Pr5HzXW8zzfL43zfFW); Q-01 bis Q-12 auch in `spec/INHALT-ENTWURF.md`, Abschnitt 6. Umgesetzt: Q-03, Q-04, Q-07 (ADR-009, #33), Q-02 (N5 mit 16 Einheiten, #34), Q-05, Q-06, Q-09 und Q-14 (N4); Q-10 (JF-Can-do-Ids bei 21 von 30 Einheiten, aus „JF Can-do for Life in Japan“; für n5-04, n5-09, n5-03, n5-15, n4-03, n4-11, n4-13, n4-14 und n4-12 gibt es dort keinen passenden Eintrag zum Sprechen).
 
 | ID | Entscheidung | Wo |
 |---|---|---|
 | Q-01 | tanos-Listen als eine Quelle der Kaiwa-Stufe neben Curriculum und Häufigkeit; Namensnennung in `NOTICE` und „Über“ | ADR-007, /LD050/ |
-| Q-02 | N5 auf 16 Einheiten erweitern (n5-13 bis n5-16) | `data/curriculum/n5.json` |
+| Q-02 | N5 auf 16 Einheiten erweitern (n5-03 bis n5-08) | `data/curriculum/n5.json` |
 | Q-03 | Stufe in der App als „N4 · A2“, Hinweis „orientiert an JLPT und JF-Standard“, kein Bestehensversprechen | UI |
 | Q-04 | Eine Curriculum-Datei je Stufe; der Lader prüft den Gesamtgraphen | `Curriculum::check` |
 | Q-05 | N4: feste Keigo-Formeln aktiv (申します, おります, 伺います, お〜ください), 尊敬語 nur verstehen; aktives Keigo ab N3 | `n4.json` |
-| Q-06 | N4 mit 14 Einheiten schon für 1.0 (n4-13 Feste, n4-14 Reklamation) | `n4.json`, Roadmap |
+| Q-06 | N4 mit 14 Einheiten schon für 1.0 (n4-09 Feste, n4-12 Reklamation) | `n4.json`, Roadmap |
 | Q-07 | Optionale Felder `level`, `topics`, `review` und Grammatik-Katalog `data/grammar/`; ADR „Curriculum-Format v2“ | neues ADR |
 | Q-08 | Muttersprachler-Review: später entscheiden | offen |
 | Q-09 | Jede zweite N4-Einheit bekommt zusätzlich ein Szenario in Freundesform, wo es im Leben vorkommt | `data/scenarios/` |

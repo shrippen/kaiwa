@@ -354,7 +354,7 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
             // The conversation.
             let scenario = curriculum
                 .next_scenario(&course)
-                .unwrap_or_else(|| "n5-12-kinou".into());
+                .unwrap_or_else(|| "n5-16-kinou".into());
             let unit = curriculum.unit_of(&scenario).map(|u| u.id.clone());
             let d = regulator.difficulty.clone();
             let (lis, con) = (d.listening_level(), d.content_level());
