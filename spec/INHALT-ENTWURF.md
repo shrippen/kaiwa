@@ -470,12 +470,13 @@ Drei Stufen, jede als Test im Repo bzw. Gate im Release. Was automatisch geht, l
 
 ### 3.1 Niveau-Check gegen das Wörterbuch (automatisch, CI)
 
-**Stand 2026-10-14:** als Bericht `cargo run -p kaiwa-lang --example levels -- <kaiwa-dict.sqlite>`
-(Stufe aus dem Curriculum, sonst tanos; Namen und Partikeln ausgenommen). Über alle 30 Einheiten:
-1 566 Wörter, 127 über der Stufe ihrer Einheit, 135 ohne Stufe. Vieles davon sind Eigenheiten der
-tanos-Listen (ありがとう N3, はじめまして N2) und feste Laden- oder Telefonformeln, die verstanden,
-nicht gesprochen werden sollen. Bevor der Check die CI bricht, braucht es die Ausnahmeliste je
-Szenario (unten) und die Kalibrierung mit Häufigkeit (4.2).
+**Stand 2026-10-14:** Für die Hilfesätze (was Lernende sagen sollen) ist der Check ein Test
+(`crates/kaiwa-lang/tests/levels.rs`): jedes Wort liegt auf der Stufe seiner Einheit oder
+darunter, ist Kernwort der Einheit oder ihrer Vorgänger, oder steht begründet in
+`data/dict/level-exceptions.txt` (Grußformeln und Funktionswörter, die tanos hoch einstuft;
+Zählwörter für Personen; drei N5-Kernwort-Kandidaten). Neun N4-Wörter sind dafür Kernwörter
+ihrer Einheit geworden. Für alle Texte samt Antworten der Figur bleibt es beim Bericht
+`cargo run -p kaiwa-lang --example levels -- <kaiwa-dict.sqlite>` (`--learner` nur Hilfesätze).
 
 Für jeden japanischen Text in Curriculum und Szenarien (`opening`, `help.keyword/start/example`,
 Beispielsätze, später LLM-Vorlagen):

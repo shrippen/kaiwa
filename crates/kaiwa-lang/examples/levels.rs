@@ -4,7 +4,9 @@
 //! level of the first unit that lists it, else its tanos level (kaiwa-data `jlpt`, Q-01); a word
 //! with neither is counted apart. Names and particles are left out.
 //!
-//!   cargo run -p kaiwa-lang --example levels -- <kaiwa-dict.sqlite> [unit-prefix]
+//!   cargo run -p kaiwa-lang --example levels -- <kaiwa-dict.sqlite> [unit-prefix] [--learner]
+//!
+//! `--learner`: only the help sentences, what the learner is asked to say.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -33,7 +35,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         args.first()
             .ok_or("usage: levels <kaiwa-dict.sqlite> [prefix]")?,
     );
-    let only = args.get(1).cloned().unwrap_or_default();
+    let learner_only = args.iter().any(|a| a == "--learner");
+    let only = args
+        .iter()
+        .skip(1)
+        .find(|a| !a.starts_with("--"))
+        .cloned()
+        .unwrap_or_default();
     let dict = Dictionary::open(&db)?;
     let words = Words::new()?;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -92,14 +100,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for sc in list(u, "scenarios") {
             let sp = root.join(format!("data/scenarios/{sc}.json"));
             let s: Value = serde_json::from_str(&fs::read_to_string(sp)?)?;
-            strings(&s["opening"], &mut texts);
+            if !learner_only {
+                strings(&s["opening"], &mut texts);
+            }
             // The keyword carries its reading in brackets, which falls apart into kana pieces.
             for g in s["goals"].as_array().into_iter().flatten() {
                 strings(&g["help"]["start"], &mut texts);
                 strings(&g["help"]["example"], &mut texts);
             }
             let fp = root.join(format!("qa/fixtures/{sc}.json"));
-            if fp.exists() {
+            if fp.exists() && !learner_only {
                 let f: Value = serde_json::from_str(&fs::read_to_string(fp)?)?;
                 for t in f.as_array().into_iter().flatten() {
                     strings(&t["reply"], &mut texts);

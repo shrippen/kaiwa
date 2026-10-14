@@ -1,0 +1,26 @@
+# Words in help sentences above their unit's level that are fine there (test levels in
+# kaiwa-lang, INHALT-ENTWURF 3.1). One dictionary form per line. The test fails on any other
+# word above the level and on an entry no help sentence needs any more.
+#
+# Set phrases and greetings: tanos ranks them high, every course teaches them first.
+ありがとう
+おはよう
+よろしく
+おめでとう
+# Basic words tanos ranks above N5 (it lists 勉強する, 日本語 and similar instead).
+日本
+勉強
+もらう
+# Function words IPADIC turns into their own entries (ください → くださる, の, こと, とき).
+くださる
+の
+こと
+とき
+# Counters for people: tanos has ひとり and ふたり at N1, every course has them at N5.
+一人
+二人
+# Core-word candidates in N5 (チーズ in the café, テニス as a hobby, うち for home). They stay
+# here while the N5 word lists are frozen for the simulation (R-01, Fragenpaket 10).
+チーズ
+テニス
+うち
