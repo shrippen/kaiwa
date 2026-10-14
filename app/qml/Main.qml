@@ -12,7 +12,8 @@ import org.shrippen.kaiwa
 //
 // Screenshot mode: --shot out.png [--view start|path|review|profile|settings|talk|place]
 // [--scenario id] [--resume] [--say "a|b|wav:file|?|!|~|read:KK|translate:N"] [--kind 0|1|2]
-// [--light 0|1].
+// [--light 0|1]. Only in a build with the feature `demo` (kaiwa.demoBuild); a package has none
+// of these switches.
 Kirigami.ApplicationWindow {
     id: root
     width: Number(arg("--width", "900"))
@@ -22,6 +23,8 @@ Kirigami.ApplicationWindow {
 
     readonly property var args: Qt.application.arguments
     function arg(name, fallback) {
+        if (!kaiwa.demoBuild)
+            return fallback
         var i = args.indexOf(name)
         return i >= 0 && i + 1 < args.length ? args[i + 1] : fallback
     }

@@ -181,7 +181,7 @@ fn ui_en(root: &Path) -> Result<Option<String>> {
         views::learner(&b)?,
         views::stats(&b, NOW)?,
         views::profile(&b)?,
-        views::privacy("en"),
+        views::privacy(&b, "en"),
     ] {
         strings(&v, &mut texts);
     }

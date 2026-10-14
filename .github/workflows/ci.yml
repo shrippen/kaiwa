@@ -67,8 +67,12 @@ jobs:
           git diff --exit-code -- app/qml
       - name: Speech crate (microphone, ReazonSpeech; the model test skips without a model)
         run: cargo test --locked -p kaiwa-speech
-      - name: Build the app
-        run: cargo build --locked -p kaiwa-app
+      - name: A package has no demo (Q-15)
+        run: |
+          cargo build --locked -p kaiwa-app
+          packaging/check-release.sh target/debug/kaiwa
+      - name: Build the app with the demo (screenshot mode, recorded answers)
+        run: cargo build --locked -p kaiwa-app --features demo
       - name: One scripted conversation offscreen
         run: |
           export KAIWA_DEMO=1

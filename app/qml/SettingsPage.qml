@@ -6,8 +6,9 @@ import Kante
 // Settings (Lastenheft Kap. 7): daily goal (/LF601/), feedback amount (/LF304/), script
 // (/LF110/), end of a spoken turn (/LF101/), mora hints (/LF320/), gamification (/LF605/),
 // pause mode (/LF602/),
-// reminder (/LF620/: at most one a day, off by default), style and language; what leaves the
-// device (/LF711/); export and deletion of all data (/LF710/).
+// reminder (/LF620/: at most one a day, off by default), style and language; the tutor and
+// its key (Q-15, /LF713/); what leaves the device (/LF711/); export and deletion of all data
+// (/LF710/).
 QQC2.ScrollView {
     id: page
     required property var kaiwa
@@ -208,6 +209,90 @@ QQC2.ScrollView {
             }
         }
 
+        // The tutor (Q-15): which language model plays the characters and checks the turns.
+        // Without one there are no conversations; the key stays in the system keyring.
+        KanteSectionLabel {
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.topMargin: KanteStyle.unit(18)
+            text: page.t("Tutor", "Tutor")
+            rule: true
+        }
+        Text {
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            text: page.t("Der Tutor ist das Sprachmodell, das die Figuren spielt und deine Sätze prüft. Lokal läuft er auf deinem Rechner (z. B. Ollama oder LM Studio, OpenAI-kompatibel); Anthropic Claude läuft in der Cloud und braucht einen API-Schlüssel.",
+                         "The tutor is the language model that plays the characters and checks your sentences. Locally it runs on your computer (e.g. Ollama or LM Studio, OpenAI-compatible); Anthropic Claude runs in the cloud and needs an API key.")
+            wrapMode: Text.Wrap
+            color: KanteStyle.mutedTextColor
+            font: KanteStyle.smallFont
+        }
+        Row {
+            id: tutorRow
+            readonly property var tutor: page.p.tutor || ({})
+            readonly property var values: ["", "openai", "anthropic"]
+            title: page.t("Anbieter", "Provider")
+            hint: (tutor.status || "") + (tutor.fromEnvironment ? page.t(" Die Umgebung (KAIWA_PROVIDER) legt ihn gerade fest.", " The environment (KAIWA_PROVIDER) sets it right now.") : "")
+            KanteSegmented {
+                model: [page.t("Keiner", "None"), page.t("Lokal (OpenAI-kompatibel)", "Local (OpenAI-compatible)"), "Anthropic Claude"]
+                currentIndex: Math.max(0, tutorRow.values.indexOf(tutorRow.tutor.provider || ""))
+                onActivated: function (i) { page.kaiwa.setSetting("tutorProvider", tutorRow.values[i]) }
+                Accessible.name: page.t("Tutor-Anbieter", "Tutor provider")
+            }
+        }
+        Row {
+            visible: (tutorRow.tutor.provider || "") === "openai"
+            title: page.t("Modell", "Model")
+            hint: page.t("Der Name, unter dem der Server das Modell kennt, z. B. qwen3:14b", "The name the server knows the model by, e.g. qwen3:14b")
+            KanteTextField {
+                Layout.preferredWidth: KanteStyle.unit(240)
+                text: tutorRow.tutor.model || ""
+                placeholderText: "qwen3:14b"
+                onEditingFinished: if (text !== (tutorRow.tutor.model || "")) page.kaiwa.setSetting("tutorModel", text)
+                Accessible.name: page.t("Modell", "Model")
+            }
+        }
+        Row {
+            visible: (tutorRow.tutor.provider || "") === "openai"
+            title: page.t("Server", "Server")
+            hint: page.t("Leer heißt Ollama auf diesem Rechner. Ein Server außerhalb dieses Rechners ist eine Cloud: dann gehen die Gespräche dorthin.",
+                         "Empty means Ollama on this computer. A server outside this computer is a cloud: the conversations then go there.")
+            KanteTextField {
+                Layout.preferredWidth: KanteStyle.unit(300)
+                text: tutorRow.tutor.baseUrl || ""
+                placeholderText: "http://localhost:11434/v1"
+                onEditingFinished: if (text !== (tutorRow.tutor.baseUrl || "")) page.kaiwa.setSetting("tutorBase", text)
+                Accessible.name: page.t("Server-Adresse", "Server address")
+            }
+        }
+        // The API key, only in the system keyring (/LF713/).
+        Row {
+            visible: !!page.p.key
+            title: page.t("API-Schlüssel", "API key") + (page.p.key ? " · " + page.p.key.provider : "")
+            hint: page.p.key ? page.p.key.text : ""
+            RowLayout {
+                spacing: KanteStyle.unit(8)
+                enabled: !!page.p.key && page.p.key.canStore
+                KanteTextField {
+                    id: apiKey
+                    Layout.preferredWidth: KanteStyle.unit(240)
+                    echoMode: TextInput.Password
+                    placeholderText: page.p.key && page.p.key.stored ? page.t("Neuer Schlüssel …", "New key …") : page.t("Schlüssel einfügen …", "Paste the key …")
+                    Accessible.name: page.t("API-Schlüssel", "API key")
+                }
+                KanteButton {
+                    text: page.t("Im Schlüsselbund speichern", "Keep in the keyring")
+                    enabled: apiKey.text.length > 0
+                    onClicked: { page.kaiwa.storeKey(apiKey.text); apiKey.text = "" }
+                }
+                KanteButton {
+                    visible: !!page.p.key && page.p.key.stored && page.p.key.canStore
+                    text: page.t("Entfernen", "Remove")
+                    emphasis: KanteButton.Emphasis.Quiet
+                    onClicked: page.kaiwa.storeKey("")
+                }
+            }
+        }
         // What leaves the device (/LF711/).
         KanteSectionLabel {
             Layout.leftMargin: KanteStyle.unit(18)
@@ -289,34 +374,6 @@ QQC2.ScrollView {
                         text: page.t("Abbrechen", "Stop")
                         onClicked: page.kaiwa.stopDownload()
                     }
-                }
-            }
-        }
-        // The API key, only in the system keyring (/LF713/).
-        Row {
-            visible: !!page.p.key
-            title: page.t("API-Schlüssel", "API key") + (page.p.key ? " · " + page.p.key.provider : "")
-            hint: page.p.key ? page.p.key.text : ""
-            RowLayout {
-                spacing: KanteStyle.unit(8)
-                enabled: !!page.p.key && page.p.key.canStore
-                KanteTextField {
-                    id: apiKey
-                    Layout.preferredWidth: KanteStyle.unit(240)
-                    echoMode: TextInput.Password
-                    placeholderText: page.p.key && page.p.key.stored ? page.t("Neuer Schlüssel …", "New key …") : page.t("Schlüssel einfügen …", "Paste the key …")
-                    Accessible.name: page.t("API-Schlüssel", "API key")
-                }
-                KanteButton {
-                    text: page.t("Im Schlüsselbund speichern", "Keep in the keyring")
-                    enabled: apiKey.text.length > 0
-                    onClicked: { page.kaiwa.storeKey(apiKey.text); apiKey.text = "" }
-                }
-                KanteButton {
-                    visible: !!page.p.key && page.p.key.stored && page.p.key.canStore
-                    text: page.t("Entfernen", "Remove")
-                    emphasis: KanteButton.Emphasis.Quiet
-                    onClicked: page.kaiwa.storeKey("")
                 }
             }
         }

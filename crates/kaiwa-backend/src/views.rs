@@ -90,8 +90,12 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
             json!({ "id": s.id, "topic": topic })
         })
         .collect();
+    // No tutor and no recordings (a package without a tutor set up): say so first (Q-15).
+    let needs_tutor =
+        !crate::DEMO && !kaiwa_ai::provider_from(st.tutor_env()).is_ok_and(|p| p.is_some());
     Ok(json!({
         "free": free,
+        "needsTutor": needs_tutor,
         "name": p.name,
         "gamification": p.gamification,
         "goalFraction": t.goal_fraction,
@@ -376,15 +380,46 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "latency": st.latency_view(&p.ui_lang)?,
         "path": st.path.display().to_string(),
         "profiles": st.profiles(),
-        "key": key_view(&p.ui_lang),
+        "key": key_view(st, &p.ui_lang),
+        "tutor": tutor_view(st, &p.ui_lang),
         "demoData": st.demo_data,
     }))
 }
 
+/// The tutor set up in the settings (Q-15): provider, model and server as stored, what the
+/// environment overrides (local test), and whether a conversation can start.
+pub fn tutor_view(st: &Backend, lang: &str) -> Value {
+    let t = st.tutor();
+    let env = st.tutor_env();
+    let provider = env("KAIWA_PROVIDER").unwrap_or_default();
+    let overridden = std::env::var("KAIWA_PROVIDER").is_ok_and(|v| !v.is_empty());
+    let ready = kaiwa_ai::provider_from(st.tutor_env()).is_ok_and(|p| p.is_some());
+    let de = lang != "en";
+    let status = match (provider.as_str(), ready, de) {
+        ("", _, true) => "Kein Tutor eingerichtet. Ohne Tutor gibt es keine Gespräche.",
+        ("", _, false) => "No tutor set up. Without a tutor there are no conversations.",
+        (_, true, true) => "Bereit.",
+        (_, true, false) => "Ready.",
+        ("anthropic", false, true) => "Es fehlt der API-Schlüssel.",
+        ("anthropic", false, false) => "The API key is missing.",
+        (_, false, true) => "Es fehlt der Name des Modells.",
+        (_, false, false) => "The model name is missing.",
+    };
+    json!({
+        "provider": t.provider,
+        "model": t.model,
+        "baseUrl": t.base_url,
+        "effective": provider,
+        "fromEnvironment": overridden,
+        "ready": ready,
+        "status": status,
+    })
+}
+
 /// The tutor's API key (/LF713/): which provider, where its key comes from, in words.
-pub fn key_view(lang: &str) -> Value {
+pub fn key_view(st: &Backend, lang: &str) -> Value {
     use kaiwa_ai::secrets::{KeyState, state};
-    let env = |k: &str| std::env::var(k).ok();
+    let env = st.tutor_env();
     let Some(provider) = env("KAIWA_PROVIDER").filter(|p| p == "anthropic" || p == "openai") else {
         return Value::Null;
     };
@@ -412,9 +447,9 @@ pub fn key_view(lang: &str) -> Value {
     })
 }
 
-/// "What leaves the device?" (/LF711/), from `kaiwa_ai::privacy`.
-pub fn privacy(lang: &str) -> Value {
-    serde_json::to_value(kaiwa_ai::privacy::flows_from_env(lang)).unwrap_or_default()
+/// "What leaves the device?" (/LF711/), from `kaiwa_ai::privacy`, for the tutor set up.
+pub fn privacy(st: &Backend, lang: &str) -> Value {
+    serde_json::to_value(kaiwa_ai::privacy::flows(st.tutor_env(), lang)).unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -423,7 +458,10 @@ mod tests {
 
     #[test]
     fn privacy_is_local_without_a_cloud_provider() {
-        let rows = privacy("de");
+        let dir = std::env::temp_dir().join(format!("kaiwa-privacy-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let b = Backend::open_at(dir.join("p.kaiwa"), false).unwrap();
+        let rows = privacy(&b, "de");
         let rows = rows.as_array().unwrap();
         assert_eq!(rows.len(), 3);
         if std::env::var_os("KAIWA_PROVIDER").is_none() {
@@ -432,6 +470,35 @@ mod tests {
                     .all(|r| r["cloud"] == false && r["sends"] == "nichts")
             );
         }
+    }
+
+    #[test]
+    fn the_tutor_from_the_settings_says_what_is_missing() {
+        if std::env::var_os("KAIWA_PROVIDER").is_some() {
+            return; // the local test's environment wins over the settings
+        }
+        let dir = std::env::temp_dir().join(format!("kaiwa-tutor-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let b = Backend::open_at(dir.join("t.kaiwa"), false).unwrap();
+        let v = tutor_view(&b, "de");
+        assert_eq!(v["ready"], false);
+        assert!(v["status"].as_str().unwrap().starts_with("Kein Tutor"));
+        let mut p = b.store.profile().unwrap();
+        p.tutor.provider = "openai".into();
+        b.store.set_profile(&p).unwrap();
+        let v = tutor_view(&b, "de");
+        assert_eq!(v["ready"], false);
+        assert!(v["status"].as_str().unwrap().contains("Modell"));
+        p.tutor.model = "qwen3:14b".into();
+        b.store.set_profile(&p).unwrap();
+        let v = tutor_view(&b, "en");
+        assert_eq!(v["ready"], true);
+        assert_eq!(v["effective"], "openai");
+        // The local server sends nothing out.
+        let rows = privacy(&b, "en");
+        assert!(rows.as_array().unwrap().iter().all(|r| r["cloud"] == false));
+        let (_, demo) = b.provider("n5-01-aisatsu");
+        assert!(!demo, "a tutor set up is used, not the recordings");
     }
 
     #[test]

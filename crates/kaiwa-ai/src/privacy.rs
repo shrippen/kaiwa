@@ -43,9 +43,9 @@ pub fn flows(env: impl Fn(&str) -> Option<String>, lang: &str) -> Vec<Flow> {
         "openai" => (format!("OpenAI-kompatibel ({base})"), true),
         _ => (
             if de {
-                "Aufgezeichnete Antworten (Demo)".into()
+                "Keiner eingerichtet".into()
             } else {
-                "Recorded answers (demo)".into()
+                "None set up".into()
             },
             false,
         ),
