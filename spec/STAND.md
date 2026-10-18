@@ -97,7 +97,7 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
 | L-06 | Datenpaket als GitHub-Release des Repos `kaiwa-data` | ADR-007 |
 | L-07 | Kante Leinen: `positive` #3a6e4e (4,92:1), Prüfung `hinnerk_targets` aktiv | Kante #56, `kaiwa-sim` (/LL203/) |
 | L-08 | PR-Agent zweimal gescheitert: grüne CI reicht | `agent.md` (#23) |
-| G-10 | Seit 18.10.2026 (Eigentümer, alle shrippen-Repos), ersetzt L-08: vor jedem Merge prüft ein neuer Claude-Agent; gemergt wird erst, wenn das letzte Review den neuesten Commit abdeckt und kein **Wichtig** offen ist, und die CI auf dem neuesten Commit grün ist | `agent.md`, `REVIEW.md` |
+| G-11 | Seit 18.10.2026 (Eigentümer, alle shrippen-Repos), ersetzt L-08: vor jedem Merge prüft ein neuer Claude-Agent; gemergt wird erst, wenn das letzte Review den neuesten Commit abdeckt und kein **Wichtig** offen ist, und die CI auf dem neuesten Commit grün ist | `agent.md`, `REVIEW.md` |
 | L-09 | JLPT-Listen von tanos.co.uk nur mit im Webarchiv bestätigter Lizenz | ADR-007 |
 
 ## Offen
