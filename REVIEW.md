@@ -34,6 +34,11 @@ notices or learns from:
 - Bug fixes: does the fix remove the cause? Is there a test that failed
   before it? A simulation check holds over several seeds, not just one.
 - New text exists in German and English; no German in the English GUI.
+- Persona names and ids from the demo world stay stable.
+- Release: the release log with a screenshot per language; done only
+  when the landing page shows the entry.
+- CI: both copies of `ci.yml` (`.gitea/`, `.github/`) change together;
+  `pr-agent.yml` is Gitea only.
 - Content (scenarios, grammar, curriculum): Japanese and explanations are
   right, sources and licences match ADR-007 and `NOTICE`.
 
