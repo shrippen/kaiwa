@@ -587,23 +587,35 @@ Kirigami.ScrollablePage {
         // Own buttons, so both say what they do in the app's language (the platform's
         // Cancel would read "Abbrechen" next to "Einstufung abbrechen").
         standardButtons: QQC2.Dialog.NoButton
+        // The answer it waited for ended the talk or the placement: nothing to leave any more.
+        Connections {
+            target: page
+            function onPlacementOverChanged() { if (page.placementOver) leaveDialog.close() }
+        }
+        Connections {
+            target: conv
+            function onFinishedChanged() { if (conv.finished) leaveDialog.close() }
+        }
         footerStart: [
             KanteButton {
                 text: conv.placing ? page.t("Weiter einstufen", "Keep going") : page.t("Weiterreden", "Keep talking")
-                emphasis: KanteButton.Emphasis.Primary
+                // Placement: the way out of the question stays plain beside the red button,
+                // as in Kante's destructive dialog.
+                emphasis: conv.placing ? KanteButton.Emphasis.Normal : KanteButton.Emphasis.Primary
                 onClicked: leaveDialog.close()
             },
             KanteButton {
                 text: conv.placing ? page.t("Einstufung beenden", "End the placement") : page.t("Verlassen", "Leave")
                 emphasis: conv.placing ? KanteButton.Emphasis.Destructive : KanteButton.Emphasis.Normal
-                // A turn still running would be lost: its answer saves the talk.
-                enabled: !conv.busy
+                // A turn still running would be lost: its answer saves the talk (a placement
+                // is not saved, it can go at any time).
+                enabled: conv.placing || !conv.busy
                 onClicked: { leaveDialog.close(); page.done() }
             }
         ]
         QQC2.Label {
             width: Math.min(page.width - KanteStyle.unit(64), KanteStyle.unit(380))
-            text: conv.busy
+            text: conv.busy && !conv.placing
                 ? page.t("Die Antwort kommt gleich; danach kannst du gehen, ohne dass etwas fehlt.", "The answer is on its way; then you can leave without losing anything.")
                 : conv.placing
                 ? page.t("Die Einstufung beginnt beim nächsten Mal von vorn.", "The placement starts again from the beginning next time.")
