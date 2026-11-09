@@ -117,6 +117,25 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
         ("温める", ItemKind::Word, None, "n5-04"),
         ("いくら", ItemKind::Word, None, "n5-04"),
     ];
+    // The talk the café correction came from, with the recorded answers (never a tutor).
+    let played = {
+        let sc = st
+            .scenarios
+            .get("n5-02-jikoshoukai")
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("scenario n5-02"))?;
+        let mock: Arc<dyn ChatProvider> = Arc::new(
+            fixtures("n5-02-jikoshoukai")
+                .and_then(|f| MockProvider::from_json(f).ok())
+                .unwrap_or_default(),
+        );
+        let mut s =
+            kaiwa_core::Session::new(sc, mock, kaiwa_core::Amount::Little, &profile.ui_lang);
+        for line in ["仕事はプロデューサーです。", "コーヒーを好きです。"] {
+            s.turn(line, kaiwa_core::Input::Spoken)?;
+        }
+        s.summary()
+    };
     for (n, (w, kind, corr, unit)) in words.iter().enumerate() {
         let added = Day(today.0 - 9 + n as i64)
             .start(now.offset_min)
@@ -129,11 +148,16 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
         };
         let mut item = Item::new(*w, *kind, source, added);
         item.unit = Some((*unit).to_string());
-        // The correction came in n5-02 as the answer to Tanaka's question (recorded answers):
-        // it comes back as a mini conversation (/LF230/).
-        if n == 0 {
-            item.cue =
-                Some("プロデューサーですか。すごいですね。{何|なに}が{好|す}きですか。".into());
+        // A correction from the played n5-02 talk comes back as a mini conversation: Tanaka's
+        // line and the old words are the recorded ones (/LF230/).
+        if corr.is_some() {
+            let key = kaiwa_core::norm(w);
+            item.cue = played.cues.get(&key).cloned();
+            item.original = played
+                .corrected
+                .iter()
+                .find(|c| kaiwa_core::norm(&c.correction.better) == key)
+                .map(|c| c.correction.original.clone());
         }
         item.review(Grade::Good, added.plus_secs(86_400));
         if n % 3 == 0 {

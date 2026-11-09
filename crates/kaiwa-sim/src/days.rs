@@ -421,6 +421,7 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                             &[srs::Corrected {
                                 better: e.right.clone(),
                                 kind: e.kind.clone(),
+                                original: None,
                                 cue: None,
                             }],
                             unit.as_deref(),

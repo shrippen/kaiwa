@@ -630,7 +630,7 @@ impl Store {
         let mut items = self.items()?;
         let before = items.len();
         let corrections: Vec<srs::Corrected> = summary
-            .top
+            .corrected
             .iter()
             .map(|sh| srs::Corrected {
                 better: sh.correction.better.clone(),
@@ -638,6 +638,7 @@ impl Store {
                     .ok()
                     .and_then(|v| v.as_str().map(str::to_string))
                     .unwrap_or_default(),
+                original: Some(sh.correction.original.clone()).filter(|o| !o.is_empty()),
                 cue: summary
                     .cues
                     .get(&kaiwa_core::norm(&sh.correction.better))
@@ -757,6 +758,14 @@ impl Store {
     }
 
     /// One review answer: FSRS, the unit's review record, the day.
+    /// The review item of `text`, if there is one.
+    pub fn item(&self, text: &str) -> Result<Option<Item>> {
+        self.get_json(
+            "SELECT value FROM items WHERE key = ?1",
+            &kaiwa_core::norm(text),
+        )
+    }
+
     pub fn review(&self, text: &str, grade: Grade, now: Moment) -> Result<Option<Item>> {
         let key = kaiwa_core::norm(text);
         let Some(mut item): Option<Item> =

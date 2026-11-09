@@ -79,11 +79,16 @@ pub struct Item {
     /// The unit it belongs to, if any.
     #[serde(default)]
     pub unit: Option<String>,
-    /// The character's line the learner answered when the mistake happened (with furigana
-    /// markup). The review plays it again as a mini conversation: the character says it, the
-    /// learner answers with the better form (/LF230/). `None`: the item is said after.
+    /// The character's line the learner answered when the mistake happened (plain text; the
+    /// opening keeps its furigana markup). The review plays it again as a mini conversation:
+    /// the character says it, the learner answers with the better form (/LF230/). `None`: the
+    /// item is said after.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cue: Option<String>,
+    /// The learner's words the correction replaced (話されます for 話せます). An answer in the
+    /// mini conversation that still has them is not right.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub original: Option<String>,
     pub added: Moment,
     /// FSRS memory state; `None` before the first review.
     pub stability: Option<f64>,
@@ -103,6 +108,7 @@ impl Item {
             source,
             unit: None,
             cue: None,
+            original: None,
             added: at,
             stability: None,
             difficulty: None,
@@ -111,6 +117,27 @@ impl Item {
             reps: 0,
             lapses: 0,
         }
+    }
+
+    /// Whether a review answer is right (/LF230/). Said after: the whole answer is the item.
+    /// A mini conversation answers with a sentence: it has the better form, and once the better
+    /// form is taken out, not the old mistake (英語が話せます。日本語も少し話されます。 still has
+    /// 話されます). Compared by [`crate::norm`].
+    pub fn answered(&self, said: &str) -> bool {
+        let (said, text) = (crate::norm(said), crate::norm(&self.text));
+        if text.is_empty() {
+            return false;
+        }
+        if self.cue.is_none() {
+            return said == text;
+        }
+        let rest = said.replace(&text, "\u{0}");
+        let mistake = self
+            .original
+            .as_deref()
+            .map(crate::norm)
+            .filter(|o| !o.is_empty() && *o != text);
+        said.contains(&text) && !mistake.is_some_and(|o| rest.contains(&o))
     }
 
     /// Probability of recall now (1.0 for an item never reviewed but just met).
@@ -223,20 +250,14 @@ pub fn refresher(now: Moment, last_practice: Option<Moment>) -> bool {
     last_practice.is_some_and(|l| now.day().0 - l.day().0 >= BREAK_DAYS)
 }
 
-/// A correction as it goes into the review: the better form, its kind (particle, register …)
-/// and the character's line it answered.
+/// A correction as it goes into the review: the better form, its kind (particle, register …),
+/// the learner's words it replaced and the character's line it answered.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Corrected {
     pub better: String,
     pub kind: String,
+    pub original: Option<String>,
     pub cue: Option<String>,
-}
-
-/// Whether a review answer has the item in it: the whole answer, or a sentence that contains the
-/// form (a mini conversation answers with a sentence, /LF230/). Compared by [`crate::norm`].
-pub fn answer_has(said: &str, text: &str) -> bool {
-    let (said, text) = (crate::norm(said), crate::norm(text));
-    !text.is_empty() && said.contains(&text)
 }
 
 /// Adds the forms from a session's summary to the items, without duplicates (by the
@@ -268,6 +289,7 @@ pub fn add_from_summary(
         let mut item = Item::new(text.clone(), kind, source, at);
         item.unit = unit.map(str::to_string);
         item.cue = found.and_then(|c| c.cue.clone());
+        item.original = found.and_then(|c| c.original.clone());
         items.push(item);
         added += 1;
     }
@@ -354,6 +376,7 @@ mod tests {
         let corr = vec![Corrected {
             better: "コーヒーが好きです".into(),
             kind: "particle".into(),
+            original: Some("コーヒーを好きです".into()),
             cue: Some("何が好きですか。".into()),
         }];
         assert_eq!(
@@ -363,23 +386,44 @@ mod tests {
         assert_eq!(add_from_summary(&mut items, &review, &corr, None, at(1)), 0);
         assert_eq!(items[0].kind, ItemKind::Pattern);
         assert_eq!(items[0].cue.as_deref(), Some("何が好きですか。"));
+        assert_eq!(items[0].original.as_deref(), Some("コーヒーを好きです"));
         assert_eq!(items[1].kind, ItemKind::Word);
         assert_eq!(items[1].cue, None, "a new word is said after");
     }
 
+    fn talk(text: &str, original: &str) -> Item {
+        let mut i = item();
+        i.text = text.into();
+        i.original = Some(original.into());
+        i.cue = Some("どうですか。".into());
+        i
+    }
+
     #[test]
-    fn an_answer_has_the_form_in_a_sentence() {
-        assert!(answer_has("コーヒーが好きです", "コーヒーが好きです"));
-        assert!(answer_has(
-            "ミュラーと申します。二時にお約束しております。",
-            "お約束しております"
-        ));
-        assert!(!answer_has(
-            "二時にお約束しています。",
-            "お約束しております"
-        ));
-        assert!(!answer_has("", "駅"));
-        assert!(!answer_has("駅", ""));
+    fn a_mini_conversation_answer_has_the_form_in_a_sentence() {
+        let i = talk("お約束しております", "お約束しています");
+        assert!(i.answered("ミュラーと申します。二時にお約束しております。"));
+        assert!(!i.answered("二時にお約束しています。"));
+        assert!(!i.answered(""));
+    }
+
+    #[test]
+    fn the_old_mistake_next_to_the_form_is_not_right() {
+        // n4-06-baito: 話されます → 話せます, while the first clause had 話せます already.
+        let i = talk("話せます", "話されます");
+        assert!(!i.answered("英語が話せます。日本語も少し話されます。"));
+        assert!(i.answered("英語が話せます。日本語も少し話せます。"));
+        // The better form contains the old words: only what is left over counts.
+        let j = talk("が好きです", "好きです");
+        assert!(j.answered("コーヒーが好きです。"));
+    }
+
+    #[test]
+    fn a_word_said_after_is_the_whole_answer() {
+        let mut w = item();
+        w.text = "袋".into();
+        assert!(w.answered("袋"));
+        assert!(!w.answered("手袋"), "a longer word is another word");
     }
 
     #[test]

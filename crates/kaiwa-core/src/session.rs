@@ -89,6 +89,9 @@ pub struct Summary {
     pub goals_total: usize,
     /// At most three corrections, the most severe first, each better form once.
     pub top: Vec<Shown>,
+    /// Every shown correction, the most severe first, each better form once: what goes into the
+    /// review as a correction (`top` is the first three of it).
+    pub corrected: Vec<Shown>,
     /// What goes into the review (SRS): the better forms of every shown correction and new words.
     pub review: Vec<String>,
     /// For each better form (by [`crate::norm`]): the character's line the learner answered
@@ -575,7 +578,8 @@ impl Session {
                 .map(|g| g.id.clone())
                 .collect(),
             goals_total: self.goals().len(),
-            top: unique.into_iter().take(3).collect(),
+            top: unique.iter().take(3).cloned().collect(),
+            corrected: unique,
             review,
             cues,
             spoken_turns: self

@@ -140,14 +140,15 @@ fn srs_keigo(root: &Path) -> Result<Option<String>> {
         Some("いらっしゃいませ。") => {}
         other => return Ok(Some(format!("no mini conversation, cue {other:?}"))),
     }
-    let answer = "ミュラーと申します。二時に小野様とお約束しております。";
-    if !kaiwa_core::srs::answer_has(answer, &item.text) {
+    if !item.answered("ミュラーと申します。二時に小野様とお約束しております。")
+    {
         return Ok(Some(
             "a sentence with the humble form does not count".into(),
         ));
     }
-    if kaiwa_core::srs::answer_has("二時にお約束しています。", &item.text) {
-        return Ok(Some("the plain form counts as right".into()));
+    if item.answered("ミュラーと申します。二時に小野様とお約束しています。")
+    {
+        return Ok(Some("the old form counts as right".into()));
     }
     Ok(None)
 }
