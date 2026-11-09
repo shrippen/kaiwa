@@ -253,6 +253,37 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
     }))
 }
 
+/// How a kind of mistake developed over the weeks since the first talk (/LF610/): the
+/// later half against the earlier, per week. Under two weeks of practice there is no trend yet,
+/// only the count; a learner of four weeks is not compared with six weeks she did not practise.
+fn trend(word: &str, weeks: &[u32], de: bool) -> String {
+    use std::cmp::Ordering;
+    if weeks.len() < 2 {
+        let n: u32 = weeks.iter().sum();
+        return if de {
+            format!("{word}: bisher {n}×")
+        } else {
+            format!("{word}: {n}× so far")
+        };
+    }
+    let (early, late) = weeks.split_at(weeks.len() / 2);
+    let sum = |w: &[u32]| w.iter().sum::<u32>() as usize;
+    // Per week: the later half may be a week longer.
+    match (
+        (sum(late) * early.len()).cmp(&(sum(early) * late.len())),
+        de,
+    ) {
+        (Ordering::Less, true) => format!("{word}: seltener als in den Wochen davor"),
+        (Ordering::Less, false) => format!("{word}: less often than in the weeks before"),
+        (Ordering::Greater, true) => {
+            format!("{word}: zuletzt häufiger, ein Fall für die Wiederholung")
+        }
+        (Ordering::Greater, false) => format!("{word}: more often lately, one for the review"),
+        (_, true) => format!("{word}: etwa gleich oft"),
+        (_, false) => format!("{word}: about as often"),
+    }
+}
+
 /// Statistics (/LF610/): 12 weeks of practice as a heat map, totals.
 pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let days = st.store.days()?;
@@ -279,11 +310,14 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let de = st.store.profile()?.ui_lang != "en";
     let from = start.start(now.offset_min).unix;
     let mut weeks: BTreeMap<String, [u32; 12]> = BTreeMap::new();
+    // The first of the twelve weeks with a talk: the trend compares only weeks with practice.
+    let mut first = 11;
     for row in st.store.finished_since(from)? {
         let Ok(state) = st.store.session_state(row.id) else {
             continue;
         };
         let w = ((row.started.day().0 - start.0) / 7).clamp(0, 11) as usize;
+        first = first.min(w);
         for t in &state.turns {
             for k in kaiwa_core::session::mistake_kinds(t) {
                 weeks.entry(k).or_default()[w] += 1;
@@ -296,25 +330,8 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         .iter()
         .take(3)
         .map(|(k, w)| {
-            let (early, late): (u32, u32) = (w[..6].iter().sum(), w[6..].iter().sum());
             let word = kind_word(k, de);
-            let trend = match (late.cmp(&early), de) {
-                (std::cmp::Ordering::Less, true) => {
-                    format!("{word}: seltener als vor sechs Wochen")
-                }
-                (std::cmp::Ordering::Less, false) => {
-                    format!("{word}: less often than six weeks ago")
-                }
-                (std::cmp::Ordering::Greater, true) => {
-                    format!("{word}: zuletzt häufiger, ein Fall für die Wiederholung")
-                }
-                (std::cmp::Ordering::Greater, false) => {
-                    format!("{word}: more often lately, one for the review")
-                }
-                (_, true) => format!("{word}: etwa gleich oft"),
-                (_, false) => format!("{word}: about as often"),
-            };
-            json!({ "kind": k, "word": word, "weeks": w, "text": trend })
+            json!({ "kind": k, "word": word, "weeks": w, "text": trend(word, &w[first..], de) })
         })
         .collect();
     // Words and phrases per level, from the unit they came from ("n5-04" is N5).
@@ -709,6 +726,18 @@ mod tests {
         if let Some(u) = w["unaided"].as_u64() {
             assert!(u <= 100);
         }
+    }
+
+    #[test]
+    fn the_trend_counts_only_weeks_with_practice() {
+        // Four weeks of practice, fading: not "more often" against weeks never practised.
+        assert!(trend("Partikeln", &[6, 3, 1, 0], true).contains("seltener"));
+        assert!(trend("Particles", &[0, 1, 3, 6], false).contains("more often"));
+        // An odd number of weeks: compared per week (4 in one week, 4 in two: fewer).
+        assert!(trend("Partikeln", &[4, 2, 2], true).contains("seltener"));
+        assert!(trend("Partikeln", &[2, 2], true).contains("gleich"));
+        assert_eq!(trend("Partikeln", &[3], true), "Partikeln: bisher 3×");
+        assert_eq!(trend("Particles", &[], false), "Particles: 0× so far");
     }
 
     #[test]

@@ -704,6 +704,7 @@ pub fn run_persona_with(
             for c in journey["checks"].as_array().into_iter().flatten() {
                 let cid = c["id"].as_str().unwrap_or_default();
                 let outcome = crate::days::check_seeds(cid, root, &persona, &days)?
+                    .or(crate::days::check_views(cid, root, &run)?)
                     .or_else(|| crate::days::check(cid, &run))
                     .or_else(|| crate::engine::check(cid, root, &persona))
                     .or_else(|| crate::profile::check(cid, root))
