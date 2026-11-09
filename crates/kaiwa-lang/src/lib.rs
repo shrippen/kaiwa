@@ -278,7 +278,9 @@ fn with_unidic(text: &str, tokens: &[unidic::Token], safe: &impl Fn(&str) -> Str
         // (中国人, 日本人: にん for じん).
         let orphan = t.suffix;
         let reading = match &t.reading {
-            _ if t.surface == "何" => nani(&text[t.end..]),
+            // 何 alone: UniDic reads it なん everywhere, and なに/なん depends on more than
+            // the next word (owner, 9.11.2026: without reading).
+            _ if t.surface == "何" => "",
             Some(r) if !group && !after_digits && !orphan => r.as_str(),
             _ => "",
         };
@@ -287,33 +289,6 @@ fn with_unidic(text: &str, tokens: &[unidic::Token], safe: &impl Fn(&str) -> Str
     }
     out.push_str(&safe(&text[pos..]));
     out
-}
-
-/// 何 on its own by what follows, as UniDic reads it なん everywhere: なん before です, だ, の
-/// and という (何ですか, 何の, 何という), なに before a particle (何を, 何が, 何か, 何も, 何と何);
-/// otherwise none (何で is either; 何か月 is a counter).
-fn nani(after: &str) -> &'static str {
-    // か before a kanji is a counter (何か月 なんかげつ, 何か国 なんかこく), not 何か.
-    let counter = after
-        .strip_prefix('か')
-        .and_then(|r| r.chars().next())
-        .is_some_and(is_kanji);
-    // と is なん only in 何という/何と言う; 何と何 is なに.
-    let to = after
-        .strip_prefix('と')
-        .is_some_and(|r| r.starts_with('い') || r.starts_with('言'));
-    if counter {
-        ""
-    } else if to || ["です", "だ", "の"].iter().any(|p| after.starts_with(p)) {
-        "なん"
-    } else if ["を", "が", "か", "も", "に", "は", "へ", "や", "と"]
-        .iter()
-        .any(|p| after.starts_with(p))
-    {
-        "なに"
-    } else {
-        ""
-    }
 }
 
 /// Single kanji with several common readings on their own, as a noun (角 かど/かく, the
@@ -539,7 +514,7 @@ mod tests {
     }
 
     #[test]
-    fn nani_reads_by_what_follows() {
+    fn nani_alone_goes_without() {
         let read = |parts: &[(&str, Option<&str>, bool, bool)]| {
             let (text, tokens) = unidic_tokens(parts);
             with_unidic(&text, &tokens, &|s: &str| s.to_string())
@@ -547,40 +522,11 @@ mod tests {
         let nan = Some("なん");
         assert_eq!(
             read(&[("何", nan, false, false), ("を", None, false, false)]),
-            "{何|なに}を"
-        );
-        assert_eq!(
-            read(&[("何", nan, false, false), ("か", None, false, false)]),
-            "{何|なに}か"
+            "何を"
         );
         assert_eq!(
             read(&[("何", nan, false, false), ("です", None, false, false)]),
-            "{何|なん}です"
-        );
-        assert_eq!(
-            read(&[("何", nan, false, false), ("の", None, false, false)]),
-            "{何|なん}の"
-        );
-        assert_eq!(
-            read(&[("何", nan, false, false), ("？", None, false, false)]),
-            "何？"
-        );
-        assert_eq!(
-            read(&[("何", nan, false, false), ("か月", None, false, false)]),
-            "何か月"
-        );
-        assert_eq!(
-            read(&[("何", nan, false, false), ("という", None, false, false)]),
-            "{何|なん}という"
-        );
-        assert_eq!(
-            read(&[
-                ("何", nan, false, false),
-                ("と", None, false, false),
-                ("何", nan, false, false),
-                ("を", None, false, false)
-            ]),
-            "{何|なに}と{何|なに}を"
+            "何です"
         );
     }
 

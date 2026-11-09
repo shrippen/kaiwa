@@ -1,6 +1,6 @@
 //! UniDic (owner, 9.11.2026, ADR-004): the readings for furigana where nobody wrote them (the
 //! learner's own lines, kanji the tutor left without). UniDic reads in context where IPADIC
-//! guesses (角を右へ → かど, 二人 → ふたり; 何 alone it reads なん everywhere, see `nani` in lib.rs). It is a download, not part of the
+//! guesses (角を右へ → かど, 二人 → ふたり; 何 alone it reads なん everywhere, so it goes without). It is a download, not part of the
 //! app (about 200 MB built): the source archive of unidic-mecab 2.1.2 from lindera.dev
 //! (140 MB, checked by SHA-256) is built here into lindera's format, as lindera's own build
 //! does it, and the source is removed again. Without it, [`crate::furigana`] reads with
