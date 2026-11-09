@@ -2,7 +2,7 @@
   "journey": "mara_first_talk",
   "scenario": "n5-02-jikoshoukai",
   "fixtures": "n5-02-jikoshoukai",
-  "note": "Text mode with recorded answers. The checks that need a live tutor (mara_codeswitch, mara_explain_de) wait for the owner's local test with a real provider.",
+  "note": "Text mode with recorded answers. mara_codeswitch and mara_explain_de judge the tutor and run with --live in the owner's local test (spec/LOKALER-TEST.md).",
   "steps": [
     { "silence": 4.2 },
     { "help": 1 },
@@ -11,6 +11,7 @@
     { "say": "マラです。よろしくおねがいします。", "input": "spoken" },
     { "say": "わたしはマラです。わたしはプロデューサーです。", "input": "spoken", "plants": ["mara_watashi"] },
     { "say": "ドイツのハンブルクから来ました。", "input": "spoken" },
+    { "say": "Wie sagt man Produzentin auf Japanisch?", "input": "typed", "plants": ["mara_codeswitch"] },
     { "say": "きのう東京に行きます。", "input": "spoken", "plants": ["mara_tense"] },
     { "say": "ビール二ください。", "input": "spoken", "plants": ["mara_counter"] },
     { "say": "コーヒーを好きです。", "input": "spoken", "plants": ["mara_suki_o"] },

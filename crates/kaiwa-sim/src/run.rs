@@ -5,7 +5,12 @@
 //! is the real `kaiwa_core::Session`; the tutor answers from recorded fixtures
 //! (`qa/fixtures/<scenario>.json`, ADR-004: live providers are tried in the owner's local test).
 //! Afterwards every check of the journey runs: automated ones pass or fail, the others are
-//! listed as not automated yet (GUI, audio or a live tutor needed).
+//! listed as not automated yet (GUI, audio or hardware needed).
+//!
+//! Some checks judge the tutor itself (false alarms, hit rate, explanations, a word asked for
+//! in German). With recorded answers they would only check the recordings, so they run only
+//! with `--live` (the owner's local test, `spec/LOKALER-TEST.md`) and are listed as "live only"
+//! otherwise ([`LIVE`]). A script with `"live_only": true` is played only with `--live`.
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -24,7 +29,12 @@ use serde_json::Value;
 pub struct Script {
     pub journey: String,
     pub scenario: String,
+    /// The recorded answers; a live-only script has none.
+    #[serde(default)]
     pub fixtures: String,
+    /// Played only with a real tutor (`--live`).
+    #[serde(default)]
+    pub live_only: bool,
     pub steps: Vec<Step>,
 }
 
@@ -73,6 +83,8 @@ pub struct Run {
     /// The aids the session counted after the translations.
     pub aids: u32,
     pub root: std::path::PathBuf,
+    /// Played against a real tutor (`--live`).
+    pub live: bool,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -80,6 +92,8 @@ pub struct Run {
 pub enum Outcome {
     Pass,
     Fail(String),
+    /// Judges the tutor: runs only with `--live` ([`LIVE`]).
+    LiveOnly,
     NotAutomated,
 }
 
@@ -131,23 +145,34 @@ fn amount_of(persona: &Value) -> Amount {
 /// Plays a script. `live`: the tutor from the environment (`kaiwa_ai::provider_from_env`)
 /// instead of the recorded answers, for the owner's local test.
 pub fn play(root: &Path, persona: &Value, script: &Script, live: bool) -> Result<Run> {
-    let scenario_path = root.join(format!("data/scenarios/{}.json", script.scenario));
-    let scenario = Scenario::from_json(
-        &std::fs::read_to_string(&scenario_path)
-            .with_context(|| scenario_path.display().to_string())?,
-    )?;
-    let fixtures_path = root.join(format!("qa/fixtures/{}.json", script.fixtures));
-    let fixtures = std::fs::read_to_string(&fixtures_path)
-        .with_context(|| fixtures_path.display().to_string())?;
     let provider: Arc<dyn kaiwa_ai::ChatProvider> = if live {
         kaiwa_ai::provider_from_env()
             .map_err(anyhow::Error::msg)?
             .context("--live needs KAIWA_PROVIDER (see app/README.md)")?
     } else {
+        let fixtures_path = root.join(format!("qa/fixtures/{}.json", script.fixtures));
+        let fixtures = std::fs::read_to_string(&fixtures_path)
+            .with_context(|| fixtures_path.display().to_string())?;
         Arc::new(
             MockProvider::from_json(&fixtures)?.with_fallback("すみません、もう一度お願いします。"),
         )
     };
+    play_with(root, persona, script, provider, live)
+}
+
+/// Plays a script against `provider`; `live` marks the run as one with a real tutor.
+pub fn play_with(
+    root: &Path,
+    persona: &Value,
+    script: &Script,
+    provider: Arc<dyn kaiwa_ai::ChatProvider>,
+    live: bool,
+) -> Result<Run> {
+    let scenario_path = root.join(format!("data/scenarios/{}.json", script.scenario));
+    let scenario = Scenario::from_json(
+        &std::fs::read_to_string(&scenario_path)
+            .with_context(|| scenario_path.display().to_string())?,
+    )?;
     let amount = amount_of(persona);
     let mut session = Session::new(
         scenario.clone(),
@@ -213,7 +238,138 @@ pub fn play(root: &Path, persona: &Value, script: &Script, live: bool) -> Result
         translations,
         aids,
         root: root.to_path_buf(),
+        live,
     })
+}
+
+/// The checks that judge the tutor, not Kaiwa's code: only with `--live`.
+pub const LIVE: &[&str] = &[
+    "mara_codeswitch",
+    "mara_explain_de",
+    "theo_fp",
+    "theo_tp",
+    "emi_keigo_detect",
+];
+
+/// Whether an explanation reads as German: a German function word or an umlaut, and no English
+/// one. A heuristic for the local test; the owner reads the explanations too.
+fn reads_german(text: &str) -> bool {
+    let words: Vec<String> = text
+        .split(|c: char| !c.is_alphabetic() || is_japanese(c))
+        .filter(|w| !w.is_empty())
+        .map(str::to_lowercase)
+        .collect();
+    let has = |list: &[&str]| words.iter().any(|w| list.contains(&w.as_str()));
+    let german = has(&[
+        "der", "die", "das", "ist", "nicht", "man", "mit", "für", "und", "ein", "eine", "statt",
+        "hier", "wird", "heißt", "sagt", "bei", "nach", "vor", "verlangt", "braucht",
+    ]) || text.chars().any(|c| "äöüßÄÖÜ".contains(c));
+    let english = has(&["the", "is", "you", "use", "with", "this", "should"]);
+    german && !english
+}
+
+/// The checks of [`LIVE`] against a run with a real tutor.
+pub fn live_check(id: &str, run: &Run) -> Option<Outcome> {
+    let fail = |m: String| Some(Outcome::Fail(m));
+    let real = |s: &&kaiwa_core::feedback::Shown| !s.correction.also_possible;
+    match id {
+        // /LF122/: asked in German for a word, the character gives the Japanese one.
+        "mara_codeswitch" => {
+            let (_, o) = turns(run).find(|(p, _)| p.iter().any(|x| x == "mara_codeswitch"))?;
+            if o.reply.contains("プロデューサー") {
+                Some(Outcome::Pass)
+            } else {
+                fail(format!("no プロデューサー in: {}", o.reply))
+            }
+        }
+        // /LL112/: every explanation in German, with a Japanese example.
+        "mara_explain_de" => {
+            for (_, o) in turns(run) {
+                for s in &o.shown {
+                    let e = &s.correction.explanation;
+                    if !e.chars().any(is_japanese) {
+                        return fail(format!("no Japanese example: {e}"));
+                    }
+                    if !reads_german(e) {
+                        return fail(format!("not German: {e}"));
+                    }
+                }
+            }
+            Some(Outcome::Pass)
+        }
+        // /LL110/: at most 2 of the correct sentences get a correction of "wrong" or worse.
+        "theo_fp" => {
+            let alarms: Vec<String> = turns(run)
+                .filter(|(p, _)| p.is_empty())
+                .filter(|(_, o)| {
+                    o.shown
+                        .iter()
+                        .filter(real)
+                        .any(|s| s.correction.severity >= Severity::Wrong)
+                })
+                .map(|(_, o)| {
+                    o.shown
+                        .iter()
+                        .map(|s| format!("{} → {}", s.correction.original, s.correction.better))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
+                .collect();
+            if alarms.len() <= 2 {
+                Some(Outcome::Pass)
+            } else {
+                fail(format!(
+                    "{} false alarms: {}",
+                    alarms.len(),
+                    alarms.join("; ")
+                ))
+            }
+        }
+        // /LL111/: at least 5 of the 6 planted errors found, theo_transitive as "wrong".
+        "theo_tp" => {
+            let planted: Vec<_> = turns(run).filter(|(p, _)| !p.is_empty()).collect();
+            let found = planted
+                .iter()
+                .filter(|(_, o)| o.shown.iter().any(|s| real(&s)))
+                .count();
+            let transitive = planted
+                .iter()
+                .find(|(p, _)| p.iter().any(|x| x == "theo_transitive"))
+                .is_some_and(|(_, o)| {
+                    o.shown
+                        .iter()
+                        .any(|s| s.correction.severity == Severity::Wrong)
+                });
+            match (found >= 5, transitive) {
+                (true, true) => Some(Outcome::Pass),
+                (false, _) => fail(format!("{found} of {} planted errors found", planted.len())),
+                (true, false) => fail("theo_transitive not as 'wrong'".into()),
+            }
+        }
+        // /LF300/, /LF302/, /LL111/: every planted register mistake found; 二重敬語 as
+        // "unnatural", ご苦労様 as "wrong" with a reason.
+        "emi_keigo_detect" => {
+            for (p, o) in turns(run).filter(|(p, _)| !p.is_empty()) {
+                let id = &p[0];
+                let Some(s) = o.shown.iter().find(|s| real(s)) else {
+                    return fail(format!("{id} not found"));
+                };
+                let want = match id.as_str() {
+                    "emi_double_keigo" => Some(Severity::Unnatural),
+                    "emi_gokurou" => Some(Severity::Wrong),
+                    _ => None,
+                };
+                if want.is_some_and(|w| s.correction.severity != w) {
+                    return fail(format!("{id} as {:?}", s.correction.severity));
+                }
+                if id == "emi_gokurou" && s.correction.explanation.trim().is_empty() {
+                    return fail("emi_gokurou without a reason".into());
+                }
+            }
+            Some(Outcome::Pass)
+        }
+        _ => None,
+    }
 }
 
 fn turns_of(events: &[Event]) -> impl Iterator<Item = &TurnOutcome> {
@@ -516,13 +672,23 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
             if script.journey != jid {
                 bail!("{} names journey {}", script_path.display(), script.journey);
             }
-            Some(play(root, &persona, &script, live)?)
+            (live || !script.live_only)
+                .then(|| play(root, &persona, &script, live))
+                .transpose()?
         } else {
             None
         };
         let mut checks = BTreeMap::new();
         for c in journey["checks"].as_array().into_iter().flatten() {
             let cid = c["id"].as_str().unwrap_or_default();
+            if LIVE.contains(&cid) {
+                let outcome = match run.as_ref().filter(|r| r.live) {
+                    Some(r) => live_check(cid, r).unwrap_or(Outcome::NotAutomated),
+                    None => Outcome::LiveOnly,
+                };
+                checks.insert(cid.to_string(), outcome);
+                continue;
+            }
             let outcome = run
                 .as_ref()
                 .and_then(|r| check(cid, r))
@@ -552,6 +718,186 @@ mod tests {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
     }
 
+    fn persona(id: &str) -> Value {
+        serde_json::from_str(
+            &std::fs::read_to_string(root().join(format!("qa/personas/{id}.json"))).unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn script(journey: &str) -> Script {
+        serde_json::from_str(
+            &std::fs::read_to_string(root().join(format!("qa/scripts/{journey}.json"))).unwrap(),
+        )
+        .unwrap()
+    }
+
+    /// A stand-in tutor for the live checks: for each sentence of the script, the reply and the
+    /// corrections (severity, explanation) `judge` gives it.
+    fn tutor(
+        script: &Script,
+        judge: impl Fn(usize, &str, &[String]) -> (String, Vec<(&'static str, &'static str)>),
+    ) -> Arc<dyn kaiwa_ai::ChatProvider> {
+        let fixtures: Vec<Value> = script
+            .steps
+            .iter()
+            .filter_map(|s| match s {
+                Step::Say { say, plants, .. } => Some((say, plants)),
+                _ => None,
+            })
+            .enumerate()
+            .map(|(n, (say, plants))| {
+                let (reply, corrections) = judge(n, say, plants);
+                serde_json::json!({
+                    "learner": say,
+                    "reply": reply,
+                    "analysis": {
+                        "understood": true, "goals_met": [], "new_words": [],
+                        "corrections": corrections.iter().map(|(sev, why)| serde_json::json!({
+                            "severity": sev, "kind": "register", "original": say,
+                            "better": "より良い形", "explanation": why, "also_possible": false,
+                        })).collect::<Vec<_>>(),
+                    },
+                })
+            })
+            .collect();
+        Arc::new(MockProvider::from_json(&Value::Array(fixtures).to_string()).unwrap())
+    }
+
+    fn live(
+        persona_id: &str,
+        journey: &str,
+        id: &str,
+        t: &dyn Fn(&Script) -> Arc<dyn kaiwa_ai::ChatProvider>,
+    ) -> Outcome {
+        let s = script(journey);
+        let run = play_with(&root(), &persona(persona_id), &s, t(&s), true).unwrap();
+        live_check(id, &run).unwrap()
+    }
+
+    #[test]
+    fn theo_counts_false_alarms_and_hits() {
+        let de = "Hier braucht es が: コーヒーが好きです。";
+        // One correct sentence flagged, every planted error found, the door as "wrong".
+        let good = |s: &Script| {
+            tutor(s, |n, _, p| {
+                let c = match (p.first().map(String::as_str), n) {
+                    (Some("theo_transitive"), _) => vec![("wrong", de)],
+                    (Some(_), _) => vec![("unnatural", de)],
+                    (None, 3) => vec![("wrong", de)],
+                    (None, _) => vec![],
+                };
+                ("そうですか。".into(), c)
+            })
+        };
+        assert_eq!(
+            live("theo", "theo_false_alarms", "theo_fp", &good),
+            Outcome::Pass
+        );
+        assert_eq!(
+            live("theo", "theo_false_alarms", "theo_tp", &good),
+            Outcome::Pass
+        );
+        // Three correct sentences flagged, two planted errors missed.
+        let bad = |s: &Script| {
+            tutor(s, |n, _, p| {
+                let c = match (p.first().map(String::as_str), n) {
+                    (Some("theo_transitive" | "theo_anata"), _) => vec![],
+                    (Some(_), _) => vec![("wrong", de)],
+                    (None, 1..=3) => vec![("wrong", de)],
+                    (None, _) => vec![],
+                };
+                ("そうですか。".into(), c)
+            })
+        };
+        assert!(matches!(
+            live("theo", "theo_false_alarms", "theo_fp", &bad),
+            Outcome::Fail(_)
+        ));
+        assert!(matches!(
+            live("theo", "theo_false_alarms", "theo_tp", &bad),
+            Outcome::Fail(_)
+        ));
+    }
+
+    #[test]
+    fn emi_needs_every_keigo_mistake_at_its_severity() {
+        let why = "Gegenüber Vorgesetzten sagt man お疲れ様です。";
+        let judge = |double: &'static str| {
+            move |s: &Script| {
+                tutor(s, move |_, _, p| {
+                    let c = match p.first().map(String::as_str) {
+                        Some("emi_double_keigo") => vec![(double, why)],
+                        Some(_) => vec![("wrong", why)],
+                        None => vec![],
+                    };
+                    ("かしこまりました。".into(), c)
+                })
+            }
+        };
+        assert_eq!(
+            live(
+                "emi",
+                "emi_interview",
+                "emi_keigo_detect",
+                &judge("unnatural")
+            ),
+            Outcome::Pass
+        );
+        assert!(matches!(
+            live("emi", "emi_interview", "emi_keigo_detect", &judge("wrong")),
+            Outcome::Fail(_)
+        ));
+    }
+
+    #[test]
+    fn mara_asks_in_german_and_reads_german_explanations() {
+        let with = |reply: &'static str, why: &'static str| {
+            move |s: &Script| {
+                tutor(s, move |_, say, p| {
+                    if p.iter().any(|x| x == "mara_codeswitch") {
+                        return (reply.into(), vec![]);
+                    }
+                    let c = if say.contains("を好き") {
+                        vec![("wrong", why)]
+                    } else {
+                        vec![]
+                    };
+                    ("そうですか。".into(), c)
+                })
+            }
+        };
+        let de = "好き verlangt が: コーヒーが好きです。";
+        let ok = with("プロデューサーです。言ってみてください。", de);
+        assert_eq!(
+            live("mara", "mara_first_talk", "mara_codeswitch", &ok),
+            Outcome::Pass
+        );
+        assert_eq!(
+            live("mara", "mara_first_talk", "mara_explain_de", &ok),
+            Outcome::Pass
+        );
+        let off = with(
+            "すみません、わかりません。",
+            "Use が with 好き: コーヒーが好きです。",
+        );
+        assert!(matches!(
+            live("mara", "mara_first_talk", "mara_codeswitch", &off),
+            Outcome::Fail(_)
+        ));
+        assert!(matches!(
+            live("mara", "mara_first_talk", "mara_explain_de", &off),
+            Outcome::Fail(_)
+        ));
+        // Without --live the tutor checks are listed, not run.
+        let reports = run_persona(&root(), "theo", false).unwrap();
+        let j = reports
+            .iter()
+            .find(|r| r.journey == "theo_false_alarms")
+            .unwrap();
+        assert_eq!(j.checks["theo_fp"], Outcome::LiveOnly);
+    }
+
     #[test]
     fn mara_first_talk_passes_its_automated_checks() {
         let reports = run_persona(&root(), "mara", false).unwrap();
@@ -577,7 +923,7 @@ mod tests {
             .find(|r| r.journey == "mara_30_days")
             .unwrap();
         assert!(!days.curve.is_empty(), "the long journey has its curve");
-        assert_eq!(first.checks["mara_codeswitch"], Outcome::NotAutomated);
+        assert_eq!(first.checks["mara_codeswitch"], Outcome::LiveOnly);
     }
 
     #[test]

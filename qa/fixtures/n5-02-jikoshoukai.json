@@ -35,5 +35,8 @@
     "translation": { "de": "Entschuldigung, noch einmal bitte.", "en": "Sorry, once more, please." },
     "analysis": { "understood": false, "goals_met": [], "new_words": ["灯台守"],
       "corrections": [{ "severity": "blocks_understanding", "kind": "word_choice", "original": "Leuchtturm", "better": "とうだいもり",
-        "explanation": "Leuchtturmwärter heißt 灯台守 (とうだいもり).", "also_possible": false }] } }
+        "explanation": "Leuchtturmwärter heißt 灯台守 (とうだいもり).", "also_possible": false }] } },
+  { "learner": "Wie sagt man Produzentin auf Japanisch?", "reply": "「プロデューサー」です。言ってみてください。",
+    "translation": { "de": "„Produzentin“ heißt Purodūsā. Sag es mal.", "en": "“Producer” is purodūsā. Try saying it." },
+    "analysis": { "understood": true, "goals_met": [], "new_words": ["プロデューサー"], "corrections": [] } }
 ]

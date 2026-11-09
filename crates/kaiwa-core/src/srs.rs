@@ -256,12 +256,14 @@ pub fn refresher(now: Moment, last_practice: Option<Moment>) -> bool {
 pub const CONTEXT: usize = 2;
 
 /// The old words of a correction with up to [`CONTEXT`] characters before them, as they stood in
-/// the learner's `sentence`, compared by [`crate::norm`]; the old words alone when the sentence
-/// does not have them as heard.
+/// the learner's `sentence`, compared by [`crate::norm`]. The old words alone when the sentence
+/// does not have them as heard, or has them more than once: a correction carries no position, so
+/// the corrected place is not known (家の前で… 仕事の前で with 前で → 前に).
 pub fn in_context(sentence: &str, original: &str) -> String {
     let (s, o) = (crate::norm(sentence), crate::norm(original));
+    let once = !o.is_empty() && s.matches(o.as_str()).count() == 1;
     match s.find(&o) {
-        Some(at) if !o.is_empty() => {
+        Some(at) if once => {
             let before: Vec<char> = s[..at].chars().collect();
             let from = before.len().saturating_sub(CONTEXT);
             before[from..].iter().collect::<String>() + &o
@@ -447,6 +449,11 @@ mod tests {
         assert_eq!(in_context("うん、行く！", "行く"), "うん行く");
         assert_eq!(in_context("行く", "行く"), "行く");
         assert_eq!(in_context("ちがう文", "前で"), "前で", "not heard as such");
+        assert_eq!(
+            in_context("家の前で会います。仕事の前で、コーヒーを飲みます。", "前で"),
+            "前で",
+            "twice: the place is not known"
+        );
         // n5-11-ichinichi: 前で → 前に. A right 駅の前で elsewhere is no repeated mistake.
         let i = talk(
             "前に",
