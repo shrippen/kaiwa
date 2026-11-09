@@ -40,10 +40,11 @@ Kirigami.ScrollablePage {
     }
 
     readonly property var turns: conv.turns.length > 0 ? JSON.parse(conv.turns) : []
-    /** The learner has said something: leaving by mistake would cost more than a click. */
-    readonly property bool started: turns.some(function (t) { return t.who === "learner" })
+    /** Leaving by mistake would cost more than a click: the learner said something, or a
+     *  placement runs (its log starts again with each stage, and it is not saved). */
+    readonly property bool started: conv.placing || turns.some(function (t) { return t.who === "learner" })
 
-    // Back (button, Alt+←, the mouse's back key) leaves through done(), so the start page
+    // Back (the toolbar's button, Alt+←, the Back key) leaves through done(), so the start page
     // offers to continue at once; during a running talk it asks first (owner, 9.11.2026).
     onBackRequested: function (event) {
         event.accepted = true
@@ -582,13 +583,29 @@ Kirigami.ScrollablePage {
         modal: true
         anchors.centerIn: QQC2.Overlay.overlay
         title: conv.placing ? page.t("Einstufung abbrechen?", "Stop the placement?") : page.t("Gespräch verlassen?", "Leave the talk?")
-        standardButtons: QQC2.Dialog.Ok | QQC2.Dialog.Cancel
-        acceptText: conv.placing ? page.t("Abbrechen", "Stop") : page.t("Verlassen", "Leave")
-        destructive: conv.placing
-        onAccepted: page.done()
+        kanteBarColor: conv.placing ? KanteStyle.negativeTextColor : KanteStyle.accentColor
+        // Own buttons, so both say what they do in the app's language (the platform's
+        // Cancel would read "Abbrechen" next to "Einstufung abbrechen").
+        standardButtons: QQC2.Dialog.NoButton
+        footerStart: [
+            KanteButton {
+                text: conv.placing ? page.t("Weiter einstufen", "Keep going") : page.t("Weiterreden", "Keep talking")
+                emphasis: KanteButton.Emphasis.Primary
+                onClicked: leaveDialog.close()
+            },
+            KanteButton {
+                text: conv.placing ? page.t("Einstufung beenden", "End the placement") : page.t("Verlassen", "Leave")
+                emphasis: conv.placing ? KanteButton.Emphasis.Destructive : KanteButton.Emphasis.Normal
+                // A turn still running would be lost: its answer saves the talk.
+                enabled: !conv.busy
+                onClicked: { leaveDialog.close(); page.done() }
+            }
+        ]
         QQC2.Label {
             width: Math.min(page.width - KanteStyle.unit(64), KanteStyle.unit(380))
-            text: conv.placing
+            text: conv.busy
+                ? page.t("Die Antwort kommt gleich; danach kannst du gehen, ohne dass etwas fehlt.", "The answer is on its way; then you can leave without losing anything.")
+                : conv.placing
                 ? page.t("Die Einstufung beginnt beim nächsten Mal von vorn.", "The placement starts again from the beginning next time.")
                 : page.t("Das Gespräch bleibt offen: Auf der Startseite geht es dort weiter, wo du aufgehört hast.", "The talk stays open: continue it from the start page where you left off.")
             wrapMode: Text.Wrap
