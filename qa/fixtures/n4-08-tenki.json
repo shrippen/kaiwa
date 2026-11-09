@@ -1,7 +1,7 @@
 [
   {
     "learner": "雨が降りそうですね。",
-    "reply": "そうですね。傘、持ってきましたか。",
+    "reply": "そうですね。{傘|かさ}、{持|も}ってきましたか。",
     "translation": {
       "de": "Ja. Haben Sie einen Schirm dabei?",
       "en": "Yes. Did you bring an umbrella?"
@@ -17,7 +17,7 @@
   },
   {
     "learner": "雨が降るそうですね。",
-    "reply": "そうですね。傘、持ってきましたか。",
+    "reply": "そうですね。{傘|かさ}、{持|も}ってきましたか。",
     "translation": {
       "de": "Ja. Haben Sie einen Schirm dabei?",
       "en": "Yes. Did you bring an umbrella?"
@@ -42,7 +42,7 @@
   },
   {
     "learner": "天気予報によると、午後から台風が来るそうです。",
-    "reply": "本当ですか。早く帰ったほうがいいでしょうね。",
+    "reply": "{本当|ほんとう}ですか。{早|はや}く{帰|かえ}ったほうがいいでしょうね。",
     "translation": {
       "de": "Wirklich? Dann gehen wir besser früh nach Hause.",
       "en": "Really? We'd better go home early, then."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "木村さんが引っ越すみたいですよ。",
-    "reply": "ああ、結婚するらしいですよ。",
+    "reply": "ああ、{結婚|けっこん}するらしいですよ。",
     "translation": {
       "de": "Ach, er heiratet wohl.",
       "en": "Ah, apparently he's getting married."
@@ -74,7 +74,7 @@
   },
   {
     "learner": "電車が止まるかもしれませんね。",
-    "reply": "台風ですから、止まるはずですよ。",
+    "reply": "{台風|たいふう}ですから、{止|と}まるはずですよ。",
     "translation": {
       "de": "Bei einem Taifun bleiben sie bestimmt stehen.",
       "en": "With a typhoon, they're bound to stop."
@@ -90,7 +90,7 @@
   },
   {
     "learner": "電車が止まるかもしれないですね。",
-    "reply": "台風ですから、止まるはずですよ。",
+    "reply": "{台風|たいふう}ですから、{止|と}まるはずですよ。",
     "translation": {
       "de": "Bei einem Taifun bleiben sie bestimmt stehen.",
       "en": "With a typhoon, they're bound to stop."

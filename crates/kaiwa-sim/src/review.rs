@@ -116,7 +116,7 @@ pub fn sheet(root: &Path, c: &Curriculum, grammar: &Catalogue, u: &Unit) -> Resu
                     m,
                     "- {} → {} ({})",
                     s(&t["learner"]),
-                    s(&t["reply"]),
+                    kaiwa_core::plain(&s(&t["reply"])),
                     s(&t["translation"]["de"])
                 )?;
                 for c in t["analysis"]["corrections"]

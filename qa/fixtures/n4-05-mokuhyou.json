@@ -17,7 +17,7 @@
   },
   {
     "learner": "毎日三十分勉強することにしました。",
-    "reply": "毎日続けるのは大切ですね。",
+    "reply": "{毎日|まいにち}{続|つづ}けるのは{大切|たいせつ}ですね。",
     "translation": {
       "de": "Jeden Tag dranbleiben ist wichtig.",
       "en": "Keeping at it every day matters."
@@ -33,7 +33,7 @@
   },
   {
     "learner": "毎日三十分勉強することをしました。",
-    "reply": "毎日続けるのは大切ですね。",
+    "reply": "{毎日|まいにち}{続|つづ}けるのは{大切|たいせつ}ですね。",
     "translation": {
       "de": "Jeden Tag dranbleiben ist wichtig.",
       "en": "Keeping at it every day matters."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "夏に日本へ留学しようと思っています。",
-    "reply": "それはすばらしいですね。どこの学校ですか。",
+    "reply": "それはすばらしいですね。どこの{学校|がっこう}ですか。",
     "translation": {
       "de": "Wunderbar. An welcher Schule?",
       "en": "Wonderful. Which school?"

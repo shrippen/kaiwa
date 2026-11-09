@@ -1,7 +1,7 @@
 [
   {
     "learner": "きのうこのジャケットを買ったんですが、穴が開いていたんです。",
-    "reply": "大変申し訳ございません。拝見してもよろしいですか。",
+    "reply": "{大変|たいへん}{申|もう}し{訳|わけ}ございません。{拝見|はいけん}してもよろしいですか。",
     "translation": {
       "de": "Das tut mir sehr leid. Darf ich sie mir ansehen?",
       "en": "I'm very sorry. May I have a look?"
@@ -17,7 +17,7 @@
   },
   {
     "learner": "きのうこのジャケットを買ったんですが、穴が開けていたんです。",
-    "reply": "大変申し訳ございません。拝見してもよろしいですか。",
+    "reply": "{大変|たいへん}{申|もう}し{訳|わけ}ございません。{拝見|はいけん}してもよろしいですか。",
     "translation": {
       "de": "Das tut mir sehr leid. Darf ich sie mir ansehen?",
       "en": "I'm very sorry. May I have a look?"
@@ -42,7 +42,7 @@
   },
   {
     "learner": "交換してもらえますか。",
-    "reply": "はい、同じサイズをお持ちします。",
+    "reply": "はい、{同|おな}じサイズをお{持|も}ちします。",
     "translation": {
       "de": "Ja, ich hole Ihnen dieselbe Größe.",
       "en": "Yes, I'll bring you the same size."
@@ -74,7 +74,7 @@
   },
   {
     "learner": "同じものがなければ、返金してもらえますか。",
-    "reply": "はい、その場合はご返金いたします。",
+    "reply": "はい、その{場合|ばあい}はご{返金|へんきん}いたします。",
     "translation": {
       "de": "Ja, in dem Fall erstatten wir den Betrag.",
       "en": "Yes, in that case we'll refund you."
@@ -90,7 +90,7 @@
   },
   {
     "learner": "同じものがないければ、返金してもらえますか。",
-    "reply": "はい、その場合はご返金いたします。",
+    "reply": "はい、その{場合|ばあい}はご{返金|へんきん}いたします。",
     "translation": {
       "de": "Ja, in dem Fall erstatten wir den Betrag.",
       "en": "Yes, in that case we'll refund you."

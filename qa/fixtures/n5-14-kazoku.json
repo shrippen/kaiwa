@@ -1,7 +1,7 @@
 [
   {
     "learner": "四人家族です。",
-    "reply": "そうですか。ご兄弟は？",
+    "reply": "そうですか。ご{兄弟|きょうだい}は？",
     "translation": {
       "de": "Ach so. Und Geschwister?",
       "en": "I see. And brothers or sisters?"
@@ -17,7 +17,7 @@
   },
   {
     "learner": "兄が一人います。",
-    "reply": "お兄さんがいるんですね。",
+    "reply": "お{兄|にい}さんがいるんですね。",
     "translation": {
       "de": "Sie haben also einen älteren Bruder.",
       "en": "So you have an older brother."
@@ -33,7 +33,7 @@
   },
   {
     "learner": "母は先生です。",
-    "reply": "へえ、先生ですか。お父さんは？",
+    "reply": "へえ、{先生|せんせい}ですか。お{父|とう}さんは？",
     "translation": {
       "de": "Oh, Lehrerin? Und dein Vater?",
       "en": "Oh, a teacher? And your father?"
@@ -49,7 +49,7 @@
   },
   {
     "learner": "鈴木さんのご家族は？",
-    "reply": "うちは三人家族です。",
+    "reply": "うちは三人{家族|かぞく}です。",
     "translation": {
       "de": "Wir sind zu dritt in der Familie.",
       "en": "There are three people in my family."

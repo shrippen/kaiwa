@@ -1,7 +1,7 @@
 [
   {
     "learner": "子どものとき、一度着物を着たことがあります。",
-    "reply": "へえ、珍しいですね。どこで着ましたか。",
+    "reply": "へえ、{珍|めずら}しいですね。どこで{着|き}ましたか。",
     "translation": {
       "de": "Oh, das ist selten. Wo hast du ihn getragen?",
       "en": "Oh, that's unusual. Where did you wear it?"
@@ -17,7 +17,7 @@
   },
   {
     "learner": "子どものとき、一度着物を着ることがあります。",
-    "reply": "へえ、いいですね。どこで着ましたか。",
+    "reply": "へえ、いいですね。どこで{着|き}ましたか。",
     "translation": {
       "de": "Oh, schön. Wo hast du ihn getragen?",
       "en": "Oh, nice. Where did you wear it?"
@@ -42,7 +42,7 @@
   },
   {
     "learner": "京都で、お寺を見たり、写真を撮ったりしました。",
-    "reply": "京都はいいですよね。わたしも去年行きました。",
+    "reply": "{京都|きょうと}はいいですよね。わたしも{去年|きょねん}{行|い}きました。",
     "translation": {
       "de": "Kyoto ist schön, nicht? Ich war letztes Jahr auch da.",
       "en": "Kyoto is lovely, isn't it? I went last year too."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "京都で、お寺を見たり、写真を撮りました。",
-    "reply": "京都はいいですよね。わたしも去年行きました。",
+    "reply": "{京都|きょうと}はいいですよね。わたしも{去年|きょねん}{行|い}きました。",
     "translation": {
       "de": "Kyoto ist schön, nicht? Ich war letztes Jahr auch da.",
       "en": "Kyoto is lovely, isn't it? I went last year too."
@@ -83,7 +83,7 @@
   },
   {
     "learner": "森田さんはドイツに行ったことがありますか。",
-    "reply": "いいえ、まだありません。でも、一度行ってみたいです。",
+    "reply": "いいえ、まだありません。でも、一度{行|い}ってみたいです。",
     "translation": {
       "de": "Nein, noch nicht. Aber ich möchte einmal hin.",
       "en": "No, not yet. But I'd like to go once."
@@ -99,7 +99,7 @@
   },
   {
     "learner": "お寺もきれいだし、食べ物もおいしかったです。",
-    "reply": "いいですね。富士山に登ったときも、景色がすごかったですよ。",
+    "reply": "いいですね。{富士山|ふじさん}に{登|のぼ}ったときも、{景色|けしき}がすごかったですよ。",
     "translation": {
       "de": "Schön. Als ich auf den Fuji gestiegen bin, war die Aussicht auch toll.",
       "en": "Nice. When I climbed Mount Fuji, the view was amazing too."
@@ -115,7 +115,7 @@
   },
   {
     "learner": "お寺もきれいし、食べ物もおいしかったです。",
-    "reply": "いいですね。富士山に登ったときも、景色がすごかったですよ。",
+    "reply": "いいですね。{富士山|ふじさん}に{登|のぼ}ったときも、{景色|けしき}がすごかったですよ。",
     "translation": {
       "de": "Schön. Als ich auf den Fuji gestiegen bin, war die Aussicht auch toll.",
       "en": "Nice. When I climbed Mount Fuji, the view was amazing too."

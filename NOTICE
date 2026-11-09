@@ -23,6 +23,11 @@ user and are not part of the repository or the program.
   word lists by Jonathan Waller, tanos.co.uk, CC BY (estimates, not official lists). The excerpt in
   data/dict (demo and tests, not part of the program) is a copy of rows of the same
   package under the same licence, see data/dict/README.md.
+- UniDic 2.1.2 (NINJAL), BSD-3-Clause: the dictionary for furigana, downloaded from
+  lindera.dev and built on the user's machine (never part of the program); its licence
+  is kept next to it as LICENSE-UNIDIC. The build settings in
+  crates/kaiwa-lang/data/unidic (metadata.json, context_id_freq.txt) are copied from
+  lindera-unidic (github.com/lindera/lindera), MIT.
 - mecab-ipadic-2.7.0-20070801 (NAIST), compiled into the program through lindera
   (MIT). Its notice follows.
 

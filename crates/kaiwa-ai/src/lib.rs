@@ -44,7 +44,8 @@ pub enum AiError {
 
 /// Who answers the tutor's two calls.
 pub trait ChatProvider: Send + Sync {
-    /// The character's next utterance, in Japanese, plain text.
+    /// The character's next utterance, in Japanese; kanji may carry furigana markup
+    /// (`{漢字|かんじ}`, see `prompts`), which the caller cleans with `kaiwa_core::clean_markup`.
     fn reply(&self, request: &TurnRequest) -> Result<String, AiError>;
     /// The analysis of the learner's last turn in `request.messages`.
     fn analyse(&self, request: &TurnRequest) -> Result<Analysis, AiError>;

@@ -42,10 +42,11 @@ pub fn clean_markup(markup: &str) -> String {
         out.push_str(&rest[..start]);
         let tail = &rest[start + 1..];
         match (tail.find('|'), tail.find('}')) {
-            (Some(bar), Some(end)) if bar < end => {
+            // A '{' before the bar makes this one stray; the next may be markup.
+            (Some(bar), Some(end)) if bar < end && !tail[..bar].contains('{') => {
                 let (text, ruby) = (&tail[..bar], &tail[bar + 1..end]);
                 let reading = ruby.split('|').next().unwrap_or_default();
-                if kana(reading) && !text.is_empty() && !text.contains('{') {
+                if kana(reading) && !text.is_empty() {
                     out.push('{');
                     out.push_str(text);
                     out.push('|');
@@ -85,7 +86,8 @@ fn unmark(markup: &str, reading: bool) -> String {
         out.push_str(&rest[..start]);
         let tail = &rest[start + 1..];
         match (tail.find('|'), tail.find('}')) {
-            (Some(bar), Some(end)) if bar < end => {
+            // A '{' before the bar makes this one stray; the next may be markup.
+            (Some(bar), Some(end)) if bar < end && !tail[..bar].contains('{') => {
                 let ruby = &tail[bar + 1..end];
                 if reading {
                     out.extend(ruby.split('|').next().unwrap_or(ruby).chars().map(katakana));
@@ -130,6 +132,7 @@ mod tests {
         // `new` is not the tutor's to set; stray braces stay text.
         assert_eq!(clean_markup("{駅|えき|new}"), "{駅|えき}");
         assert_eq!(clean_markup("はい{ と }"), "はい｛ と ｝");
+        assert_eq!(clean_markup("{ {駅|えき}"), "｛ {駅|えき}");
         assert_eq!(plain(&clean_markup("{仕事|しごと}は？")), "仕事は？");
     }
 

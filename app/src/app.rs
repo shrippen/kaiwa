@@ -182,6 +182,12 @@ fn models_json(lang: &str) -> serde_json::Value {
                 ("kaiwa-data", false) => {
                     "Dictionary: reading, meaning and accent when you click a word"
                 }
+                ("UniDic", true) => {
+                    "Lesungen: Furigana über deinen eigenen Sätzen und wo der Tutor keine schreibt"
+                }
+                ("UniDic", false) => {
+                    "Readings: furigana over your own sentences and where the tutor writes none"
+                }
                 (_, true) => "Aussprache-Hinweise zu langen Vokalen und っ",
                 (_, false) => "Pronunciation hints on long vowels and っ",
             };

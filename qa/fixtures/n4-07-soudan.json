@@ -1,7 +1,7 @@
 [
   {
     "learner": "天気がよかったら、鎌倉に行こうよ。",
-    "reply": "いいね！海も見たいな。じゃあ、あとで相談しよう。",
+    "reply": "いいね！{海|うみ}も{見|み}たいな。じゃあ、あとで{相談|そうだん}しよう。",
     "translation": {
       "de": "Gute Idee! Ich will auch das Meer sehen. Lass uns das nachher besprechen.",
       "en": "Good idea! I want to see the sea too. Let's talk it over later."
@@ -17,7 +17,7 @@
   },
   {
     "learner": "天気がいいたら、鎌倉に行こうよ。",
-    "reply": "いいね！海も見たいな。",
+    "reply": "いいね！{海|うみ}も{見|み}たいな。",
     "translation": {
       "de": "Gute Idee! Ich will auch das Meer sehen.",
       "en": "Good idea! I want to see the sea too."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "じゃあ、九時に駅で会おう。",
-    "reply": "オッケー。じゃあ、土曜日ね。",
+    "reply": "オッケー。じゃあ、{土曜|どよう}日ね。",
     "translation": {
       "de": "Okay. Dann bis Samstag.",
       "en": "OK. See you Saturday."

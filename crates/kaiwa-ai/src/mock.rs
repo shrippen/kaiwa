@@ -39,9 +39,33 @@ pub struct MockProvider {
 
 /// Matching key: without punctuation and white space.
 pub fn key(text: &str) -> String {
-    text.chars()
+    unmarked(text)
+        .chars()
         .filter(|c| !c.is_whitespace() && !"、。，．,.!?！？「」『』…・".contains(*c))
         .collect()
+}
+
+/// A recorded reply without its furigana markup (`{何|なん}` → `何`), as the line a
+/// translation is asked for.
+fn unmarked(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(open) = rest.find('{') {
+        out.push_str(&rest[..open]);
+        let tail = &rest[open + 1..];
+        match (tail.find('|'), tail.find('}')) {
+            (Some(bar), Some(end)) if bar < end => {
+                out.push_str(&tail[..bar]);
+                rest = &tail[end + 1..];
+            }
+            _ => {
+                out.push('{');
+                rest = tail;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 impl MockProvider {

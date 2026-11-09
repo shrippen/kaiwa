@@ -41,7 +41,7 @@ Die Demo (Demo-Profil, aufgezeichnete Antworten, `--shot` und die anderen Schalt
 
 ## Modelle
 
-Spracherkennung, Stimme und Moren-Prüfung laufen lokal mit Modellen, die nicht mit der App kommen. Die Einstellungen laden sie unter „Modelle“, jedes erst nach einem Klick, mit Zweck, Lizenz, Quelle und Größe vorher (F-08, /LL401/). Jede Datei wird über ihre SHA-256 geprüft, bevor die App sie benutzt; ein abgebrochener Download hinterlässt nur eine `.part`-Datei.
+Spracherkennung, Stimme, Moren-Prüfung und Furigana laufen lokal mit Modellen, die nicht mit der App kommen. Die Einstellungen laden sie unter „Modelle“, jedes erst nach einem Klick, mit Zweck, Lizenz, Quelle und Größe vorher (F-08, /LL401/). Jede Datei wird über ihre SHA-256 geprüft, bevor die App sie benutzt; ein abgebrochener Download hinterlässt nur eine `.part`-Datei.
 
 | Modell | Wofür | Lizenz | Download | auf der Platte |
 |---|---|---|---|---|
@@ -49,6 +49,7 @@ Spracherkennung, Stimme und Moren-Prüfung laufen lokal mit Modellen, die nicht 
 | Kokoro-82M (kokoro-onnx, int8) | Übergangsstimme der Figur | Apache-2.0 | 121 MB | 121 MB |
 | kaiwa-kana-ctc (huggingface.co/shrippen) | Moren-Hinweise | Apache-2.0 | 356 MB | 356 MB |
 | kaiwa-data 0.2.0 (github.com/shrippen) | Wörterbuch: Wort und Namen nachschlagen | CC BY-SA 4.0 (tanos-Stufen CC BY) | 48 MB | 158 MB |
+| UniDic 2.1.2 (NINJAL, über lindera.dev) | Furigana: Lesungen im Zusammenhang | BSD-3-Clause | 141 MB (Archiv, wird auf dem Rechner in wenigen Sekunden gebaut und dann gelöscht) | 198 MB |
 
 Ohne Oberfläche: `cargo run -p kaiwa-speech --example fetch_models` (alle fehlenden, oder Namen als Argumente). Die Modelle liegen in `~/.local/share/kaiwa/models`, ein anderer Ort geht über `KAIWA_MODELS=/pfad`.
 

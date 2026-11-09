@@ -1,7 +1,7 @@
 [
   {
     "learner": "行く！浴衣、着てみたい。",
-    "reply": "いいね！わたしの、貸してあげる。",
+    "reply": "いいね！わたしの、{貸|か}してあげる。",
     "translation": {
       "de": "Super! Ich leih dir meinen.",
       "en": "Great! I'll lend you mine."
@@ -17,7 +17,7 @@
   },
   {
     "learner": "何時に待ち合わせる？",
-    "reply": "六時に駅の前はどう？",
+    "reply": "六時に{駅|えき}の前はどう？",
     "translation": {
       "de": "Um sechs vor dem Bahnhof?",
       "en": "Six o'clock in front of the station?"
@@ -33,7 +33,7 @@
   },
   {
     "learner": "たこ焼き、食べてみたいな。",
-    "reply": "絶対おいしいよ！",
+    "reply": "{絶対|ぜったい}おいしいよ！",
     "translation": {
       "de": "Die sind sicher lecker!",
       "en": "They're definitely tasty!"
@@ -49,7 +49,7 @@
   },
   {
     "learner": "たこ焼き、食べるてみたいな。",
-    "reply": "絶対おいしいよ！",
+    "reply": "{絶対|ぜったい}おいしいよ！",
     "translation": {
       "de": "Die sind sicher lecker!",
       "en": "They're definitely tasty!"

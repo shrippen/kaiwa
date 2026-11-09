@@ -813,6 +813,8 @@ impl qobject::Conversation {
             rust.speaker = None;
             rust.mora = None;
             rust.unloaded = true;
+            // The readings (UniDic) load again with the next line that needs them.
+            kaiwa_lang::unidic::unload();
         }
     }
 
