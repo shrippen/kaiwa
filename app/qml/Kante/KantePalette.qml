@@ -43,6 +43,14 @@ QtObject {
         readonly property color accentPressed: "#e5a823"
         readonly property color onState: "#141312"
         readonly property color scrim: "#9e141312"
+        readonly property color stage: "#282828"
+        readonly property color stageText: "#ebdbb2"
+        readonly property color string0: "#d3869b"
+        readonly property color string1: "#5ccfc4"
+        readonly property color string2: "#fabd2f"
+        readonly property color string3: "#fbf1c7"
+        readonly property color string4: "#bdae93"
+        readonly property color string5: "#5ccfc4"
     }
 
     readonly property QtObject light: QtObject {
@@ -78,6 +86,14 @@ QtObject {
         readonly property color accentPressed: "#e5a823"
         readonly property color onState: "#fbf8ee"
         readonly property color scrim: "#80282828"
+        readonly property color stage: "#282828"
+        readonly property color stageText: "#ebdbb2"
+        readonly property color string0: "#bc2f6c"
+        readonly property color string1: "#076678"
+        readonly property color string2: "#8a5a00"
+        readonly property color string3: "#282828"
+        readonly property color string4: "#665c54"
+        readonly property color string5: "#0f6b66"
     }
 
     // Brand mark fill (icon, badges); not for controls.
@@ -91,6 +107,18 @@ QtObject {
     readonly property int heightSmall: 32
     readonly property int heightMedium: 40
     readonly property int heightLarge: 48
+    // Lines (px, not scaled): borders, marking lines, the colour edge of an entry; dash pattern.
+    readonly property int lineBorder: 1
+    readonly property int lineMark: 2
+    readonly property int lineEdge: 3
+    readonly property var dash: [6, 4]
+    // Tint levels and opacities.
+    readonly property real levelWash: 0.06
+    readonly property real levelFill: 0.12
+    readonly property real levelStrongFill: 0.22
+    readonly property real levelEdge: 0.4
+    readonly property real levelDone: 0.6
+    readonly property real levelDim: 0.5
 
     // Type
     readonly property string headingFamily: "Rajdhani"

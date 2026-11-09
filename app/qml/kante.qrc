@@ -11,6 +11,7 @@
   <file>Kante/KanteBulkBar.qml</file>
   <file>Kante/KanteButton.qml</file>
   <file>Kante/KanteCalendarGrid.qml</file>
+  <file>Kante/KanteCalendarHeatmap.qml</file>
   <file>Kante/KanteCallout.qml</file>
   <file>Kante/KanteCard.qml</file>
   <file>Kante/KanteCheckSkin.qml</file>
@@ -28,39 +29,53 @@
   <file>Kante/KanteDropZone.qml</file>
   <file>Kante/KanteEmptyState.qml</file>
   <file>Kante/KanteFieldSkin.qml</file>
+  <file>Kante/KanteFocusFollow.qml</file>
+  <file>Kante/KanteFocusTrap.qml</file>
   <file>Kante/KanteFretboard.qml</file>
   <file>Kante/KanteGoalMeter.qml</file>
   <file>Kante/KanteHazard.qml</file>
   <file>Kante/KanteHeading.qml</file>
   <file>Kante/KanteHeardLine.qml</file>
+  <file>Kante/KanteHeatGrid.qml</file>
   <file>Kante/KanteHeatmap.qml</file>
   <file>Kante/KanteHintCard.qml</file>
   <file>Kante/KanteHud.qml</file>
+  <file>Kante/KanteIcon.qml</file>
   <file>Kante/KanteInfoTip.qml</file>
   <file>Kante/KanteKeyLane.qml</file>
   <file>Kante/KanteKeyLayout.qml</file>
   <file>Kante/KanteKeyboard.qml</file>
+  <file>Kante/KanteKeycap.qml</file>
   <file>Kante/KanteKpi.qml</file>
   <file>Kante/KanteLamp.qml</file>
+  <file>Kante/KanteLegend.qml</file>
+  <file>Kante/KanteLevelDots.qml</file>
   <file>Kante/KanteLevelMeter.qml</file>
+  <file>Kante/KanteLevelPicker.qml</file>
   <file>Kante/KanteLineChart.qml</file>
   <file>Kante/KanteListRow.qml</file>
   <file>Kante/KanteLiveLine.qml</file>
   <file>Kante/KanteLiveText.qml</file>
   <file>Kante/KanteLoader.qml</file>
+  <file>Kante/KanteMenuItem.qml</file>
+  <file>Kante/KanteMenuSection.qml</file>
   <file>Kante/KanteMessage.qml</file>
   <file>Kante/KanteMessageSkin.qml</file>
   <file>Kante/KanteNoteMark.qml</file>
   <file>Kante/KanteOdometer.qml</file>
+  <file>Kante/KanteOptionTile.qml</file>
+  <file>Kante/KantePageBar.qml</file>
   <file>Kante/KantePageTitle.qml</file>
   <file>Kante/KantePalette.qml</file>
   <file>Kante/KantePath.qml</file>
   <file>Kante/KantePill.qml</file>
   <file>Kante/KantePitchCurve.qml</file>
   <file>Kante/KantePolygon.qml</file>
+  <file>Kante/KantePopover.qml</file>
   <file>Kante/KantePopupSkin.qml</file>
   <file>Kante/KanteProgressBar.qml</file>
   <file>Kante/KantePullToRefresh.qml</file>
+  <file>Kante/KanteRehearsalMark.qml</file>
   <file>Kante/KanteReveal.qml</file>
   <file>Kante/KanteRubyText.qml</file>
   <file>Kante/KanteRunner.qml</file>
@@ -76,15 +91,18 @@
   <file>Kante/KanteSliderSkin.qml</file>
   <file>Kante/KanteSparkline.qml</file>
   <file>Kante/KanteSpinBox.qml</file>
+  <file>Kante/KanteSplitHandle.qml</file>
   <file>Kante/KanteStatusLight.qml</file>
   <file>Kante/KanteSteps.qml</file>
   <file>Kante/KanteSticker.qml</file>
   <file>Kante/KanteStyle.qml</file>
   <file>Kante/KanteSwatch.qml</file>
+  <file>Kante/KanteSwatchPicker.qml</file>
   <file>Kante/KanteSwitch.qml</file>
   <file>Kante/KanteTabBar.qml</file>
   <file>Kante/KanteTabLane.qml</file>
   <file>Kante/KanteTabStaff.qml</file>
+  <file>Kante/KanteTableHeader.qml</file>
   <file>Kante/KanteTagPicker.qml</file>
   <file>Kante/KanteTalkButton.qml</file>
   <file>Kante/KanteTechniqueMark.qml</file>

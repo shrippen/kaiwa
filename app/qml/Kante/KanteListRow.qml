@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import "."
 
@@ -16,6 +17,10 @@ import "."
  *   focusOnClick    a tap takes the keyboard focus (off where the list keeps it)
  *   disabledReason  when disabled, shown as the second line, so it is readable on touch too
  *                   (a disabled item gets no hover, so a tooltip would never show)
+ * A focusable `trailing` control (1.51, e.g. a KanteInfoTip "?"): Tab reaches the row, then the
+ * control; Shift+Tab from the row's first control goes to its row (from a later one to the
+ * control before it). Leaving the row, the control gives up
+ * the row's focus, so Tab into the row stops at the row again.
  */
 FocusScope {
     id: row
@@ -61,6 +66,36 @@ FocusScope {
     implicitHeight: Math.max(densityHeight, texts.implicitHeight + KanteStyle.unit(density === KanteListRow.Density.Dense ? 4 : 12))
     activeFocusOnTab: true
 
+    // Whether a popup stacked above the row (a sheet, a dialog, a drawer) lies at scene point
+    // `at` (1.61.1). The passive tap below also sees presses that a TapHandler in the popup took.
+    // Only popups count: Kirigami and apps keep other items in the overlay (passive
+    // notifications, toasts). A row inside a popup only yields to popups drawn above its own
+    // (higher z, or the same z and opened later).
+    function underPopup(at) {
+        const overlay = QQC2.Overlay.overlay
+        if (!overlay || !overlay.visible) {
+            return false
+        }
+        let own = -1
+        for (let p = row; p && p.parent; p = p.parent) {
+            if (p.parent === overlay) {
+                own = overlay.children.indexOf(p)
+                break
+            }
+        }
+        const ownZ = own >= 0 ? overlay.children[own].z : -Infinity
+        for (let i = 0; i < overlay.children.length; i++) {
+            const c = overlay.children[i]
+            // Above the row's own popup: a higher z, or the same z and opened later (drawn later).
+            const above = c.z > ownZ || (c.z === ownZ && i > own)
+            if (i !== own && above && c.visible && c.opacity > 0 && String(c).startsWith("QQuickPopupItem")
+                    && c.contains(c.mapFromItem(null, at.x, at.y))) {
+                return true
+            }
+        }
+        return false
+    }
+
     /** A tap: takes the focus (`focusOnClick`) and emits `clicked`. */
     function activate() {
         if (focusOnClick) {
@@ -71,6 +106,50 @@ FocusScope {
 
     Keys.onReturnPressed: clicked()
     Keys.onSpacePressed: clicked()
+
+    // A focus scope hands its focus on to the child that had it last: once a trailing "?" had
+    // the focus, Tab into the row went straight to the "?" (Kontra QA 28.10., P7). Leaving the
+    // row, the children give the focus up.
+    onActiveFocusChanged: {
+        if (activeFocus) {
+            const start = row.nextItemInFocusChain(true)
+            guard(trailingSlot, start)
+            guard(markerSlot, start)
+            return
+        }
+        dropFocus(trailingSlot)
+        dropFocus(markerSlot)
+    }
+    function dropFocus(item) {
+        for (let i = 0; i < item.children.length; i++) {
+            const c = item.children[i]
+            c.focus = false
+            dropFocus(c)
+        }
+    }
+
+    // Shift+Tab from the row's first control goes to the row; Qt passed over the row to the
+    // control before it. Qt moves the focus in the control's own key handling, before the event
+    // reaches the row, so that stop (`start`, the row's next in the focus chain) gets the
+    // handler, once; a later control goes back to the one before it as usual.
+    function guard(item, start) {
+        for (let i = 0; i < item.children.length; i++) {
+            const c = item.children[i]
+            if (c.activeFocusOnTab) {
+                c.Keys.backtabPressed.disconnect(backFromChild)
+                if (c === start) {
+                    c.Keys.backtabPressed.connect(backFromChild)
+                }
+            }
+            guard(c, start)
+        }
+    }
+    function backFromChild(event) {
+        event.accepted = true
+        dropFocus(trailingSlot)
+        dropFocus(markerSlot)
+        row.forceActiveFocus(Qt.BacktabFocusReason)
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -170,16 +249,20 @@ FocusScope {
 
     HoverHandler { id: hover }
     // A tap, seen passively: a TapHandler would keep the press from an ItemDelegate or
-    // MouseArea underneath. Released inside, not dragged (a flick is no tap).
+    // MouseArea underneath. Released inside, not dragged (a flick is no tap). In scene
+    // coordinates: once a ListView grabbed the press, `position` came in another item's
+    // (Qt 6.11), and every row but the first lost its taps (lmix, 29.10.2026).
     PointHandler {
         id: tap
         onGrabChanged: function (transition, point) {
             if (transition !== PointerDevice.UngrabPassive || point.state !== EventPoint.Released) {
                 return
             }
-            var p = point.position
-            var moved = Math.hypot(p.x - point.pressPosition.x, p.y - point.pressPosition.y)
-            if (moved > Qt.styleHints.startDragDistance || !row.contains(p)) {
+            const at = point.scenePosition
+            const from = point.scenePressPosition
+            const moved = Math.hypot(at.x - from.x, at.y - from.y)
+            if (moved > Qt.styleHints.startDragDistance || !row.contains(row.mapFromItem(null, at.x, at.y))
+                    || row.underPopup(from)) {
                 return
             }
             row.activate()
