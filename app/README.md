@@ -62,6 +62,8 @@ Die Spracherkennung (ReazonSpeech über sherpa-onnx, ADR-002) läuft lokal. Fehl
 
 Bauen braucht ALSA (`alsa-lib`, Debian/Ubuntu `libasound2-dev`). Der Build lädt die statischen sherpa-onnx-Bibliotheken; ohne Netz `SHERPA_ONNX_ARCHIVE_DIR` auf das vorher geladene Archiv setzen.
 
+Mikrofon (Einstellungen, „Mikrofon“): Wählbar sind die Mikrofone des Systems, „Systemstandard“ folgt den Systemeinstellungen; ein gewähltes, das gerade fehlt, ersetzt der Standard. „Aufnehmen“ nimmt bis zu 6 s mit Pegelanzeige auf, sagt dann, ob es zu leise, zu laut oder zu verrauscht war, spielt es vor und zeigt, was ReazonSpeech verstanden hat. Die Aufnahme bleibt nur im Speicher. Unter Linux läuft der Ton über PulseAudio (auch das von PipeWire), sonst über ALSA.
+
 Freisprechen (Einstellungen, „Sprechen“): Kaiwa hört nach jeder Antwort der Figur von selbst zu, und die Pause aus „Ende eines Zugs“ (1,2–5 s) beendet den Satz; Füllwörter wie えーと zählen als Sprechen (/LF100/–/LF102/). Klingen zwei Sätze abgeschnitten, bietet das Gespräch eine längere Pause an. Ohne Sprechen lädt Kaiwa die Modelle nach der eingestellten Zeit aus dem Speicher (Voreinstellung 10 min, /LL012/).
 
 ## Stimme der Figur (Übergangsstimme)

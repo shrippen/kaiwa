@@ -77,6 +77,51 @@ pub fn shutdown() {
     std::mem::forget(onnx());
 }
 
+/// The buffer for a stream on `device`: PulseAudio (also PipeWire's) hands record data in
+/// fragments of about 2 s and plays with as much delay unless a size is asked for, so it gets
+/// `ms` milliseconds; ALSA keeps its default.
+pub(crate) fn buffer_for(
+    device: &cpal::Device,
+    supported: &cpal::SupportedStreamConfig,
+    ms: u32,
+) -> cpal::BufferSize {
+    use cpal::traits::DeviceTrait;
+    let pulse = device
+        .id()
+        .is_ok_and(|id| id.to_string().starts_with("pulseaudio:"));
+    if !pulse {
+        return cpal::BufferSize::Default;
+    }
+    let frames = supported.sample_rate() * ms / 1000;
+    match supported.buffer_size() {
+        cpal::SupportedBufferSize::Range { min, max } => {
+            cpal::BufferSize::Fixed(frames.clamp(*min, *max))
+        }
+        cpal::SupportedBufferSize::Unknown => cpal::BufferSize::Fixed(frames),
+    }
+}
+
+/// The stream config to open: the device's default, but as f32 when the default format is
+/// one the streams do not take (PulseAudio offers s24 first and converts to anything).
+pub(crate) fn usable_config(
+    default: cpal::SupportedStreamConfig,
+    ranges: impl Iterator<Item = cpal::SupportedStreamConfigRange>,
+) -> cpal::SupportedStreamConfig {
+    use cpal::SampleFormat::{F32, I16, I32, U16};
+    if matches!(default.sample_format(), F32 | I16 | U16 | I32) {
+        return default;
+    }
+    let rate = default.sample_rate();
+    let channels = default.channels();
+    let mut ranges: Vec<_> = ranges.filter(|r| r.sample_format() == F32).collect();
+    // The default channel count first, so a mono microphone stays mono.
+    ranges.sort_by_key(|r| r.channels() != channels);
+    ranges
+        .into_iter()
+        .find_map(|r| r.try_with_sample_rate(rate))
+        .unwrap_or(default)
+}
+
 /// Input level 0..1 for the talk button: RMS in dBFS, −60 dB → 0, 0 dB → 1.
 pub fn level_of(samples: &[f32]) -> f32 {
     if samples.is_empty() {

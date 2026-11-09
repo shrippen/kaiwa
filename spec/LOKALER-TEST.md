@@ -72,6 +72,7 @@ Was du beurteilst, steht in der Vorlage. Kurz:
 
 ReazonSpeech, Kokoro und kaiwa-kana-ctc in den Einstellungen unter „Modelle“ laden (`app/README.md`, „Modelle“), dann mit Mikrofon und Lautsprecher spielen.
 
+0. **Mikrofon** (Einstellungen › Mikrofon): Stimmt die Liste (keine „Monitor of …“-Einträge, das Headset dabei)? Den Test einmal still, einmal normal und einmal sehr nah ins Mikrofon sprechen: Passt das Urteil (kommt nichts an / gut / zu laut), klingt das Anhören wie du, und steht unter „Verstanden“ dein Satz? Ein anderes Mikrofon wählen, dann muss das Gespräch es nehmen.
 1. **Verstanden?** Wird erkannt, was du sagst? Klingt die Übergangsstimme verständlich, stören falsche Lesarten oder Pausen?
 2. **Nicht abgeschnitten** (`hinnerk_no_cutoff`): Freisprechen an (Einstellungen › Sprechen). Sprich langsam, mit Pausen von 2–3 s mitten im Satz. Kein Zug darf vor seinem Ende abgeschlossen werden. Nach zwei knappen Fällen soll die App anbieten, die Pause zu verlängern.
 3. **Moren-Hinweis** (`mara_mora_hint`): Sprich ありがとございます (kurzes とう) und ちょと待てください. Höchstens ein Hinweis zur Moren-Länge je Satz, nichts bei ありがとうございます.

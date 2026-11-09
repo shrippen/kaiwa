@@ -9,7 +9,7 @@ rust-version.workspace = true
 
 [dependencies]
 bzip2 = { version = "0.5.2", default-features = false, features = ["libbz2-rs-sys"] }
-cpal = "0.18.2"
+cpal = { version = "0.18.2", features = ["pulseaudio"] }
 kaiwa-lang = { path = "../kaiwa-lang" }
 ort = { version = "2.0.0-rc.13", default-features = false, features = ["std", "api-28"] }
 # Links nothing itself: ONNX Runtime 1.28 comes with sherpa-onnx.

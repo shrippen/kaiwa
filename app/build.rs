@@ -14,5 +14,6 @@ fn main() {
     .qrc("qml/kante.qrc")
     .file("src/app.rs")
     .file("src/conversation.rs")
+    .file("src/mic.rs")
     .build();
 }

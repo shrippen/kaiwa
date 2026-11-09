@@ -2,9 +2,10 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import Kante
+import org.shrippen.kaiwa
 
 // Settings (Lastenheft Kap. 7): daily goal (/LF601/), feedback amount (/LF304/), script
-// (/LF110/), end of a spoken turn (/LF101/), mora hints (/LF320/), gamification (/LF605/),
+// (/LF110/), end of a spoken turn (/LF101/), the microphone and its test, mora hints (/LF320/), gamification (/LF605/),
 // pause mode (/LF602/),
 // reminder (/LF620/: at most one a day, off by default), style and language; the tutor and
 // its key (Q-15, /LF713/); what leaves the device (/LF711/); export and deletion of all data
@@ -118,6 +119,114 @@ QQC2.ScrollView {
                 model: [page.t("1,2 s", "1.2 s"), "2 s", "3 s", "5 s"]
                 currentIndex: Math.max(0, values.indexOf(page.p.endPause))
                 onActivated: function (i) { page.kaiwa.setSetting("endPause", String(values[i])) }
+            }
+        }
+        // The microphone: which one, and a test recording with level, verdict, playback and
+        // what the recognition understood. Nothing is kept or sent.
+        MicTest {
+            id: mic
+            Component.onCompleted: refreshDevices()
+        }
+        Timer {
+            interval: 50
+            repeat: true
+            running: mic.phase === 1 || mic.playing
+            onTriggered: mic.poll()
+        }
+        Row {
+            id: micRow
+            readonly property var devices: mic.devices.length > 0 ? JSON.parse(mic.devices) : []
+            readonly property var chosen: devices.find(function (d) { return d.id === page.p.microphone }) || null
+            title: page.t("Mikrofon", "Microphone")
+            hint: page.p.microphone && !chosen
+                ? page.t("Das gewählte Mikrofon ist gerade nicht da; Kaiwa nimmt den Systemstandard.", "The chosen microphone is not there right now; Kaiwa uses the system default.")
+                : page.t("Systemstandard folgt dem, was im System eingestellt ist", "System default follows what is set in the system")
+            RowLayout {
+                spacing: KanteStyle.unit(8)
+                KanteComboBox {
+                    Layout.preferredWidth: KanteStyle.unit(300)
+                    model: [page.t("Systemstandard", "System default")].concat(micRow.devices.map(function (d) { return d.name }))
+                    currentIndex: micRow.chosen ? micRow.devices.indexOf(micRow.chosen) + 1 : 0
+                    enabled: mic.phase !== 1
+                    onActivated: function (i) { page.kaiwa.setSetting("microphone", i === 0 ? "" : micRow.devices[i - 1].id) }
+                    Accessible.name: page.t("Mikrofon", "Microphone")
+                }
+                KanteButton {
+                    text: page.t("Neu suchen", "Search again")
+                    emphasis: KanteButton.Emphasis.Quiet
+                    enabled: mic.phase !== 1
+                    onClicked: mic.refreshDevices()
+                }
+            }
+        }
+        Row {
+            title: page.t("Mikrofon testen", "Test the microphone")
+            hint: page.t("Sag einen Satz, etwa „はじめまして。“ Kaiwa prüft bis zu 6 s Lautstärke und Hintergrund und spielt sie dir vor. Nichts wird gespeichert oder gesendet.",
+                         "Say a sentence, e.g. “はじめまして。” Kaiwa checks up to 6 s for volume and background and plays them back. Nothing is kept or sent.")
+            RowLayout {
+                spacing: KanteStyle.unit(12)
+                KanteButton {
+                    text: mic.phase === 1 ? page.t("Fertig", "Done") : page.t("Aufnehmen", "Record")
+                    emphasis: mic.phase === 1 ? KanteButton.Emphasis.Primary : KanteButton.Emphasis.Normal
+                    enabled: mic.phase !== 2
+                    onClicked: mic.phase === 1 ? mic.stop() : mic.start()
+                }
+                KanteAudioMeter {
+                    Layout.preferredWidth: KanteStyle.unit(220)
+                    level: mic.phase === 1 ? mic.level * 60 - 60 : undefined
+                    floor: -60
+                    warnAt: -12
+                    dangerAt: -3
+                    showScale: true
+                    Accessible.name: page.t("Eingangspegel", "Input level")
+                }
+                Text {
+                    visible: mic.phase === 1
+                    text: page.t("noch " + Math.ceil(mic.remaining) + " s", Math.ceil(mic.remaining) + " s left")
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.smallFont
+                }
+            }
+        }
+        ColumnLayout {
+            id: micResult
+            readonly property var r: mic.result.length > 0 ? JSON.parse(mic.result) : null
+            visible: mic.phase === 4 || (r !== null && mic.phase !== 1)
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            spacing: KanteStyle.unit(8)
+            KanteCallout {
+                Layout.fillWidth: true
+                kind: mic.phase === 4 ? KanteCallout.Kind.Danger
+                    : !micResult.r ? KanteCallout.Kind.Info
+                    : micResult.r.verdict === "good" ? KanteCallout.Kind.Ok
+                    : micResult.r.verdict === "silent" ? KanteCallout.Kind.Danger
+                    : KanteCallout.Kind.Warn
+                title: mic.phase === 4 ? page.t("Mikrofon", "Microphone") : page.t("Ergebnis", "Result")
+                text: mic.phase === 4 ? mic.error
+                    : !micResult.r ? ""
+                    : micResult.r.text + " "
+                      + page.t("Stimme " + micResult.r.speechDb + " dB, Hintergrund " + micResult.r.noiseDb + " dB (dBFS).",
+                               "Voice " + micResult.r.speechDb + " dB, background " + micResult.r.noiseDb + " dB (dBFS).")
+                KanteButton {
+                    visible: mic.phase !== 4 && micResult.r !== null
+                    text: mic.playing ? page.t("Spielt …", "Playing …") : page.t("Anhören", "Listen")
+                    enabled: !mic.playing
+                    onClicked: mic.play()
+                }
+            }
+            Text {
+                visible: micResult.r !== null && mic.phase !== 4 && micResult.r.recognition !== "skipped"
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                color: KanteStyle.textColor
+                font: KanteStyle.defaultFont
+                text: !micResult.r ? ""
+                    : micResult.r.recognition === "checking" ? page.t("Die Spracherkennung hört zu …", "The recognition is listening …")
+                    : micResult.r.recognition === "missing" ? page.t("Was die Spracherkennung versteht, zeigt sich, sobald ReazonSpeech unter „Modelle“ geladen ist.", "What the recognition understands shows once ReazonSpeech is downloaded under “Models”.")
+                    : micResult.r.heard.length > 0 ? page.t("Verstanden: ", "Understood: ") + micResult.r.heard
+                    : page.t("Die Spracherkennung hat nichts verstanden.", "The recognition understood nothing.")
             }
         }
         // /LF320/: on by default (L-01); without the model it says where to get it (F-08).

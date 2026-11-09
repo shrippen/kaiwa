@@ -33,6 +33,7 @@ Wenn sonst etwas auffiel:
 
 | Prüfregel | ok | nicht ok | Notiz |
 |---|---|---|---|
+| Mikrofon-Test in den Einstellungen: Liste, Urteil, Anhören, „Verstanden“ | | | |
 | Erkennung und Übergangsstimme (allgemeiner Eindruck) | | | |
 | `hinnerk_no_cutoff`: kein Zug abgeschnitten, Angebot längerer Pause | | | |
 | `mara_mora_hint`: höchstens ein Moren-Hinweis, keiner bei richtigem Satz | | | |

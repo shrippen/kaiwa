@@ -106,6 +106,10 @@ pub struct Profile {
     /// The tutor set up in the settings (Q-15); the key is in the system keyring.
     #[serde(default)]
     pub tutor: kaiwa_ai::Tutor,
+    /// The microphone picked in the settings (a cpal device id); `None` is the system's
+    /// default, and so is a device that is gone.
+    #[serde(default)]
+    pub microphone: Option<String>,
 }
 
 fn yes() -> bool {
@@ -142,6 +146,7 @@ impl Default for Profile {
             hands_free: false,
             text_scale: 1.0,
             tutor: kaiwa_ai::Tutor::default(),
+            microphone: None,
         }
     }
 }

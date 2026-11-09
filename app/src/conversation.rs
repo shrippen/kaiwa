@@ -1047,7 +1047,8 @@ impl qobject::Conversation {
         if *self.talk_state() != READY || *self.busy() || *self.finished() {
             return;
         }
-        match Capture::start() {
+        let microphone = state().store.profile().ok().and_then(|p| p.microphone);
+        match Capture::start_on(microphone.as_deref()) {
             Ok(c) => {
                 let turn_end = self.hands_free.then(|| {
                     let pause = state()
@@ -1490,7 +1491,7 @@ fn hint_json(h: &Hint, lang: &str) -> Value {
 }
 
 /// What the learner reads when speaking does not work, in the UI language.
-fn speech_text(e: &SpeechError, lang: &str) -> String {
+pub(crate) fn speech_text(e: &SpeechError, lang: &str) -> String {
     let de = lang == "de";
     match (e, de) {
         (SpeechError::NoMicrophone, true) => {
