@@ -270,6 +270,8 @@ const ERROR: i32 = 4;
 
 /// Hands-free: listening stops after this long without any speech.
 const HANDS_FREE_WAIT_SECS: f64 = 30.0;
+/// Shorter recordings (a tap) are not checked for a voice.
+const MIN_CHECKED_SECS: f32 = 0.5;
 
 /// The voice's pace without a session: a little below Kokoro's normal one.
 const SPEED: f32 = 0.9;
@@ -1182,6 +1184,21 @@ impl qobject::Conversation {
             self.as_mut().set_talk_state(ERROR);
             return;
         };
+        // No voice in it (no microphone, muted, wrong input): say so instead of letting the
+        // recognition invent sounds from the silence (/LF104/). A tap too short to measure
+        // goes on as before.
+        let level = kaiwa_speech::capture::check(&rec);
+        if level.seconds >= MIN_CHECKED_SECS && !level.voice() {
+            self.as_mut().rust_mut().ended_by_pause = false;
+            self.as_mut().set_talk_state(READY);
+            let msg = if self.lang == "en" {
+                "No sound came in. Is a microphone plugged in, switched on and chosen? Settings › Microphone tests it."
+            } else {
+                "Es kam kein Ton an. Ist ein Mikrofon angeschlossen, eingeschaltet und gewählt? Einstellungen › Mikrofon testet es."
+            };
+            self.as_mut().set_error(QString::from(msg));
+            return;
+        }
         // Kept only with the opt-in, for the chosen days (/LF712/).
         if let Some(id) = self.session_id {
             let turn = self.log.iter().filter(|e| e["who"] == "learner").count();

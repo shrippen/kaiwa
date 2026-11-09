@@ -133,6 +133,9 @@ pub struct Check {
     pub speech_db: f32,
     /// dBFS of the quiet windows (10th percentile): the room and the microphone's own noise.
     pub noise_db: f32,
+    /// dBFS of the loudest 250 ms: a short answer in a long take (thinking first) still
+    /// shows here, where the percentiles see only the room.
+    pub loudest_db: f32,
     /// Share of samples at full scale.
     pub clipped: f32,
     pub seconds: f32,
@@ -152,12 +155,24 @@ pub enum Verdict {
     Good,
 }
 
+/// Below this nothing comes in (dBFS).
+pub const SILENT_DB: f32 = -60.0;
 /// Below this the speech is too quiet for the recognition (dBFS).
 pub const QUIET_DB: f32 = -40.0;
 /// Speech at most this far above the noise is too noisy (dB).
 pub const NOISY_DB: f32 = 12.0;
 /// More than this share of samples at full scale is clipping.
 pub const CLIPPED: f32 = 0.001;
+
+impl Check {
+    /// Whether a voice could be in the recording: something comes in, and it is either loud
+    /// enough or stands out from the room. Silence, or a faint steady hiss (an input with no
+    /// microphone on it), is no voice, and the recognition would only invent sounds from it.
+    pub fn voice(&self) -> bool {
+        self.loudest_db >= SILENT_DB
+            && (self.loudest_db >= QUIET_DB || self.loudest_db - self.noise_db >= NOISY_DB)
+    }
+}
 
 pub fn check(rec: &Recording) -> Check {
     let rate = rec.sample_rate.max(1) as usize;
@@ -176,6 +191,13 @@ pub fn check(rec: &Recording) -> Check {
         .filter(|w| w.len() == win)
         .map(db)
         .collect();
+    // The loudest 250 ms (five windows), as the mean power of the block.
+    let block = levels.len().clamp(1, 5);
+    let loudest_db = levels
+        .windows(block)
+        .map(|b| b.iter().map(|d| 10f32.powf(d / 10.0)).sum::<f32>() / block as f32)
+        .fold(None, |m: Option<f32>, p| Some(m.map_or(p, |m| m.max(p))))
+        .map_or(-120.0, |p| 10.0 * p.log10());
     levels.sort_by(f32::total_cmp);
     let at = |q: f32| {
         levels
@@ -189,7 +211,7 @@ pub fn check(rec: &Recording) -> Check {
     } else {
         rec.samples.iter().filter(|s| s.abs() >= 0.99).count() as f32 / rec.samples.len() as f32
     };
-    let verdict = if speech_db < -60.0 {
+    let verdict = if speech_db < SILENT_DB {
         Verdict::Silent
     } else if clipped > CLIPPED {
         Verdict::Clipping
@@ -203,6 +225,7 @@ pub fn check(rec: &Recording) -> Check {
     Check {
         speech_db,
         noise_db,
+        loudest_db,
         clipped,
         seconds: rec.samples.len() as f32 / rate as f32,
         verdict,
@@ -342,6 +365,29 @@ mod tests {
         let c = check(&take(0.001, 0.3));
         assert!((c.seconds - 2.0).abs() < 1e-3);
         assert!(c.speech_db > -15.0 && c.noise_db < -55.0, "{c:?}");
+    }
+
+    #[test]
+    fn silence_and_faint_hiss_are_no_voice() {
+        // No microphone: digital silence, or the faint steady noise of an empty input.
+        assert!(!check(&take(0.0, 0.0)).voice());
+        assert!(!check(&take(0.0001, 0.0)).voice());
+        assert!(!check(&take(0.003, 0.004)).voice());
+        // Quiet but clear speech, and loud speech in a noisy room, still go to the recognition.
+        assert!(check(&take(0.0005, 0.005)).voice());
+        assert!(check(&take(0.1, 0.2)).voice());
+        assert!(check(&take(0.001, 0.3)).voice());
+        // Thinking 10 s in a quiet room, then a short clear answer and the pause to the end of
+        // the turn: a voice, though the speech is under a tenth of the take.
+        let rate = 16_000;
+        let mut samples = vec![0.0001f32; rate * 10];
+        samples.extend((0..rate).map(|i| 0.2 * (i as f32 * 0.07).sin()));
+        samples.extend(std::iter::repeat_n(0.0001, rate * 6 / 5));
+        let late = Recording {
+            samples,
+            sample_rate: rate as u32,
+        };
+        assert!(check(&late).voice(), "{:?}", check(&late));
     }
 
     impl Recording {
