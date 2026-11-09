@@ -49,9 +49,15 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 [Tagesbericht](https://claude.ai/artifact/WygHfHhWkdQg18T8X9mZDi). Gemergt: #38 (R-02, R-03), #39 (Inhaltsprüfungen /LF221/, Grammatik im Gespräch, Review-Vorlagen, `hinnerk_plain_words`, PKGBUILD mit `!lto` und `NOTICE`), #40 (ein Zustand je Grammatikpunkt im Lernermodell, /LF201/; Profil), #41 (der Tutor kennt die Grammatik der Einheit), #42 (LOKALER-TEST), #43 (Muster für die einfache Form), #44 (`kaiwa-sim days --seeds`). Kontra #67 (Cargo-Cache im app-Job, R-04).
 
-## Offen: Fragenpaket 10 (2026-10-14)
+## Entscheidungen aus Fragenpaket 10 (2026-11-09)
 
-[Fragenpaket 10](https://claude.ai/artifact/J9bfCbFdaHanLQEckNEtsC): S-01 `mara_success_band` mit Fenster 8 und 12 Seeds (Messung bei R-01 unten), S-02 drei N5-Kernwörter (チーズ, テニス, うち; bis dahin in `data/dict/level-exceptions.txt`), S-03 nächster Schwerpunkt (Vorschlag: erstes Paket, dann lokaler Test).
+[Fragenpaket 10](https://claude.ai/artifact/J9bfCbFdaHanLQEckNEtsC), Antworten des Eigentümers am 2026-11-09.
+
+| ID | Entscheidung | Stand |
+|---|---|---|
+| S-01 | `mara_success_band`: gleitend über 8 Sitzungen, 12 Seeds, mindestens 10 im Band; der Regler bleibt bei einem Schritt (ersetzt R-01) | `kaiwa-sim` (`days::check_seeds`, `BAND_*`), `qa/personas/mara.json`; gemessen 12 von 12 |
+| S-02 | チーズ, テニス, うち als N5-Kernwörter (n5-05, n5-09, n5-11), raus aus `data/dict/level-exceptions.txt` | `data/curriculum/n5.json`; Band danach weiter 12 von 12 |
+| S-03 | Nächster Schwerpunkt: B, den lokalen Test vorbereiten (echter Tutor, Spracherkennung, Stimme; die nicht automatischen Prüfregeln), und C, Wiederholung als Mini-Gespräch (/LF230/, `emi_srs_keigo`). Das erste Paket (A) wartet | offen |
 
 ## Entscheidungen aus Fragenpaket 9 (2026-10-14)
 
@@ -59,7 +65,7 @@ Allgemein (gilt für alle Projekte, `../CLAUDE.md`): Vor dem ersten Release sind
 
 | ID | Entscheidung | Stand |
 |---|---|---|
-| R-01 | `mara_success_band` über 12 Seeds prüfen (≥ 10 im Band), Regler zwei Schritte über 0,95 | **Nicht umgesetzt, neue Frage:** gemessen hält das Band mit Fenster 5 nur 7 von 12 Seeds; zwei Schritte über 0,95 verschlechtern auf 4 von 12 (überschießt), ein Mittel über zwei Sitzungen bringt 8 von 12. Mit Fenster 8 halten alle Varianten das Band: Bei 3–4 Zielen je Sitzung schwankt der Erfolg in Schritten von 0,25, fünf Sitzungen sind dafür zu wenig. Das ändert die Prüfregel und braucht deine Entscheidung. Bis dahin bleibt die Prüfung bei Seed 30. |
+| R-01 | `mara_success_band` über 12 Seeds prüfen (≥ 10 im Band), Regler zwei Schritte über 0,95 | **Ersetzt durch S-01.** gemessen hält das Band mit Fenster 5 nur 7 von 12 Seeds; zwei Schritte über 0,95 verschlechtern auf 4 von 12 (überschießt), ein Mittel über zwei Sitzungen bringt 8 von 12. Mit Fenster 8 halten alle Varianten das Band: Bei 3–4 Zielen je Sitzung schwankt der Erfolg in Schritten von 0,25, fünf Sitzungen sind dafür zu wenig. |
 | R-02 | Simulation wiederholt, wenn alles gesperrt ist | `kaiwa-sim` (days): bis zu zehn Elemente statt einer gesperrten Einheit |
 | R-03 | Ids müssen nicht stabil sein | Einheiten und Szenarien tragen Ids in Pfad-Reihenfolge; Store-Migration 2 schreibt alte Profile um |
 | R-04 | Kontras CI anpassen | Kontra #67: Rust-Build im app-Job cachen (der Qt-Cache greift meist schon; die Stapel-Regeln hält Kontra ein) |
