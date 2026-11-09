@@ -287,12 +287,14 @@ pub fn live_check(id: &str, run: &Run) -> Option<Outcome> {
     match id {
         // /LF122/: asked in German for a word, the character gives the Japanese one and asks
         // the learner to say it (言って…, 言えますか, 言いましょう, どうぞ; と言います only names
-        // it). Hearing it is the local test's.
+        // it, どうぞよろしく greets). Hearing it is the local test's.
         "mara_codeswitch" => {
             let (_, o) = turns(run).find(|(p, _)| p.iter().any(|x| x == "mara_codeswitch"))?;
-            let asks = ["言って", "言えますか", "言いましょう", "どうぞ"]
+            // どうぞよろしく is a greeting, not a request.
+            let asks = ["言って", "言えますか", "言いましょう"]
                 .iter()
-                .any(|f| o.reply.contains(f));
+                .any(|f| o.reply.contains(f))
+                || o.reply.replace("どうぞよろしく", "").contains("どうぞ");
             if !o.reply.contains("プロデューサー") {
                 fail(format!("no プロデューサー in: {}", o.reply))
             } else if !asks {
@@ -931,6 +933,16 @@ mod tests {
             live("mara", "mara_first_talk", "mara_codeswitch", &mute),
             Outcome::Fail(_)
         ));
+        let greets = with("プロデューサーです。どうぞよろしくお願いします。", de);
+        assert!(matches!(
+            live("mara", "mara_first_talk", "mara_codeswitch", &greets),
+            Outcome::Fail(_)
+        ));
+        let please = with("プロデューサー。はい、どうぞ。", de);
+        assert_eq!(
+            live("mara", "mara_first_talk", "mara_codeswitch", &please),
+            Outcome::Pass
+        );
         assert_eq!(
             live("mara", "mara_first_talk", "mara_codeswitch", &ok),
             Outcome::Pass
@@ -1002,6 +1014,11 @@ mod tests {
         }
         // A check by hand stays one; the long journey without a tutor still runs.
         assert_eq!(first.checks["mara_mora_hint"], Outcome::NotAutomated);
+        assert_eq!(
+            first.checks["mara_ptt"],
+            Outcome::Pass,
+            "ui checks run as always"
+        );
         let days = reports
             .iter()
             .find(|r| r.journey == "mara_30_days")
