@@ -19,8 +19,3 @@
 # Counters for people: tanos has ひとり and ふたり at N1, every course has them at N5.
 一人
 二人
-# Core-word candidates in N5 (チーズ in the café, テニス as a hobby, うち for home). They stay
-# here while the N5 word lists are frozen for the simulation (R-01, Fragenpaket 10).
-チーズ
-テニス
-うち

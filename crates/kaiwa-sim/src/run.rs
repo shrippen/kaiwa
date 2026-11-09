@@ -484,7 +484,8 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
             let mut checks = BTreeMap::new();
             for c in journey["checks"].as_array().into_iter().flatten() {
                 let cid = c["id"].as_str().unwrap_or_default();
-                let outcome = crate::days::check(cid, &run)
+                let outcome = crate::days::check_seeds(cid, root, &persona, &days)?
+                    .or_else(|| crate::days::check(cid, &run))
                     .or_else(|| crate::engine::check(cid, root, &persona))
                     .or_else(|| crate::profile::check(cid, root))
                     .or_else(|| crate::ui::check(cid, root))

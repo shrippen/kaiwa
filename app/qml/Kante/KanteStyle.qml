@@ -46,6 +46,8 @@ QtObject {
 
     /** Force the dark palette (e.g. an Android app that always runs Material Dark). */
     property bool preferDark: false
+    /** Force Leinen, whatever the platform theme says (an app's style setting); preferDark wins. */
+    property bool preferLight: false
 
     /**
      * The app runs the Material style (Android). Kirigami then derives its
@@ -57,8 +59,24 @@ QtObject {
      */
     property bool materialStyle: false
 
-    /** Leinen when the platform theme is light, unless preferDark. */
-    readonly property bool light: !preferDark && Kirigami.Theme.backgroundColor.hslLightness > 0.5
+    /**
+     * Presses a button from the keyboard (Return, Enter) as a click does (1.49). Qt 6.8 and
+     * later animate it; older versions only emit clicked().
+     */
+    function pressByKey(button, event) {
+        if (!button.enabled) {
+            event.accepted = false
+            return
+        }
+        if (typeof button.animateClick === "function") {
+            button.animateClick()
+        } else {
+            button.clicked()
+        }
+    }
+
+    /** Leinen when the platform theme is light or preferLight, unless preferDark. */
+    readonly property bool light: !preferDark && (preferLight || Kirigami.Theme.backgroundColor.hslLightness > 0.5)
     readonly property QtObject palette: light ? KantePalette.light : KantePalette.dark
 
     // ── Theme roles (palette only in Kante; Kante Light keeps the theme) ──
@@ -277,6 +295,30 @@ QtObject {
         return parts.join(", ")
     }
     /**
+     * Rehearsal marks (Kante 1.50): the part names of one bar as one label. A name or a list
+     * of names; blanks and repeats are left out, the rest joined with " · ":
+     *   "Intro"                 "Intro"
+     *   ["Refrain", "B"]        "Refrain · B"
+     *   undefined, [], [""]     ""
+     */
+    function rehearsalText(names) {
+        if (names === undefined || names === null) {
+            return ""
+        }
+        // A list from QML or C++ is not always a JS Array: test for a length.
+        const list = typeof names === "string" || names.length === undefined ? [names] : names
+        const out = []
+        for (let i = 0; i < list.length; i++) {
+            const n = list[i] === undefined || list[i] === null ? "" : String(list[i]).trim()
+            if (n !== "" && out.indexOf(n) < 0) {
+                out.push(n)
+            }
+        }
+        return out.join(" \u00b7 ")
+    }
+    /** A rehearsal mark for screen readers (1.50), %1 the label: "Teil Refrain · B". An app translates it once. */
+    property string partText: "Teil %1"
+    /**
      * String colours (Kante 1.28), one per string, string 0 = the lowest, kept apart from the
      * note state colours. Presets (`stringPalettes`): "kante" six roles that differ in hue
      * (purple, cyan, yellow, strong text, muted, info), "mono" every string in the strong
@@ -284,6 +326,14 @@ QtObject {
      * strong text). `stringPalette` is the app's choice, set once; KanteTabLane, KanteTabStaff
      * and KanteFretboard follow it where their `stringColors` leave a string out. Colour is
      * never the only sign: strings keep their names and rows.
+     *
+     * "kante" in Kante and Kante Light (1.51) comes from the palette (string0..string5): on a
+     * light ground raspberry, blue, ochre, strong text, muted, cyan, at least 4.5:1 (the fret
+     * digits are drawn in it) and the four bass strings apart under deuteranopia; the platform
+     * roles gave the A string 1.7:1 at a beamer, and purple and cyan look alike with
+     * deuteranopia. Dark Kante keeps its colours; Kante Light on a dark system takes the dark
+     * palette's (before: the platform roles). Kante Light moves a colour that reads below
+     * 4.5:1 on an unusual platform ground (hue kept). System keeps the platform roles.
      */
     readonly property var stringPalettes: ["kante", "mono", "bright"]
     property string stringPalette: "kante"
@@ -292,9 +342,22 @@ QtObject {
         var p = preset !== undefined && preset !== null && preset !== "" ? String(preset) : stringPalette
         var list = p === "mono" ? [strongTextColor]
             : p === "bright" ? [warningColor, infoColor, accentTextColor, tagColor, focusColor, strongTextColor]
-            : [tagColor, focusColor, accentTextColor, strongTextColor, mutedTextColor, infoColor]
+            : kanteStrings
         var i = Math.max(0, Math.floor(Number(s) || 0))
         return list[i % list.length]
+    }
+    /** The "kante" preset, worked out once per theme, not per note. */
+    readonly property var kanteStrings: {
+        if (!active) {
+            return [tagColor, focusColor, accentTextColor, strongTextColor, mutedTextColor, infoColor]
+        }
+        const p = palette
+        const list = [p.string0, p.string1, p.string2, p.string3, p.string4, p.string5]
+        if (themed) {
+            return list
+        }
+        const ground = Qt.rgba(backgroundColor.r, backgroundColor.g, backgroundColor.b, 1)
+        return list.map(function (c) { return readable(c, ground) })
     }
     /** The colours of `count` strings (default 6) in `preset`, e.g. for `stringColors`. */
     function stringColors(count, preset) {
@@ -319,6 +382,14 @@ QtObject {
     readonly property color frameColor: themed ? palette.frame : tint(Kirigami.Theme.textColor, 0.12)
     readonly property color ruleColor: themed ? palette.rule : tint(Kirigami.Theme.textColor, 0.12)
     readonly property color dialogColor: themed ? palette.dialog : Kirigami.Theme.backgroundColor
+    /**
+     * Ground of picture areas (monitors, video previews, image stages): dark in every kind and
+     * scheme, Leinen and a light platform theme included, because colour is judged there and a
+     * beige or white ground misleads (web: `.stage`). Opaque; the platform has no such role.
+     */
+    readonly property color stageColor: palette.stage
+    /** Text and marks on stageColor (a "No signal" label, a safe-area frame). */
+    readonly property color stageTextColor: palette.stageText
 
     /** Top-right corner cut of cards (px), scaled with the grid unit; 0 in System. */
     readonly property int chamfer: active ? Math.round(KantePalette.chamfer * Kirigami.Units.gridUnit / 18) : 0
@@ -361,6 +432,47 @@ QtObject {
     /** Smallest cut (stickers, small buttons); 0 in System. */
     readonly property int cutSmall: active ? unit(KantePalette.cutSmall) : 0
 
+    // ── Lines, markers and tints (Kante 1.56) ─────────────────────────────
+    // In every style, so a view drawn by hand (a time grid, a board) needs no sizes of its own.
+    // Weights, dash, levels and opacities come from tokens/palette.json (shape.lines, levels).
+    /** Borders and grid lines (web: 1 px borders). */
+    readonly property int borderWidth: KantePalette.lineBorder
+    /** Lines that mark: today, the picked day, the now line, an underline (web: 2 px lines). */
+    readonly property int lineWidth: KantePalette.lineMark
+    /** The colour edge of an entry: a calendar's or a project's colour on its left side. */
+    readonly property int edgeWidth: KantePalette.lineEdge
+    /** Its corners: square in the Kante style, slightly round elsewhere. */
+    readonly property int edgeRadius: themed ? 0 : 1
+    /** Small markers (day dots, legend keys): square in the Kante style, round elsewhere. */
+    readonly property int markerSize: Math.max(4, Math.round(Kirigami.Units.gridUnit / 4))
+    readonly property int markerRadius: themed ? 0 : Math.floor(markerSize / 2)
+    /** A thin meter (a day's load, progress inside a row). */
+    readonly property int meterHeight: Math.max(3, Math.round(Kirigami.Units.gridUnit / 5))
+    readonly property int meterRadius: themed ? 0 : Math.floor(meterHeight / 2)
+    /** Narrowest combo box in the Kante style (KanteFieldSkin), 120 px at a grid unit of 18. */
+    readonly property int comboMinimumWidth: unit(120)
+    /** A colour swatch in a legend or a menu. */
+    readonly property int swatchSize: Math.round(Kirigami.Units.gridUnit * 0.7)
+    /** Dash pattern of an edge that runs past its room (ShapePath.dashPattern, in line widths). */
+    readonly property var dashPattern: KantePalette.dash
+    /**
+     * Tint levels of a colour over the ground, for tint(c, level): wash (a tray, a quiet
+     * area), fill (free time, a draft), strongFill (a planned block), edge (the border of
+     * such an area).
+     */
+    readonly property real washLevel: KantePalette.levelWash
+    readonly property real fillLevel: KantePalette.levelFill
+    readonly property real strongFillLevel: KantePalette.levelStrongFill
+    readonly property real edgeLevel: KantePalette.levelEdge
+    /** Opacity of something done (a completed task). */
+    readonly property real doneOpacity: KantePalette.levelDone
+    /** Opacity of something out of range or minor: a day of another month, half-hour lines. */
+    readonly property real dimOpacity: KantePalette.levelDim
+    /** Height of one minute in an hour grid (an hour is 1.5 grid units). */
+    readonly property real minuteHeight: Kirigami.Units.gridUnit / 40
+    /** Height of one entry line in a month cell. */
+    readonly property real calendarEntryHeight: Kirigami.Units.gridUnit * 1.1
+
     // ── Motion ───────────────────────────────────────────────────────────
     // Warm and mechanical, never glitch. An app binds `motion` to its own
     // "animations" setting; without platform animations (durations 0) nothing moves.
@@ -398,6 +510,20 @@ QtObject {
     }
     function tint(c, alpha) {
         return Qt.rgba(c.r, c.g, c.b, alpha)
+    }
+    /**
+     * (1.61) The colour of a level 0..count on a scale, as KanteHeatmap draws it: 0 (or no
+     * number) the sunken ground, then `base` (the focus colour unless given) in steps of
+     * 0.88 / count opacity, full at `count` (4 unless given). For shares by level
+     * (KanteProgressBar.parts) with a KanteLegend.
+     */
+    function levelColor(level, count, base) {
+        var n = count > 0 ? count : 4
+        var c = base !== undefined ? base : focusColor
+        if (!(level > 0)) {
+            return sunkenColor
+        }
+        return level >= n ? c : tint(c, level * (0.88 / n))
     }
 
     // ── Fonts ────────────────────────────────────────────────────────────

@@ -23,6 +23,13 @@ import "."
  * left edge (2.5 = the middle of the third bar), `barFill` is the share of a column the
  * bar fills (1 = bars touch), `wholeSteps` keeps the axis on whole numbers (counts).
  * KanteTimingHistogram is configured this way.
+ * `ranges` (1.44) shade spans behind the bars [{from, to, label}], in columns as `markers`
+ * (e.g. a target band): a tint, dashed edges and the label at the top, not colour alone.
+ * `minValue` (1.64) is the floor of the scale (default 0): the axis, the grid and the bars start
+ * there (Mitori's averages 1–4: `minValue: 1`, `maxValue: 4`); a stack loses its bottom part
+ * below it. `minBarHeight` (1.64, pixels) is the least height of a bar with a value, so a bar
+ * on the floor still shows (a value below the floor too, it looks the same); the read-out says
+ * the real value.
  */
 Item {
     id: chart
@@ -39,9 +46,15 @@ Item {
     property int highlight: -1
     /** Top of the scale; 0 = the largest value or goal. */
     property real maxValue: 0
+    /** Floor of the scale (1.64): axis, grid and bars start here. */
+    property real minValue: 0
+    /** Least height of a bar with a value, in pixels (1.64; e.g. KanteStyle.unit(3)); 0: none. */
+    property real minBarHeight: 0
     /** Colour of part k of every stack; the data palette where missing. */
     property var stackColors: []
     property bool axis: false
+    /** Title of the value axis, written upwards left of its labels (1.49; e.g. "Noten"). */
+    property string axisTitle: ""
     property int valueFormat: KanteBarChart.ValueFormat.Number
     /** Optional function (number) -> string for the axis; overrides `valueFormat`. */
     property var formatter: null
@@ -60,6 +73,7 @@ Item {
     property string edgeUnit: ""
     /** Vertical lines [{at, label, dashed}], `at` in columns from the left edge. */
     property var markers: []
+    property var ranges: []
     /** Axis steps on whole numbers only (counts): 1, 2, 5, 10, … */
     property bool wholeSteps: false
     /** Share of a column the bar fills. */
@@ -67,10 +81,10 @@ Item {
 
     /** Largest total (value or goal), before rounding to the axis steps. */
     readonly property real dataMax: {
-        if (maxValue > 0) {
+        if (maxValue > 0 && maxValue > minValue) {
             return maxValue
         }
-        var m = Math.max(goal, 0)
+        var m = Math.max(goal, 0, minValue)
         for (var i = 0; i < values.length; i++) {
             var v = values[i]
             var total = 0
@@ -83,16 +97,20 @@ Item {
             }
             m = Math.max(m, total)
         }
-        return m > 0 ? m : 1
+        return m > minValue ? m : minValue + 1
     }
     /** Distance between two axis labels: 1-2-5 steps, for hours ¼, ½, 1, 2, 4, 6, 8, 12, 24. */
-    readonly property real axisStep: niceStep(dataMax / 4)
-    /** Top of the scale: with an axis, rounded up to a whole step. */
-    readonly property real scaleMax: axis && maxValue <= 0 ? Math.ceil(dataMax / axisStep - 1e-9) * axisStep : dataMax
-    readonly property int gridLines: axis ? Math.round(scaleMax / axisStep) + 1 : 3
+    readonly property real axisStep: niceStep((dataMax - minValue) / 4)
+    /** Top of the scale: with an axis, rounded up to a whole step above the floor. */
+    readonly property real scaleMax: axis && !(maxValue > 0 && maxValue > minValue)
+        ? minValue + Math.ceil((dataMax - minValue) / axisStep - 1e-9) * axisStep : dataMax
+    /** Height of the scale in values, floor to top. */
+    readonly property real scaleSpan: Math.max(1e-9, scaleMax - minValue)
+    readonly property int gridLines: axis ? Math.round(scaleSpan / axisStep) + 1 : 3
     readonly property real labelHeight: compact ? 0 : KanteStyle.unit(16)
     readonly property real plotHeight: height - labelHeight
-    readonly property real padLeft: axis ? axisWidth.width + KanteStyle.unit(8) : 0
+    readonly property real padLeft: axis ? axisWidth.width + KanteStyle.unit(8)
+                                           + (axisTitleText.visible ? axisTitleText.height + KanteStyle.unit(4) : 0) : 0
     readonly property real plotWidth: width - padLeft
 
     function niceStep(raw) {
@@ -135,6 +153,25 @@ Item {
     function totalOf(i) {
         return partsOf(i).reduce(function (a, b) { return a + b }, 0)
     }
+    /** Pixels from the floor up to value v (0 at or below the floor). */
+    function heightOf(v) {
+        return Math.max(0, v - minValue) / scaleSpan * plotHeight
+    }
+    /** Drawn height of bar i: its total above the floor, `minBarHeight` at least; 0 without a value. */
+    function barHeight(i) {
+        if (i < 0 || i >= values.length) {
+            return 0
+        }
+        var v = values[i]
+        if (v === null || v === undefined || (!Array.isArray(v) && isNaN(v))) {
+            return 0
+        }
+        return Math.max(minBarHeight, heightOf(totalOf(i)))
+    }
+    /** Pixel y of value v on the plot. */
+    function yOf(v) {
+        return plotHeight - (v - minValue) / scaleSpan * plotHeight
+    }
     readonly property real columnWidth: plotWidth / Math.max(1, values.length)
     /** Bar at x, or -1 outside the plot. */
     function barAt(px) {
@@ -144,15 +181,21 @@ Item {
     /** Part of bar i at y (0 = bottom), or -1 above the bar. */
     function partAt(i, py) {
         var parts = partsOf(i)
-        var v = (plotHeight - py) / plotHeight * scaleMax
-        var sum = 0
-        for (var k = 0; k < parts.length; k++) {
-            sum += Math.max(0, parts[k])
-            if (v >= 0 && v <= sum) {
+        var h = plotHeight - py
+        var top = barHeight(i)
+        if (h < 0 || h > top) {
+            return -1
+        }
+        // As drawn, from the top: each upper part its own height, the bottom part the rest (the
+        // floor cuts it, a least height lifts it).
+        var edge = top
+        for (var k = parts.length - 1; k > 0; k--) {
+            edge -= Math.max(0, parts[k]) / scaleSpan * plotHeight
+            if (h > edge) {
                 return k
             }
         }
-        return -1
+        return 0
     }
 
     function partColor(k) {
@@ -166,7 +209,25 @@ Item {
     TextMetrics {
         id: axisWidth
         font: KanteStyle.monoFont(KanteStyle.labelFont().pointSize * 0.85, false)
-        text: chart.format(chart.scaleMax)
+        // Mono figures: the longer text is the wider one (a floor below 0 may be).
+        text: chart.format(chart.minValue).length > chart.format(chart.scaleMax).length
+            ? chart.format(chart.minValue) : chart.format(chart.scaleMax)
+    }
+
+    // Axis title, turned upwards; rotation keeps the centre, so x and y place the turned box
+    // at the left edge, centred on the plot.
+    Text {
+        id: axisTitleText
+        objectName: "kanteAxisTitle"
+        visible: chart.axis && !chart.compact && chart.axisTitle !== ""
+        width: Math.min(implicitWidth, chart.plotHeight)
+        elide: Text.ElideRight
+        text: chart.axisTitle
+        color: KanteStyle.mutedTextColor
+        font: axisWidth.font
+        rotation: -90
+        x: (height - width) / 2
+        y: (chart.plotHeight - height) / 2
     }
 
     implicitWidth: KanteStyle.unit(compact ? 120 : 260)
@@ -180,7 +241,7 @@ Item {
             x: chart.padLeft
             width: chart.plotWidth
             height: 1
-            y: chart.axis ? chart.plotHeight - index * chart.axisStep / chart.scaleMax * chart.plotHeight - (index === 0 ? 1 : 0)
+            y: chart.axis ? chart.plotHeight - index * chart.axisStep / chart.scaleSpan * chart.plotHeight - (index === 0 ? 1 : 0)
                           : chart.plotHeight - index * chart.plotHeight / 3 - 1
             color: index === 0 ? KanteStyle.frameColor : KanteStyle.ruleColor
         }
@@ -189,12 +250,47 @@ Item {
         model: chart.axis ? chart.gridLines : 0
         delegate: Text {
             required property int index
-            readonly property real lineY: chart.plotHeight - index * chart.axisStep / chart.scaleMax * chart.plotHeight
+            readonly property real lineY: chart.plotHeight - index * chart.axisStep / chart.scaleSpan * chart.plotHeight
             x: chart.padLeft - width - KanteStyle.unit(6)
             y: Math.max(0, Math.min(chart.plotHeight - height / 2, lineY - height / 2))
-            text: chart.format(index * chart.axisStep)
+            text: chart.format(chart.minValue + index * chart.axisStep)
             color: KanteStyle.mutedTextColor
             font: axisWidth.font
+        }
+    }
+
+    // Ranges behind the bars: tint and dashed edges; their labels follow the markers'.
+    Repeater {
+        model: chart.ranges
+        delegate: Item {
+            id: range
+            required property var modelData
+            required property int index
+            readonly property real from: Math.max(0, Math.min(chart.values.length, Number(modelData.from)))
+            readonly property real to: Math.max(0, Math.min(chart.values.length, Number(modelData.to)))
+            objectName: "kanteRange"
+            visible: !isNaN(from) && !isNaN(to) && to > from
+            x: chart.padLeft + from * chart.columnWidth
+            width: (to - from) * chart.columnWidth
+            height: chart.plotHeight
+            Rectangle {
+                anchors.fill: parent
+                color: KanteStyle.tint1Color
+            }
+            Shape {
+                anchors.fill: parent
+                ShapePath {
+                    strokeColor: KanteStyle.mutedTextColor
+                    strokeWidth: 1
+                    strokeStyle: ShapePath.DashLine
+                    dashPattern: [4, 3]
+                    fillColor: "transparent"
+                    startX: 0.5; startY: 0
+                    PathLine { x: 0.5; y: chart.plotHeight }
+                    PathMove { x: range.width - 0.5; y: 0 }
+                    PathLine { x: range.width - 0.5; y: chart.plotHeight }
+                }
+            }
         }
     }
 
@@ -221,18 +317,13 @@ Item {
                 }
                 Column {
                     id: stack
+                    objectName: "kanteBar"
                     width: col.width * Math.max(0.05, Math.min(1, chart.barFill))
                     x: (col.width - width) / 2
                     y: chart.plotHeight - height
-                    height: {
-                        var t = 0
-                        if (col.stacked) {
-                            for (var k = 0; k < col.value.length; k++) t += col.value[k]
-                        } else {
-                            t = col.value
-                        }
-                        return Math.max(0, t) / chart.scaleMax * chart.plotHeight
-                    }
+                    height: chart.barHeight(col.index)
+                    // Above a floor the bottom part is cut where the parts reach below it.
+                    clip: chart.minValue !== 0
                     Behavior on height { NumberAnimation { duration: KanteStyle.durationSlow; easing.type: Easing.OutCubic } }
                     // A stacked column paints from the top; the first part is at the bottom.
                     Repeater {
@@ -241,7 +332,18 @@ Item {
                             required property int index
                             readonly property real part: col.stacked ? col.value[col.value.length - 1 - index] : col.value
                             width: stack.width
-                            height: chart.scaleMax > 0 ? Math.max(0, part) / chart.scaleMax * chart.plotHeight : 0
+                            // The bottom part fills the rest of the bar: the floor cuts it, a
+                            // least height lifts it.
+                            height: {
+                                if (partIndex > 0) {
+                                    return Math.max(0, part) / chart.scaleSpan * chart.plotHeight
+                                }
+                                var above = 0
+                                for (var k = 1; col.stacked && k < col.value.length; k++) {
+                                    above += Math.max(0, col.value[k]) / chart.scaleSpan * chart.plotHeight
+                                }
+                                return Math.max(0, stack.height - above)
+                            }
                             readonly property int partIndex: col.stacked ? col.value.length - 1 - index : 0
                             color: col.stacked ? chart.partColor(partIndex)
                                 : (col.index === chart.highlight ? KanteStyle.accentColor : KanteStyle.dataColor(chart.series))
@@ -264,7 +366,8 @@ Item {
 
     // Goal line, dashed.
     Shape {
-        visible: chart.goal >= 0
+        objectName: "kanteGoal"
+        visible: chart.goal >= 0 && chart.goal >= chart.minValue
         anchors.fill: parent
         ShapePath {
             strokeColor: KanteStyle.accentColor
@@ -273,8 +376,8 @@ Item {
             dashPattern: [4, 3]
             fillColor: "transparent"
             startX: chart.padLeft
-            startY: chart.plotHeight - chart.goal / chart.scaleMax * chart.plotHeight
-            PathLine { x: chart.width; y: chart.plotHeight - chart.goal / chart.scaleMax * chart.plotHeight }
+            startY: chart.yOf(chart.goal)
+            PathLine { x: chart.width; y: chart.yOf(chart.goal) }
         }
     }
 
@@ -348,6 +451,34 @@ Item {
                     color: KanteStyle.strongTextColor
                     font: KanteStyle.monoFont(KanteStyle.labelFont().pointSize * 0.85, true)
                 }
+            }
+        }
+    }
+
+    // Range labels above the bars, one row each below the marker labels.
+    Repeater {
+        model: chart.ranges
+        delegate: Rectangle {
+            id: rangeLabel
+            required property var modelData
+            required property int index
+            readonly property real from: Math.max(0, Math.min(chart.values.length, Number(modelData.from)))
+            readonly property real to: Math.max(0, Math.min(chart.values.length, Number(modelData.to)))
+            // Only with its band: a range clipped to nothing has no label either.
+            objectName: "kanteRangeLabel"
+            visible: !!modelData.label && !isNaN(from) && !isNaN(to) && to > from
+            x: Math.min(chart.padLeft + from * chart.columnWidth + KanteStyle.unit(3), chart.width - width)
+            y: (chart.markers.length + index) * (height + KanteStyle.unit(2))
+            z: 1
+            width: rangeText.implicitWidth + KanteStyle.unit(8)
+            height: rangeText.implicitHeight + KanteStyle.unit(2)
+            color: Qt.alpha(KanteStyle.dialogColor, 0.85)
+            Text {
+                id: rangeText
+                anchors.centerIn: parent
+                text: rangeLabel.modelData.label || ""
+                color: KanteStyle.mutedTextColor
+                font: KanteStyle.monoFont(KanteStyle.labelFont().pointSize * 0.85, true)
             }
         }
     }

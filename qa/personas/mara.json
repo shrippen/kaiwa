@@ -391,7 +391,7 @@
           "requirements": [
             "/LF210/"
           ],
-          "assert": "Gleitende Erfolgsquote über 5 Sitzungen bleibt zwischen 65 % und 92 %."
+          "assert": "Gleitende Erfolgsquote über 8 Sitzungen bleibt zwischen 65 % und 92 %, in mindestens 10 von 12 Läufen (Seed des Skripts und die elf folgenden)."
         },
         {
           "id": "mara_gradual",

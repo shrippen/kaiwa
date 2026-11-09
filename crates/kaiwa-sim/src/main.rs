@@ -54,7 +54,7 @@ enum Command {
         journey: String,
         /// Instead of the journey, play it with this many seeds (the script's and the ones
         /// after it) and print per seed the lowest and highest moving success over 5 and over
-        /// 8 sessions against the band 65–92 % (/LF210/, Fragenpaket 10).
+        /// 8 sessions against the band 65–92 % (/LF210/; the check uses 8, S-01).
         #[arg(long)]
         seeds: Option<u64>,
     },
@@ -228,7 +228,7 @@ fn print_seeds(root: &std::path::Path, persona: &str, journey: &str, n: u64) -> 
     )?)?;
     let script = days::script_for(root, journey)?
         .ok_or_else(|| anyhow::anyhow!("{journey} has no day script"))?;
-    let band = 0.65..=0.92;
+    let band = days::BAND;
     let mut held = [0usize; 2];
     println!("seed  sessions  window 5: min  max  band   window 8: min  max  band");
     for k in 0..n {
