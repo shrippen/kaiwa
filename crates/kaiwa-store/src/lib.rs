@@ -638,7 +638,11 @@ impl Store {
                     .ok()
                     .and_then(|v| v.as_str().map(str::to_string))
                     .unwrap_or_default(),
-                original: Some(sh.correction.original.clone()).filter(|o| !o.is_empty()),
+                original: summary
+                    .mistakes
+                    .get(&kaiwa_core::norm(&sh.correction.better))
+                    .cloned()
+                    .filter(|o| !o.is_empty()),
                 cue: summary
                     .cues
                     .get(&kaiwa_core::norm(&sh.correction.better))
@@ -757,7 +761,6 @@ impl Store {
             .collect())
     }
 
-    /// One review answer: FSRS, the unit's review record, the day.
     /// The review item of `text`, if there is one.
     pub fn item(&self, text: &str) -> Result<Option<Item>> {
         self.get_json(
@@ -766,6 +769,7 @@ impl Store {
         )
     }
 
+    /// One review answer: FSRS, the unit's review record, the day.
     pub fn review(&self, text: &str, grade: Grade, now: Moment) -> Result<Option<Item>> {
         let key = kaiwa_core::norm(text);
         let Some(mut item): Option<Item> =
