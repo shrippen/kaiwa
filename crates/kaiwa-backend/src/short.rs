@@ -137,7 +137,7 @@ impl ShortTalk {
 impl Backend {
     /// Checks a review answer (/LF502/): spoken or typed, compared without punctuation.
     pub fn answer_review(&self, text: &str, said: &str, helped: bool, now: Moment) -> Value {
-        let right = kaiwa_core::norm(said) == kaiwa_core::norm(text);
+        let right = kaiwa_core::srs::answer_has(said, text);
         let grade = Grade::of(right, helped, false);
         let next = match self.store.review(text, grade, now) {
             Ok(Some(item)) => item.due.iso(),

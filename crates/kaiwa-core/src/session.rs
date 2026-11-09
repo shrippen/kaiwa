@@ -91,6 +91,9 @@ pub struct Summary {
     pub top: Vec<Shown>,
     /// What goes into the review (SRS): the better forms of every shown correction and new words.
     pub review: Vec<String>,
+    /// For each better form (by [`crate::norm`]): the character's line the learner answered
+    /// when the mistake happened, the cue of its mini-conversation review (/LF230/).
+    pub cues: BTreeMap<String, String>,
     pub spoken_turns: usize,
     pub typed_turns: usize,
     pub helps_used: u32,
@@ -516,7 +519,26 @@ impl Session {
         &self.turns
     }
 
+    /// The character's line that learner turn `turn` answered (with furigana markup for the
+    /// opening): the opening for the first turn, otherwise the reply before it.
+    pub fn cue(&self, turn: usize) -> Option<&str> {
+        match turn {
+            0 => Some(self.opening()),
+            n => self.turns.get(n - 1).map(|t| t.reply.as_str()),
+        }
+        .filter(|c| !c.is_empty())
+    }
+
     pub fn summary(&self) -> Summary {
+        let mut cues = BTreeMap::new();
+        for (i, t) in self.turns.iter().enumerate() {
+            for s in visible(&counted(t), self.amount) {
+                if let Some(cue) = self.cue(i) {
+                    cues.entry(crate::norm(&s.correction.better))
+                        .or_insert_with(|| cue.to_string());
+                }
+            }
+        }
         let mut all: Vec<Shown> = self
             .turns
             .iter()
@@ -555,6 +577,7 @@ impl Session {
             goals_total: self.goals().len(),
             top: unique.into_iter().take(3).collect(),
             review,
+            cues,
             spoken_turns: self
                 .turns
                 .iter()
@@ -713,6 +736,25 @@ mod tests {
             "../../../data/scenarios/n5-02-jikoshoukai.json"
         ))
         .unwrap()
+    }
+
+    #[test]
+    fn a_correction_remembers_the_line_it_answered() {
+        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        s.turn("マラです。よろしくおねがいします。", Input::Typed)
+            .unwrap();
+        s.turn("コーヒーを好きです。", Input::Typed).unwrap();
+        assert_eq!(s.cue(0), Some(s.opening()));
+        let asked = s.turns()[0].reply.clone();
+        assert_eq!(s.cue(1), Some(asked.as_str()));
+        assert_eq!(s.cue(3), None, "no line past the last reply");
+        let sum = s.summary();
+        assert_eq!(
+            sum.cues.get(&crate::norm("コーヒーが好きです")),
+            Some(&asked),
+            "{:?}",
+            sum.cues
+        );
     }
 
     fn provider() -> Arc<dyn ChatProvider> {

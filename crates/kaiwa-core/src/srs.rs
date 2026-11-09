@@ -79,6 +79,11 @@ pub struct Item {
     /// The unit it belongs to, if any.
     #[serde(default)]
     pub unit: Option<String>,
+    /// The character's line the learner answered when the mistake happened (with furigana
+    /// markup). The review plays it again as a mini conversation: the character says it, the
+    /// learner answers with the better form (/LF230/). `None`: the item is said after.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cue: Option<String>,
     pub added: Moment,
     /// FSRS memory state; `None` before the first review.
     pub stability: Option<f64>,
@@ -97,6 +102,7 @@ impl Item {
             kind,
             source,
             unit: None,
+            cue: None,
             added: at,
             stability: None,
             difficulty: None,
@@ -217,12 +223,28 @@ pub fn refresher(now: Moment, last_practice: Option<Moment>) -> bool {
     last_practice.is_some_and(|l| now.day().0 - l.day().0 >= BREAK_DAYS)
 }
 
+/// A correction as it goes into the review: the better form, its kind (particle, register …)
+/// and the character's line it answered.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Corrected {
+    pub better: String,
+    pub kind: String,
+    pub cue: Option<String>,
+}
+
+/// Whether a review answer has the item in it: the whole answer, or a sentence that contains the
+/// form (a mini conversation answers with a sentence, /LF230/). Compared by [`crate::norm`].
+pub fn answer_has(said: &str, text: &str) -> bool {
+    let (said, text) = (crate::norm(said), crate::norm(text));
+    !text.is_empty() && said.contains(&text)
+}
+
 /// Adds the forms from a session's summary to the items, without duplicates (by the
 /// comparison key). Returns how many were new.
 pub fn add_from_summary(
     items: &mut Vec<Item>,
     review: &[String],
-    corrections: &[(String, String)],
+    corrections: &[Corrected],
     unit: Option<&str>,
     at: Moment,
 ) -> usize {
@@ -232,16 +254,20 @@ pub fn add_from_summary(
         if key.is_empty() || items.iter().any(|i| crate::norm(&i.text) == key) {
             continue;
         }
-        let (kind, source) = match corrections
-            .iter()
-            .find(|(better, _)| crate::norm(better) == key)
-        {
-            Some((_, k)) => (ItemKind::Pattern, Source::Correction { kind: k.clone() }),
+        let found = corrections.iter().find(|c| crate::norm(&c.better) == key);
+        let (kind, source) = match found {
+            Some(c) => (
+                ItemKind::Pattern,
+                Source::Correction {
+                    kind: c.kind.clone(),
+                },
+            ),
             None if text.chars().count() <= 6 => (ItemKind::Word, Source::NewWord),
             None => (ItemKind::Phrase, Source::NewWord),
         };
         let mut item = Item::new(text.clone(), kind, source, at);
         item.unit = unit.map(str::to_string);
+        item.cue = found.and_then(|c| c.cue.clone());
         items.push(item);
         added += 1;
     }
@@ -325,13 +351,42 @@ mod tests {
     fn summary_forms_become_items_once() {
         let mut items = Vec::new();
         let review = vec!["コーヒーが好きです".to_string(), "駅".to_string()];
-        let corr = vec![("コーヒーが好きです".to_string(), "particle".to_string())];
+        let corr = vec![Corrected {
+            better: "コーヒーが好きです".into(),
+            kind: "particle".into(),
+            cue: Some("何が好きですか。".into()),
+        }];
         assert_eq!(
             add_from_summary(&mut items, &review, &corr, Some("n5-02"), at(0)),
             2
         );
         assert_eq!(add_from_summary(&mut items, &review, &corr, None, at(1)), 0);
         assert_eq!(items[0].kind, ItemKind::Pattern);
+        assert_eq!(items[0].cue.as_deref(), Some("何が好きですか。"));
         assert_eq!(items[1].kind, ItemKind::Word);
+        assert_eq!(items[1].cue, None, "a new word is said after");
+    }
+
+    #[test]
+    fn an_answer_has_the_form_in_a_sentence() {
+        assert!(answer_has("コーヒーが好きです", "コーヒーが好きです"));
+        assert!(answer_has(
+            "ミュラーと申します。二時にお約束しております。",
+            "お約束しております"
+        ));
+        assert!(!answer_has(
+            "二時にお約束しています。",
+            "お約束しております"
+        ));
+        assert!(!answer_has("", "駅"));
+        assert!(!answer_has("駅", ""));
+    }
+
+    #[test]
+    fn an_item_without_a_cue_reads_as_before() {
+        let old = r#"{"text":"駅","kind":"word","source":{"from":"new_word"},"added":{"unix":0,"offset_min":0},"stability":null,"difficulty":null,"last_review":null,"due":1,"reps":0,"lapses":0}"#;
+        let i: Item = serde_json::from_str(old).unwrap();
+        assert_eq!(i.cue, None);
+        assert!(!serde_json::to_string(&i).unwrap().contains("cue"));
     }
 }

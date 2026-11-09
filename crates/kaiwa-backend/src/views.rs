@@ -167,6 +167,7 @@ pub fn path(st: &Backend) -> anyhow::Result<Value> {
 /// The items to review now, at most `limit` (/LF230/, /LF502/: five in the plasmoid).
 pub fn review(st: &Backend, now: Moment, limit: usize) -> anyhow::Result<Value> {
     let due = st.store.due(now, limit)?;
+    let de = st.store.profile()?.ui_lang == "de";
     Ok(Value::Array(
         due.iter()
             .map(|i| {
@@ -178,6 +179,13 @@ pub fn review(st: &Backend, now: Moment, limit: usize) -> anyhow::Result<Value> 
                     "fromMistake": matches!(i.source, kaiwa_core::srs::Source::Correction { .. }),
                     // Taken over from the word lookup (/LF112/).
                     "fromLookup": i.source == kaiwa_core::srs::Source::Lookup,
+                    // The character's line to answer: a mini conversation (/LF230/).
+                    "cue": i.cue,
+                    // What the correction was about, in words (Höflichkeit, Partikeln …).
+                    "practises": match &i.source {
+                        kaiwa_core::srs::Source::Correction { kind } => kind_word(kind, de),
+                        _ => "",
+                    },
                 })
             })
             .collect(),

@@ -629,15 +629,19 @@ impl Store {
             .map(|u| u.id.clone());
         let mut items = self.items()?;
         let before = items.len();
-        let corrections: Vec<(String, String)> = summary
+        let corrections: Vec<srs::Corrected> = summary
             .top
             .iter()
-            .map(|sh| {
-                let kind = serde_json::to_value(sh.correction.kind)
+            .map(|sh| srs::Corrected {
+                better: sh.correction.better.clone(),
+                kind: serde_json::to_value(sh.correction.kind)
                     .ok()
                     .and_then(|v| v.as_str().map(str::to_string))
-                    .unwrap_or_default();
-                (sh.correction.better.clone(), kind)
+                    .unwrap_or_default(),
+                cue: summary
+                    .cues
+                    .get(&kaiwa_core::norm(&sh.correction.better))
+                    .cloned(),
             })
             .collect();
         srs::add_from_summary(

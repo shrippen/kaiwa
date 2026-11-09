@@ -129,6 +129,12 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
         };
         let mut item = Item::new(*w, *kind, source, added);
         item.unit = Some((*unit).to_string());
+        // The correction came in n5-02 as the answer to Tanaka's question (recorded answers):
+        // it comes back as a mini conversation (/LF230/).
+        if n == 0 {
+            item.cue =
+                Some("プロデューサーですか。すごいですね。{何|なに}が{好|す}きですか。".into());
+        }
         item.review(Grade::Good, added.plus_secs(86_400));
         if n % 3 == 0 {
             item.due = today;

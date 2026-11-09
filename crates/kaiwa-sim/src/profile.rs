@@ -85,6 +85,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "lena_default_no_audio" => no_audio(root),
         "lena_stats_fast" => fast(root),
         "jonas_local_switch" => local_switch(root),
+        "emi_srs_keigo" => srs_keigo(root),
         _ => return None,
     };
     Some(match r {
@@ -92,6 +93,63 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         Ok(Some(why)) => Outcome::Fail(why),
         Err(e) => Outcome::Fail(format!("{e:#}")),
     })
+}
+
+/// /LF230/: Emi's register corrections come back the next day as a mini conversation, not as a
+/// flash card: the item carries the character's line she answered, and an answer that uses the
+/// humble form in a sentence counts as right. The reception scene (keigo) with its recorded
+/// answers stands in for the interview, which has no scenario yet.
+fn srs_keigo(root: &Path) -> Result<Option<String>> {
+    let dir = temp_dir("srs-keigo");
+    let store = Store::open(&dir.join("emi.kaiwa"))?;
+    let sc = Scenario::from_json(&std::fs::read_to_string(
+        root.join("data/scenarios/n4-13-uketsuke.json"),
+    )?)?;
+    let mock = MockProvider::from_json(&std::fs::read_to_string(
+        root.join("qa/fixtures/n4-13-uketsuke.json"),
+    )?)?;
+    // Emi wants much feedback: style and register corrections are shown.
+    let mut s = Session::new(sc, Arc::new(mock), Amount::Much, "de");
+    let id = store.begin_session(&s.snapshot(), at(0, 9 * 3600))?;
+    s.turn(
+        "ミュラーと申します。二時に小野様とお約束しています。",
+        Input::Spoken,
+    )?;
+    store.record(
+        id,
+        &s,
+        at(0, 9 * 3600),
+        at(0, 9 * 3600 + 300),
+        Some(&curriculum(root)?),
+    )?;
+    let due = store.due(at(1, 9 * 3600), 10)?;
+    std::fs::remove_dir_all(&dir)?;
+    let Some(item) = due.iter().find(|i| i.text == "お約束しております") else {
+        return Ok(Some(format!(
+            "the humble form is not due the next day: {:?}",
+            due.iter().map(|i| &i.text).collect::<Vec<_>>()
+        )));
+    };
+    if !matches!(&item.source, Source::Correction { kind } if kind == "register") {
+        return Ok(Some(format!(
+            "not a register correction: {:?}",
+            item.source
+        )));
+    }
+    match item.cue.as_deref() {
+        Some("いらっしゃいませ。") => {}
+        other => return Ok(Some(format!("no mini conversation, cue {other:?}"))),
+    }
+    let answer = "ミュラーと申します。二時に小野様とお約束しております。";
+    if !kaiwa_core::srs::answer_has(answer, &item.text) {
+        return Ok(Some(
+            "a sentence with the humble form does not count".into(),
+        ));
+    }
+    if kaiwa_core::srs::answer_has("二時にお約束しています。", &item.text) {
+        return Ok(Some("the plain form counts as right".into()));
+    }
+    Ok(None)
 }
 
 /// A local model: the same answers as the cloud one, only slower.
