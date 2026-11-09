@@ -159,6 +159,16 @@ pub const NOISY_DB: f32 = 12.0;
 /// More than this share of samples at full scale is clipping.
 pub const CLIPPED: f32 = 0.001;
 
+impl Check {
+    /// Whether a voice could be in the recording: something comes in, and it is either loud
+    /// enough or stands out from the room. Silence, or a faint steady hiss (an input with no
+    /// microphone on it), is no voice, and the recognition would only invent sounds from it.
+    pub fn voice(&self) -> bool {
+        self.verdict != Verdict::Silent
+            && (self.speech_db >= QUIET_DB || self.speech_db - self.noise_db >= NOISY_DB)
+    }
+}
+
 pub fn check(rec: &Recording) -> Check {
     let rate = rec.sample_rate.max(1) as usize;
     let win = (rate / 20).max(1);
@@ -342,6 +352,18 @@ mod tests {
         let c = check(&take(0.001, 0.3));
         assert!((c.seconds - 2.0).abs() < 1e-3);
         assert!(c.speech_db > -15.0 && c.noise_db < -55.0, "{c:?}");
+    }
+
+    #[test]
+    fn silence_and_faint_hiss_are_no_voice() {
+        // No microphone: digital silence, or the faint steady noise of an empty input.
+        assert!(!check(&take(0.0, 0.0)).voice());
+        assert!(!check(&take(0.0001, 0.0)).voice());
+        assert!(!check(&take(0.003, 0.004)).voice());
+        // Quiet but clear speech, and loud speech in a noisy room, still go to the recognition.
+        assert!(check(&take(0.0005, 0.005)).voice());
+        assert!(check(&take(0.1, 0.2)).voice());
+        assert!(check(&take(0.001, 0.3)).voice());
     }
 
     impl Recording {
