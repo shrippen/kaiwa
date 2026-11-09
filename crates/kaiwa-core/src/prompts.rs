@@ -107,7 +107,10 @@ pub fn analysis_system(s: &Scenario, lang: &str, grammar: &[String]) -> String {
            unnatural (correct but odd or the wrong register), style (a nuance). \
            Ignore fillers like えーと and あの. \
            The explanation is one or two short sentences in {lang_name}, with the Japanese example;\n\
-         - new_words: words the learner used or met for the first time, dictionary form.",
+         - new_words: words the learner used or met for the first time, dictionary form;\n\
+         - reading: the learner's last turn exactly as given, every character kept (mistakes too), \
+           each kanji word followed by its reading in this sentence as {{漢字|かな}} in hiragana \
+           (何を → {{何|なに}}を, 何ですか → {{何|なん}}ですか).",
         character = s.character.en,
         register = register_words(s.register),
         goals = goals(s),

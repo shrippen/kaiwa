@@ -309,6 +309,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             new_words: vec![],
+            markup: String::new(),
             understood: true,
             aided: false,
             from_help: false,

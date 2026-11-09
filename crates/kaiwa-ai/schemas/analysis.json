@@ -1,7 +1,7 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["understood", "goals_met", "corrections", "new_words"],
+  "required": ["understood", "goals_met", "corrections", "new_words", "reading"],
   "properties": {
     "understood": { "type": "boolean", "description": "The character understood what the learner meant." },
     "goals_met": { "type": "array", "items": { "type": "string" }, "description": "Ids of scenario goals this turn reached." },
@@ -22,6 +22,7 @@
         }
       }
     },
-    "new_words": { "type": "array", "items": { "type": "string" }, "description": "Words new to the learner, dictionary form." }
+    "new_words": { "type": "array", "items": { "type": "string" }, "description": "Words new to the learner, dictionary form." },
+    "reading": { "type": "string", "description": "The learner's last turn exactly as given, every character kept, each kanji word followed by its reading in the sentence as {漢字|かな} (hiragana)." }
   }
 }

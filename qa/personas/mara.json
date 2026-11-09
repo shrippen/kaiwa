@@ -241,6 +241,13 @@
           "assert": "Auf 'Wie sagt man Produzentin?' antwortet die Figur mit プロデューサー (Audio) und bittet ums Nachsprechen."
         },
         {
+          "id": "mara_own_furigana",
+          "requirements": [
+            "/LF110/"
+          ],
+          "assert": "Jeder eigene Satz mit Kanji bekommt mit der Antwort die Lesungen des Tutors (ohne Markup genau der Satz)."
+        },
+        {
           "id": "mara_explain_de",
           "requirements": [
             "/LL112/"

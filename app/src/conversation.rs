@@ -303,7 +303,8 @@ fn summary_json(s: &Summary, lang: &str) -> Value {
 impl qobject::Conversation {
     fn publish_turns(mut self: Pin<&mut Self>) {
         // Every line as words to look up (/LF112/, Kante 1.33), once per line: the
-        // character's with the tutor's furigana, the learner's own with IPADIC's (/LF110/).
+        // character's with the tutor's furigana, the learner's own with the dictionary's until the
+        // tutor's reading comes with its answer (/LF110/, ADR-004).
         for entry in self.as_mut().rust_mut().log.iter_mut() {
             if entry.get("segments").is_some() {
                 continue;
@@ -312,9 +313,14 @@ impl qobject::Conversation {
                 Some("character") => {
                     kaiwa_backend::lookup::line(entry["markup"].as_str().unwrap_or_default())
                 }
-                Some("learner") => {
-                    kaiwa_backend::lookup::own_line(entry["text"].as_str().unwrap_or_default())
-                }
+                // With the tutor's reading once its answer is there, before with the
+                // dictionary's (ADR-004).
+                Some("learner") => match entry["markup"].as_str() {
+                    Some(markup) => kaiwa_backend::lookup::line(markup),
+                    None => {
+                        kaiwa_backend::lookup::own_line(entry["text"].as_str().unwrap_or_default())
+                    }
+                },
                 _ => continue,
             };
             entry["segments"] = line["segments"].clone();
@@ -1324,6 +1330,14 @@ impl qobject::Conversation {
                                     outcome.shown.iter().map(|x| shown_json(x, &lang)).collect(),
                                 );
                                 turn["pending"] = json!(false);
+                                // The tutor's furigana replace the dictionary's (ADR-004).
+                                if !outcome.own_markup.is_empty() {
+                                    turn["markup"] = outcome.own_markup.clone().into();
+                                    if let Some(t) = turn.as_object_mut() {
+                                        t.remove("segments");
+                                        t.remove("words");
+                                    }
+                                }
                             }
                             rust.log.push(
                                 json!({ "who": "character", "markup": outcome.reply.clone() }),
@@ -1575,6 +1589,9 @@ fn log_of(scenario: &Scenario, state: &SessionState, lang: &str) -> Vec<Value> {
             "pending": false,
             "misrecognized": t.misrecognized,
         }));
+        if !t.markup.is_empty() {
+            log.last_mut().expect("just pushed")["markup"] = t.markup.clone().into();
+        }
         log.push(json!({ "who": "character", "markup": t.reply }));
     }
     log

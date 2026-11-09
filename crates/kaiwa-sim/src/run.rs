@@ -261,6 +261,7 @@ pub const LIVE: &[&str] = &[
     "theo_fp",
     "theo_tp",
     "emi_keigo_detect",
+    "mara_own_furigana",
 ];
 
 /// Whether an explanation reads as German: a German function word or an umlaut, and no English
@@ -305,6 +306,20 @@ pub fn live_check(id: &str, run: &Run) -> Option<Outcome> {
             }
         }
         // /LL112/: every explanation in German, with a Japanese example.
+        // /LF110/, ADR-004: every line of the learner's with kanji gets the tutor's readings
+        // (the dictionary's are only the first guess).
+        "mara_own_furigana" => {
+            let kanji = |c: char| ('\u{4e00}'..='\u{9fff}').contains(&c);
+            for e in &run.events {
+                if let Event::Turn { say, outcome, .. } = e
+                    && say.chars().any(kanji)
+                    && outcome.own_markup.is_empty()
+                {
+                    return fail(format!("no reading from the tutor for: {say}"));
+                }
+            }
+            Some(Outcome::Pass)
+        }
         "mara_explain_de" => {
             for (_, o) in turns(run) {
                 for s in &o.shown {
@@ -833,6 +848,62 @@ mod tests {
         let s = script(journey);
         let run = play_with(&root(), &persona(persona_id), &s, t(&s), true).unwrap();
         live_check(id, &run).unwrap()
+    }
+
+    #[test]
+    fn mara_gets_the_tutors_readings_for_her_own_lines() {
+        // Every kanji run read as か: kana, and without the markup the line itself.
+        let read = |say: &str| {
+            let mut out = String::new();
+            let mut run = String::new();
+            for c in say.chars().chain(std::iter::once('。')) {
+                if ('\u{4e00}'..='\u{9fff}').contains(&c) {
+                    run.push(c);
+                    continue;
+                }
+                if !run.is_empty() {
+                    out.push_str(&format!("{{{run}|か}}"));
+                    run.clear();
+                }
+                out.push(c);
+            }
+            out.pop();
+            out
+        };
+        let with_readings = |script: &Script| -> Arc<dyn kaiwa_ai::ChatProvider> {
+            let fixtures: Vec<Value> = script
+                .steps
+                .iter()
+                .filter_map(|s| match s {
+                    Step::Say { say, .. } => Some(serde_json::json!({
+                        "learner": say, "reply": "そうですか。",
+                        "analysis": { "understood": true, "goals_met": [], "new_words": [],
+                                      "corrections": [], "reading": read(say) },
+                    })),
+                    _ => None,
+                })
+                .collect();
+            Arc::new(MockProvider::from_json(&Value::Array(fixtures).to_string()).unwrap())
+        };
+        assert_eq!(
+            live(
+                "mara",
+                "mara_first_talk",
+                "mara_own_furigana",
+                &with_readings
+            ),
+            Outcome::Pass
+        );
+        fn plain_tutor(script: &Script) -> Arc<dyn kaiwa_ai::ChatProvider> {
+            tutor(script, |_: usize, _: &str, _: &[String]| {
+                ("そうですか。".into(), vec![])
+            })
+        }
+        let without = plain_tutor;
+        assert!(matches!(
+            live("mara", "mara_first_talk", "mara_own_furigana", &without),
+            Outcome::Fail(_)
+        ));
     }
 
     #[test]
