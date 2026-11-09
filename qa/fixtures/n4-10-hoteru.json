@@ -1,7 +1,7 @@
 [
   {
     "learner": "部屋のエアコンがつかないんですが。",
-    "reply": "大変申し訳ございません。お部屋は何号室ですか。",
+    "reply": "{大変|たいへん}{申|もう}し{訳|わけ}ございません。お{部屋|へや}は何号室ですか。",
     "translation": {
       "de": "Das tut mir sehr leid. Welche Zimmernummer haben Sie?",
       "en": "I'm very sorry. What is your room number?"
@@ -17,7 +17,7 @@
   },
   {
     "learner": "部屋のエアコンをつかないんですが。",
-    "reply": "大変申し訳ございません。お部屋は何号室ですか。",
+    "reply": "{大変|たいへん}{申|もう}し{訳|わけ}ございません。お{部屋|へや}は何号室ですか。",
     "translation": {
       "de": "Das tut mir sehr leid. Welche Zimmernummer haben Sie?",
       "en": "I'm very sorry. What is your room number?"
@@ -42,7 +42,7 @@
   },
   {
     "learner": "スイッチを押したのに、動きません。",
-    "reply": "そうですか。すぐに係の者が参ります。",
+    "reply": "そうですか。すぐに{係|かかり}の{者|もの}が{参|まい}ります。",
     "translation": {
       "de": "Verstehe. Es kommt sofort jemand.",
       "en": "I see. Someone will come right away."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "見に来てもらえますか。",
-    "reply": "はい、五分ほどで伺います。",
+    "reply": "はい、五分ほどで{伺|うかが}います。",
     "translation": {
       "de": "Ja, in etwa fünf Minuten ist jemand bei Ihnen.",
       "en": "Yes, someone will be there in about five minutes."

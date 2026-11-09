@@ -1,10 +1,10 @@
 [
-  {"learner": "土曜日は買い物をします。", "reply": "そうですか。日曜日は美術館に行きませんか。",
+  {"learner": "土曜日は買い物をします。", "reply": "そうですか。{日曜|にちよう}日は{美術|びじゅつ}館に{行|い}きませんか。",
     "translation": { "de": "Ach so. Wollen wir am Sonntag ins Kunstmuseum gehen?", "en": "I see. Shall we go to the art museum on Sunday?" }, "analysis": {"understood": true, "goals_met": ["plan"], "corrections": [], "new_words": []}},
   {"learner": "いいですね。行きたいです。", "reply": "よかった。",
     "translation": { "de": "Schön.", "en": "Great." }, "analysis": {"understood": true, "goals_met": ["accept"], "corrections": [], "new_words": []}},
   {"learner": "何時に会いますか。", "reply": "十時はどうですか。",
     "translation": { "de": "Wie wäre es um zehn Uhr?", "en": "How about ten o'clock?" }, "analysis": {"understood": true, "goals_met": ["time"], "corrections": [], "new_words": []}},
-  {"learner": "駅の前で会いませんか。", "reply": "いいですね。じゃあ、駅の前で。",
+  {"learner": "駅の前で会いませんか。", "reply": "いいですね。じゃあ、{駅|えき}の前で。",
     "translation": { "de": "Gut. Dann vor dem Bahnhof.", "en": "Good. In front of the station, then." }, "analysis": {"understood": true, "goals_met": ["place"], "corrections": [], "new_words": []}}
 ]

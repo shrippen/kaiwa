@@ -1874,10 +1874,13 @@ dependencies = [
 name = "kaiwa-lang"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "lindera",
+ "lindera-dictionary",
  "rusqlite",
  "serde",
  "serde_json",
+ "tar",
  "thiserror 2.0.21",
  "unicode-normalization",
 ]

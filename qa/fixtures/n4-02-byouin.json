@@ -42,7 +42,7 @@
   },
   {
     "learner": "三日前から熱があるので、来ました。",
-    "reply": "熱は何度ぐらいですか。",
+    "reply": "{熱|ねつ}は何度ぐらいですか。",
     "translation": {
       "de": "Wie hoch ist das Fieber?",
       "en": "How high is the fever?"
@@ -58,7 +58,7 @@
   },
   {
     "learner": "三日前に熱があるので、来ました。",
-    "reply": "熱は何度ぐらいですか。",
+    "reply": "{熱|ねつ}は何度ぐらいですか。",
     "translation": {
       "de": "Wie hoch ist das Fieber?",
       "en": "How high is the fever?"
@@ -83,7 +83,7 @@
   },
   {
     "learner": "最近、仕事をしすぎました。",
-    "reply": "そうですか。少し休んだほうがいいですね。",
+    "reply": "そうですか。{少|すこ}し{休|やす}んだほうがいいですね。",
     "translation": {
       "de": "Verstehe. Sie sollten sich etwas ausruhen.",
       "en": "I see. You should rest a little."
@@ -99,7 +99,7 @@
   },
   {
     "learner": "最近、仕事をしすぎりました。",
-    "reply": "そうですか。少し休んだほうがいいですね。",
+    "reply": "そうですか。{少|すこ}し{休|やす}んだほうがいいですね。",
     "translation": {
       "de": "Verstehe. Sie sollten sich etwas ausruhen.",
       "en": "I see. You should rest a little."
@@ -124,7 +124,7 @@
   },
   {
     "learner": "薬は食後に飲まなければなりませんか。",
-    "reply": "いいえ、食後じゃなくてもいいですよ。でも、一日三回飲んでください。",
+    "reply": "いいえ、{食後|しょくご}じゃなくてもいいですよ。でも、一日三回{飲|の}んでください。",
     "translation": {
       "de": "Nein, nicht unbedingt nach dem Essen. Aber nehmen Sie es dreimal am Tag.",
       "en": "No, it doesn't have to be after meals. But take it three times a day."

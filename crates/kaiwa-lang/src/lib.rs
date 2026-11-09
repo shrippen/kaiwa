@@ -4,6 +4,7 @@
 pub mod accent;
 pub mod dict;
 pub mod pos;
+pub mod unidic;
 pub mod words;
 
 use std::path::PathBuf;
@@ -173,6 +174,46 @@ pub fn annotate(words: &Words, markup: &str) -> (Vec<Segment>, Vec<LineWord>) {
 /// whole word. Braces and bars in the text become full-width, so they stay text.
 pub fn furigana(words: &Words, text: &str) -> String {
     let safe = |t: &str| t.replace('{', "｛").replace('}', "｝").replace('|', "｜");
+    // The words with a fixed reading first; the dictionaries read the parts between them.
+    let mut out = String::new();
+    let mut rest = text;
+    while let Some((at, word, markup)) = FIXED
+        .iter()
+        .filter_map(|(w, m)| rest.find(w).map(|at| (at, *w, *m)))
+        .min_by_key(|(at, w, _)| (*at, std::cmp::Reverse(w.len())))
+    {
+        out.push_str(&read(words, &rest[..at], &safe));
+        out.push_str(markup);
+        rest = &rest[at + word.len()..];
+    }
+    out.push_str(&read(words, rest, &safe));
+    out
+}
+
+/// Words both dictionaries read wrong, with the reading people say (お父さん: UniDic ちち,
+/// 富士山: やま).
+const FIXED: &[(&str, &str)] = &[
+    ("お父さん", "お{父|とう}さん"),
+    ("お母さん", "お{母|かあ}さん"),
+    ("お兄さん", "お{兄|にい}さん"),
+    ("お姉さん", "お{姉|ねえ}さん"),
+    ("お祖父さん", "お{祖父|じい}さん"),
+    ("お祖母さん", "お{祖母|ばあ}さん"),
+    ("富士山", "{富士山|ふじさん}"),
+];
+
+fn read(words: &Words, text: &str, safe: &impl Fn(&str) -> String) -> String {
+    if text.is_empty() {
+        return String::new();
+    }
+    match unidic::tokens(text) {
+        Some(tokens) => with_unidic(text, &tokens, safe),
+        None => with_ipadic(words, text, safe),
+    }
+}
+
+/// [`furigana`] with IPADIC's readings, cautiously ([`unsure`]).
+fn with_ipadic(words: &Words, text: &str, safe: &impl Fn(&str) -> String) -> String {
     let mut out = String::new();
     let mut pos = 0;
     for w in words.words(text) {
@@ -202,10 +243,50 @@ pub fn complete(words: &Words, markup: &str) -> String {
         .collect()
 }
 
+/// [`furigana`] with UniDic's readings: a number or counter next to another one, or right
+/// after digits, has none (三本 さんぼん, 三千 さんぜん change together).
+fn with_unidic(text: &str, tokens: &[unidic::Token], safe: &impl Fn(&str) -> String) -> String {
+    let digits = |s: &str| {
+        !s.is_empty()
+            && s.chars().all(|c| {
+                c.is_ascii_digit() || ('０'..='９').contains(&c) || matches!(c, ',' | '，')
+            })
+            && s.chars()
+                .any(|c| c.is_ascii_digit() || ('０'..='９').contains(&c))
+    };
+    let joined = |i: usize, j: usize| tokens[i].end == tokens[j].start;
+    let mut out = String::new();
+    let mut pos = 0;
+    for (i, t) in tokens.iter().enumerate() {
+        if t.start < pos {
+            continue;
+        }
+        out.push_str(&safe(&text[pos..t.start]));
+        let next_to = |j: usize| {
+            (tokens[j].counted || digits(&tokens[j].surface))
+                && if j < i { joined(j, i) } else { joined(i, j) }
+        };
+        let group =
+            t.counted && ((i > 0 && next_to(i - 1)) || (i + 1 < tokens.len() && next_to(i + 1)));
+        let after_digits = i > 0 && digits(&tokens[i - 1].surface) && joined(i - 1, i);
+        // A suffix is read with the word before, which UniDic does not always see
+        // (中国人, 日本人: にん for じん).
+        let orphan = t.suffix;
+        let reading = match &t.reading {
+            Some(r) if !group && !after_digits && !orphan => r.as_str(),
+            _ => "",
+        };
+        out.push_str(&ruby(&safe(&t.surface), reading));
+        pos = t.end;
+    }
+    out.push_str(&safe(&text[pos..]));
+    out
+}
+
 /// Single kanji with several common readings on their own, as a noun (角 かど/かく, the
 /// weekdays 月火水木金土日, 上 うえ/じょう, 方 ほう/かた …). Until UniDic is there, they
 /// stay without a reading rather than with a guessed one.
-const AMBIGUOUS: &str = "角月火水木金土日上下方間今後中前先生人分外内家年時物気";
+pub(crate) const AMBIGUOUS: &str = "角月火水木金土日上下方間今後中前先生人分外内家年時物気";
 
 /// A word whose reading depends on the sentence more than IPADIC sees: 何 (なに or なん),
 /// names and places (固有名詞), and an [`AMBIGUOUS`] kanji standing alone as a noun.
@@ -213,6 +294,10 @@ fn unsure(w: &words::Word) -> bool {
     let mut chars = w.surface.chars();
     let single = matches!((chars.next(), chars.next()), (Some(c), None) if AMBIGUOUS.contains(c));
     w.surface.contains('何') || w.proper || single && w.pos == "名詞"
+}
+
+pub(crate) fn is_kanji(c: char) -> bool {
+    kanji(c)
 }
 
 fn kanji(c: char) -> bool {
@@ -251,7 +336,7 @@ fn ruby(surface: &str, reading: &str) -> String {
 
 /// The reading of each run: kana runs must match literally, a kanji run takes at least one
 /// kana. `None` when the reading does not fit.
-fn align(runs: &[(String, bool)], reading: &[char]) -> Option<Vec<String>> {
+pub(crate) fn align(runs: &[(String, bool)], reading: &[char]) -> Option<Vec<String>> {
     let Some(((run, is_kanji), rest)) = runs.split_first() else {
         return reading.is_empty().then(Vec::new);
     };
@@ -330,15 +415,22 @@ fn parse(markup: &str) -> Vec<Marked> {
 mod tests {
     use super::*;
 
+    /// The IPADIC path, whether UniDic is installed on this machine or not.
+    fn ipadic(words: &Words, text: &str) -> String {
+        with_ipadic(words, text, &|t: &str| {
+            t.replace('{', "｛").replace('}', "｝").replace('|', "｜")
+        })
+    }
+
     #[test]
     fn plain_text_gets_furigana_from_ipadic() {
         let words = Words::new().unwrap();
         assert_eq!(
-            furigana(&words, "駅まで歩いて五分です。"),
+            ipadic(&words, "駅まで歩いて五分です。"),
             "{駅|えき}まで{歩|ある}いて五分です。"
         );
         assert_eq!(
-            furigana(&words, "コーヒーが好きです。"),
+            ipadic(&words, "コーヒーが好きです。"),
             "コーヒーが{好|す}きです。"
         );
         // A number with its counter has no reliable reading from IPADIC (ににん, いちほん):
@@ -351,7 +443,7 @@ mod tests {
             ("二十歳です。", "二十歳"),
             ("一人で来ました。", "一人"),
         ] {
-            let m = furigana(&words, text);
+            let m = ipadic(&words, text);
             assert!(m.starts_with(group), "{m}");
         }
         // The same with the number in digits, as speech recognition often writes it.
@@ -362,15 +454,15 @@ mod tests {
             ("5分です。", "5分です"),
             ("1,000円です。", "1,000円です"),
         ] {
-            let m = furigana(&words, text);
+            let m = ipadic(&words, text);
             assert!(m.starts_with(head), "{m}");
         }
         // A noun not right after the digits keeps its reading.
-        assert_eq!(furigana(&words, "2時に駅です。"), "2時に{駅|えき}です。");
+        assert_eq!(ipadic(&words, "2時に駅です。"), "2時に{駅|えき}です。");
         // Kana only, latin letters and marks stay as they are; braces stay text.
-        assert_eq!(furigana(&words, "はい、OK {x}"), "はい、OK ｛x｝");
+        assert_eq!(ipadic(&words, "はい、OK {x}"), "はい、OK ｛x｝");
         // The markup reads back as the same text.
-        let (segs, _) = annotate(&words, &furigana(&words, "取り扱いに注意してください。"));
+        let (segs, _) = annotate(&words, &ipadic(&words, "取り扱いに注意してください。"));
         let text: String = segs.iter().map(|s| s.text.as_str()).collect();
         assert_eq!(text, "取り扱いに注意してください。");
     }
@@ -393,6 +485,30 @@ mod tests {
     }
 
     #[test]
+    fn a_comma_is_no_number_and_1tsu_is_a_counter() {
+        let words = Words::new().unwrap();
+        assert_eq!(ipadic(&words, "はい,駅です。"), "はい,{駅|えき}です。");
+        let w = words.words("1つください");
+        assert!(w.iter().any(|x| x.key == "くださる"), "{w:?}");
+        assert!(!w.iter().any(|x| x.key == "つる"), "{w:?}");
+        // The cut keeps the byte offsets of the whole text.
+        let text = "りんごを2つください。";
+        for x in words.words(text) {
+            assert_eq!(&text[x.start..x.end], x.surface);
+        }
+    }
+
+    #[test]
+    fn family_words_read_as_people_say_them() {
+        let words = Words::new().unwrap();
+        assert_eq!(
+            furigana(&words, "お父さんとお兄さんは？"),
+            "お{父|とう}さんとお{兄|にい}さんは？"
+        );
+        assert!(furigana(&words, "富士山に登りました。").starts_with("{富士山|ふじさん}に"));
+    }
+
+    #[test]
     fn readings_that_depend_on_the_sentence_are_left_out() {
         let words = Words::new().unwrap();
         for (text, head) in [
@@ -404,12 +520,12 @@ mod tests {
             ("月、水、金はどうですか。", "月、水、金はどうですか"),
             ("何曜日ですか。", "何"),
         ] {
-            let m = furigana(&words, text);
+            let m = ipadic(&words, text);
             assert!(m.starts_with(head), "{m}");
         }
         // A word of two kanji or a verb keeps its reading.
-        assert!(furigana(&words, "駅で食べました。").contains("{食|た}べ"));
-        assert!(furigana(&words, "仕事です。").contains("{仕事|しごと}"));
+        assert!(ipadic(&words, "駅で食べました。").contains("{食|た}べ"));
+        assert!(ipadic(&words, "仕事です。").contains("{仕事|しごと}"));
     }
 
     #[test]

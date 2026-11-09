@@ -96,6 +96,20 @@ fn lang() -> String {
         .unwrap_or_else(|_| "de".into())
 }
 
+/// Why the recognition could not check the recording, and where to fix it (Settings › Models).
+fn recognition_text(e: &kaiwa_speech::SpeechError, de: bool) -> String {
+    match (e, de) {
+        (kaiwa_speech::SpeechError::ModelLoad(_), true) => {
+            "ReazonSpeech lässt sich nicht laden. Unter „Modelle“ löschen und neu laden.".into()
+        }
+        (kaiwa_speech::SpeechError::ModelLoad(_), false) => {
+            "ReazonSpeech cannot be loaded. Delete it under “Models” and download it again.".into()
+        }
+        (e, true) => format!("Die Spracherkennung lässt sich nicht starten ({e})."),
+        (e, false) => format!("The recognition cannot start ({e})."),
+    }
+}
+
 /// The verdict in words: what it means and what to do.
 fn verdict_text(v: Verdict, de: bool) -> &'static str {
     match (v, de) {
@@ -243,7 +257,7 @@ impl qobject::MicTest {
                 }
                 Err(e) => {
                     v["recognition"] = "failed".into();
-                    v["why"] = crate::conversation::speech_text(&e, &lang).into();
+                    v["why"] = recognition_text(&e, lang == "de").into();
                 }
             }
             let _ = thread.queue(move |mut q| {
@@ -262,12 +276,13 @@ impl qobject::MicTest {
                 Ok(p) => self.as_mut().rust_mut().player = Some(p),
                 Err(e) => {
                     let text = crate::conversation::speech_text(&e, &lang());
+                    // The result stays; the speaker problem shows under it.
                     self.as_mut().set_error(QString::from(&text));
-                    self.as_mut().set_phase(ERROR);
                     return;
                 }
             }
         }
+        self.as_mut().set_error(QString::default());
         if let Some(p) = &self.player {
             p.silence();
             p.play(&rec.samples, rec.sample_rate);

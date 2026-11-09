@@ -1,7 +1,7 @@
 [
   {
     "learner": "誕生日おめでとう！",
-    "reply": "ありがとう！どうぞ、入って。",
+    "reply": "ありがとう！どうぞ、{入|はい}って。",
     "translation": {
       "de": "Danke! Komm rein.",
       "en": "Thanks! Come on in."
@@ -17,7 +17,7 @@
   },
   {
     "learner": "これ、プレゼントだよ。",
-    "reply": "わあ、うれしい！開けてもいい？",
+    "reply": "わあ、うれしい！{開|あ}けてもいい？",
     "translation": {
       "de": "Oh, wie schön! Darf ich es aufmachen?",
       "en": "Oh, how lovely! Can I open it?"
@@ -49,7 +49,7 @@
   },
   {
     "learner": "家族に何をもらったの？",
-    "reply": "母に、かわいいかばんをもらったよ。",
+    "reply": "{母|はは}に、かわいいかばんをもらったよ。",
     "translation": {
       "de": "Von meiner Mutter habe ich eine süße Tasche bekommen.",
       "en": "I got a cute bag from my mum."
@@ -65,7 +65,7 @@
   },
   {
     "learner": "家族に何をくれたの？",
-    "reply": "母に、かわいいかばんをもらったよ。",
+    "reply": "{母|はは}に、かわいいかばんをもらったよ。",
     "translation": {
       "de": "Von meiner Mutter habe ich eine süße Tasche bekommen.",
       "en": "I got a cute bag from my mum."

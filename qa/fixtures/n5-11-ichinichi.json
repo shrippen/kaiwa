@@ -1,7 +1,7 @@
 [
   {
     "learner": "毎朝、六時に起きます。",
-    "reply": "早いですね。わたしは八時です。",
+    "reply": "{早|はや}いですね。わたしは八時です。",
     "translation": {
       "de": "Früh! Ich um acht.",
       "en": "Early! I get up at eight."
@@ -17,7 +17,7 @@
   },
   {
     "learner": "仕事の前に、コーヒーを飲みます。",
-    "reply": "わたしも毎朝コーヒーを飲みます。",
+    "reply": "わたしも{毎朝|まいあさ}コーヒーを{飲|の}みます。",
     "translation": {
       "de": "Ich trinke auch jeden Morgen Kaffee.",
       "en": "I drink coffee every morning too."
@@ -33,7 +33,7 @@
   },
   {
     "learner": "仕事の前で、コーヒーを飲みます。",
-    "reply": "わたしも毎朝コーヒーを飲みます。",
+    "reply": "わたしも{毎朝|まいあさ}コーヒーを{飲|の}みます。",
     "translation": {
       "de": "Ich trinke auch jeden Morgen Kaffee.",
       "en": "I drink coffee every morning too."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "うちに帰ってから、晩ご飯を作ります。",
-    "reply": "えらいですね。何を作りますか。",
+    "reply": "えらいですね。{何|なん}を{作|つく}りますか。",
     "translation": {
       "de": "Toll. Was kochst du?",
       "en": "Good for you. What do you cook?"
@@ -74,7 +74,7 @@
   },
   {
     "learner": "うちに帰りてから、晩ご飯を作ります。",
-    "reply": "えらいですね。何を作りますか。",
+    "reply": "えらいですね。{何|なん}を{作|つく}りますか。",
     "translation": {
       "de": "Toll. Was kochst du?",
       "en": "Good for you. What do you cook?"

@@ -91,7 +91,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. | app, backend, store | Code | – |
 | /LL010/ | M | Antwortlatenz (Sprechende → erster Ton der KI): p50 ≤ 1,5 s und p95 ≤ … | app, backend | geprüft | 1 von 3 automatisch grün: `lena_responsive`, `lena_suggest_smaller`, `theo_latency` |
 | /LL011/ | M | Das Plasmoid öffnet in ≤ 300 ms (Dienst läuft) und ist ≤ 2 s nach … | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_fast` |
-| /LL012/ | S | Speicher im Leerlauf ≤ 150 MB (ohne geladene Modelle). | app, store | Code | 0 von 1 automatisch grün: `lena_idle_memory` |
+| /LL012/ | S | Speicher im Leerlauf ≤ 150 MB (ohne geladene Modelle). | app, lang, store | Code | 0 von 1 automatisch grün: `lena_idle_memory` |
 | /LL020/ | M | Profil-Ansicht, Lernpfad und Statistik laden in ≤ 500 ms bei der … | store | geprüft | 1 von 1 automatisch grün: `lena_stats_fast` |
 | /LL100/ | M | Die STT-Zeichenfehlerrate (CER) für Lernendensprache auf dem … | speech | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LL110/ | M | Fehlalarmrate der Verbesserungsvorschläge (Vorschlag bei korrekter … | core | Code | 0 von 1 automatisch grün: `theo_fp` |

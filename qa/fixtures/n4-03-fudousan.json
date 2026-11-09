@@ -1,7 +1,7 @@
 [
   {
     "learner": "通勤のために、駅から近くて静かな部屋がいいです。",
-    "reply": "かしこまりました。では、こちらの二つはいかがですか。家賃はどちらも八万円です。",
+    "reply": "かしこまりました。では、こちらの二つはいかがですか。{家賃|やちん}はどちらも八万円です。",
     "translation": {
       "de": "Sehr gern. Wie wären diese beiden? Die Miete ist bei beiden 80.000 Yen.",
       "en": "Certainly. How about these two? The rent is 80,000 yen for both."
@@ -42,7 +42,7 @@
   },
   {
     "learner": "こちらのほうが駅から行きやすいですね。",
-    "reply": "そうですね。駅から歩いて五分です。あちらのほうが少し広いですが。",
+    "reply": "そうですね。{駅|えき}から{歩|ある}いて五分です。あちらのほうが{少|すこ}し{広|ひろ}いですが。",
     "translation": {
       "de": "Ja, fünf Minuten zu Fuß vom Bahnhof. Die andere ist etwas größer.",
       "en": "Yes, five minutes' walk from the station. The other one is a little bigger, though."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "こちらのほうが駅から行くやすいですね。",
-    "reply": "そうですね。駅から歩いて五分です。",
+    "reply": "そうですね。{駅|えき}から{歩|ある}いて五分です。",
     "translation": {
       "de": "Ja, fünf Minuten zu Fuß vom Bahnhof.",
       "en": "Yes, five minutes' walk from the station."
@@ -83,7 +83,7 @@
   },
   {
     "learner": "ごみの出し方はどこに書いてありますか。",
-    "reply": "規則はこの紙に書いてあります。燃えるごみは月曜日と木曜日です。",
+    "reply": "{規則|きそく}はこの{紙|かみ}に{書|か}いてあります。{燃|も}えるごみは{月曜|げつよう}日と{木曜|もくよう}日です。",
     "translation": {
       "de": "Die Regeln stehen auf diesem Blatt. Brennbarer Müll ist montags und donnerstags.",
       "en": "The rules are on this sheet. Burnable rubbish is on Mondays and Thursdays."
@@ -99,7 +99,7 @@
   },
   {
     "learner": "じゃあ、来週までに書類を準備しておきます。",
-    "reply": "ありがとうございます。では、お待ちしております。",
+    "reply": "ありがとうございます。では、お{待|ま}ちしております。",
     "translation": {
       "de": "Vielen Dank. Dann erwarte ich Sie.",
       "en": "Thank you. I'll be expecting you then."
@@ -115,7 +115,7 @@
   },
   {
     "learner": "じゃあ、来週までに書類を準備しています。",
-    "reply": "ありがとうございます。では、お待ちしております。",
+    "reply": "ありがとうございます。では、お{待|ま}ちしております。",
     "translation": {
       "de": "Vielen Dank. Dann erwarte ich Sie.",
       "en": "Thank you. I'll be expecting you then."

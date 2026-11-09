@@ -1,7 +1,7 @@
 [
   {
     "learner": "沖縄に行こうと思ってる。",
-    "reply": "いいね！海、きれいだよね。",
+    "reply": "いいね！{海|うみ}、きれいだよね。",
     "translation": {
       "de": "Super! Das Meer ist so schön.",
       "en": "Nice! The sea is beautiful."
@@ -17,7 +17,7 @@
   },
   {
     "learner": "沖縄に行くと思ってる。",
-    "reply": "いいね！海、きれいだよね。",
+    "reply": "いいね！{海|うみ}、きれいだよね。",
     "translation": {
       "de": "Super! Das Meer ist so schön.",
       "en": "Nice! The sea is beautiful."
@@ -42,7 +42,7 @@
   },
   {
     "learner": "今年は一人で行くことにしたんだ。",
-    "reply": "へえ、もう決めたんだ。一人旅、楽しそう。",
+    "reply": "へえ、もう{決|き}めたんだ。{一人|ひとり}{旅|たび}、{楽|たの}しそう。",
     "translation": {
       "de": "Wow, schon entschieden? Allein reisen klingt toll.",
       "en": "Wow, decided already? Travelling alone sounds fun."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "来週までにホテルを予約するつもり。",
-    "reply": "早く予約したほうがいいよ。夏は高いから。",
+    "reply": "{早|はや}く{予約|よやく}したほうがいいよ。{夏|なつ}は{高|たか}いから。",
     "translation": {
       "de": "Buch lieber früh, im Sommer wird es teuer.",
       "en": "Better book early, it gets pricey in summer."
@@ -74,7 +74,7 @@
   },
   {
     "learner": "来週にホテルを予約するつもり。",
-    "reply": "早く予約したほうがいいよ。夏は高いから。",
+    "reply": "{早|はや}く{予約|よやく}したほうがいいよ。{夏|なつ}は{高|たか}いから。",
     "translation": {
       "de": "Buch lieber früh, im Sommer wird es teuer.",
       "en": "Better book early, it gets pricey in summer."
@@ -99,7 +99,7 @@
   },
   {
     "learner": "遠藤さんは？どこか行く？",
-    "reply": "わたしは実家に帰る予定。",
+    "reply": "わたしは{実家|じっか}に{帰|かえ}る{予定|よてい}。",
     "translation": {
       "de": "Ich fahre zu meinen Eltern.",
       "en": "I'm going back to my parents'."

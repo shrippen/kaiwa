@@ -17,7 +17,7 @@
   },
   {
     "learner": "近くに公園があります。",
-    "reply": "いいですね。散歩しますか。",
+    "reply": "いいですね。{散歩|さんぽ}しますか。",
     "translation": {
       "de": "Schön. Gehst du spazieren?",
       "en": "Nice. Do you go for walks?"
@@ -33,7 +33,7 @@
   },
   {
     "learner": "近くに公園がいます。",
-    "reply": "いいですね。散歩しますか。",
+    "reply": "いいですね。{散歩|さんぽ}しますか。",
     "translation": {
       "de": "Schön. Gehst du spazieren?",
       "en": "Nice. Do you go for walks?"
@@ -58,7 +58,7 @@
   },
   {
     "learner": "部屋は小さいですが、静かです。",
-    "reply": "静かなのがいちばんですね。",
+    "reply": "{静|しず}かなのがいちばんですね。",
     "translation": {
       "de": "Ruhig ist das Wichtigste.",
       "en": "Quiet is the best."
@@ -74,7 +74,7 @@
   },
   {
     "learner": "部屋は小さいですが、静かなです。",
-    "reply": "静かなのがいちばんですね。",
+    "reply": "{静|しず}かなのがいちばんですね。",
     "translation": {
       "de": "Ruhig ist das Wichtigste.",
       "en": "Quiet is the best."

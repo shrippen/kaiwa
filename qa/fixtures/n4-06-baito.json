@@ -1,7 +1,7 @@
 [
   {
     "learner": "英語が話せます。日本語も少し話せます。",
-    "reply": "そうですか。英語が話せると助かります。",
+    "reply": "そうですか。{英語|えいご}が{話|はな}せると{助|たす}かります。",
     "translation": {
       "de": "Gut. Englisch hilft uns sehr.",
       "en": "Good. English is a great help to us."
@@ -17,7 +17,7 @@
   },
   {
     "learner": "英語が話せます。日本語も少し話されます。",
-    "reply": "そうですか。英語が話せると助かります。",
+    "reply": "そうですか。{英語|えいご}が{話|はな}せると{助|たす}かります。",
     "translation": {
       "de": "Gut. Englisch hilft uns sehr.",
       "en": "Good. English is a great help to us."
@@ -99,7 +99,7 @@
   },
   {
     "learner": "勉強できるように、週に三回働きたいです。",
-    "reply": "分かりました。月、水、金はどうですか。",
+    "reply": "{分|わ}かりました。月、水、金はどうですか。",
     "translation": {
       "de": "In Ordnung. Wie wäre Montag, Mittwoch, Freitag?",
       "en": "All right. How about Monday, Wednesday and Friday?"

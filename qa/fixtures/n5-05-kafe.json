@@ -17,7 +17,7 @@
   },
   {
     "learner": "大きいのをおねがいします。",
-    "reply": "かしこまりました。ほかに何かいかがですか。",
+    "reply": "かしこまりました。ほかに{何|なん}かいかがですか。",
     "translation": {
       "de": "Sehr gern. Darf es noch etwas sein?",
       "en": "Certainly. Would you like anything else?"
@@ -33,7 +33,7 @@
   },
   {
     "learner": "それと、チーズケーキをひとつください。",
-    "reply": "店内でお召し上がりですか。",
+    "reply": "{店内|てんない}でお{召|め}し{上|あ}がりですか。",
     "translation": {
       "de": "Zum Hieressen?",
       "en": "Is that for here?"
@@ -49,7 +49,7 @@
   },
   {
     "learner": "ここで食べます。",
-    "reply": "かしこまりました。少々お待ちください。",
+    "reply": "かしこまりました。{少々|しょうしょう}お{待|ま}ちください。",
     "translation": {
       "de": "Sehr gern. Einen Moment bitte.",
       "en": "Certainly. One moment, please."
@@ -65,7 +65,7 @@
   },
   {
     "learner": "紅茶をください。",
-    "reply": "紅茶ですね。サイズはどうしますか。",
+    "reply": "{紅茶|こうちゃ}ですね。サイズはどうしますか。",
     "translation": {
       "de": "Einen Tee. Welche Größe?",
       "en": "A tea. What size?"

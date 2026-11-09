@@ -6,7 +6,7 @@
 |---|---|---|---|
 | Wörterbuch | JMdict (EDRDG) | CC BY-SA 4.0 | Namensnennung in „Über“, abgeleitete Wörterbuch-DB als eigenes Datenpaket unter CC BY-SA |
 | Kanji | KANJIDIC2 (EDRDG) | CC BY-SA 4.0 | wie JMdict |
-| Morphologie und Akzentkern | UniDic (NINJAL) | BSD-3 / GPL / LGPL (wählbar) | BSD-3 wählen; `aType` liefert Akzentkerne |
+| Morphologie und Akzentkern | UniDic (NINJAL) | BSD-3 / GPL / LGPL (wählbar) | BSD-3 wählen; `aType` liefert Akzentkerne. Für Furigana als Download (lindera.dev, auf dem Rechner gebaut, ADR-004), Lizenz daneben als `LICENSE-UNIDIC`, in `NOTICE` |
 | Morphologie-Engine | vibrato oder lindera (Rust) | MIT/Apache-2.0 | unproblematisch |
 | Morphologie für die Übergangsstimme | IPADIC (NAIST, über lindera einkompiliert) | IPADIC-Lizenz (frei, mit Hinweispflicht) | in `NOTICE`; nur Lesarten, kein Akzent |
 | Lautumschrift-Tabelle | misaki (Apache-2.0), aus cutlet (MIT) | Apache-2.0 / MIT | Herkunft im Quelltext (`g2p/table.rs`), in `NOTICE` |

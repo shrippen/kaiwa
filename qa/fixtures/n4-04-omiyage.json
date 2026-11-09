@@ -1,7 +1,7 @@
 [
   {
     "learner": "これ、ドイツのお土産です。どうぞ。",
-    "reply": "わあ、ありがとう。チョコレートですか。家族みんなでいただきます。",
+    "reply": "わあ、ありがとう。チョコレートですか。{家族|かぞく}みんなでいただきます。",
     "translation": {
       "de": "Oh, danke. Schokolade? Die essen wir mit der ganzen Familie.",
       "en": "Oh, thank you. Chocolate? We'll share it with the whole family."
@@ -17,7 +17,7 @@
   },
   {
     "learner": "ベルリンで、友だちが引っ越しを手伝ってくれました。",
-    "reply": "いい友だちですね。",
+    "reply": "いい{友|とも}だちですね。",
     "translation": {
       "de": "Was für gute Freunde.",
       "en": "What good friends."
@@ -33,7 +33,7 @@
   },
   {
     "learner": "ベルリンで、友だちが引っ越しを手伝ってあげました。",
-    "reply": "いい友だちですね。",
+    "reply": "いい{友|とも}だちですね。",
     "translation": {
       "de": "Was für gute Freunde.",
       "en": "What good friends."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "姉に日本の本をあげました。",
-    "reply": "お姉さん、喜んだでしょう。",
+    "reply": "お{姉|ねえ}さん、{喜|よろこ}んだでしょう。",
     "translation": {
       "de": "Deine Schwester hat sich sicher gefreut.",
       "en": "Your sister must have been pleased."
@@ -74,7 +74,7 @@
   },
   {
     "learner": "姉に日本の本をくれました。",
-    "reply": "お姉さん、喜んだでしょう。",
+    "reply": "お{姉|ねえ}さん、{喜|よろこ}んだでしょう。",
     "translation": {
       "de": "Deine Schwester hat sich sicher gefreut.",
       "en": "Your sister must have been pleased."
@@ -99,7 +99,7 @@
   },
   {
     "learner": "空港まで迎えに来てくれて、ありがとうございました。",
-    "reply": "いえいえ。無事に帰ってきてよかったです。",
+    "reply": "いえいえ。{無事|ぶじ}に{帰|かえ}ってきてよかったです。",
     "translation": {
       "de": "Gern geschehen. Schön, dass du gut angekommen bist.",
       "en": "Not at all. I'm glad you got back safely."

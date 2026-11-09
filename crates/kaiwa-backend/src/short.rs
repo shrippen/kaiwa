@@ -173,8 +173,8 @@ mod tests {
             .expect("demo item");
         assert_eq!(
             coffee.cue.as_deref(),
-            Some("プロデューサーですか。すごいですね。何が好きですか。"),
-            "the recorded line before the mistake"
+            Some("プロデューサーですか。すごいですね。{何|なん}が{好|す}きですか。"),
+            "the recorded line before the mistake, with the tutor's readings"
         );
         assert_eq!(coffee.original.as_deref(), Some("コーヒーを好きです"));
         let v = b.answer_review("コーヒーが好きです", "コーヒーを好きです。", false, now);

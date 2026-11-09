@@ -36,6 +36,8 @@ Kirigami.ScrollablePage {
 
     Conversation {
         id: conv
+        // The talk ended meanwhile: nothing left to leave.
+        onFinishedChanged: if (finished) leaveDialog.close()
         Component.onCompleted: page.placement ? startPlacement() : page.resume ? resume() : start(page.scenarioId)
     }
 
@@ -594,10 +596,6 @@ Kirigami.ScrollablePage {
         Connections {
             target: page
             function onPlacementOverChanged() { if (page.placementOver) leaveDialog.close() }
-        }
-        Connections {
-            target: conv
-            function onFinishedChanged() { if (conv.finished) leaveDialog.close() }
         }
         footerStart: [
             KanteButton {

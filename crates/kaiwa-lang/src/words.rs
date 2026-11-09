@@ -62,7 +62,34 @@ impl Words {
         })
     }
 
+    /// The tokens of `text`; a つ right after digits (1つ, ２つ) is cut off first, as IPADIC
+    /// otherwise reads it into the next word (1つください: a verb つください).
     fn tokens(&self, text: &str) -> Vec<Token> {
+        let digit = |c: char| c.is_ascii_digit() || ('０'..='９').contains(&c);
+        let mut cuts = Vec::new();
+        let mut prev = None;
+        for (i, c) in text.char_indices() {
+            if c == 'つ' && prev.is_some_and(digit) {
+                cuts.push(i);
+                cuts.push(i + c.len_utf8());
+            }
+            prev = Some(c);
+        }
+        if cuts.is_empty() {
+            return self.tokens_of(text, 0);
+        }
+        let mut out = Vec::new();
+        let mut from = 0;
+        for cut in cuts.into_iter().chain([text.len()]) {
+            if cut > from {
+                out.extend(self.tokens_of(&text[from..cut], from));
+            }
+            from = cut;
+        }
+        out
+    }
+
+    fn tokens_of(&self, text: &str, offset: usize) -> Vec<Token> {
         let Ok(tokens) = self.segmenter.segment(Cow::Borrowed(text)) else {
             return Vec::new();
         };
@@ -70,7 +97,7 @@ impl Words {
             .into_iter()
             .map(|mut t| {
                 let surface = t.surface.to_string();
-                let (start, end) = (t.byte_start, t.byte_end);
+                let (start, end) = (t.byte_start + offset, t.byte_end + offset);
                 let details: Vec<String> = t.details().iter().map(|s| s.to_string()).collect();
                 let field = |i: usize| {
                     details
@@ -108,11 +135,10 @@ impl Words {
         for t in self.tokens(text) {
             if t.pos == "記号" || t.pos.is_empty() || !t.surface.chars().any(japanese) {
                 prev = None;
-                digits_end = t
-                    .surface
-                    .chars()
-                    .all(|c| c.is_ascii_digit() || ('０'..='９').contains(&c) || c == ',')
-                    .then_some(t.end);
+                let digit = |c: char| c.is_ascii_digit() || ('０'..='９').contains(&c);
+                digits_end = (t.surface.chars().all(|c| digit(c) || c == ',')
+                    && t.surface.chars().any(digit))
+                .then_some(t.end);
                 continue;
             }
             // IPADIC cuts kana it does not know before a small kana (し・ゅみ for しゅみ); no

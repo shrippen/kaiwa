@@ -1,7 +1,7 @@
 [
   {
     "learner": "ごめん、風邪をひいたんだ。",
-    "reply": "えっ、大丈夫？熱はある？",
+    "reply": "えっ、{大丈夫|だいじょうぶ}？{熱|ねつ}はある？",
     "translation": {
       "de": "Oh nein, alles okay? Hast du Fieber?",
       "en": "Oh no, are you okay? Do you have a fever?"
@@ -17,7 +17,7 @@
   },
   {
     "learner": "ごめん、風邪をひいたんです。",
-    "reply": "えっ、大丈夫？熱はある？",
+    "reply": "えっ、{大丈夫|だいじょうぶ}？{熱|ねつ}はある？",
     "translation": {
       "de": "Oh nein, alles okay? Hast du Fieber?",
       "en": "Oh no, are you okay? Do you have a fever?"
@@ -42,7 +42,7 @@
   },
   {
     "learner": "熱があるから、明日はだめなんだ。",
-    "reply": "そっか、残念。無理しないでね。",
+    "reply": "そっか、{残念|ざんねん}。{無理|むり}しないでね。",
     "translation": {
       "de": "Ach so, schade. Übernimm dich nicht.",
       "en": "I see, too bad. Don't push yourself."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "来週の土曜日はどう？",
-    "reply": "うん、いいよ。じゃあ、来週ね。",
+    "reply": "うん、いいよ。じゃあ、{来週|らいしゅう}ね。",
     "translation": {
       "de": "Ja, passt. Dann nächste Woche.",
       "en": "Yes, fine. Next week then."
@@ -74,7 +74,7 @@
   },
   {
     "learner": "ありがとう。ゆっくり休むね。",
-    "reply": "うん、お大事に！",
+    "reply": "うん、お{大事|だいじ}に！",
     "translation": {
       "de": "Ja, gute Besserung!",
       "en": "Yes, get well soon!"

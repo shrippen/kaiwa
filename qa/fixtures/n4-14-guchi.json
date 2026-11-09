@@ -1,7 +1,7 @@
 [
   {
     "learner": "帰りに雨に降られて、びしょびしょだよ。",
-    "reply": "うわ、大変だったね。",
+    "reply": "うわ、{大変|たいへん}だったね。",
     "translation": {
       "de": "Oh je, das war hart.",
       "en": "Oh no, that was rough."
@@ -17,7 +17,7 @@
   },
   {
     "learner": "遅刻して、部長に怒られた。",
-    "reply": "それは災難だったね。",
+    "reply": "それは{災難|さいなん}だったね。",
     "translation": {
       "de": "Pech gehabt.",
       "en": "That was bad luck."
@@ -33,7 +33,7 @@
   },
   {
     "learner": "遅刻して、部長が怒られた。",
-    "reply": "それは災難だったね。",
+    "reply": "それは{災難|さいなん}だったね。",
     "translation": {
       "de": "Pech gehabt.",
       "en": "That was bad luck."

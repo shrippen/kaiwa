@@ -1,7 +1,7 @@
 [
-  {"learner": "二人です。", "reply": "こちらへどうぞ。ご注文はお決まりですか。",
+  {"learner": "二人です。", "reply": "こちらへどうぞ。ご{注文|ちゅうもん}はお{決|き}まりですか。",
     "translation": { "de": "Hier entlang, bitte. Haben Sie schon gewählt?", "en": "This way, please. Are you ready to order?" }, "analysis": {"understood": true, "goals_met": ["people"], "corrections": [], "new_words": []}},
-  {"learner": "ラーメンを二つください。", "reply": "お飲み物はいかがですか。",
+  {"learner": "ラーメンを二つください。", "reply": "お{飲|の}み{物|もの}はいかがですか。",
     "translation": { "de": "Möchten Sie etwas trinken?", "en": "Would you like something to drink?" }, "analysis": {"understood": true, "goals_met": ["order"], "corrections": [], "new_words": []}},
   {"learner": "お水を二つおねがいします。", "reply": "かしこまりました。",
     "translation": { "de": "Sehr gern.", "en": "Certainly." }, "analysis": {"understood": true, "goals_met": ["drinks"], "corrections": [], "new_words": []}},

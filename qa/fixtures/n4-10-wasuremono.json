@@ -1,7 +1,7 @@
 [
   {
     "learner": "電車に財布を忘れてしまったんです。",
-    "reply": "そうですか。忘れ物ですね。どんな財布ですか。",
+    "reply": "そうですか。{忘|わす}れ{物|もの}ですね。どんな{財布|さいふ}ですか。",
     "translation": {
       "de": "Verstehe, etwas liegen gelassen. Was für ein Portemonnaie?",
       "en": "I see, something left behind. What kind of wallet?"
@@ -17,7 +17,7 @@
   },
   {
     "learner": "電車に財布を忘れてしまいたんです。",
-    "reply": "そうですか。どんな財布ですか。",
+    "reply": "そうですか。どんな{財布|さいふ}ですか。",
     "translation": {
       "de": "Verstehe. Was für ein Portemonnaie?",
       "en": "I see. What kind of wallet?"
@@ -42,7 +42,7 @@
   },
   {
     "learner": "黒くて小さい財布で、中にカードが入っています。",
-    "reply": "分かりました。確認しますので、少々お待ちください。",
+    "reply": "{分|わ}かりました。{確認|かくにん}しますので、{少々|しょうしょう}お{待|ま}ちください。",
     "translation": {
       "de": "Verstanden. Ich sehe nach, einen Moment bitte.",
       "en": "Understood. I'll check, one moment please."
@@ -58,7 +58,7 @@
   },
   {
     "learner": "黒くて小さい財布で、中にカードを入っています。",
-    "reply": "分かりました。確認しますので、少々お待ちください。",
+    "reply": "{分|わ}かりました。{確認|かくにん}しますので、{少々|しょうしょう}お{待|ま}ちください。",
     "translation": {
       "de": "Verstanden. Ich sehe nach, einen Moment bitte.",
       "en": "Understood. I'll check, one moment please."
@@ -83,7 +83,7 @@
   },
   {
     "learner": "十時ごろ、渋谷行きの電車でした。",
-    "reply": "十時ごろの渋谷行きですね。ありました、こちらですか。",
+    "reply": "十時ごろの{渋谷|しぶや}行きですね。ありました、こちらですか。",
     "translation": {
       "de": "Gegen zehn Richtung Shibuya. Da ist es – ist es dieses?",
       "en": "Around ten towards Shibuya. Here it is – is this it?"
@@ -99,7 +99,7 @@
   },
   {
     "learner": "もっと気をつければよかったです。",
-    "reply": "見つかってよかったですね。",
+    "reply": "{見|み}つかってよかったですね。",
     "translation": {
       "de": "Gut, dass es gefunden wurde.",
       "en": "Good thing it was found."

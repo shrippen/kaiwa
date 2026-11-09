@@ -229,6 +229,15 @@ QQC2.ScrollView {
                     : micResult.r.heard.length > 0 ? page.t("Verstanden: ", "Understood: ") + micResult.r.heard
                     : page.t("Die Spracherkennung hat nichts verstanden.", "The recognition understood nothing.")
             }
+            // A speaker problem while listening back; the result above stays.
+            Text {
+                visible: mic.phase !== 4 && mic.error.length > 0
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                color: KanteStyle.negativeTextColor
+                font: KanteStyle.defaultFont
+                text: mic.error
+            }
         }
         // /LF320/: on by default (L-01); without the model it says where to get it (F-08).
         Row {

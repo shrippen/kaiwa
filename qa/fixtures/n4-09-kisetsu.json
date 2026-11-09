@@ -1,7 +1,7 @@
 [
   {
     "learner": "そうですね。朝と夜は寒くなってきました。",
-    "reply": "ええ。もうすぐ秋ですね。",
+    "reply": "ええ。もうすぐ{秋|あき}ですね。",
     "translation": {
       "de": "Ja. Bald ist Herbst.",
       "en": "Yes. Autumn's nearly here."
@@ -17,7 +17,7 @@
   },
   {
     "learner": "そうですね。朝と夜は寒いになってきました。",
-    "reply": "ええ。もうすぐ秋ですね。",
+    "reply": "ええ。もうすぐ{秋|あき}ですね。",
     "translation": {
       "de": "Ja. Bald ist Herbst.",
       "en": "Yes. Autumn's nearly here."
@@ -42,7 +42,7 @@
   },
   {
     "learner": "お祭りでは、何をするんですか。",
-    "reply": "おどったり、屋台で食べたりします。夜は花火もありますよ。",
+    "reply": "おどったり、{屋台|やたい}で{食|た}べたりします。{夜|よる}は{花火|はなび}もありますよ。",
     "translation": {
       "de": "Man tanzt, isst an den Ständen, und abends gibt es Feuerwerk.",
       "en": "People dance and eat at the stalls, and there are fireworks at night."
@@ -74,7 +74,7 @@
   },
   {
     "learner": "浴衣を着てみたいです。",
-    "reply": "いいですね。娘のを貸しましょうか。",
+    "reply": "いいですね。{娘|むすめ}のを{貸|か}しましょうか。",
     "translation": {
       "de": "Schön. Soll ich dir einen von meiner Tochter leihen?",
       "en": "Nice. Shall I lend you one of my daughter's?"
@@ -90,7 +90,7 @@
   },
   {
     "learner": "浴衣を着るみたいです。",
-    "reply": "いいですね。娘のを貸しましょうか。",
+    "reply": "いいですね。{娘|むすめ}のを{貸|か}しましょうか。",
     "translation": {
       "de": "Schön. Soll ich dir einen von meiner Tochter leihen?",
       "en": "Nice. Shall I lend you one of my daughter's?"

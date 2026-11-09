@@ -33,6 +33,14 @@ pub enum Source {
         url: &'static str,
         keep: &'static [&'static str],
     },
+    /// An archive built into the model on this computer after the download (UniDic: the
+    /// source dictionary into lindera's format); `build(archive, dir)` removes the archive.
+    Built {
+        archive: Remote,
+        url: &'static str,
+        build: fn(&Path, &Path) -> Result<(), String>,
+        made: &'static [&'static str],
+    },
 }
 
 /// A model the app can offer to download.
@@ -54,7 +62,7 @@ impl Model {
     pub fn download_bytes(&self) -> u64 {
         match self.source {
             Source::Files { files, .. } => files.iter().map(|f| f.bytes).sum(),
-            Source::Archive { archive, .. } => archive.bytes,
+            Source::Archive { archive, .. } | Source::Built { archive, .. } => archive.bytes,
         }
     }
 
@@ -68,6 +76,7 @@ impl Model {
         match self.source {
             Source::Files { files, .. } => files.iter().all(|f| dir.join(f.name).exists()),
             Source::Archive { keep, .. } => keep.iter().all(|f| dir.join(f).exists()),
+            Source::Built { made, .. } => made.iter().all(|f| dir.join(f).exists()),
         }
     }
 }
@@ -103,9 +112,10 @@ const KOKORO_FILES: &[Remote] = &[
     },
 ];
 
-/// The models: speech recognition, the interim voice, the mora check, and the dictionary
-/// (kaiwa-data, L-06; not speech, but downloaded the same way, M-03).
-pub const MODELS: [Model; 4] = [
+/// The models: speech recognition, the interim voice, the mora check, the dictionary
+/// (kaiwa-data, L-06; not speech, but downloaded the same way, M-03) and the readings for
+/// furigana (UniDic, ADR-004).
+pub const MODELS: [Model; 5] = [
     Model {
         dir: REAZONSPEECH,
         name: "ReazonSpeech",
@@ -165,6 +175,23 @@ pub const MODELS: [Model; 4] = [
             keep: &["kaiwa-dict.sqlite", "NOTICE", "LICENSE-DATA"],
         },
     },
+    Model {
+        dir: kaiwa_lang::unidic::DIR,
+        name: "UniDic",
+        licence: "BSD-3-Clause",
+        origin: "lindera.dev (UniDic 2.1.2, NINJAL)",
+        disk_bytes: kaiwa_lang::unidic::DISK_BYTES,
+        source: Source::Built {
+            archive: Remote {
+                name: kaiwa_lang::unidic::ARCHIVE,
+                bytes: kaiwa_lang::unidic::ARCHIVE_BYTES,
+                sha256: kaiwa_lang::unidic::ARCHIVE_SHA256,
+            },
+            url: kaiwa_lang::unidic::URL,
+            build: kaiwa_lang::unidic::build,
+            made: kaiwa_lang::unidic::BUILT,
+        },
+    },
 ];
 
 /// The unpacked dictionary with its licence files.
@@ -180,6 +207,8 @@ pub enum DownloadError {
     NotInArchive(String),
     #[error("stopped")]
     Stopped,
+    #[error("building it failed: {0}")]
+    Build(String),
     #[error("{0}")]
     Io(#[from] io::Error),
 }
@@ -290,6 +319,19 @@ pub fn download(
             Ok(())
         }
         Source::Archive { archive, url, keep } => unpack(url, &archive, keep, &dir, progress, stop),
+        Source::Built {
+            archive,
+            url,
+            build,
+            ..
+        } => {
+            let file = dir.join(archive.name);
+            if !file.exists() {
+                fetch_file(url, &archive, &dir, 0, progress, stop)?;
+            }
+            progress(archive.bytes);
+            build(&file, &dir).map_err(DownloadError::Build)
+        }
     }
 }
 
@@ -359,7 +401,7 @@ mod tests {
         for m in MODELS {
             let files: Vec<Remote> = match m.source {
                 Source::Files { files, .. } => files.to_vec(),
-                Source::Archive { archive, .. } => vec![archive],
+                Source::Archive { archive, .. } | Source::Built { archive, .. } => vec![archive],
             };
             for f in files {
                 assert_eq!(f.sha256.len(), 64, "{}", f.name);

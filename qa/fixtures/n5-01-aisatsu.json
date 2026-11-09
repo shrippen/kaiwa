@@ -1,7 +1,7 @@
 [
   {
     "learner": "おはようございます。",
-    "reply": "今日は寒くないですね。",
+    "reply": "{今日|きょう}は{寒|さむ}くないですね。",
     "translation": {
       "de": "Heute ist es nicht kalt, nicht wahr?",
       "en": "It isn't cold today, is it?"
@@ -17,7 +17,7 @@
   },
   {
     "learner": "そうですね。いい天気ですね。",
-    "reply": "ええ、本当に。あ、荷物を預かりましたよ。",
+    "reply": "ええ、{本当|ほんとう}に。あ、{荷物|にもつ}を{預|あず}かりましたよ。",
     "translation": {
       "de": "Ja, wirklich. Ach, ich habe ein Paket für Sie angenommen.",
       "en": "Yes, really. Oh, I took in a parcel for you."
@@ -33,7 +33,7 @@
   },
   {
     "learner": "そうですね。暖かくなりましたね。",
-    "reply": "ええ、本当に。あ、荷物を預かりましたよ。",
+    "reply": "ええ、{本当|ほんとう}に。あ、{荷物|にもつ}を{預|あず}かりましたよ。",
     "translation": {
       "de": "Ja, wirklich. Ach, ich habe ein Paket für Sie angenommen.",
       "en": "Yes, really. Oh, I took in a parcel for you."
@@ -49,7 +49,7 @@
   },
   {
     "learner": "にもつ、ありがとうございました。",
-    "reply": "いえいえ。お出かけですか。",
+    "reply": "いえいえ。お{出|で}かけですか。",
     "translation": {
       "de": "Aber nicht doch. Gehen Sie aus?",
       "en": "Not at all. Are you going out?"
@@ -81,7 +81,7 @@
   },
   {
     "learner": "こんにちは。",
-    "reply": "こんにちは。今日は寒くないですね。",
+    "reply": "こんにちは。{今日|きょう}は{寒|さむ}くないですね。",
     "translation": {
       "de": "Hallo. Heute ist es nicht kalt, nicht wahr?",
       "en": "Hello. It isn't cold today, is it?"
@@ -97,7 +97,7 @@
   },
   {
     "learner": "すみません、にもつ、ありがとうございました。",
-    "reply": "いえいえ。お出かけですか。",
+    "reply": "いえいえ。お{出|で}かけですか。",
     "translation": {
       "de": "Aber nicht doch. Gehen Sie aus?",
       "en": "Not at all. Are you going out?"

@@ -1,5 +1,5 @@
 [
-  { "learner": "はい、おねがいします。", "reply": "かしこまりました。袋はご利用ですか。",
+  { "learner": "はい、おねがいします。", "reply": "かしこまりました。{袋|ふくろ}はご{利用|りよう}ですか。",
     "translation": { "de": "Sehr gern. Brauchen Sie eine Tüte?", "en": "Certainly. Would you like a bag?" },
     "analysis": { "understood": true, "goals_met": ["warm"], "corrections": [], "new_words": [] } },
   { "learner": "袋はいりません。", "reply": "かしこまりました。",
@@ -13,7 +13,7 @@
     "analysis": { "understood": true, "goals_met": ["price"], "new_words": [],
       "corrections": [{ "severity": "unnatural", "kind": "register", "original": "これ、いくら？", "better": "これはいくらですか。",
         "explanation": "Zur Kassiererin die höfliche Form: これはいくらですか。", "also_possible": false }] } },
-  { "learner": "知らない。", "reply": "大丈夫です。袋はご利用ですか。",
+  { "learner": "知らない。", "reply": "{大丈夫|だいじょうぶ}です。{袋|ふくろ}はご{利用|りよう}ですか。",
     "translation": { "de": "In Ordnung. Brauchen Sie eine Tüte?", "en": "That's fine. Would you like a bag?" },
     "analysis": { "understood": true, "goals_met": [], "new_words": [],
       "corrections": [{ "severity": "unnatural", "kind": "register", "original": "知らない", "better": "わかりません",

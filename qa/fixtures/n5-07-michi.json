@@ -1,9 +1,9 @@
 [
-  {"learner": "すみません、郵便局はどこですか。", "reply": "郵便局ですか。まっすぐ行って、二つ目の角を右です。",
+  {"learner": "すみません、郵便局はどこですか。", "reply": "{郵便|ゆうびん}{局|きょく}ですか。まっすぐ{行|い}って、二つ目の角を{右|みぎ}です。",
     "translation": { "de": "Zur Post? Geradeaus und an der zweiten Ecke rechts.", "en": "The post office? Go straight and turn right at the second corner." }, "analysis": {"understood": true, "goals_met": ["ask"], "corrections": [], "new_words": []}},
   {"learner": "まっすぐ行って、右ですね。", "reply": "はい、そうです。",
     "translation": { "de": "Ja, genau.", "en": "Yes, that's right." }, "analysis": {"understood": true, "goals_met": ["check"], "corrections": [], "new_words": []}},
-  {"learner": "ここから遠いですか。", "reply": "いいえ、歩いて五分ぐらいですよ。",
+  {"learner": "ここから遠いですか。", "reply": "いいえ、{歩|ある}いて五分ぐらいですよ。",
     "translation": { "de": "Nein, zu Fuß etwa fünf Minuten.", "en": "No, about five minutes on foot." }, "analysis": {"understood": true, "goals_met": ["far"], "corrections": [], "new_words": []}},
   {"learner": "どうもありがとうございました。", "reply": "どういたしまして。",
     "translation": { "de": "Gern geschehen.", "en": "You're welcome." }, "analysis": {"understood": true, "goals_met": ["thanks"], "corrections": [], "new_words": []}}

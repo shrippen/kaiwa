@@ -1,7 +1,7 @@
 [
   {
     "learner": "え、何かあったの？",
-    "reply": "アオイのこと、知ってる？",
+    "reply": "アオイのこと、{知|し}ってる？",
     "translation": {
       "de": "Weißt du das von Aoi?",
       "en": "Do you know about Aoi?"
@@ -49,7 +49,7 @@
   },
   {
     "learner": "最近、うれしそうだったよね。",
-    "reply": "うん、そうだったね。お祝いしよう！",
+    "reply": "うん、そうだったね。お{祝|いわ}いしよう！",
     "translation": {
       "de": "Ja, stimmt. Lass uns feiern!",
       "en": "Yes, true. Let's celebrate!"
@@ -65,7 +65,7 @@
   },
   {
     "learner": "最近、うれしいそうだったよね。",
-    "reply": "うん、そうだったね。お祝いしよう！",
+    "reply": "うん、そうだったね。お{祝|いわ}いしよう！",
     "translation": {
       "de": "Ja, stimmt. Lass uns feiern!",
       "en": "Yes, true. Let's celebrate!"

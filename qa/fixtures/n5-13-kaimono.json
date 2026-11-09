@@ -17,7 +17,7 @@
   },
   {
     "learner": "青いのはありますか。",
-    "reply": "はい、ございます。赤いのもありますよ。こちらです。",
+    "reply": "はい、ございます。{赤|あか}いのもありますよ。こちらです。",
     "translation": {
       "de": "Ja, haben wir. Es gibt auch Rot. Hier, bitte.",
       "en": "Yes, we do. There's red too. Here it is."

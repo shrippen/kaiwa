@@ -1,7 +1,7 @@
 [
   {
     "learner": "すみません、もう一度おねがいします。",
-    "reply": "はい。週末は、何をしますか。",
+    "reply": "はい。{週末|しゅうまつ}は、{何|なん}をしますか。",
     "translation": {
       "de": "Gern. Was machst du am Wochenende?",
       "en": "Sure. What do you do at the weekend?"
@@ -33,7 +33,7 @@
   },
   {
     "learner": "「Museum」は日本語で何ですか。",
-    "reply": "「美術館」です。",
+    "reply": "「{美術|びじゅつ}館」です。",
     "translation": {
       "de": "„Bijutsukan“.",
       "en": "“Bijutsukan”."
@@ -49,7 +49,7 @@
   },
   {
     "learner": "「Museum」は日本語は何ですか。",
-    "reply": "「美術館」です。",
+    "reply": "「{美術|びじゅつ}館」です。",
     "translation": {
       "de": "„Bijutsukan“.",
       "en": "“Bijutsukan”."
@@ -74,7 +74,7 @@
   },
   {
     "learner": "週末は美術館に行きます。",
-    "reply": "いいですね。どこの美術館ですか。",
+    "reply": "いいですね。どこの{美術|びじゅつ}館ですか。",
     "translation": {
       "de": "Schön. Welches Museum?",
       "en": "Nice. Which museum?"
@@ -90,7 +90,7 @@
   },
   {
     "learner": "週末は美術館を行きます。",
-    "reply": "いいですね。どこの美術館ですか。",
+    "reply": "いいですね。どこの{美術|びじゅつ}館ですか。",
     "translation": {
       "de": "Schön. Welches Museum?",
       "en": "Nice. Which museum?"

@@ -1,7 +1,7 @@
 [
   {
     "learner": "はい、初めてです。",
-    "reply": "そうですか。では、ご説明します。タオルはお湯に入れないでください。",
+    "reply": "そうですか。では、ご{説明|せつめい}します。タオルはお{湯|ゆ}に{入|い}れないでください。",
     "translation": {
       "de": "Gut. Dann erkläre ich es: Bitte das Handtuch nicht ins Wasser tun.",
       "en": "I see. Then let me explain: please don't put your towel in the water."
@@ -17,7 +17,7 @@
   },
   {
     "learner": "お風呂で写真を撮ってもいいですか。",
-    "reply": "すみません、お風呂では写真を撮らないでください。",
+    "reply": "すみません、お{風呂|ふろ}では{写真|しゃしん}を{撮|と}らないでください。",
     "translation": {
       "de": "Entschuldigung, im Bad bitte keine Fotos.",
       "en": "Sorry, please don't take photos in the bath."
@@ -33,7 +33,7 @@
   },
   {
     "learner": "お風呂で写真を撮るもいいですか。",
-    "reply": "すみません、お風呂では写真を撮らないでください。",
+    "reply": "すみません、お{風呂|ふろ}では{写真|しゃしん}を{撮|と}らないでください。",
     "translation": {
       "de": "Entschuldigung, im Bad bitte keine Fotos.",
       "en": "Sorry, please don't take photos in the bath."
@@ -74,7 +74,7 @@
   },
   {
     "learner": "タオルはここに置きましょうか。",
-    "reply": "はい、そちらに置いてください。",
+    "reply": "はい、そちらに{置|お}いてください。",
     "translation": {
       "de": "Ja, legen Sie es bitte dort hin.",
       "en": "Yes, please leave it there."
@@ -90,7 +90,7 @@
   },
   {
     "learner": "タオルはここに置いてましょうか。",
-    "reply": "はい、そちらに置いてください。",
+    "reply": "はい、そちらに{置|お}いてください。",
     "translation": {
       "de": "Ja, legen Sie es bitte dort hin.",
       "en": "Yes, please leave it there."
