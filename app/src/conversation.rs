@@ -540,7 +540,7 @@ impl qobject::Conversation {
             rust.session_id = id;
             rust.started = Some(now());
             rust.last_use = Some(std::time::Instant::now());
-            // Another conversation, maybe another voice: nothing said before counts.
+            // Another conversation: nothing said before counts.
             if let Ok(mut c) = rust.said.lock() {
                 c.clear();
             }
