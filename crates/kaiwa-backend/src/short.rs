@@ -137,7 +137,12 @@ impl ShortTalk {
 impl Backend {
     /// Checks a review answer (/LF502/): spoken or typed, compared without punctuation.
     pub fn answer_review(&self, text: &str, said: &str, helped: bool, now: Moment) -> Value {
-        let right = kaiwa_core::norm(said) == kaiwa_core::norm(text);
+        // A mini conversation looks for the form in the sentence, a word said after is the whole
+        // answer (/LF230/).
+        let right = match self.store.item(text) {
+            Ok(Some(item)) => item.answered(said),
+            _ => kaiwa_core::norm(said) == kaiwa_core::norm(text),
+        };
         let grade = Grade::of(right, helped, false);
         let next = match self.store.review(text, grade, now) {
             Ok(Some(item)) => item.due.iso(),
@@ -155,6 +160,35 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("kaiwa-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         Backend::open_at(dir.join("t.kaiwa"), true).unwrap()
+    }
+
+    #[test]
+    fn a_review_answer_is_graded_by_its_item() {
+        let b = backend("review-grade");
+        let now = crate::now();
+        let coffee = b
+            .store
+            .item("コーヒーが好きです")
+            .unwrap()
+            .expect("demo item");
+        assert_eq!(
+            coffee.cue.as_deref(),
+            Some("プロデューサーですか。すごいですね。何が好きですか。"),
+            "the recorded line before the mistake"
+        );
+        assert_eq!(coffee.original.as_deref(), Some("コーヒーを好きです"));
+        let v = b.answer_review("コーヒーが好きです", "コーヒーを好きです。", false, now);
+        assert_eq!(v["right"], false);
+        let v = b.answer_review(
+            "コーヒーが好きです",
+            "はい、コーヒーが好きです。",
+            false,
+            now,
+        );
+        assert_eq!(v["right"], true);
+        // A word without a line is the whole answer.
+        let v = b.answer_review("袋", "手袋", false, now);
+        assert_eq!(v["right"], false);
     }
 
     #[test]

@@ -46,7 +46,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF215/ | S | Starke Unterforderung (z. B. Erfolg ≥ 95 % über drei Sitzungen) führt … | app, core | geprüft | 1 von 1 automatisch grün: `emi_skip` |
 | /LF220/ | M | Das Curriculum ist ein Graph aus Einheiten. | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_path` |
 | /LF221/ | M | Inhalte (Szenarien, Beispielsätze, Erklärungen) werden geprüft … | core, lang | Code | – |
-| /LF230/ | M | Wiederholung (SRS) für Wörter, Wendungen und Grammatikmuster aus … | app, backend, core, store | geprüft | 1 von 2 automatisch grün: `emi_srs_keigo`, `mara_srs_errors` |
+| /LF230/ | M | Wiederholung (SRS) für Wörter, Wendungen und Grammatikmuster aus … | app, backend, core, store | geprüft | 2 von 2 automatisch grün: `emi_srs_keigo`, `mara_srs_errors` |
 | /LF231/ | S | Wer eine Pause einlegt (≥ 7 Tage), steigt mit einer Auffrischung … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_comeback` |
 | /LF300/ | M | Nach jedem eigenen Zug bewertet das System Grammatik, Wortwahl … | – | geprüft | 1 von 2 automatisch grün: `emi_keigo_detect`, `selin_register_flag` |
 | /LF301/ | M | Jeder Vorschlag zeigt: eigene Form → bessere Form (als Diff), eine … | app | geprüft | 1 von 1 automatisch grün: `mara_diff_audio` |

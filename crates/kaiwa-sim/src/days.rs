@@ -418,7 +418,12 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                         let _ = srs::add_from_summary(
                             &mut items,
                             std::slice::from_ref(&e.right),
-                            &[(e.right.clone(), e.kind.clone())],
+                            &[srs::Corrected {
+                                better: e.right.clone(),
+                                kind: e.kind.clone(),
+                                original: None,
+                                cue: None,
+                            }],
                             unit.as_deref(),
                             at,
                         );
@@ -586,15 +591,21 @@ pub fn check_seeds(
             misses.push(format!("seed {}: {m}", s.seed));
         }
     }
-    let held = BAND_SEEDS as usize - misses.len();
-    Ok(Some(if held >= BAND_HELD {
+    Ok(Some(band_over_seeds(BAND_SEEDS as usize, &misses)))
+}
+
+/// The verdict over `runs` seeds, of which `misses` left the band: pass with at least
+/// `BAND_HELD` in it.
+fn band_over_seeds(runs: usize, misses: &[String]) -> Outcome {
+    let held = runs.saturating_sub(misses.len());
+    if held >= BAND_HELD {
         Outcome::Pass
     } else {
         Outcome::Fail(format!(
-            "band held on {held} of {BAND_SEEDS} seeds (at least {BAND_HELD}); {}",
+            "band held on {held} of {runs} seeds (at least {BAND_HELD}); {}",
             misses.join("; ")
         ))
-    }))
+    }
 }
 
 /// The moving average of the success over `n` sessions.
@@ -867,6 +878,14 @@ mod tests {
             x.success = 0.4;
         }
         assert!(band_miss(&run.sessions).is_some());
+    }
+
+    #[test]
+    fn ten_of_twelve_seeds_pass_nine_fail() {
+        let misses = |n: usize| (0..n).map(|k| format!("seed {k}")).collect::<Vec<_>>();
+        assert!(matches!(band_over_seeds(12, &misses(2)), Outcome::Pass));
+        assert!(matches!(band_over_seeds(12, &misses(3)), Outcome::Fail(_)));
+        assert!(matches!(band_over_seeds(12, &misses(12)), Outcome::Fail(_)));
     }
 
     #[test]
