@@ -80,11 +80,15 @@ impl Player {
                 let device = cpal::default_host()
                     .default_output_device()
                     .ok_or(SpeechError::NoSpeaker)?;
-                let supported = device
-                    .default_output_config()
-                    .map_err(|e| SpeechError::Speaker(e.to_string()))?;
+                let supported = crate::usable_config(
+                    device
+                        .default_output_config()
+                        .map_err(|e| SpeechError::Speaker(e.to_string()))?,
+                    || device.supported_output_configs().into_iter().flatten(),
+                );
                 let rate = supported.sample_rate();
-                let config = supported.config();
+                let mut config = supported.config();
+                config.buffer_size = crate::buffer_for(&device, &supported, 40);
                 let q = thread_queue.clone();
                 let stream = match supported.sample_format() {
                     SampleFormat::F32 => build::<f32>(&device, config, q),

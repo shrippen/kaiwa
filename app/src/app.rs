@@ -40,7 +40,7 @@ pub mod qobject {
 
         /// Changes one setting: goal, gamification, feedback, script, endPause, style, uiLang,
         /// reminder, costLimit, moraHints, keepRecordings, name, tutorProvider (a preset id),
-        /// tutorModel, tutorBase.
+        /// tutorModel, tutorBase, microphone.
         #[qinvokable]
         #[cxx_name = "setSetting"]
         fn set_setting(self: Pin<&mut KaiwaApp>, key: &QString, value: &QString);
@@ -371,6 +371,8 @@ impl qobject::KaiwaApp {
                         };
                     }
                 }
+                // The microphone (a device id from MicTest.devices); "" is the default.
+                "microphone" => p.microphone = (!value.is_empty()).then_some(value),
                 "tutorModel" => p.tutor.model = value.trim().to_string(),
                 "tutorBase" => p.tutor.base_url = value.trim().to_string(),
                 _ => return,

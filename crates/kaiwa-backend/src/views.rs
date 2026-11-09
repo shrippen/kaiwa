@@ -408,6 +408,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "unloadAfter": p.unload_after_min,
         "handsFree": p.hands_free,
         "textScale": p.text_scale,
+        "microphone": p.microphone,
         "cost": st.cost_view(crate::now())?,
         "latency": st.latency_view(&p.ui_lang)?,
         "path": st.path.display().to_string(),
