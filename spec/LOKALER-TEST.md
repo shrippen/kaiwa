@@ -1,6 +1,10 @@
 # Lokaler Test
 
-Was nur auf deinem Rechner geht: die KI-Anbindung (ADR-004), VOICEVOX mit seinen Stimmlizenzen (ADR-003) und Messwerte auf der Referenzhardware, dem Framework 13 (ADR-006). Jeder Schritt sagt, was du ausführst und was als Ergebnis zurückkommt. Die Ergebnisdateien kommen als PR nach `qa/local/<datum>/` (H-05). Claude wertet sie aus und trägt sie in die ADRs ein.
+Manches geht nur auf deinem Rechner: der echte Tutor (ADR-004), Mikrofon und Stimme, VOICEVOX mit seinen Stimmlizenzen (ADR-003) und Messwerte auf der Referenzhardware, dem Framework 13 (ADR-006). Jeder Schritt sagt, was du ausführst und was dabei herauskommt.
+
+**Ergebnisse:** Leg einen Ordner `qa/local/<datum>/` an (z. B. `qa/local/2026-11-15/`) und kopier [`qa/local/VORLAGE.md`](../qa/local/VORLAGE.md) als `notizen.md` hinein. Die Vorlage hat für jede Prüfregel, die nicht automatisch läuft, eine Zeile zum Ankreuzen. Dazu kommen die Dateien, die die Schritte schreiben. Alles geht als PR ins Repository (H-05). Claude wertet aus und trägt die Ergebnisse in ADRs, Personas und `STAND.md` ein.
+
+Du musst nicht alles an einem Tag machen. Die Reihenfolge unten ist die, die am meisten bringt: zuerst Schritt 1 (etwa 15 Minuten, kostet bei Anthropic ein paar Cent), dann 2 und 3.
 
 ## 0. Vorbereitung
 
@@ -10,14 +14,9 @@ git clone https://git.arianw.de/shrippen/Kaiwa.git && cd Kaiwa
 python3 -m venv .venv && . .venv/bin/activate && pip install -r spikes/requirements.txt
 ```
 
-## 1. KI-Anbindung (ADR-004, Spike 0.5)
+## 1. Der Tutor automatisch (`kaiwa-sim run --live`)
 
-Wähle einen Anbieter oder beide. **In der App** geht das seit Q-15 ohne Umgebungsvariablen:
-`cargo run -p kaiwa-app`, dann Einstellungen › Tutor: „Lokal (OpenAI-kompatibel)“ mit Modell (z. B.
-`qwen3:14b`) und Server (leer ist Ollama auf diesem Rechner) oder „Anthropic Claude“ mit dem
-API-Schlüssel, der im Schlüsselbund landet. Ohne Tutor sagt die App, dass keiner eingerichtet ist.
-
-**Für `kaiwa-sim --live`** (kein Profil, keine Einstellungen) nimmt der Tutor die Umgebung:
+Ein Tutor wird über die Umgebung gewählt (`kaiwa-sim` hat kein Profil und keine Einstellungen):
 
 ```sh
 export KAIWA_PROVIDER=anthropic ANTHROPIC_API_KEY=…                 # Haiku antwortet, Sonnet analysiert
@@ -25,33 +24,94 @@ export KAIWA_PROVIDER=anthropic ANTHROPIC_API_KEY=…                 # Haiku an
 export KAIWA_PROVIDER=openai KAIWA_MODEL=qwen3:14b KAIWA_OPENAI_BASE=http://localhost:11434/v1
 ```
 
-Die Variablen überschreiben auch in der App die Einstellungen. Der Tutor bekommt die Grammatik der
-Einheit mit (#41): Achte darauf, ob die Figur sie benutzt und auf dem Niveau der Einheit bleibt.
+Dann:
 
-1. **Reisen automatisch:** `cargo run -p kaiwa-sim -- run --live --report qa/local/live.json`. Ergebnis: dieselben Prüfregeln wie in der CI, aber mit dem echten Tutor. Interessant sind `mara_recall` und `selin_register_flag` (Trefferquote, /LL111/), außerdem jede Korrektur bei korrekten Sätzen (Fehlalarm, /LL110/).
-2. **Von Hand:** `cargo run -p kaiwa-app` (so, wie es ein Paket baut: ohne Demo). Führ das Szenario „Sich vorstellen“ einmal richtig und einmal mit Fehlern (`qa/corpus/saetze.tsv` s01–s03). Notiere, was dir an Antworten, Korrekturen und Erklärungen auffällt. Danach ein N4-Szenario, z. B. „Anruf in der Firma“ (n4-13, Keigo), über „Später weiter“ oder den Lernpfad nach dem Überspringen; der Knopf „Grammatik“ zeigt, was die Einheit übt.
-3. **Latenz:** Stopp die Zeit vom Senden bis zur Antwort, fünf Züge, notieren (Ziel /LL010/).
-4. **Sprechen und Stimme:** ReazonSpeech und Kokoro in den Einstellungen unter „Modelle“ laden (`app/README.md`, „Modelle“), dann mit Mikrofon und Lautsprecher spielen. Notiere: Wird verstanden, was du sagst? Klingt die Übergangsstimme verständlich, und stören falsche Lesarten oder Pausen? Die Zeit vom Loslassen des Knopfs bis zum ersten Ton der Figur gehört zur Latenz.
+```sh
+cargo run -p kaiwa-sim -- run --live --report qa/local/<datum>/live.json | tee qa/local/<datum>/live.txt
+```
 
-## 2. VOICEVOX (ADR-003, Spike 0.4 Teil 2)
+Alle Reisen laufen mit dem echten Tutor statt mit den Aufzeichnungen, rund 70 Züge. Ohne `--live` stehen die folgenden fünf Prüfregeln als „live only“ da, mit `--live` prüft `kaiwa-sim` sie selbst:
+
+| Prüfregel | Was sie prüft | Skript |
+|---|---|---|
+| `theo_fp` | Höchstens 2 von 40 korrekten Sätzen bekommen eine Korrektur mit „falsch“ oder schlimmer (Fehlalarme, /LL110/). | `qa/scripts/theo_false_alarms.json` |
+| `theo_tp` | Mindestens 5 der 6 eingebauten Fehler werden gefunden, ドアが開けました als „falsch“ (/LL111/). | dasselbe |
+| `emi_keigo_detect` | Jeder Keigo-Fehler von Emi wird gefunden, 二重敬語 als „unnatürlich“, ご苦労様 als „falsch“ mit Begründung. | `qa/scripts/emi_interview.json` (Empfangsszene, bis es ein Vorstellungsgespräch gibt) |
+| `mara_codeswitch` | Auf „Wie sagt man Produzentin auf Japanisch?“ nennt die Figur プロデューサー und bittet ums Nachsprechen (/LF122/). Ob sie es hörbar spricht, gehört zu Schritt 3. | `qa/scripts/mara_first_talk.json` |
+| `mara_explain_de` | Jede Erklärung ist auf Deutsch und hat ein japanisches Beispiel. Die Sprache erkennt eine Faustregel. Ob Fachbegriffe erklärt sind, beurteilst du (Vorlage). | dasselbe |
+
+Für `theo_fp` siehst du außerdem in `live.txt` nach, ob Vorschläge zu den korrekten Sätzen nur als „Auch möglich“ kommen (Vorlage).
+
+Bricht ein Aufruf des Anbieters ab (Limit, Netz), steht bei den Prüfregeln dieser Reise, die den Tutor brauchen, `FAIL … tutor: …`; der Lauf geht mit der nächsten Reise weiter, und der Report wird geschrieben. Dann den Lauf einfach wiederholen. Fehlt `KAIWA_PROVIDER` oder der Schlüssel, bricht der Lauf gleich am Anfang mit einer Meldung ab.
+
+Die übrigen Prüfregeln laufen dabei auch mit dem echten Tutor. Interessant ist dort, was mit den Aufzeichnungen grün ist und mit dem Tutor rot wird, vor allem `mara_recall` und `selin_register_flag`. Ein `FAIL` ist kein Fehler deines Tests, sondern ein Befund: Die Zeile nennt den Grund.
+
+## 2. Der Tutor in der App (von Hand)
+
+**Erst die Variablen aus Schritt 1 entfernen** (oder ein neues Terminal öffnen). Sie haben Vorrang vor den Einstellungen; sonst redest du ab hier mit dem Tutor aus Schritt 1, und die lokalen Messungen in 3.5 und 4.3 stimmen nicht:
+
+```sh
+unset KAIWA_PROVIDER KAIWA_MODEL KAIWA_OPENAI_BASE ANTHROPIC_API_KEY
+```
+
+`cargo run -p kaiwa-app` (wie im Paket, ohne Demo), dann Einstellungen › Tutor: „Lokal (OpenAI-kompatibel)“ mit Modell und Server (leer ist Ollama auf diesem Rechner) oder „Anthropic Claude“ mit dem Schlüssel, der im Schlüsselbund landet. Gesetzte Umgebungsvariablen haben Vorrang vor den Einstellungen.
+
+Was du beurteilst, steht in der Vorlage. Kurz:
+
+1. **Sich vorstellen** (n5-02): einmal richtig, einmal mit den Fehlern aus `qa/corpus/saetze.tsv` s01–s03. Wie klingen Antworten, Korrekturen und Erklärungen?
+2. **Erklärungen mit Beispielpaaren** (`emi_explain_examples`): ein N4-Szenario mit Keigo, z. B. „Anruf in der Firma“ (n4-13), über den Lernpfad nach dem Überspringen. Sag 明日、御社に行きます。 Nennt die Erklärung Fachbegriffe höchstens in Klammern und zeigt sie ein Paar wie 行きます → 伺います?
+3. **Nachfragen** (`jonas_follow_up`): Antworte im Szenario „Am Bahnhof“ (n5-06) nur mit はい. Fragt die Figur nach, und bleibt das Ziel offen, bis du die Auskunft wirklich gibst?
+4. **Unpassendes** (`jonas_inappropriate`): Schreib der Figur einmal etwas Beleidigendes. Sie soll freundlich ins Szenario zurücklenken, ohne Moralpredigt und ohne die Rolle zu verlassen.
+5. **Deutsches Wort** (`hinnerk_german_word_help`): Sag im Szenario „Sich vorstellen“ わたしは Leuchtturm です。 Bietet die Figur とうだい an und bittet ums Nachsprechen? (Ob sie es langsam spricht, gehört zu Schritt 3.)
+6. **Wiederholung als Mini-Gespräch** (/LF230/, neu): Am Tag nach einem Gespräch mit Korrekturen unter „Wiederholen“ der Figur antworten, getippt und gesprochen. Passt die Frage zur Korrektur? Wird eine richtige Antwort als richtig gewertet?
+7. **Latenz:** Stopp fünfmal die Zeit vom Senden bis zur Antwort (Ziel /LL010/).
+
+## 3. Sprechen und Stimme
+
+ReazonSpeech, Kokoro und kaiwa-kana-ctc in den Einstellungen unter „Modelle“ laden (`app/README.md`, „Modelle“), dann mit Mikrofon und Lautsprecher spielen.
+
+1. **Verstanden?** Wird erkannt, was du sagst? Klingt die Übergangsstimme verständlich, stören falsche Lesarten oder Pausen?
+2. **Nicht abgeschnitten** (`hinnerk_no_cutoff`): Freisprechen an (Einstellungen › Sprechen). Sprich langsam, mit Pausen von 2–3 s mitten im Satz. Kein Zug darf vor seinem Ende abgeschlossen werden. Nach zwei knappen Fällen soll die App anbieten, die Pause zu verlängern.
+3. **Moren-Hinweis** (`mara_mora_hint`): Sprich ありがとございます (kurzes とう) und ちょと待てください. Höchstens ein Hinweis zur Moren-Länge je Satz, nichts bei ありがとうございます.
+4. **Langsam** (`hinnerk_german_word_help`, Teil Audio): Die Figur spricht とうだい aus Schritt 2.5 langsam? Ebenso hörbar: Auf „Wie sagt man Produzentin auf Japanisch?“ spricht sie プロデューサー (`mara_codeswitch`).
+5. **Latenz** (`theo_latency`): 20 Züge im freien Gespräch, alles lokal (Ollama in den Einstellungen, ReazonSpeech, Kokoro; keine `KAIWA_*`-Variablen gesetzt). Miss je Zug die Zeit vom Ende deines Satzes bis zum ersten Ton der Figur, mit Stoppuhr oder Bildschirmaufnahme. Ziel: Median ≤ 3 s, 95 % ≤ 5 s, „denkt nach“ ist währenddessen sichtbar.
+
+## 4. Rechner und Oberfläche (Framework 13)
+
+1. **Speicher im Leerlauf** (`lena_idle_memory`): Ein Gespräch mit Sprechen führen, dann 10 Minuten nichts tun und `ps -o rss= -C kaiwa` ausgeben (in KB). Die Modelle müssen entladen sein, Ziel ≤ 150 MB.
+2. **Flüssig** (`lena_responsive`): `QSG_RENDER_TIMING=1 cargo run -p kaiwa-app 2> qa/local/<datum>/frames.log` und ein Gespräch mit Sprechen führen. Die Bildzeiten stehen im Log, Ziel < 50 ms. „Denkt nach“ sichtbar, Abbrechen geht jederzeit?
+3. **Nichts geht nach draußen** (`lena_zero_egress`): Tutor lokal (Ollama in den Einstellungen, keine `KAIWA_*`-Variablen gesetzt), Modelle geladen, dann
+   `strace -f -e trace=connect,sendto,sendmsg -o qa/local/<datum>/egress.log ./target/debug/kaiwa` und ein Gespräch führen. Erlaubt sind nur Verbindungen zu `127.0.0.1`/`::1` (Ollama) und lokale Sockets (D-Bus, PipeWire). Jede andere Adresse und jede DNS-Anfrage (Port 53) ist ein Befund.
+4. **Große Schrift** (`hinnerk_font`): Systemschrift auf 160 % oder in Kaiwa Textgröße 160 %, dann jede Ansicht durchgehen. Nichts abgeschnitten, Furigana und Kana mitskaliert, keine Bedienelemente überlappen. Screenshots bei Auffälligkeiten in den Ordner.
+
+## 5. VOICEVOX (ADR-003, Spike 0.4 Teil 2)
 
 Kokoro trifft den Pitch-Akzent nicht (`spikes/s04-tts/README.md`). VOICEVOX holt ihn aus dem Wörterbuch.
 
 1. Lade die Release-Dateien (0.16.x) von github.com/VOICEVOX/voicevox_core: `download-linux-x64` und das Python-Wheel.
 2. `./download-linux-x64 -o voicevox_core`. Lies die Nutzungsbedingungen der Stimmen, die angezeigt werden, und nimm nur die an, die du für Kaiwa in Betracht ziehst (F-06: natürlich-erwachsen).
-3. `pip install voicevox_core-*.whl && python -I spikes/s04-tts/voicevox.py --core voicevox_core --out qa/local/`. Ergebnis: `voicevox.json` mit der Akzent-Trefferquote pro Stimme. Das Ziel sind 11 oder mehr von 13 Wörtern.
+3. `pip install voicevox_core-*.whl && python -I spikes/s04-tts/voicevox.py --core voicevox_core --out qa/local/<datum>/`. Ergebnis: `voicevox.json` mit der Akzent-Trefferquote pro Stimme. Das Ziel sind 11 oder mehr von 13 Wörtern.
 
-## 3. Messwerte auf dem Framework 13 (ADR-006)
+## 6. Messwerte (ADR-006)
 
 ```sh
-python -I spikes/s04-tts/measure.py --models <dir> --corpus qa/corpus --out qa/local/s04       # Kokoro: RTF, Latenz
-python -I spikes/s03-stt/measure.py --corpus-audio qa/local/s04/corpus --corpus qa/corpus \
-    --whisper-cli <whisper.cpp>/build/bin/whisper-cli --models <dir> --out qa/local/s03 \
-    --engines reazonspeech-zipformer,whisper-small                                              # STT
+python -I spikes/s04-tts/measure.py --models <dir> --corpus qa/corpus --out qa/local/<datum>/s04       # Kokoro: RTF, Latenz
+python -I spikes/s03-stt/measure.py --corpus-audio qa/local/<datum>/s04/corpus --corpus qa/corpus \
+    --whisper-cli <whisper.cpp>/build/bin/whisper-cli --models <dir> --out qa/local/<datum>/s03 \
+    --engines reazonspeech-zipformer,whisper-small                                                     # STT
 ```
 
 Die Modelle: `kokoro-v1.0.onnx` und `voices-v1.0.bin` (kokoro-onnx Releases), ggml-Modelle (huggingface.co/ggerganov/whisper.cpp) und `sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01` (k2-fsa/sherpa-onnx Releases, asr-models).
 
-## 4. Eigene Aufnahmen (F-04)
+## 7. Eigene Aufnahmen (F-04)
 
 `qa/corpus/README.md`: 50 Sätze und 20 Minimalpaare. Die Aufnahmen kommen per Git LFS nach `qa/corpus/audio/`.
+
+## Nicht Teil dieses Tests
+
+| Prüfregeln | Warum später |
+|---|---|
+| `mara_plasmoid_*`, `mara_ptt_shortcut` | Plasmoid und `kaiwad` ruhen bis M4 (Zweig `later/plasmoid`). |
+| `jonas_noise`, `jonas_sync` | Android und Sync gehören zu M5/M6. |
+| `selin_win_keys`, `selin_win_style` | Windows gehört zu M6. |
+| `theo_pitch_detect`, `theo_pitch_no_nitpick`, `theo_compare` | Pitch-Bewertung erst nach 1.0 (L-02 bis L-04). |

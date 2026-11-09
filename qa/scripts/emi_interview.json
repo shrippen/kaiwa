@@ -1,0 +1,15 @@
+{
+  "journey": "emi_interview",
+  "scenario": "n4-13-uketsuke",
+  "live_only": true,
+  "note": "Only with --live (the owner's local test). There is no interview scenario yet; the reception (keigo) stands in. Each of Emi's planted mistakes once (qa/corpus/saetze.tsv s12-s16 and emi_code_switch), typed, after a correct opening line.",
+  "steps": [
+    { "say": "ミュラーと申します。二時に小野様とお約束しております。", "input": "typed" },
+    { "say": "明日、御社に行きます。", "input": "typed", "plants": ["emi_iku"] },
+    { "say": "その件は知ってます。", "input": "typed", "plants": ["emi_shitteru"] },
+    { "say": "部長がおっしゃられました。", "input": "typed", "plants": ["emi_double_keigo"] },
+    { "say": "ご苦労様です。", "input": "typed", "plants": ["emi_gokurou"] },
+    { "say": "すみません、もう一回言ってください。", "input": "typed", "plants": ["emi_mou_ikkai"] },
+    { "say": "前の仕事ではLogistikのPlanungをしてました。", "input": "typed", "plants": ["emi_code_switch"] }
+  ]
+}

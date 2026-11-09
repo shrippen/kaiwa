@@ -198,7 +198,7 @@ fn run_all(
     for id in ids {
         all.extend(run::run_persona(root, &id, live)?);
     }
-    let (mut pass, mut fail, mut open) = (0, 0, 0);
+    let (mut pass, mut fail, mut live, mut open) = (0, 0, 0, 0);
     for j in &all {
         for (cid, outcome) in &j.checks {
             match outcome {
@@ -210,11 +210,12 @@ fn run_all(
                     fail += 1;
                     println!("FAIL  {} / {}: {}", j.journey, cid, why);
                 }
+                run::Outcome::LiveOnly => live += 1,
                 run::Outcome::NotAutomated => open += 1,
             }
         }
     }
-    println!("{pass} passed, {fail} failed, {open} not automated yet");
+    println!("{pass} passed, {fail} failed, {live} live only (--live), {open} not automated yet");
     if let Some(path) = report {
         std::fs::write(path, serde_json::to_string_pretty(&all)?)?;
     }
