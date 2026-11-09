@@ -97,6 +97,9 @@ pub struct Summary {
     /// For each better form (by [`crate::norm`]): the character's line the learner answered
     /// when the mistake happened, the cue of its mini-conversation review (/LF230/).
     pub cues: BTreeMap<String, String>,
+    /// For each better form (by [`crate::norm`]): the old words in their place in the learner's
+    /// sentence ([`crate::srs::in_context`]), to tell a repeated mistake in the review.
+    pub mistakes: BTreeMap<String, String>,
     pub spoken_turns: usize,
     pub typed_turns: usize,
     pub helps_used: u32,
@@ -534,8 +537,12 @@ impl Session {
 
     pub fn summary(&self) -> Summary {
         let mut cues = BTreeMap::new();
+        let mut mistakes = BTreeMap::new();
         for (i, t) in self.turns.iter().enumerate() {
             for s in visible(&counted(t), self.amount) {
+                mistakes
+                    .entry(crate::norm(&s.correction.better))
+                    .or_insert_with(|| crate::srs::in_context(&t.learner, &s.correction.original));
                 if let Some(cue) = self.cue(i) {
                     cues.entry(crate::norm(&s.correction.better))
                         .or_insert_with(|| cue.to_string());
@@ -582,6 +589,7 @@ impl Session {
             corrected: unique,
             review,
             cues,
+            mistakes,
             spoken_turns: self
                 .turns
                 .iter()

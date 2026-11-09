@@ -153,11 +153,7 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
         if corr.is_some() {
             let key = kaiwa_core::norm(w);
             item.cue = played.cues.get(&key).cloned();
-            item.original = played
-                .corrected
-                .iter()
-                .find(|c| kaiwa_core::norm(&c.correction.better) == key)
-                .map(|c| c.correction.original.clone());
+            item.original = played.mistakes.get(&key).cloned();
         }
         item.review(Grade::Good, added.plus_secs(86_400));
         if n % 3 == 0 {

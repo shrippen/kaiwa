@@ -85,8 +85,10 @@ pub struct Item {
     /// item is said after.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cue: Option<String>,
-    /// The learner's words the correction replaced (話されます for 話せます). An answer in the
-    /// mini conversation that still has them is not right.
+    /// The learner's words the correction replaced, with up to [`CONTEXT`] characters before
+    /// them from the learner's sentence (少し話されます for 話せます; see [`in_context`]). An
+    /// answer in the mini conversation that still has them is not right; the context keeps a
+    /// correct use elsewhere in the answer from counting (駅の前で next to 仕事の前に).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub original: Option<String>,
     pub added: Moment,
@@ -248,6 +250,24 @@ pub fn due(items: &[Item], now: Moment, last_practice: Option<Moment>, limit: us
 /// Whether a break calls for the refresher.
 pub fn refresher(now: Moment, last_practice: Option<Moment>) -> bool {
     last_practice.is_some_and(|l| now.day().0 - l.day().0 >= BREAK_DAYS)
+}
+
+/// Characters of the learner's sentence kept before the old words.
+pub const CONTEXT: usize = 2;
+
+/// The old words of a correction with up to [`CONTEXT`] characters before them, as they stood in
+/// the learner's `sentence`, compared by [`crate::norm`]; the old words alone when the sentence
+/// does not have them as heard.
+pub fn in_context(sentence: &str, original: &str) -> String {
+    let (s, o) = (crate::norm(sentence), crate::norm(original));
+    match s.find(&o) {
+        Some(at) if !o.is_empty() => {
+            let before: Vec<char> = s[..at].chars().collect();
+            let from = before.len().saturating_sub(CONTEXT);
+            before[from..].iter().collect::<String>() + &o
+        }
+        _ => o,
+    }
 }
 
 /// A correction as it goes into the review: the better form, its kind (particle, register …),
@@ -416,6 +436,33 @@ mod tests {
         // The better form contains the old words: only what is left over counts.
         let j = talk("が好きです", "好きです");
         assert!(j.answered("コーヒーが好きです。"));
+    }
+
+    #[test]
+    fn the_old_words_keep_their_place_in_the_sentence() {
+        assert_eq!(
+            in_context("仕事の前で、コーヒーを飲みます。", "前で"),
+            "事の前で"
+        );
+        assert_eq!(in_context("うん、行く！", "行く"), "うん行く");
+        assert_eq!(in_context("行く", "行く"), "行く");
+        assert_eq!(in_context("ちがう文", "前で"), "前で", "not heard as such");
+        // n5-11-ichinichi: 前で → 前に. A right 駅の前で elsewhere is no repeated mistake.
+        let i = talk(
+            "前に",
+            &in_context("仕事の前で、コーヒーを飲みます。", "前で"),
+        );
+        assert!(i.answered("仕事の前に、駅の前でコーヒーを飲みます。"));
+        assert!(!i.answered("仕事の前で、コーヒーを飲みます。"));
+        // n5-09-tomodachi: 行く → 行きます.
+        let j = talk("行きます", &in_context("うん、行く！", "行く"));
+        assert!(j.answered("土曜日、映画を見に行くなら、私も行きます。"));
+        // n4-06-baito still: the mistake in its place is wrong.
+        let k = talk(
+            "話せます",
+            &in_context("英語が話せます。日本語も少し話されます。", "話されます"),
+        );
+        assert!(!k.answered("英語が話せます。日本語も少し話されます。"));
     }
 
     #[test]

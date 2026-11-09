@@ -257,3 +257,49 @@ fn migration_2_moves_old_unit_ids_to_path_order() {
         "2026-10-13 n5-131 an5-13"
     );
 }
+
+#[test]
+fn every_shown_correction_comes_back_as_a_mini_conversation() {
+    // Four different corrections with much feedback: the fourth is past the summary's top three
+    // and still goes into the review as a correction, with its line and old words (/LF230/).
+    let store = Store::in_memory().unwrap();
+    let mut session = Session::new(scenario(), provider(), Amount::Much, "de");
+    let start = at(0, 9);
+    let id = store.begin_session(&session.snapshot(), start).unwrap();
+    for t in [
+        "コーヒーを好きです。",
+        "わたしはマラです。わたしはプロデューサーです。",
+        "ビール二ください。",
+        "きのう東京に行きます。",
+    ] {
+        session.turn(t, Input::Spoken).unwrap();
+    }
+    assert!(session.summary().corrected.len() >= 4);
+    store
+        .record(
+            id,
+            &session,
+            start,
+            start.plus_secs(300),
+            Some(&curriculum()),
+        )
+        .unwrap();
+    for (better, old) in [
+        ("コーヒーが好きです", "コーヒーを好きです"),
+        (
+            "マラです。プロデューサーをしています。",
+            "わたしはマラですわたしはプロデューサーです",
+        ),
+        ("ビールを二つください", "ビール二ください"),
+        ("きのう東京に行きました", "きのう東京に行きます"),
+    ] {
+        let item = store.item(better).unwrap().expect(better);
+        assert!(
+            matches!(item.source, srs::Source::Correction { .. }),
+            "{better}: {:?}",
+            item.source
+        );
+        assert!(item.cue.is_some(), "{better} has no line");
+        assert_eq!(item.original.as_deref(), Some(old), "{better}");
+    }
+}
