@@ -94,4 +94,8 @@ pub struct Analysis {
     /// Words the learner used or met for the first time (dictionary form).
     #[serde(default)]
     pub new_words: Vec<String>,
+    /// The learner's turn with the readings of its kanji as furigana markup (`{漢字|かな}`),
+    /// read in context; the dictionary's readings give way to it (ADR-004).
+    #[serde(default)]
+    pub reading: String,
 }

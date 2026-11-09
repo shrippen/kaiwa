@@ -91,6 +91,7 @@ impl MockProvider {
                 goals_met: vec![],
                 corrections: vec![],
                 new_words: vec![],
+                reading: String::new(),
             },
             translation: HashMap::new(),
         });

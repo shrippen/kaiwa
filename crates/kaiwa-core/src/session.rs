@@ -45,6 +45,8 @@ pub enum Aid {
 #[derive(Debug, Clone, Serialize)]
 pub struct TurnOutcome {
     pub reply: String,
+    /// The learner's line with the tutor's furigana ([`own_reading`]); empty without.
+    pub own_markup: String,
     pub understood: bool,
     /// Corrections to show, for the feedback amount of the session.
     pub shown: Vec<Shown>,
@@ -58,6 +60,18 @@ pub struct TurnOutcome {
     /// Three turns in a row without getting closer to a goal: help comes by itself, at least
     /// the sentence start (/LF213/, Jonas).
     pub help: Option<HelpStep>,
+}
+
+/// The tutor's reading of the learner's line as clean furigana markup, only when it is the
+/// line itself: without the markup exactly the text (a reading that changed a character is
+/// dropped, the dictionary's furigana stay), and with at least one reading.
+pub fn own_reading(text: &str, reading: &str) -> String {
+    let markup = crate::clean_markup(reading);
+    if markup.contains('{') && crate::plain(&markup) == text {
+        markup
+    } else {
+        String::new()
+    }
 }
 
 /// A learner turn as kept in the session (and in the profile, /LD030/).
@@ -80,6 +94,9 @@ pub struct TurnRecord {
     /// Better forms the learner disputed (/LF307/).
     #[serde(default)]
     pub disputed: Vec<String>,
+    /// The learner's line with the tutor's furigana; empty when it gave none that fits.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub markup: String,
 }
 
 /// The end of a session (/LF310/).
@@ -459,6 +476,7 @@ impl Session {
             self.difficulty = d.clone();
         }
 
+        let own_markup = own_reading(text, &analysis.reading);
         let shown = visible(&analysis.corrections, self.amount);
         let interrupt = shown.iter().find(|s| s.interrupts).cloned();
         self.turns.push(TurnRecord {
@@ -473,9 +491,11 @@ impl Session {
             reply: reply.clone(),
             misrecognized: false,
             disputed: Vec::new(),
+            markup: own_markup.clone(),
         });
         self.aid_on_line = false;
         Ok(TurnOutcome {
+            own_markup,
             reply,
             understood: analysis.understood,
             shown,
@@ -885,6 +905,44 @@ mod tests {
         let out = s.turn("こんにちは。", Input::Typed).unwrap();
         assert_eq!(out.reply, "お{仕事|しごと}は{何|なん}ですか。角");
         assert_eq!(s.messages.last().unwrap().content, "お仕事は何ですか。角");
+    }
+
+    #[test]
+    fn the_tutors_reading_of_the_learners_line_counts_only_when_it_is_the_line() {
+        assert_eq!(
+            own_reading("何を食べますか。", "{何|なに}を{食|た}べますか。"),
+            "{何|なに}を{食|た}べますか。"
+        );
+        // Not kana, a changed character, or no reading at all: the dictionary's stay.
+        assert_eq!(
+            own_reading("何を食べますか。", "{何|nani}を食べますか。"),
+            ""
+        );
+        assert_eq!(
+            own_reading("何を食べますか。", "{何|なに}を{食|た}べますか？"),
+            ""
+        );
+        assert_eq!(
+            own_reading("ビール二ください。", "ビール{二|ふた}つください。"),
+            "",
+            "a corrected line is not the learner's"
+        );
+        assert_eq!(own_reading("はい。", "はい。"), "");
+        assert_eq!(own_reading("何を食べますか。", ""), "");
+    }
+
+    #[test]
+    fn a_turn_brings_the_tutors_reading_and_keeps_it() {
+        let fixture = r#"[{ "learner": "何を食べますか。", "reply": "すしです。",
+            "analysis": { "understood": true, "goals_met": [], "corrections": [], "new_words": [],
+                          "reading": "{何|なに}を{食|た}べますか。" } }]"#;
+        let p: Arc<dyn ChatProvider> = Arc::new(MockProvider::from_json(fixture).unwrap());
+        let mut s = Session::new(scenario(), p, Amount::Little, "de");
+        let out = s.turn("何を食べますか。", Input::Typed).unwrap();
+        assert_eq!(out.own_markup, "{何|なに}を{食|た}べますか。");
+        assert_eq!(s.turns()[0].markup, out.own_markup);
+        let json = serde_json::to_string(&s.snapshot()).unwrap();
+        assert!(json.contains("{何|なに}"), "kept for a resumed session");
     }
 
     #[test]

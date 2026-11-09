@@ -12,6 +12,7 @@ Rechner: … · Tutor: … (Anbieter, Modell) · Kaiwa-Commit: `git rev-parse --
 |---|---|---|---|
 | `theo_fp`: Vorschläge zu korrekten Sätzen nur als „Auch möglich“ | | | |
 | `mara_explain_de`: keine Fachbegriffe ohne Erklärung | | | |
+| `mara_own_furigana`: die Lesungen über Maras Sätzen stimmen (`live.txt`) | | | |
 
 Wenn sonst etwas auffiel:
 

@@ -32,7 +32,7 @@ Dann:
 cargo run -p kaiwa-sim -- run --live --report qa/local/<datum>/live.json | tee qa/local/<datum>/live.txt
 ```
 
-Alle Reisen laufen mit dem echten Tutor statt mit den Aufzeichnungen, rund 70 Züge. Ohne `--live` stehen die folgenden fünf Prüfregeln als „live only“ da, mit `--live` prüft `kaiwa-sim` sie selbst:
+Alle Reisen laufen mit dem echten Tutor statt mit den Aufzeichnungen, rund 70 Züge. Ohne `--live` stehen die folgenden sechs Prüfregeln als „live only“ da, mit `--live` prüft `kaiwa-sim` sie selbst:
 
 | Prüfregel | Was sie prüft | Skript |
 |---|---|---|
@@ -40,6 +40,7 @@ Alle Reisen laufen mit dem echten Tutor statt mit den Aufzeichnungen, rund 70 Z�
 | `theo_tp` | Mindestens 5 der 6 eingebauten Fehler werden gefunden, ドアが開けました als „falsch“ (/LL111/). | dasselbe |
 | `emi_keigo_detect` | Jeder Keigo-Fehler von Emi wird gefunden, 二重敬語 als „unnatürlich“, ご苦労様 als „falsch“ mit Begründung. | `qa/scripts/emi_interview.json` (Empfangsszene, bis es ein Vorstellungsgespräch gibt) |
 | `mara_codeswitch` | Auf „Wie sagt man Produzentin auf Japanisch?“ nennt die Figur プロデューサー und bittet ums Nachsprechen (/LF122/). Ob sie es hörbar spricht, gehört zu Schritt 3. | `qa/scripts/mara_first_talk.json` |
+| `mara_own_furigana` | Jeder Satz von Mara mit Kanji bekommt die Lesungen des Tutors, und ohne Markup ist es genau ihr Satz (/LF110/, ADR-004). Ob die Lesungen stimmen (何 als なに oder なん), beurteilst du (Vorlage). | dasselbe |
 | `mara_explain_de` | Jede Erklärung ist auf Deutsch und hat ein japanisches Beispiel. Die Sprache erkennt eine Faustregel. Ob Fachbegriffe erklärt sind, beurteilst du (Vorlage). | dasselbe |
 
 Für `theo_fp` siehst du außerdem in `live.txt` nach, ob Vorschläge zu den korrekten Sätzen nur als „Auch möglich“ kommen (Vorlage).
