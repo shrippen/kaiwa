@@ -286,15 +286,15 @@ pub fn live_check(id: &str, run: &Run) -> Option<Outcome> {
     let real = |s: &&kaiwa_core::feedback::Shown| !s.correction.also_possible;
     match id {
         // /LF122/: asked in German for a word, the character gives the Japanese one and asks
-        // the learner to say it (言って…, 言えますか, 言いましょう, どうぞ; と言います only names
-        // it, どうぞよろしく greets). Hearing it is the local test's.
+        // the learner to say it (言って…, 言えますか, 言いましょう; と言います only names it).
+        // どうぞ alone is not counted: it also greets (どうぞよろしく, 宜しく, どうぞ、よろしく),
+        // and a wrong Fail shows the reply where a wrong Pass would hide it. Hearing it is the
+        // local test's.
         "mara_codeswitch" => {
             let (_, o) = turns(run).find(|(p, _)| p.iter().any(|x| x == "mara_codeswitch"))?;
-            // どうぞよろしく is a greeting, not a request.
             let asks = ["言って", "言えますか", "言いましょう"]
                 .iter()
-                .any(|f| o.reply.contains(f))
-                || o.reply.replace("どうぞよろしく", "").contains("どうぞ");
+                .any(|f| o.reply.contains(f));
             if !o.reply.contains("プロデューサー") {
                 fail(format!("no プロデューサー in: {}", o.reply))
             } else if !asks {
@@ -938,11 +938,17 @@ mod tests {
             live("mara", "mara_first_talk", "mara_codeswitch", &greets),
             Outcome::Fail(_)
         ));
-        let please = with("プロデューサー。はい、どうぞ。", de);
-        assert_eq!(
-            live("mara", "mara_first_talk", "mara_codeswitch", &please),
-            Outcome::Pass
-        );
+        for greeting in [
+            "プロデューサーです。どうぞ宜しく。",
+            "プロデューサーです。どうぞ、よろしく。",
+            "プロデューサー。はい、どうぞ。",
+        ] {
+            let r = with(greeting, de);
+            assert!(matches!(
+                live("mara", "mara_first_talk", "mara_codeswitch", &r),
+                Outcome::Fail(_)
+            ));
+        }
         assert_eq!(
             live("mara", "mara_first_talk", "mara_codeswitch", &ok),
             Outcome::Pass
