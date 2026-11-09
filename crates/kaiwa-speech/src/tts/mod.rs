@@ -28,6 +28,9 @@ pub struct Voice {
     session: Session,
     /// One style vector per phoneme count (510 × 256).
     styles: Vec<f32>,
+    /// The voice the styles belong to, and the archive they come from.
+    name: String,
+    voices: std::path::PathBuf,
     g2p: G2p,
     vocab: HashMap<char, i64>,
 }
@@ -128,9 +131,26 @@ impl Voice {
         Ok(Self {
             session,
             styles: styles(&voices, voice)?,
+            name: voice.to_string(),
+            voices,
             g2p: G2p::new()?,
             vocab: vocab::VOCAB.iter().copied().collect(),
         })
+    }
+
+    /// The voice it speaks with (`jf_tebukuro`, `jm_kumo`, …).
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Speaks with another voice from now on; only its styles load, the model stays. On an
+    /// error it keeps the voice it had.
+    pub fn select(&mut self, voice: &str) -> Result<(), SpeechError> {
+        if voice != self.name {
+            self.styles = styles(&self.voices, voice)?;
+            self.name = voice.to_string();
+        }
+        Ok(())
     }
 
     pub fn phonemes(&self, text: &str) -> String {
@@ -253,6 +273,23 @@ mod tests {
         assert!(audio.len() > SAMPLE_RATE as usize / 2);
         let heard = rec.transcribe(&audio, SAMPLE_RATE);
         assert!(heard.contains("コーヒー"), "heard {heard}");
+    }
+
+    /// Another scenario's character speaks with its own voice; an unknown one keeps the old.
+    /// Needs Kokoro (`KAIWA_MODELS`).
+    #[test]
+    fn select_switches_the_voice() {
+        let dir = crate::models::kokoro_dir();
+        let Ok(mut voice) = Voice::from_dir(&dir, "jf_tebukuro", 2) else {
+            eprintln!("skipped: no Kokoro in {}", dir.display());
+            return;
+        };
+        let before = voice.speak("はい。", 1.0).unwrap();
+        voice.select("jm_kumo").unwrap();
+        assert_eq!(voice.name(), "jm_kumo");
+        assert_ne!(voice.speak("はい。", 1.0).unwrap(), before);
+        assert!(voice.select("xx_none").is_err());
+        assert_eq!(voice.name(), "jm_kumo");
     }
 
     /// Both runtimes at once, as in the app: the learner speaks while the character's line is

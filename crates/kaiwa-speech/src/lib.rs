@@ -44,6 +44,11 @@ pub trait Synthesizer: Send {
     /// One sentence as mono samples at [`Synthesizer::sample_rate`]; `speed` 1.0 is normal.
     fn speak(&mut self, text: &str, speed: f32) -> Result<Vec<f32>, SpeechError>;
     fn sample_rate(&self) -> u32;
+    /// The voice it speaks with.
+    fn voice(&self) -> &str;
+    /// Speaks with another of its voices from now on (another character); keeps the old one
+    /// on an error.
+    fn select(&mut self, voice: &str) -> Result<(), SpeechError>;
 }
 
 impl Transcriber for stt::Recognizer {
@@ -58,6 +63,12 @@ impl Synthesizer for tts::Voice {
     }
     fn sample_rate(&self) -> u32 {
         tts::SAMPLE_RATE
+    }
+    fn voice(&self) -> &str {
+        self.name()
+    }
+    fn select(&mut self, voice: &str) -> Result<(), SpeechError> {
+        tts::Voice::select(self, voice)
     }
 }
 
