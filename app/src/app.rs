@@ -39,8 +39,8 @@ pub mod qobject {
         fn refresh(self: Pin<&mut KaiwaApp>);
 
         /// Changes one setting: goal, gamification, feedback, script, endPause, style, uiLang,
-        /// reminder, costLimit, moraHints, keepRecordings, name, tutorProvider, tutorModel,
-        /// tutorBase.
+        /// reminder, costLimit, moraHints, keepRecordings, name, tutorProvider (a preset id),
+        /// tutorModel, tutorBase.
         #[qinvokable]
         #[cxx_name = "setSetting"]
         fn set_setting(self: Pin<&mut KaiwaApp>, key: &QString, value: &QString);
@@ -356,12 +356,19 @@ impl qobject::KaiwaApp {
                 }
                 "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
                 "name" => p.name = value,
-                // The tutor (Q-15): "anthropic", "openai" or "" for none; model and server for
-                // an OpenAI-compatible one.
+                // The tutor (Q-15): a preset id or "" for none; model and server for an
+                // OpenAI-compatible one.
+                // Model and server belong to the provider: a new one starts without them, so
+                // no server of the old one is used by mistake.
                 "tutorProvider" => {
-                    p.tutor.provider = match value.as_str() {
-                        "anthropic" | "openai" => value,
-                        _ => String::new(),
+                    let id = kaiwa_ai::presets::preset(&value)
+                        .map(|p| p.id.to_string())
+                        .unwrap_or_default();
+                    if id != p.tutor.provider {
+                        p.tutor = kaiwa_ai::Tutor {
+                            provider: id,
+                            ..Default::default()
+                        };
                     }
                 }
                 "tutorModel" => p.tutor.model = value.trim().to_string(),
@@ -519,6 +526,10 @@ impl qobject::KaiwaApp {
     fn store_key(mut self: Pin<&mut Self>, key: &QString) {
         let provider = state().tutor_env()("KAIWA_PROVIDER").unwrap_or_default();
         let de = self.lang().to_string() == "de";
+        // Only a provider that takes a key has a keyring entry.
+        if kaiwa_ai::presets::preset(&provider).is_none_or(|p| p.key_env.is_none()) {
+            return;
+        }
         let msg = match (kaiwa_ai::secrets::store(&provider, &key.to_string()), de) {
             (Ok(()), true) => "Der Schlüssel liegt im Schlüsselbund.".to_string(),
             (Ok(()), false) => "The key is in the keyring.".to_string(),

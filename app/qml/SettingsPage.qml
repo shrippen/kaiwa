@@ -221,8 +221,8 @@ QQC2.ScrollView {
             Layout.fillWidth: true
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
-            text: page.t("Der Tutor ist das Sprachmodell, das die Figuren spielt und deine Sätze prüft. Lokal läuft er auf deinem Rechner (z. B. Ollama oder LM Studio, OpenAI-kompatibel); Anthropic Claude läuft in der Cloud und braucht einen API-Schlüssel. Ein API-Schlüssel ist eine Art Passwort, mit dem Kaiwa den Dienst des Anbieters nutzen darf; du bekommst ihn in deinem Konto beim Anbieter.",
-                         "The tutor is the language model that plays the characters and checks your sentences. Locally it runs on your computer (e.g. Ollama or LM Studio, OpenAI-compatible); Anthropic Claude runs in the cloud and needs an API key. An API key is a kind of password that lets Kaiwa use the provider's service; you get it in your account with the provider.")
+            text: page.t("Der Tutor ist das Sprachmodell, das die Figuren spielt und deine Sätze prüft. Ollama und LM Studio laufen auf deinem Rechner, dann verlässt nichts das Gerät. Anthropic, OpenRouter, OpenAI, Google und Mistral laufen in der Cloud und brauchen einen API-Schlüssel; über OpenRouter erreichst du mit einem Schlüssel die Modelle vieler Anbieter. Ein API-Schlüssel ist eine Art Passwort, mit dem Kaiwa den Dienst des Anbieters nutzen darf; du bekommst ihn in deinem Konto beim Anbieter.",
+                         "The tutor is the language model that plays the characters and checks your sentences. Ollama and LM Studio run on your computer, then nothing leaves the device. Anthropic, OpenRouter, OpenAI, Google and Mistral run in the cloud and need an API key; OpenRouter reaches the models of many providers with one key. An API key is a kind of password that lets Kaiwa use the provider's service; you get it in your account with the provider.")
             wrapMode: Text.Wrap
             color: KanteStyle.mutedTextColor
             font: KanteStyle.smallFont
@@ -230,37 +230,48 @@ QQC2.ScrollView {
         Row {
             id: tutorRow
             readonly property var tutor: page.p.tutor || ({})
-            readonly property var values: ["", "openai", "anthropic"]
+            readonly property var presets: tutor.presets || []
+            readonly property var preset: presets.find(function (x) { return x.id === (tutor.provider || "") }) || null
             title: page.t("Anbieter", "Provider")
             hint: (tutor.status || "") + (tutor.fromEnvironment ? page.t(" Die Umgebung (KAIWA_PROVIDER) legt ihn gerade fest.", " The environment (KAIWA_PROVIDER) sets it right now.") : "")
-            KanteSegmented {
-                model: [page.t("Keiner", "None"), page.t("Lokal (OpenAI-kompatibel)", "Local (OpenAI-compatible)"), "Anthropic Claude"]
-                currentIndex: Math.max(0, tutorRow.values.indexOf(tutorRow.tutor.provider || ""))
-                onActivated: function (i) { page.kaiwa.setSetting("tutorProvider", tutorRow.values[i]) }
+            KanteComboBox {
+                Layout.preferredWidth: KanteStyle.unit(260)
+                model: [page.t("Keiner", "None")].concat(tutorRow.presets.map(function (x) {
+                    return x.label + (x.local ? page.t(" · auf diesem Rechner", " · on this computer") : "")
+                }))
+                currentIndex: tutorRow.preset ? tutorRow.presets.indexOf(tutorRow.preset) + 1 : 0
+                onActivated: function (i) { page.kaiwa.setSetting("tutorProvider", i === 0 ? "" : tutorRow.presets[i - 1].id) }
                 Accessible.name: page.t("Tutor-Anbieter", "Tutor provider")
             }
         }
         Row {
-            visible: (tutorRow.tutor.provider || "") === "openai"
+            visible: !!tutorRow.preset && tutorRow.preset.needsModel
             title: page.t("Modell", "Model")
-            hint: page.t("Der Name, unter dem der Server das Modell kennt, z. B. qwen3:14b", "The name the server knows the model by, e.g. qwen3:14b")
+            hint: tutorRow.preset
+                  ? page.t("Der Name, unter dem der Anbieter das Modell kennt, z. B. " + tutorRow.preset.exampleModel + ". Japanisch und Erklärungen auf Deutsch gelingen größeren Modellen besser.",
+                           "The name the provider knows the model by, e.g. " + tutorRow.preset.exampleModel + ". Larger models do better at Japanese and at explaining in German.")
+                  : ""
             KanteTextField {
-                Layout.preferredWidth: KanteStyle.unit(240)
+                Layout.preferredWidth: KanteStyle.unit(260)
                 text: tutorRow.tutor.model || ""
-                placeholderText: "qwen3:14b"
+                placeholderText: tutorRow.preset ? tutorRow.preset.exampleModel : ""
                 onEditingFinished: if (text !== (tutorRow.tutor.model || "")) page.kaiwa.setSetting("tutorModel", text)
                 Accessible.name: page.t("Modell", "Model")
             }
         }
         Row {
-            visible: (tutorRow.tutor.provider || "") === "openai"
+            visible: !!tutorRow.preset && tutorRow.preset.needsModel
             title: page.t("Server", "Server")
-            hint: page.t("Leer heißt Ollama auf diesem Rechner. Ein Server außerhalb dieses Rechners ist eine Cloud: dann gehen die Gespräche dorthin.",
-                         "Empty means Ollama on this computer. A server outside this computer is a cloud: the conversations then go there.")
+            hint: tutorRow.preset && tutorRow.preset.needsServer
+                  ? page.t("Die Adresse eines OpenAI-kompatiblen Servers. Liegt er außerhalb dieses Rechners, ist er eine Cloud: dann gehen die Gespräche dorthin.",
+                           "The address of an OpenAI-compatible server. Outside this computer it is a cloud: the conversations then go there.")
+                  : page.t("Leer heißt die Adresse des Anbieters. Nur ändern, wenn er woanders läuft; ein Server außerhalb dieses Rechners ist eine Cloud.",
+                           "Empty means the provider's address. Change it only when it runs elsewhere; a server outside this computer is a cloud.")
             KanteTextField {
                 Layout.preferredWidth: KanteStyle.unit(300)
                 text: tutorRow.tutor.baseUrl || ""
-                placeholderText: "http://localhost:11434/v1"
+                placeholderText: tutorRow.preset && tutorRow.preset.server ? tutorRow.preset.server : "http://localhost:8080/v1"
+                invalid: !!tutorRow.preset && tutorRow.preset.needsServer && text.trim().length === 0
                 onEditingFinished: if (text !== (tutorRow.tutor.baseUrl || "")) page.kaiwa.setSetting("tutorBase", text)
                 Accessible.name: page.t("Server-Adresse", "Server address")
             }
@@ -268,7 +279,7 @@ QQC2.ScrollView {
         // The API key, only in the system keyring (/LF713/).
         Row {
             visible: !!page.p.key
-            title: page.t("API-Schlüssel", "API key") + (page.p.key ? " · " + page.p.key.provider : "")
+            title: page.t("API-Schlüssel", "API key") + (page.p.key ? " · " + page.p.key.label : "")
             hint: page.p.key ? page.p.key.text : ""
             RowLayout {
                 spacing: KanteStyle.unit(8)
@@ -395,8 +406,8 @@ QQC2.ScrollView {
             visible: page.privacy.some(function (f) { return f.cloud })
             title: page.t("Kostenbremse", "Cost limit")
             hint: (page.p.cost ? [page.p.cost.text, page.p.cost.unknown].filter(function (x) { return x.length > 0 }).join(" ") : "")
-                + page.t(" Geschätzt aus den Listenpreisen; am Limit antwortet der Cloud-Tutor bis Monatsende nicht mehr.",
-                         " Estimated from list prices; at the limit the cloud tutor stops answering until the month ends.")
+                + page.t(" Geschätzt aus dem Preis, den der Anbieter meldet, sonst aus den Listenpreisen. Am Limit antwortet der Cloud-Tutor bis Monatsende nicht mehr.",
+                         " Estimated from the price the provider reports, else from list prices. At the limit the cloud tutor stops answering until the month ends.")
             KanteSegmented {
                 readonly property var values: [null, 200, 500, 1000, 2000]
                 model: [page.t("Ohne", "None"), "2 €", "5 €", "10 €", "20 €"]

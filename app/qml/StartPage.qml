@@ -37,8 +37,8 @@ QQC2.ScrollView {
             visible: page.today.needsTutor === true
             kind: KanteCallout.Kind.Warn
             title: page.t("Noch kein Tutor", "No tutor yet")
-            text: page.t("Die Figuren spielt ein Sprachmodell: lokal auf deinem Rechner oder Anthropic Claude in der Cloud. Richte es in den Einstellungen unter „Tutor“ ein.",
-                         "A language model plays the characters: locally on your computer or Anthropic Claude in the cloud. Set it up in the settings under Tutor.")
+            text: page.t("Die Figuren spielt ein Sprachmodell: lokal auf deinem Rechner (Ollama, LM Studio) oder in der Cloud (Anthropic, OpenRouter und andere). Richte es in den Einstellungen unter „Tutor“ ein.",
+                         "A language model plays the characters: locally on your computer (Ollama, LM Studio) or in the cloud (Anthropic, OpenRouter and others). Set it up in the settings under Tutor.")
         }
         KanteButton {
             Layout.leftMargin: KanteStyle.unit(18)

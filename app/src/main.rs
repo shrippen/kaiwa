@@ -3,7 +3,7 @@
 //! GUI from Kante (System, Kante, Kante Light). The profile is a file (`kaiwa-store`).
 //!
 //!   cargo run -p kaiwa-app                      # recorded tutor answers (demo mode)
-//!   KAIWA_PROVIDER=openai KAIWA_MODEL=… cargo run -p kaiwa-app
+//!   KAIWA_PROVIDER=ollama KAIWA_MODEL=qwen3:14b cargo run -p kaiwa-app   # presets: app/README.md
 //!   cargo run -p kaiwa-app -- --shot out.png --kind 1 --say "コーヒーを好きです。"
 
 mod app;

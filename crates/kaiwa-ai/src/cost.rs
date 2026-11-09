@@ -32,14 +32,32 @@ fn prices() -> &'static PriceFile {
 pub fn cents(model: &str, input: u64, output: u64) -> Option<f64> {
     let p = prices();
     let (i, o) = p.models.get(model)?;
-    Some((input as f64 * i + output as f64 * o) / 1e6 * p.usd_to_eur * 100.0)
+    Some(at(*i, *o, input, output))
+}
+
+fn at(i: f64, o: f64, input: u64, output: u64) -> f64 {
+    (input as f64 * i + output as f64 * o) / 1e6 * prices().usd_to_eur * 100.0
+}
+
+/// Euro cents of a cloud call whose model has no price: as if it were the dearest model in
+/// the list, so the brake rather holds too early than never.
+pub fn ceiling_cents(input: u64, output: u64) -> f64 {
+    let p = prices();
+    let max = |f: fn(&(f64, f64)) -> f64| p.models.values().map(f).fold(0.0, f64::max);
+    at(max(|x| x.0), max(|x| x.1), input, output)
+}
+
+/// Euro cents for a price the provider reports in US dollars (OpenRouter's `usage.cost`).
+pub fn usd_cents(usd: f64) -> f64 {
+    usd * prices().usd_to_eur * 100.0
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Spent {
     /// Euro cents of the calls with a known price.
     pub cents: f64,
-    /// Calls whose model has no price (counted, not guessed).
+    /// Cloud calls whose model has no price, counted at the dearest known one
+    /// ([`ceiling_cents`]); a server on this computer costs nothing and is not counted here.
     pub unknown_calls: u32,
     pub calls: u32,
 }
@@ -53,12 +71,30 @@ pub struct Meter {
 }
 
 impl Meter {
-    pub fn record(&self, model: &str, input: u64, output: u64) {
+    /// Books one call: the price the provider reports, else the list price, else (in the
+    /// cloud) the ceiling; a server on this computer is free.
+    pub fn record(
+        &self,
+        model: &str,
+        input: u64,
+        output: u64,
+        cloud: bool,
+        reported_usd: Option<f64>,
+    ) {
         let mut s = self.spent.lock().unwrap_or_else(|e| e.into_inner());
         s.calls += 1;
-        match cents(model, input, output) {
+        if !cloud {
+            return;
+        }
+        match reported_usd
+            .map(usd_cents)
+            .or_else(|| cents(model, input, output))
+        {
             Some(c) => s.cents += c,
-            None => s.unknown_calls += 1,
+            None => {
+                s.cents += ceiling_cents(input, output);
+                s.unknown_calls += 1;
+            }
         }
     }
 
@@ -103,13 +139,16 @@ pub fn usage(answer: &Value) -> Option<(u64, u64)> {
 pub struct Metered<T: Transport> {
     pub inner: T,
     pub meter: &'static Meter,
+    /// The server is outside this computer: its calls cost money.
+    pub cloud: bool,
 }
 
 impl<T: Transport> Metered<T> {
-    pub fn new(inner: T) -> Self {
+    pub fn new(inner: T, cloud: bool) -> Self {
         Self {
             inner,
             meter: meter(),
+            cloud,
         }
     }
 }
@@ -130,7 +169,8 @@ impl<T: Transport> Transport for Metered<T> {
                 .as_str()
                 .or_else(|| body["model"].as_str())
                 .unwrap_or_default();
-            self.meter.record(model, i, o);
+            let reported = answer["usage"]["cost"].as_f64();
+            self.meter.record(model, i, o, self.cloud, reported);
         }
         Ok(answer)
     }
@@ -160,6 +200,7 @@ mod tests {
                 "content": []
             })),
             meter: m,
+            cloud: true,
         };
         t.post_json("u", &[], &json!({})).unwrap();
         let spent = m.peek();
@@ -177,12 +218,21 @@ mod tests {
     }
 
     #[test]
-    fn unknown_models_are_counted_not_guessed() {
+    fn an_unknown_cloud_model_costs_the_ceiling_a_local_one_nothing() {
         let m = Meter::default();
-        m.record("local-model", 5000, 500);
-        let s = m.peek();
+        m.record("qwen3:14b", 5000, 500, false, None);
+        let s = m.take();
+        assert_eq!((s.calls, s.unknown_calls, s.cents), (1, 0, 0.0));
+        m.record("gpt-4.1", 1_000_000, 0, true, None);
+        let s = m.take();
         assert_eq!((s.calls, s.unknown_calls), (1, 1));
-        assert_eq!(s.cents, 0.0);
+        let dearest = cents("claude-opus-5-5", 1_000_000, 0).unwrap();
+        assert!((s.cents - dearest).abs() < 1e-9, "{}", s.cents);
+        // A price the provider reports wins (OpenRouter: usage.cost in dollars).
+        m.record("anthropic/claude-sonnet-4.5", 1_000_000, 0, true, Some(1.0));
+        let s = m.take();
+        assert_eq!(s.unknown_calls, 0);
+        assert!((s.cents - 92.0).abs() < 1e-9);
         assert_eq!(
             usage(&json!({ "usage": { "prompt_tokens": 10, "completion_tokens": 3 } })),
             Some((10, 3))

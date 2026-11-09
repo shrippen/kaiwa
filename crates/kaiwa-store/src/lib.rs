@@ -26,7 +26,9 @@ use kaiwa_core::srs::{self, Grade, Item};
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
-pub const EXPORT_SCHEMA: &str = "kaiwa-export/1";
+/// The export format; 2 names the tutor by its preset (migration 3). An export of format 1
+/// is read with [`tutor_ids_3`].
+pub const EXPORT_SCHEMA: &str = "kaiwa-export/2";
 
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
@@ -265,7 +267,27 @@ const MIGRATIONS: &[&str] = &[
     // 2: unit and scenario ids in path order (2026-10-14, before the first release); the
     // rewrite of the stored ids is `rename_unit_ids`.
     "SELECT 1;",
+    // 3: tutor presets (2026-11-09, before the first release): "openai" meant any
+    // OpenAI-compatible server and is now the provider OpenAI; without a server it was
+    // Ollama on this computer, with one it is "custom".
+    "UPDATE settings SET value = json_set(value, '$.tutor.provider',
+        CASE WHEN coalesce(json_extract(value, '$.tutor.base_url'), '') = ''
+             THEN 'ollama' ELSE 'custom' END)
+     WHERE key = 'profile' AND json_extract(value, '$.tutor.provider') = 'openai';",
 ];
+
+/// Migration 3 for a profile outside the database (an export of format 1): "openai" was any
+/// OpenAI-compatible server, Ollama on this computer without a server.
+fn tutor_ids_3(profile: &mut serde_json::Value) {
+    // An export from before the tutor setting (14.10.2026) has none; it stays missing.
+    let Some(t) = profile.get_mut("tutor") else {
+        return;
+    };
+    if t["provider"] == "openai" {
+        let base = t["base_url"].as_str().unwrap_or_default();
+        t["provider"] = if base.is_empty() { "ollama" } else { "custom" }.into();
+    }
+}
 
 /// Migration 2: unit ids before → after (scenario ids carry the unit id as prefix). Frozen;
 /// one pass per text, so n5-13 → n5-03 and n5-03 → n5-04 do not chain.
@@ -922,8 +944,11 @@ impl Store {
 
     /// Reads an export into this (new, empty) profile.
     pub fn import(&self, v: &serde_json::Value) -> Result<()> {
-        if v["schema"] != EXPORT_SCHEMA {
-            return Err(StoreError::WrongFormat(v["schema"].to_string()));
+        let mut profile = v["profile"].clone();
+        match v["schema"].as_str() {
+            Some(EXPORT_SCHEMA) => {}
+            Some("kaiwa-export/1") => tutor_ids_3(&mut profile),
+            _ => return Err(StoreError::WrongFormat(v["schema"].to_string())),
         }
         let empty: i64 = self
             .db
@@ -932,7 +957,7 @@ impl Store {
             return Err(StoreError::NotEmpty);
         }
         let tx = self.db.unchecked_transaction()?;
-        self.set_profile(&serde_json::from_value(v["profile"].clone())?)?;
+        self.set_profile(&serde_json::from_value(profile)?)?;
         self.set_learning(&serde_json::from_value(v["learning"].clone())?)?;
         for s in v["sessions"].as_array().into_iter().flatten() {
             let row: SessionRow = serde_json::from_value(s["row"].clone())?;

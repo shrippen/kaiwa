@@ -18,30 +18,32 @@ pub struct Flow {
     pub sends: String,
 }
 
-fn local_host(url: &str) -> bool {
-    url.is_empty()
-        || ["localhost", "127.0.0.1", "[::1]", "0.0.0.0"]
-            .iter()
-            .any(|h| url.contains(h))
-}
-
-/// The flows for the settings in `env` (`KAIWA_PROVIDER`, `KAIWA_OPENAI_BASE`).
+/// The flows for the settings in `env` (`KAIWA_PROVIDER`, `KAIWA_OPENAI_BASE`), by preset.
 pub fn flows(env: impl Fn(&str) -> Option<String>, lang: &str) -> Vec<Flow> {
     let de = lang == "de";
     let nothing = if de { "nichts" } else { "nothing" };
-    let provider = env("KAIWA_PROVIDER").unwrap_or_default();
-    let base = env("KAIWA_OPENAI_BASE").unwrap_or_default();
-    let (llm, cloud) = match provider.as_str() {
-        "anthropic" => ("Anthropic Claude".to_string(), true),
-        "openai" if local_host(&base) => (
-            format!(
-                "OpenAI-kompatibel ({})",
-                if base.is_empty() { "lokal" } else { &base }
-            ),
-            false,
-        ),
-        "openai" => (format!("OpenAI-kompatibel ({base})"), true),
-        _ => (
+    let (llm, cloud) = match env("KAIWA_PROVIDER")
+        .filter(|p| !p.is_empty())
+        .and_then(|p| crate::presets::preset(&p))
+    {
+        Some(p) => {
+            let cloud = p.cloud(&env);
+            // A server other than the preset's is named, so the learner sees where it goes.
+            let server = p.base_url(&env).filter(|b| b != p.base);
+            let label = if p.id == "custom" && !de {
+                "OpenAI-compatible"
+            } else {
+                p.label
+            };
+            (
+                match server {
+                    Some(b) => format!("{label} ({b})"),
+                    None => label.to_string(),
+                },
+                cloud,
+            )
+        }
+        None => (
             if de {
                 "Keiner eingerichtet".into()
             } else {
@@ -124,9 +126,10 @@ mod tests {
     fn local_only_sends_nothing() {
         for e in [
             env(&[]),
+            env(&[("KAIWA_PROVIDER", "ollama"), ("KAIWA_MODEL", "qwen3:14b")]),
             env(&[
-                ("KAIWA_PROVIDER", "openai"),
-                ("KAIWA_OPENAI_BASE", "http://localhost:11434/v1"),
+                ("KAIWA_PROVIDER", "custom"),
+                ("KAIWA_OPENAI_BASE", "http://127.0.0.1:8080/v1"),
             ]),
         ] {
             let f = flows(e, "de");
@@ -141,11 +144,17 @@ mod tests {
         assert!(f[1].sends.starts_with("Text") && f[1].sends.contains("ohne Audio"));
         let f = flows(
             env(&[
-                ("KAIWA_PROVIDER", "openai"),
+                ("KAIWA_PROVIDER", "custom"),
                 ("KAIWA_OPENAI_BASE", "https://api.example.com/v1"),
             ]),
             "en",
         );
         assert!(f[1].cloud && f[1].place == "Cloud");
+        assert_eq!(
+            f[1].provider,
+            "OpenAI-compatible (https://api.example.com/v1)"
+        );
+        let f = flows(env(&[("KAIWA_PROVIDER", "openrouter")]), "de");
+        assert!(f[1].cloud && f[1].provider == "OpenRouter");
     }
 }

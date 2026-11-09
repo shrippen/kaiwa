@@ -7,8 +7,8 @@
 #   ./start.sh sim [args…]     kaiwa-sim, default `run` (the persona journeys in text mode)
 #   ./start.sh check           what CI runs on the Rust side: fmt, clippy, tests, personas
 #
-# The tutor is set up in the settings (Tutor); KAIWA_PROVIDER=openai KAIWA_MODEL=… (and
-# KAIWA_API_KEY) overrides it. Recorded answers (qa/fixtures) only in the demo build.
+# The tutor is set up in the settings (Tutor); KAIWA_PROVIDER (a preset id: ollama,
+# openrouter, …, see app/README.md) with KAIWA_MODEL and the key variable overrides it. Recorded answers (qa/fixtures) only in the demo build.
 # Further arguments go to the program, e.g. `./start.sh demo en --view path`.
 set -euo pipefail
 cd "$(dirname "$0")"

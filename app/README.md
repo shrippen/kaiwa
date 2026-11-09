@@ -80,14 +80,16 @@ Die Lautumschrift ist ein Nachbau von misakis japanischer G2P auf lindera mit IP
 
 ## Tutor (ADR-004, Q-15)
 
-Der Tutor wird in den Einstellungen unter „Tutor“ eingerichtet: „Lokal (OpenAI-kompatibel)“ mit Modellname und Server (leer ist Ollama auf diesem Rechner) oder „Anthropic Claude“; der API-Schlüssel liegt im Schlüsselbund des Systems (/LF713/). Ohne Tutor gibt es keine Gespräche, die App sagt das, statt etwas zu erfinden. Für den lokalen Test überschreiben Umgebungsvariablen die Einstellungen:
+Der Tutor wird in den Einstellungen unter „Tutor“ eingerichtet. Zur Wahl stehen Voreinstellungen (`kaiwa_ai::presets`): Ollama und LM Studio auf diesem Rechner, Anthropic Claude, OpenRouter, OpenAI, Google Gemini, Mistral und ein eigener OpenAI-kompatibler Server. Außer bei Anthropic gehört ein Modellname dazu, beim eigenen Server die Adresse. Der API-Schlüssel liegt im Schlüsselbund des Systems (/LF713/), je Anbieter ein Eintrag. Ohne Tutor gibt es keine Gespräche, die App sagt das, statt etwas zu erfinden. Für den lokalen Test überschreiben Umgebungsvariablen die Einstellungen:
 
 ```sh
 KAIWA_PROVIDER=anthropic ANTHROPIC_API_KEY=… cargo run -p kaiwa-app
-KAIWA_PROVIDER=openai KAIWA_OPENAI_BASE=http://localhost:11434/v1 KAIWA_MODEL=qwen3:14b cargo run -p kaiwa-app
+KAIWA_PROVIDER=openrouter OPENROUTER_API_KEY=… KAIWA_MODEL=… cargo run -p kaiwa-app
+KAIWA_PROVIDER=ollama KAIWA_MODEL=qwen3:14b cargo run -p kaiwa-app
+KAIWA_PROVIDER=custom KAIWA_OPENAI_BASE=http://gpu.lan:8080/v1 KAIWA_MODEL=… cargo run -p kaiwa-app
 ```
 
-Im Demo-Build antworten ohne Tutor die Aufzeichnungen, was ein Banner oben anzeigt. Anthropic nutzt die Voreinstellung aus ADR-004: ein schnelles Modell für die Antwort, ein stärkeres für die Analyse.
+Im Demo-Build antworten ohne Tutor die Aufzeichnungen, was ein Banner oben anzeigt. Die Schlüssel-Variablen sind `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY` und `KAIWA_API_KEY` (eigener Server); `KAIWA_OPENAI_BASE` ersetzt die Adresse eines OpenAI-kompatiblen Anbieters. Anthropic nutzt die Voreinstellung aus ADR-004: ein schnelles Modell für die Antwort, ein stärkeres für die Analyse.
 
 ## Kante aktualisieren
 

@@ -89,6 +89,7 @@
   <file>Kante/KanteSheetSkin.qml</file>
   <file>Kante/KanteSkeleton.qml</file>
   <file>Kante/KanteSliderSkin.qml</file>
+  <file>Kante/KanteSongMap.qml</file>
   <file>Kante/KanteSparkline.qml</file>
   <file>Kante/KanteSpinBox.qml</file>
   <file>Kante/KanteSplitHandle.qml</file>

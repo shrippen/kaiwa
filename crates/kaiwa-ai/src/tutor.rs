@@ -9,13 +9,16 @@ use crate::{AiError, Analysis, ChatProvider, TurnRequest};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Tutor {
-    /// "anthropic", "openai" (any OpenAI-compatible server) or empty for none.
+    /// A preset id ([`crate::presets::PRESETS`]: "ollama", "anthropic", "openrouter", …,
+    /// "custom" for any OpenAI-compatible server) or empty for none.
     #[serde(default)]
     pub provider: String,
-    /// The model name for an OpenAI-compatible server (`qwen3:14b`); Anthropic uses its presets.
+    /// The model name for an OpenAI-compatible provider (`qwen3:14b`); Anthropic uses its
+    /// presets.
     #[serde(default)]
     pub model: String,
-    /// The server of an OpenAI-compatible provider; empty is Ollama on this machine.
+    /// The server of an OpenAI-compatible provider; empty is the preset's (needed for
+    /// "custom").
     #[serde(default)]
     pub base_url: String,
 }
@@ -59,13 +62,13 @@ mod tests {
     #[test]
     fn the_environment_wins_over_the_settings() {
         let t = Tutor {
-            provider: "openai".into(),
+            provider: "ollama".into(),
             model: "qwen3:14b".into(),
             base_url: String::new(),
         };
         let none = |_: &str| None;
         let l = t.lookup(none);
-        assert_eq!(l("KAIWA_PROVIDER").as_deref(), Some("openai"));
+        assert_eq!(l("KAIWA_PROVIDER").as_deref(), Some("ollama"));
         assert_eq!(l("KAIWA_OPENAI_BASE"), None);
         assert_eq!(l("ANTHROPIC_API_KEY"), None);
         let env = |k: &str| (k == "KAIWA_PROVIDER").then(|| "anthropic".to_string());

@@ -20,8 +20,10 @@ Ein Tutor wird über die Umgebung gewählt (`kaiwa-sim` hat kein Profil und kein
 
 ```sh
 export KAIWA_PROVIDER=anthropic ANTHROPIC_API_KEY=…                 # Haiku antwortet, Sonnet analysiert
+# oder über OpenRouter (ein Schlüssel, viele Modelle):
+export KAIWA_PROVIDER=openrouter OPENROUTER_API_KEY=… KAIWA_MODEL=…  # Modell-Id wie auf openrouter.ai/models
 # oder lokal:
-export KAIWA_PROVIDER=openai KAIWA_MODEL=qwen3:14b KAIWA_OPENAI_BASE=http://localhost:11434/v1
+export KAIWA_PROVIDER=ollama KAIWA_MODEL=qwen3:14b
 ```
 
 Dann:
@@ -51,10 +53,10 @@ Die übrigen Prüfregeln laufen dabei auch mit dem echten Tutor. Interessant ist
 **Erst die Variablen aus Schritt 1 entfernen** (oder ein neues Terminal öffnen). Sie haben Vorrang vor den Einstellungen; sonst redest du ab hier mit dem Tutor aus Schritt 1, und die lokalen Messungen in 3.5 und 4.3 stimmen nicht:
 
 ```sh
-unset KAIWA_PROVIDER KAIWA_MODEL KAIWA_OPENAI_BASE ANTHROPIC_API_KEY
+unset KAIWA_PROVIDER KAIWA_MODEL KAIWA_OPENAI_BASE KAIWA_API_KEY ANTHROPIC_API_KEY OPENROUTER_API_KEY OPENAI_API_KEY GEMINI_API_KEY MISTRAL_API_KEY
 ```
 
-`cargo run -p kaiwa-app` (wie im Paket, ohne Demo), dann Einstellungen › Tutor: „Lokal (OpenAI-kompatibel)“ mit Modell und Server (leer ist Ollama auf diesem Rechner) oder „Anthropic Claude“ mit dem Schlüssel, der im Schlüsselbund landet. Gesetzte Umgebungsvariablen haben Vorrang vor den Einstellungen.
+`cargo run -p kaiwa-app` (wie im Paket, ohne Demo), dann Einstellungen › Tutor: einen Anbieter wählen (Ollama oder LM Studio auf diesem Rechner, Anthropic, OpenRouter, OpenAI, Google Gemini, Mistral oder einen eigenen OpenAI-kompatiblen Server), bei den OpenAI-kompatiblen das Modell eintragen, bei einer Cloud den Schlüssel, der im Schlüsselbund landet. Gesetzte Umgebungsvariablen haben Vorrang vor den Einstellungen.
 
 Was du beurteilst, steht in der Vorlage. Kurz:
 

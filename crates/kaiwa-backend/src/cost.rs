@@ -92,8 +92,12 @@ impl Backend {
         };
         let unknown = match (m.unknown_calls, de) {
             (0, _) => String::new(),
-            (n, true) => format!("{n} Aufrufe ohne bekannten Preis sind nicht mitgezählt."),
-            (n, false) => format!("{n} calls without a known price are not counted."),
+            (n, true) => format!(
+                "{n} Aufrufe ohne bekannten Preis sind wie das teuerste bekannte Modell gezählt, die Bremse greift eher zu früh."
+            ),
+            (n, false) => format!(
+                "{n} calls without a known price are counted like the dearest known model, so the limit rather holds too early."
+            ),
         };
         Ok(json!({
             "cents": m.cents,
