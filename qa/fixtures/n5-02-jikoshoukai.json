@@ -8,7 +8,7 @@
   { "learner": "ドイツのハンブルクから来ました。", "reply": "ハンブルクですか。いいですね。お{仕事|しごと}は{何|なん}ですか。",
     "translation": { "de": "Hamburg? Schön. Was machen Sie beruflich?", "en": "Hamburg? Nice. What do you do for work?" },
     "analysis": { "understood": true, "goals_met": ["origin"], "corrections": [], "new_words": ["ハンブルク"] } },
-  { "learner": "仕事はプロデューサーです。", "reply": "プロデューサーですか。すごいですね。{何|なん}が{好|す}きですか。",
+  { "learner": "仕事はプロデューサーです。", "reply": "プロデューサーですか。すごいですね。{何|なに}が{好|す}きですか。",
     "translation": { "de": "Produzentin? Toll. Was mögen Sie gern?", "en": "A producer? Great. What do you like?" },
     "analysis": { "understood": true, "goals_met": ["work"], "corrections": [], "new_words": ["仕事"] } },
   { "learner": "コーヒーを好きです。", "reply": "コーヒーが{好|す}きなんですね。わたしも{好|す}きです。",

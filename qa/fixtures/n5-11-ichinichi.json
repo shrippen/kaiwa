@@ -58,7 +58,7 @@
   },
   {
     "learner": "うちに帰ってから、晩ご飯を作ります。",
-    "reply": "えらいですね。{何|なん}を{作|つく}りますか。",
+    "reply": "えらいですね。{何|なに}を{作|つく}りますか。",
     "translation": {
       "de": "Toll. Was kochst du?",
       "en": "Good for you. What do you cook?"
@@ -74,7 +74,7 @@
   },
   {
     "learner": "うちに帰りてから、晩ご飯を作ります。",
-    "reply": "えらいですね。{何|なん}を{作|つく}りますか。",
+    "reply": "えらいですね。{何|なに}を{作|つく}りますか。",
     "translation": {
       "de": "Toll. Was kochst du?",
       "en": "Good for you. What do you cook?"

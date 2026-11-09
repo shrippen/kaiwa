@@ -17,7 +17,7 @@
   },
   {
     "learner": "大きいのをおねがいします。",
-    "reply": "かしこまりました。ほかに{何|なん}かいかがですか。",
+    "reply": "かしこまりました。ほかに{何|なに}かいかがですか。",
     "translation": {
       "de": "Sehr gern. Darf es noch etwas sein?",
       "en": "Certainly. Would you like anything else?"

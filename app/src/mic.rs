@@ -99,12 +99,12 @@ fn lang() -> String {
 /// Why the recognition could not check the recording, and where to fix it (Settings › Models).
 fn recognition_text(e: &kaiwa_speech::SpeechError, de: bool) -> String {
     match (e, de) {
-        (kaiwa_speech::SpeechError::ModelLoad(_), true) => {
-            "ReazonSpeech lässt sich nicht laden. Unter „Modelle“ löschen und neu laden.".into()
-        }
-        (kaiwa_speech::SpeechError::ModelLoad(_), false) => {
-            "ReazonSpeech cannot be loaded. Delete it under “Models” and download it again.".into()
-        }
+        (kaiwa_speech::SpeechError::ModelLoad(dir), true) => format!(
+            "ReazonSpeech lässt sich nicht laden. Den Ordner {dir} löschen, dann unter „Modelle“ neu laden."
+        ),
+        (kaiwa_speech::SpeechError::ModelLoad(dir), false) => format!(
+            "ReazonSpeech cannot be loaded. Delete the folder {dir}, then download it again under “Models”."
+        ),
         (e, true) => format!("Die Spracherkennung lässt sich nicht starten ({e})."),
         (e, false) => format!("The recognition cannot start ({e})."),
     }

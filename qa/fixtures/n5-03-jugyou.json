@@ -1,7 +1,7 @@
 [
   {
     "learner": "すみません、もう一度おねがいします。",
-    "reply": "はい。{週末|しゅうまつ}は、{何|なん}をしますか。",
+    "reply": "はい。{週末|しゅうまつ}は、{何|なに}をしますか。",
     "translation": {
       "de": "Gern. Was machst du am Wochenende?",
       "en": "Sure. What do you do at the weekend?"

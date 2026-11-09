@@ -266,13 +266,19 @@ fn with_unidic(text: &str, tokens: &[unidic::Token], safe: &impl Fn(&str) -> Str
             (tokens[j].counted || digits(&tokens[j].surface))
                 && if j < i { joined(j, i) } else { joined(i, j) }
         };
-        let group =
-            t.counted && ((i > 0 && next_to(i - 1)) || (i + 1 < tokens.len() && next_to(i + 1)));
+        // A number before a counter UniDic files as a suffix (人, 冊: 四人 よにん, 一冊
+        // いっさつ) changes its reading with it, too.
+        let suffix_after = i + 1 < tokens.len() && tokens[i + 1].suffix && joined(i, i + 1);
+        let group = t.counted
+            && ((i > 0 && next_to(i - 1))
+                || (i + 1 < tokens.len() && next_to(i + 1))
+                || suffix_after);
         let after_digits = i > 0 && digits(&tokens[i - 1].surface) && joined(i - 1, i);
         // A suffix is read with the word before, which UniDic does not always see
         // (中国人, 日本人: にん for じん).
         let orphan = t.suffix;
         let reading = match &t.reading {
+            _ if t.surface == "何" => nani(&text[t.end..]),
             Some(r) if !group && !after_digits && !orphan => r.as_str(),
             _ => "",
         };
@@ -281,6 +287,25 @@ fn with_unidic(text: &str, tokens: &[unidic::Token], safe: &impl Fn(&str) -> Str
     }
     out.push_str(&safe(&text[pos..]));
     out
+}
+
+/// 何 on its own by what follows, as UniDic reads it なん everywhere: なん before です, だ, の
+/// and と (何ですか, 何の, 何と), なに before a particle (何を, 何が, 何か, 何も); otherwise
+/// none (何で is either).
+fn nani(after: &str) -> &'static str {
+    if ["です", "だ", "の", "と"]
+        .iter()
+        .any(|p| after.starts_with(p))
+    {
+        "なん"
+    } else if ["を", "が", "か", "も", "に", "は", "へ", "や"]
+        .iter()
+        .any(|p| after.starts_with(p))
+    {
+        "なに"
+    } else {
+        ""
+    }
 }
 
 /// Single kanji with several common readings on their own, as a noun (角 かど/かく, the
@@ -482,6 +507,87 @@ mod tests {
         );
         // Kana only: unchanged.
         assert_eq!(complete(&words, "はい、そうです。"), "はい、そうです。");
+    }
+
+    /// Tokens as UniDic gives them, for the rules of `with_unidic` without the dictionary.
+    fn unidic_tokens(parts: &[(&str, Option<&str>, bool, bool)]) -> (String, Vec<unidic::Token>) {
+        let mut text = String::new();
+        let tokens = parts
+            .iter()
+            .map(|&(surface, reading, counted, suffix)| {
+                let start = text.len();
+                text.push_str(surface);
+                unidic::Token {
+                    surface: surface.into(),
+                    start,
+                    end: text.len(),
+                    reading: reading.map(Into::into),
+                    counted,
+                    suffix,
+                }
+            })
+            .collect();
+        (text, tokens)
+    }
+
+    #[test]
+    fn nani_reads_by_what_follows() {
+        let read = |parts: &[(&str, Option<&str>, bool, bool)]| {
+            let (text, tokens) = unidic_tokens(parts);
+            with_unidic(&text, &tokens, &|s: &str| s.to_string())
+        };
+        let nan = Some("なん");
+        assert_eq!(
+            read(&[("何", nan, false, false), ("を", None, false, false)]),
+            "{何|なに}を"
+        );
+        assert_eq!(
+            read(&[("何", nan, false, false), ("か", None, false, false)]),
+            "{何|なに}か"
+        );
+        assert_eq!(
+            read(&[("何", nan, false, false), ("です", None, false, false)]),
+            "{何|なん}です"
+        );
+        assert_eq!(
+            read(&[("何", nan, false, false), ("の", None, false, false)]),
+            "{何|なん}の"
+        );
+        assert_eq!(
+            read(&[("何", nan, false, false), ("？", None, false, false)]),
+            "何？"
+        );
+    }
+
+    #[test]
+    fn a_number_before_a_suffix_counter_goes_without() {
+        let read = |parts: &[(&str, Option<&str>, bool, bool)]| {
+            let (text, tokens) = unidic_tokens(parts);
+            with_unidic(&text, &tokens, &|s: &str| s.to_string())
+        };
+        // 人 and 冊 come as 接尾辞, not 助数詞 (probe, 9.11.2026).
+        assert_eq!(
+            read(&[
+                ("四", Some("よん"), true, false),
+                ("人", Some("にん"), false, true)
+            ]),
+            "四人"
+        );
+        assert_eq!(
+            read(&[
+                ("一", Some("いち"), true, false),
+                ("冊", Some("さつ"), false, true)
+            ]),
+            "一冊"
+        );
+        // A number alone keeps its reading.
+        assert_eq!(
+            read(&[
+                ("三", Some("さん"), true, false),
+                ("、", None, false, false)
+            ]),
+            "{三|さん}、"
+        );
     }
 
     #[test]
