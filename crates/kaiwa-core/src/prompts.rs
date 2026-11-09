@@ -71,7 +71,10 @@ pub fn reply_system(s: &Scenario, lang: &str, d: &Difficulty, grammar: &[String]
          When the learner switches to {lang_name} to ask for a word, give the Japanese word and ask them to say it.\n\
          Lead the conversation towards these goals, one at a time:\n{goals}\n\
          Never leave the role; if the learner says something inappropriate, steer back to the scene kindly.\n\
-         Answer with the Japanese utterance only, no translation, no romaji.",
+         Answer with the Japanese utterance only, no translation, no romaji.\n\
+         Write the reading of every word with kanji in braces, as it is read in this sentence, \
+         in hiragana: {{漢字|かんじ}}; okurigana and kana stay outside: {{仕事|しごと}}は{{何|なん}}ですか。\
+         {{食|た}}べました。{{角|かど}}を{{右|みぎ}}へ。Katakana words and kana stay as they are.",
         character = s.character.en,
         register = register_words(s.register),
         level = level_words(s, d),

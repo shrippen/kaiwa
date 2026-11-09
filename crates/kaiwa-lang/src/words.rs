@@ -34,6 +34,9 @@ pub struct Word {
     /// For a group: what to look up when the whole is not in the dictionary (弁当 for お弁当,
     /// 五 for 五分).
     pub fallback: Option<String>,
+    /// A proper noun (固有名詞: names, places), whose reading IPADIC often guesses.
+    #[serde(skip)]
+    pub proper: bool,
 }
 
 pub struct Words {
@@ -170,6 +173,7 @@ impl Words {
                     },
                     pos: t.pos.clone(),
                     fallback: None,
+                    proper: t.sub == "固有名詞",
                 });
             }
             digits_end = None;

@@ -165,10 +165,12 @@ pub fn annotate(words: &Words, markup: &str) -> (Vec<Segment>, Vec<LineWord>) {
     (segments, line_words)
 }
 
-/// Furigana markup for plain text (the learner's own line, recognised or typed): the readings
-/// IPADIC gives, kana around the kanji kept apart (`{歩|ある}いて`). A word whose reading
-/// does not fit its kana gets the reading over the whole word; one without a reading stays
-/// plain. Braces and bars in the text become full-width, so they stay text.
+/// Furigana markup for plain text (the learner's own line, recognised or typed; kanji the
+/// tutor left without a reading): the readings IPADIC gives, kana around the kanji kept apart
+/// (`{歩|ある}いて`). Cautious (owner, 9.11.2026): IPADIC reads without the sentence, so a
+/// word it often reads wrong stays without ([`unsure`]); a number with its counter has no
+/// reading anyway. A word whose reading does not fit its kana gets the reading over the
+/// whole word. Braces and bars in the text become full-width, so they stay text.
 pub fn furigana(words: &Words, text: &str) -> String {
     let safe = |t: &str| t.replace('{', "｛").replace('}', "｝").replace('|', "｜");
     let mut out = String::new();
@@ -178,7 +180,8 @@ pub fn furigana(words: &Words, text: &str) -> String {
             continue;
         }
         out.push_str(&safe(&text[pos..w.start]));
-        out.push_str(&ruby(&safe(&w.surface), &w.reading));
+        let reading = if unsure(&w) { "" } else { w.reading.as_str() };
+        out.push_str(&ruby(&safe(&w.surface), reading));
         pos = w.end;
     }
     out.push_str(&safe(&text[pos..]));
@@ -197,6 +200,19 @@ pub fn complete(words: &Words, markup: &str) -> String {
             (false, false) => format!("{{{}|{}}}", m.text, m.reading),
         })
         .collect()
+}
+
+/// Single kanji with several common readings on their own, as a noun (角 かど/かく, the
+/// weekdays 月火水木金土日, 上 うえ/じょう, 方 ほう/かた …). Until UniDic is there, they
+/// stay without a reading rather than with a guessed one.
+const AMBIGUOUS: &str = "角月火水木金土日上下方間今後中前先生人分外内家年時物気";
+
+/// A word whose reading depends on the sentence more than IPADIC sees: 何 (なに or なん),
+/// names and places (固有名詞), and an [`AMBIGUOUS`] kanji standing alone as a noun.
+fn unsure(w: &words::Word) -> bool {
+    let mut chars = w.surface.chars();
+    let single = matches!((chars.next(), chars.next()), (Some(c), None) if AMBIGUOUS.contains(c));
+    w.surface.contains('何') || w.proper || single && w.pos == "名詞"
 }
 
 fn kanji(c: char) -> bool {
@@ -374,6 +390,26 @@ mod tests {
         );
         // Kana only: unchanged.
         assert_eq!(complete(&words, "はい、そうです。"), "はい、そうです。");
+    }
+
+    #[test]
+    fn readings_that_depend_on_the_sentence_are_left_out() {
+        let words = Words::new().unwrap();
+        for (text, head) in [
+            ("お仕事は何ですか。", "お{仕事|しごと}は何ですか"),
+            (
+                "二つ目の角を右です。",
+                "{二|ふた}つ{目|め}の角を{右|みぎ}です",
+            ),
+            ("月、水、金はどうですか。", "月、水、金はどうですか"),
+            ("何曜日ですか。", "何"),
+        ] {
+            let m = furigana(&words, text);
+            assert!(m.starts_with(head), "{m}");
+        }
+        // A word of two kanji or a verb keeps its reading.
+        assert!(furigana(&words, "駅で食べました。").contains("{食|た}べ"));
+        assert!(furigana(&words, "仕事です。").contains("{仕事|しごと}"));
     }
 
     #[test]

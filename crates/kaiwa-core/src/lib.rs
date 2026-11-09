@@ -27,6 +27,45 @@ pub use learner::LearnerModel;
 pub use scenario::Scenario;
 pub use session::{Input, Session, SessionState, Stats, Summary, TurnOutcome};
 
+/// A reply's furigana markup as the tutor wrote it, made safe: a reading that is not kana
+/// (the tutor put kanji or romaji there) is dropped and the text stays; a brace that opens
+/// nothing stays text. KanteRubyText and [`plain`] read the result.
+pub fn clean_markup(markup: &str) -> String {
+    let kana = |r: &str| {
+        !r.is_empty()
+            && r.chars()
+                .all(|c| matches!(c, '\u{3041}'..='\u{309f}' | '\u{30a0}'..='\u{30ff}'))
+    };
+    let mut out = String::with_capacity(markup.len());
+    let mut rest = markup;
+    while let Some(start) = rest.find('{') {
+        out.push_str(&rest[..start]);
+        let tail = &rest[start + 1..];
+        match (tail.find('|'), tail.find('}')) {
+            (Some(bar), Some(end)) if bar < end => {
+                let (text, ruby) = (&tail[..bar], &tail[bar + 1..end]);
+                let reading = ruby.split('|').next().unwrap_or_default();
+                if kana(reading) && !text.is_empty() && !text.contains('{') {
+                    out.push('{');
+                    out.push_str(text);
+                    out.push('|');
+                    out.push_str(reading);
+                    out.push('}');
+                } else {
+                    out.push_str(text);
+                }
+                rest = &tail[end + 1..];
+            }
+            _ => {
+                out.push('｛');
+                rest = tail;
+            }
+        }
+    }
+    out.push_str(&rest.replace('}', "｝"));
+    out
+}
+
 /// Text without furigana markup (`{漢字|かんじ}` → `漢字`, as in KanteRubyText).
 pub fn plain(markup: &str) -> String {
     unmark(markup, false)
@@ -80,6 +119,19 @@ pub fn norm(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_tutors_markup_is_made_safe() {
+        // Kana readings stay, katakana too; a reading in kanji or romaji is dropped.
+        assert_eq!(
+            clean_markup("{何|なん}ですか。{角|kado}を{右|ミギ}へ。{東京|東京}"),
+            "{何|なん}ですか。角を{右|ミギ}へ。東京"
+        );
+        // `new` is not the tutor's to set; stray braces stay text.
+        assert_eq!(clean_markup("{駅|えき|new}"), "{駅|えき}");
+        assert_eq!(clean_markup("はい{ と }"), "はい｛ と ｝");
+        assert_eq!(plain(&clean_markup("{仕事|しごと}は？")), "仕事は？");
+    }
 
     #[test]
     fn plain_strips_readings() {

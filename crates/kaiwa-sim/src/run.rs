@@ -292,13 +292,14 @@ pub fn live_check(id: &str, run: &Run) -> Option<Outcome> {
         // local test's.
         "mara_codeswitch" => {
             let (_, o) = turns(run).find(|(p, _)| p.iter().any(|x| x == "mara_codeswitch"))?;
+            let reply = kaiwa_core::plain(&o.reply);
             let asks = ["言って", "言えますか", "言いましょう"]
                 .iter()
-                .any(|f| o.reply.contains(f));
-            if !o.reply.contains("プロデューサー") {
-                fail(format!("no プロデューサー in: {}", o.reply))
+                .any(|f| reply.contains(f));
+            if !reply.contains("プロデューサー") {
+                fail(format!("no プロデューサー in: {reply}"))
             } else if !asks {
-                fail(format!("does not ask to say it: {}", o.reply))
+                fail(format!("does not ask to say it: {reply}"))
             } else {
                 Some(Outcome::Pass)
             }
@@ -639,7 +640,7 @@ pub fn check(id: &str, run: &Run) -> Option<Outcome> {
                 }
                 let polite = ["です", "ます", "ございます"]
                     .iter()
-                    .any(|m| o.reply.contains(m));
+                    .any(|m| kaiwa_core::plain(&o.reply).contains(m));
                 if !polite || o.interrupt.is_some() {
                     return fail(format!(
                         "reply after {plants:?} is not a polite recast: {}",
