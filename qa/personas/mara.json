@@ -245,7 +245,7 @@
           "requirements": [
             "/LF110/"
           ],
-          "assert": "Jeder eigene Satz mit Kanji bekommt mit der Antwort die Lesungen des Tutors (ohne Markup genau der Satz); bis dahin stehen die des Wörterbuchs."
+          "assert": "Jeder eigene Satz mit Kanji bekommt mit der Antwort die Lesungen des Tutors (ohne Markup genau der Satz)."
         },
         {
           "id": "mara_explain_de",
