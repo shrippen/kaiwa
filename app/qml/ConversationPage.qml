@@ -40,6 +40,18 @@ Kirigami.ScrollablePage {
     }
 
     readonly property var turns: conv.turns.length > 0 ? JSON.parse(conv.turns) : []
+    /** The learner has said something: leaving by mistake would cost more than a click. */
+    readonly property bool started: turns.some(function (t) { return t.who === "learner" })
+
+    // Back (button, Alt+←, the mouse's back key) leaves through done(), so the start page
+    // offers to continue at once; during a running talk it asks first (owner, 9.11.2026).
+    onBackRequested: function (event) {
+        event.accepted = true
+        if (page.started && !conv.finished && !page.placementOver)
+            leaveDialog.open()
+        else
+            page.done()
+    }
     readonly property var goals: conv.goals.length > 0 ? JSON.parse(conv.goals) : []
     readonly property var summary: conv.summary.length > 0 ? JSON.parse(conv.summary) : null
     readonly property var recorded: conv.recorded.length > 0 ? JSON.parse(conv.recorded) : null
@@ -561,6 +573,28 @@ Kirigami.ScrollablePage {
         interval: 600
         // An open lookup lives in the window's overlay, which cannot be grabbed: then its content.
         onTriggered: (wordPopup.opened ? wordPopup.contentItem : grammarDialog.opened ? grammarDialog.contentItem : page).grabToImage(function (r) { r.saveToFile(page.shot); Qt.quit() })
+    }
+
+    // Leaving a running talk: a placement starts again next time, a conversation stays open
+    // and continues from the start page.
+    KanteDialog {
+        id: leaveDialog
+        modal: true
+        anchors.centerIn: QQC2.Overlay.overlay
+        title: conv.placing ? page.t("Einstufung abbrechen?", "Stop the placement?") : page.t("Gespräch verlassen?", "Leave the talk?")
+        standardButtons: QQC2.Dialog.Ok | QQC2.Dialog.Cancel
+        acceptText: conv.placing ? page.t("Abbrechen", "Stop") : page.t("Verlassen", "Leave")
+        destructive: conv.placing
+        onAccepted: page.done()
+        QQC2.Label {
+            width: Math.min(page.width - KanteStyle.unit(64), KanteStyle.unit(380))
+            text: conv.placing
+                ? page.t("Die Einstufung beginnt beim nächsten Mal von vorn.", "The placement starts again from the beginning next time.")
+                : page.t("Das Gespräch bleibt offen: Auf der Startseite geht es dort weiter, wo du aufgehört hast.", "The talk stays open: continue it from the start page where you left off.")
+            wrapMode: Text.Wrap
+            font: KanteStyle.defaultFont
+            color: KanteStyle.textColor
+        }
     }
 
     // The grammar of the unit: each point with its explanation and examples (ADR-009 catalogue).
