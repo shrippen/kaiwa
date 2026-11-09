@@ -279,7 +279,10 @@ const MIGRATIONS: &[&str] = &[
 /// Migration 3 for a profile outside the database (an export of format 1): "openai" was any
 /// OpenAI-compatible server, Ollama on this computer without a server.
 fn tutor_ids_3(profile: &mut serde_json::Value) {
-    let t = &mut profile["tutor"];
+    // An export from before the tutor setting (14.10.2026) has none; it stays missing.
+    let Some(t) = profile.get_mut("tutor") else {
+        return;
+    };
     if t["provider"] == "openai" {
         let base = t["base_url"].as_str().unwrap_or_default();
         t["provider"] = if base.is_empty() { "ollama" } else { "custom" }.into();

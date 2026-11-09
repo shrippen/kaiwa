@@ -349,6 +349,11 @@ fn an_export_of_format_1_keeps_a_local_tutor_local() {
         b.import(&old).unwrap();
         assert_eq!(b.profile().unwrap().tutor.provider, after);
     }
+    // An export from before the tutor setting has no tutor and still loads.
+    old["profile"].as_object_mut().unwrap().remove("tutor");
+    let b = Store::in_memory().unwrap();
+    b.import(&old).unwrap();
+    assert_eq!(b.profile().unwrap().tutor, kaiwa_ai::Tutor::default());
     old["schema"] = "kaiwa-export/0".into();
     assert!(Store::in_memory().unwrap().import(&old).is_err());
 }
