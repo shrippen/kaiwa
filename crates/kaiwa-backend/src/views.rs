@@ -542,7 +542,7 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
     };
     json!({
         "provider": provider,
-        "label": p.label,
+        "label": if p.id == "custom" && !de { "OpenAI-compatible" } else { p.label },
         "stored": matches!(s, KeyState::Keyring | KeyState::Environment),
         "canStore": !matches!(s, KeyState::Unavailable(_) | KeyState::Environment),
         "text": text,

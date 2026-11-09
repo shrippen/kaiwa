@@ -406,8 +406,8 @@ QQC2.ScrollView {
             visible: page.privacy.some(function (f) { return f.cloud })
             title: page.t("Kostenbremse", "Cost limit")
             hint: (page.p.cost ? [page.p.cost.text, page.p.cost.unknown].filter(function (x) { return x.length > 0 }).join(" ") : "")
-                + page.t(" Geschätzt aus den Listenpreisen; am Limit antwortet der Cloud-Tutor bis Monatsende nicht mehr.",
-                         " Estimated from list prices; at the limit the cloud tutor stops answering until the month ends.")
+                + page.t(" Geschätzt aus dem Preis, den der Anbieter meldet, sonst aus den Listenpreisen; ein Modell ohne bekannten Preis zählt wie das teuerste bekannte. Am Limit antwortet der Cloud-Tutor bis Monatsende nicht mehr.",
+                         " Estimated from the price the provider reports, else from list prices; a model without a known price counts like the dearest known one. At the limit the cloud tutor stops answering until the month ends.")
             KanteSegmented {
                 readonly property var values: [null, 200, 500, 1000, 2000]
                 model: [page.t("Ohne", "None"), "2 €", "5 €", "10 €", "20 €"]

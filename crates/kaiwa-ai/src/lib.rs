@@ -112,7 +112,7 @@ pub fn provider_from(
                 api_key: a.api_key,
                 reply_model: a.reply_model,
                 analysis_model: a.analysis_model,
-                transport: cost::Metered::new(a.transport),
+                transport: cost::Metered::new(a.transport, true),
             })))
         }
         presets::Api::OpenAi => {
@@ -121,13 +121,14 @@ pub fn provider_from(
             let base = p
                 .base_url(env)
                 .ok_or(format!("KAIWA_PROVIDER={id} needs KAIWA_OPENAI_BASE"))?;
+            let cloud = !presets::local_host(&base);
             let o = openai::OpenAiCompatible::new(base, model);
             Ok(Some(std::sync::Arc::new(openai::OpenAiCompatible {
                 base_url: o.base_url,
                 api_key: key.unwrap_or_default(),
                 reply_model: o.reply_model,
                 analysis_model: o.analysis_model,
-                transport: cost::Metered::new(o.transport),
+                transport: cost::Metered::new(o.transport, cloud),
             })))
         }
     }

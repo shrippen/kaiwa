@@ -53,7 +53,7 @@ Die übrigen Prüfregeln laufen dabei auch mit dem echten Tutor. Interessant ist
 **Erst die Variablen aus Schritt 1 entfernen** (oder ein neues Terminal öffnen). Sie haben Vorrang vor den Einstellungen; sonst redest du ab hier mit dem Tutor aus Schritt 1, und die lokalen Messungen in 3.5 und 4.3 stimmen nicht:
 
 ```sh
-unset KAIWA_PROVIDER KAIWA_MODEL KAIWA_OPENAI_BASE ANTHROPIC_API_KEY OPENROUTER_API_KEY KAIWA_API_KEY
+unset KAIWA_PROVIDER KAIWA_MODEL KAIWA_OPENAI_BASE KAIWA_API_KEY ANTHROPIC_API_KEY OPENROUTER_API_KEY OPENAI_API_KEY GEMINI_API_KEY MISTRAL_API_KEY
 ```
 
 `cargo run -p kaiwa-app` (wie im Paket, ohne Demo), dann Einstellungen › Tutor: einen Anbieter wählen (Ollama oder LM Studio auf diesem Rechner, Anthropic, OpenRouter, OpenAI, Google Gemini, Mistral oder einen eigenen OpenAI-kompatiblen Server), bei den OpenAI-kompatiblen das Modell eintragen, bei einer Cloud den Schlüssel, der im Schlüsselbund landet. Gesetzte Umgebungsvariablen haben Vorrang vor den Einstellungen.

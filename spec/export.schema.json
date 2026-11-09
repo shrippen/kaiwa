@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://git.arianw.de/shrippen/Kaiwa/spec/export.schema.json",
-  "title": "Kaiwa profile export (kaiwa-export/1)",
+  "title": "Kaiwa profile export (kaiwa-export/2)",
   "description": "Everything Kaiwa keeps about one profile (Lastenheft /LF710/, /LD010/-/LD060/). Audio is never part of it.",
   "type": "object",
   "required": ["schema", "exported_at", "profile", "learning", "sessions", "items", "days", "pauses", "disputes"],
@@ -16,7 +16,7 @@
     "day": { "type": "integer", "description": "Local days since 1970-01-01." }
   },
   "properties": {
-    "schema": { "const": "kaiwa-export/1" },
+    "schema": { "const": "kaiwa-export/2" },
     "exported_at": { "$ref": "#/$defs/moment" },
     "profile": {
       "type": "object",

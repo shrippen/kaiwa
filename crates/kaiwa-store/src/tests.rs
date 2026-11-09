@@ -333,3 +333,22 @@ fn migration_3_names_the_tutor_by_its_preset() {
         assert_eq!(p.name, "Mara");
     }
 }
+
+#[test]
+fn an_export_of_format_1_keeps_a_local_tutor_local() {
+    let a = Store::in_memory().unwrap();
+    let mut p = a.profile().unwrap();
+    p.tutor.provider = "ollama".into();
+    a.set_profile(&p).unwrap();
+    let mut old = a.export(at(1, 9)).unwrap();
+    old["schema"] = "kaiwa-export/1".into();
+    for (base, after) in [("", "ollama"), ("http://gpu.lan:8080/v1", "custom")] {
+        old["profile"]["tutor"] =
+            serde_json::json!({ "provider": "openai", "model": "qwen3:14b", "base_url": base });
+        let b = Store::in_memory().unwrap();
+        b.import(&old).unwrap();
+        assert_eq!(b.profile().unwrap().tutor.provider, after);
+    }
+    old["schema"] = "kaiwa-export/0".into();
+    assert!(Store::in_memory().unwrap().import(&old).is_err());
+}
