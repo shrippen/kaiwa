@@ -42,7 +42,7 @@ Alle Reisen laufen mit dem echten Tutor statt mit den Aufzeichnungen, rund 70 Z�
 
 Für `theo_fp` siehst du außerdem in `live.txt` nach, ob Vorschläge zu den korrekten Sätzen nur als „Auch möglich“ kommen (Vorlage).
 
-Bricht ein Aufruf des Anbieters ab (Limit, Netz), steht bei den Prüfregeln dieser Reise `FAIL … tutor: …`, und der Lauf geht mit der nächsten Reise weiter. Dann den Lauf einfach wiederholen.
+Bricht ein Aufruf des Anbieters ab (Limit, Netz), steht bei den Prüfregeln dieser Reise, die den Tutor brauchen, `FAIL … tutor: …`; der Lauf geht mit der nächsten Reise weiter, und der Report wird geschrieben. Dann den Lauf einfach wiederholen. Fehlt `KAIWA_PROVIDER` oder der Schlüssel, bricht der Lauf gleich am Anfang mit einer Meldung ab.
 
 Die übrigen Prüfregeln laufen dabei auch mit dem echten Tutor. Interessant ist dort, was mit den Aufzeichnungen grün ist und mit dem Tutor rot wird, vor allem `mara_recall` und `selin_register_flag`. Ein `FAIL` ist kein Fehler deines Tests, sondern ein Befund: Die Zeile nennt den Grund.
 

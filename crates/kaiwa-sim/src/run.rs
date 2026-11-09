@@ -85,6 +85,9 @@ pub struct Run {
     pub root: std::path::PathBuf,
     /// Played against a real tutor (`--live`).
     pub live: bool,
+    /// A call to the real tutor failed (a limit, the network): the run stopped there, and every
+    /// check that needs it fails with this reason.
+    pub tutor_error: Option<String>,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -181,6 +184,7 @@ pub fn play_with(
         persona["profile"]["ui_language"].as_str().unwrap_or("de"),
     );
     let mut events = Vec::new();
+    let mut tutor_error = None;
     for step in &script.steps {
         match step {
             Step::Silence { silence } => events.push(Event::Silence {
@@ -207,7 +211,14 @@ pub fn play_with(
                 } else {
                     Input::Spoken
                 };
-                let outcome = session.turn(say, input)?;
+                let outcome = match session.turn(say, input) {
+                    Ok(o) => o,
+                    Err(e) if live => {
+                        tutor_error = Some(format!("{e:#}"));
+                        break;
+                    }
+                    Err(e) => return Err(e.into()),
+                };
                 events.push(Event::Turn {
                     say: say.clone(),
                     input,
@@ -239,6 +250,7 @@ pub fn play_with(
         aids,
         root: root.to_path_buf(),
         live,
+        tutor_error,
     })
 }
 
@@ -274,12 +286,16 @@ pub fn live_check(id: &str, run: &Run) -> Option<Outcome> {
     let real = |s: &&kaiwa_core::feedback::Shown| !s.correction.also_possible;
     match id {
         // /LF122/: asked in German for a word, the character gives the Japanese one and asks
-        // the learner to say it (言って…, 言えますか, 言いましょう). Hearing it is the local test's.
+        // the learner to say it (言って…, 言えますか, 言いましょう, どうぞ; と言います only names
+        // it). Hearing it is the local test's.
         "mara_codeswitch" => {
             let (_, o) = turns(run).find(|(p, _)| p.iter().any(|x| x == "mara_codeswitch"))?;
+            let asks = ["言って", "言えますか", "言いましょう", "どうぞ"]
+                .iter()
+                .any(|f| o.reply.contains(f));
             if !o.reply.contains("プロデューサー") {
                 fail(format!("no プロデューサー in: {}", o.reply))
-            } else if !o.reply.contains('言') {
+            } else if !asks {
                 fail(format!("does not ask to say it: {}", o.reply))
             } else {
                 Some(Outcome::Pass)
@@ -638,6 +654,25 @@ pub fn check(id: &str, run: &Run) -> Option<Outcome> {
 /// Plays every journey of `persona_id` that has a script; journeys without one are reported
 /// with all their checks as not automated.
 pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<JourneyReport>> {
+    // With --live the tutor's settings are checked once, before anything is played.
+    let tutor = if live {
+        Some(
+            kaiwa_ai::provider_from_env()
+                .map_err(anyhow::Error::msg)?
+                .context("--live needs KAIWA_PROVIDER (see app/README.md)")?,
+        )
+    } else {
+        None
+    };
+    run_persona_with(root, persona_id, tutor)
+}
+
+/// [`run_persona`] with the tutor given: `Some` plays every script against it (`--live`).
+pub fn run_persona_with(
+    root: &Path,
+    persona_id: &str,
+    tutor: Option<Arc<dyn kaiwa_ai::ChatProvider>>,
+) -> Result<Vec<JourneyReport>> {
     let path = root.join(format!("qa/personas/{persona_id}.json"));
     let persona: Value = serde_json::from_str(
         &std::fs::read_to_string(&path).with_context(|| path.display().to_string())?,
@@ -682,26 +717,9 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
             if script.journey != jid {
                 bail!("{} names journey {}", script_path.display(), script.journey);
             }
-            match (live || !script.live_only).then(|| play(root, &persona, &script, live)) {
-                Some(Ok(r)) => Some(r),
-                // With a real tutor one failed call (a limit, the network) is a finding of this
-                // journey, not the end of the run: the report still gets written.
-                Some(Err(e)) if live => {
-                    let mut checks = BTreeMap::new();
-                    for c in journey["checks"].as_array().into_iter().flatten() {
-                        let cid = c["id"].as_str().unwrap_or_default().to_string();
-                        checks.insert(cid, Outcome::Fail(format!("tutor: {e:#}")));
-                    }
-                    reports.push(JourneyReport {
-                        persona: persona_id.into(),
-                        journey: jid,
-                        checks,
-                        requirements: requirements_of(journey),
-                        curve: Vec::new(),
-                    });
-                    continue;
-                }
-                Some(Err(e)) => return Err(e),
+            match &tutor {
+                Some(t) => Some(play_with(root, &persona, &script, t.clone(), true)?),
+                None if !script.live_only => Some(play(root, &persona, &script, false)?),
                 None => None,
             }
         } else {
@@ -710,6 +728,16 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
         let mut checks = BTreeMap::new();
         for c in journey["checks"].as_array().into_iter().flatten() {
             let cid = c["id"].as_str().unwrap_or_default();
+            // With a real tutor one failed call (a limit, the network) stops only this journey:
+            // the checks that need its run fail with the reason, the others run as always, and
+            // the report still gets written.
+            if let Some(why) = run.as_ref().and_then(|r| r.tutor_error.as_ref()) {
+                let r = run.as_ref().expect("a run with an error");
+                if LIVE.contains(&cid) || check(cid, r).is_some() {
+                    checks.insert(cid.to_string(), Outcome::Fail(format!("tutor: {why}")));
+                    continue;
+                }
+            }
             if LIVE.contains(&cid) {
                 let outcome = match run.as_ref().filter(|r| r.live) {
                     Some(r) => live_check(cid, r).unwrap_or(Outcome::NotAutomated),
@@ -898,7 +926,7 @@ mod tests {
         };
         let de = "好き verlangt が: コーヒーが好きです。";
         let ok = with("プロデューサーです。言ってみてください。", de);
-        let mute = with("プロデューサーです。", de);
+        let mute = with("「プロデューサー」と言います。", de);
         assert!(matches!(
             live("mara", "mara_first_talk", "mara_codeswitch", &mute),
             Outcome::Fail(_)
@@ -930,6 +958,55 @@ mod tests {
             .find(|r| r.journey == "theo_false_alarms")
             .unwrap();
         assert_eq!(j.checks["theo_fp"], Outcome::LiveOnly);
+    }
+
+    /// A tutor that answers the first `n` calls from the recordings, then fails like a limit.
+    struct Flaky(MockProvider, std::sync::atomic::AtomicUsize, usize);
+
+    impl kaiwa_ai::ChatProvider for Flaky {
+        fn reply(&self, r: &kaiwa_ai::TurnRequest) -> Result<String, kaiwa_ai::AiError> {
+            if self.1.fetch_add(1, std::sync::atomic::Ordering::SeqCst) >= self.2 {
+                return Err(kaiwa_ai::AiError::NoFixture);
+            }
+            self.0.reply(r)
+        }
+        fn analyse(
+            &self,
+            r: &kaiwa_ai::TurnRequest,
+        ) -> Result<kaiwa_ai::Analysis, kaiwa_ai::AiError> {
+            self.0.analyse(r)
+        }
+    }
+
+    #[test]
+    fn a_tutor_error_stops_only_the_checks_that_need_the_run() {
+        let rec = MockProvider::from_json(
+            &std::fs::read_to_string(root().join("qa/fixtures/n5-02-jikoshoukai.json")).unwrap(),
+        )
+        .unwrap()
+        .with_fallback("そうですか。");
+        let tutor: Arc<dyn kaiwa_ai::ChatProvider> =
+            Arc::new(Flaky(rec, std::sync::atomic::AtomicUsize::new(0), 2));
+        let reports = run_persona_with(&root(), "mara", Some(tutor)).unwrap();
+        let first = reports
+            .iter()
+            .find(|r| r.journey == "mara_first_talk")
+            .unwrap();
+        // Needs the run (and the tutor): fails with the reason.
+        for id in ["mara_codeswitch", "mara_recall"] {
+            assert!(
+                matches!(&first.checks[id], Outcome::Fail(why) if why.starts_with("tutor:")),
+                "{id}: {:?}",
+                first.checks[id]
+            );
+        }
+        // A check by hand stays one; the long journey without a tutor still runs.
+        assert_eq!(first.checks["mara_mora_hint"], Outcome::NotAutomated);
+        let days = reports
+            .iter()
+            .find(|r| r.journey == "mara_30_days")
+            .unwrap();
+        assert_eq!(days.checks["mara_success_band"], Outcome::Pass);
     }
 
     #[test]
