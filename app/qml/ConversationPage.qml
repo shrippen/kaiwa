@@ -150,14 +150,17 @@ Kirigami.ScrollablePage {
                 Layout.fillWidth: true
                 from: modelData.who === "learner" ? KanteMessage.From.Own : KanteMessage.From.Other
                 author: modelData.who === "learner" ? (modelData.typed ? page.t("Du · getippt", "You · typed") : page.t("Du", "You")) : conv.character
-                text: modelData.who === "learner" ? modelData.text : ""
+                // /LF110/: the learner's own line with furigana too (from IPADIC), as text
+                // only until they are there.
+                text: modelData.who === "learner" && !modelData.segments ? modelData.text : ""
 
-                // /LF112/: a click on a word (or Tab, arrows, Enter) looks it up.
+                // /LF112/: a click on a word (or Tab, arrows, Enter) looks it up, in the
+                // character's lines and in the learner's own.
                 KanteRubyText {
                     id: line
-                    visible: modelData.who === "character"
+                    visible: modelData.who === "character" || !!modelData.segments
                     Layout.fillWidth: true
-                    segments: modelData.who === "character" && modelData.segments ? modelData.segments : []
+                    segments: modelData.segments ? modelData.segments : []
                     markup: modelData.who === "character" && !modelData.segments ? modelData.markup : ""
                     density: KanteRubyText.Density.All
                     interactive: true
@@ -636,19 +639,41 @@ Kirigami.ScrollablePage {
             info = JSON.parse(conv.lookup(line, word))
             added = false
         }
+        // The word in the overlay's coordinates, kept so the popup can move when its
+        // height changes (the dictionary arrives, a sense list is long).
+        property rect wordBox: Qt.rect(0, 0, 0, 0)
         function show(anchor, lineIndex, wordIndex) {
             line = lineIndex
             word = wordIndex
             reload()
             var r = anchor.wordRect(wordIndex)
-            var p = anchor.mapToItem(parent, r.x, r.y + r.height)
-            x = Math.max(0, Math.min(p.x, parent.width - width))
-            y = p.y + KanteStyle.unit(4)
+            var p = anchor.mapToItem(parent, r.x, r.y)
+            wordBox = Qt.rect(p.x, p.y, r.width, r.height)
+            place()
             open()
         }
+        // Below the word; when it does not fit there, above it; never out of the window.
+        function place() {
+            if (!parent)
+                return
+            var gap = KanteStyle.unit(4)
+            var h = height
+            var below = wordBox.y + wordBox.height + gap
+            var above = wordBox.y - gap - h
+            var fitsBelow = below + h <= parent.height
+            var fitsAbove = above >= 0
+            y = fitsBelow || !fitsAbove && parent.height - wordBox.y - wordBox.height >= wordBox.y
+                ? Math.max(0, Math.min(below, parent.height - h))
+                : Math.max(0, above)
+            x = Math.max(0, Math.min(wordBox.x, parent.width - width))
+        }
+        onHeightChanged: if (opened || visible) place()
 
         parent: QQC2.Overlay.overlay
         width: Math.min(KanteStyle.unit(420), parent ? parent.width - KanteStyle.unit(16) : KanteStyle.unit(420))
+        // Never taller than the window (a long list of senses is cut at the bottom).
+        height: parent ? Math.min(implicitHeight, parent.height - KanteStyle.unit(16)) : implicitHeight
+        clip: true
         padding: KanteStyle.unit(14)
         modal: false
         focus: true

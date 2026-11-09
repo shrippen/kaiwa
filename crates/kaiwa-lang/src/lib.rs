@@ -165,6 +165,95 @@ pub fn annotate(words: &Words, markup: &str) -> (Vec<Segment>, Vec<LineWord>) {
     (segments, line_words)
 }
 
+/// Furigana markup for plain text (the learner's own line, recognised or typed): the readings
+/// IPADIC gives, kana around the kanji kept apart (`{歩|ある}いて`). A word whose reading
+/// does not fit its kana gets the reading over the whole word; one without a reading stays
+/// plain. Braces and bars in the text become full-width, so they stay text.
+pub fn furigana(words: &Words, text: &str) -> String {
+    let safe = |t: &str| t.replace('{', "｛").replace('}', "｝").replace('|', "｜");
+    let mut out = String::new();
+    let mut pos = 0;
+    for w in words.words(text) {
+        if w.start < pos {
+            continue;
+        }
+        out.push_str(&safe(&text[pos..w.start]));
+        out.push_str(&ruby(&safe(&w.surface), &w.reading));
+        pos = w.end;
+    }
+    out.push_str(&safe(&text[pos..]));
+    out
+}
+
+fn kanji(c: char) -> bool {
+    matches!(c, '\u{3400}'..='\u{9fff}' | '々' | '〆')
+}
+
+/// One word with its reading as markup.
+fn ruby(surface: &str, reading: &str) -> String {
+    if reading.is_empty() || !surface.chars().any(kanji) {
+        return surface.to_string();
+    }
+    // Runs of kanji and of everything else.
+    let mut runs: Vec<(String, bool)> = Vec::new();
+    for c in surface.chars() {
+        match runs.last_mut() {
+            Some((r, k)) if *k == kanji(c) => r.push(c),
+            _ => runs.push((c.to_string(), kanji(c))),
+        }
+    }
+    let reading: Vec<char> = words::hiragana(reading).chars().collect();
+    match align(&runs, &reading) {
+        Some(parts) => runs
+            .iter()
+            .zip(parts)
+            .map(|((r, k), p)| {
+                if *k {
+                    format!("{{{r}|{p}}}")
+                } else {
+                    r.clone()
+                }
+            })
+            .collect(),
+        None => format!("{{{surface}|{}}}", reading.iter().collect::<String>()),
+    }
+}
+
+/// The reading of each run: kana runs must match literally, a kanji run takes at least one
+/// kana. `None` when the reading does not fit.
+fn align(runs: &[(String, bool)], reading: &[char]) -> Option<Vec<String>> {
+    let Some(((run, is_kanji), rest)) = runs.split_first() else {
+        return reading.is_empty().then(Vec::new);
+    };
+    if !is_kanji {
+        let kana: Vec<char> = words::hiragana(run).chars().collect();
+        if !reading.starts_with(&kana) {
+            return None;
+        }
+        let mut tail = align(rest, &reading[kana.len()..])?;
+        tail.insert(0, run.clone());
+        return Some(tail);
+    }
+    // The shortest reading first that lets the rest fit; the last run takes all that is left.
+    let max = if rest.is_empty() {
+        reading.len()
+    } else {
+        reading.len().saturating_sub(1)
+    };
+    let min = if rest.is_empty() {
+        reading.len().max(1)
+    } else {
+        1
+    };
+    for n in min..=max {
+        if let Some(mut tail) = align(rest, &reading[n..]) {
+            tail.insert(0, reading[..n].iter().collect());
+            return Some(tail);
+        }
+    }
+    None
+}
+
 struct Marked {
     text: String,
     reading: String,
@@ -210,6 +299,36 @@ fn parse(markup: &str) -> Vec<Marked> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn plain_text_gets_furigana_from_ipadic() {
+        let words = Words::new().unwrap();
+        assert_eq!(
+            furigana(&words, "駅まで歩いて五分です。"),
+            "{駅|えき}まで{歩|ある}いて{五分|ごふん}です。"
+        );
+        assert_eq!(
+            furigana(&words, "コーヒーが好きです。"),
+            "コーヒーが{好|す}きです。"
+        );
+        // Kana only, latin letters and marks stay as they are; braces stay text.
+        assert_eq!(furigana(&words, "はい、OK {x}"), "はい、OK ｛x｝");
+        // The markup reads back as the same text.
+        let (segs, _) = annotate(&words, &furigana(&words, "取り扱いに注意してください。"));
+        let text: String = segs.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(text, "取り扱いに注意してください。");
+    }
+
+    #[test]
+    fn a_reading_splits_around_the_kana() {
+        assert_eq!(ruby("取り扱い", "とりあつかい"), "{取|と}り{扱|あつか}い");
+        assert_eq!(ruby("お弁当", "おべんとう"), "お{弁当|べんとう}");
+        assert_eq!(ruby("食べました", "タベマシタ"), "{食|た}べました");
+        // A reading that does not fit the kana goes over the whole word.
+        assert_eq!(ruby("行く", "おこなう"), "{行く|おこなう}");
+        assert_eq!(ruby("はい", "はい"), "はい");
+        assert_eq!(ruby("駅", ""), "駅");
+    }
 
     #[test]
     fn markup_becomes_segments_with_word_numbers() {

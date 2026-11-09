@@ -27,6 +27,15 @@ pub fn line(markup: &str) -> Value {
     json!({ "segments": segments, "words": words })
 }
 
+/// The learner's own line (plain text, recognised or typed) with furigana from IPADIC, as
+/// [`line`] gives it, and the `markup` behind it.
+pub fn own_line(text: &str) -> Value {
+    let markup = kaiwa_lang::furigana(words(), text);
+    let mut v = line(&markup);
+    v["markup"] = markup.into();
+    v
+}
+
 /// The dictionary at `path`, opened once and again after a download.
 fn dictionary(
     path: &Path,
