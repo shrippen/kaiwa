@@ -185,6 +185,20 @@ pub fn furigana(words: &Words, text: &str) -> String {
     out
 }
 
+/// Markup with furigana over every kanji: what the markup reads stays (the scenario's, the
+/// tutor's, `new` included), the plain parts get IPADIC's as in [`furigana`]. A tutor reply
+/// usually comes without markup; the reading aid over every kanji is the default (/LF110/).
+pub fn complete(words: &Words, markup: &str) -> String {
+    parse(markup)
+        .iter()
+        .map(|m| match (m.reading.is_empty(), m.is_new) {
+            (true, _) => furigana(words, &m.text),
+            (false, true) => format!("{{{}|{}|new}}", m.text, m.reading),
+            (false, false) => format!("{{{}|{}}}", m.text, m.reading),
+        })
+        .collect()
+}
+
 fn kanji(c: char) -> bool {
     matches!(c, '\u{3400}'..='\u{9fff}' | '々' | '〆')
 }
@@ -343,6 +357,23 @@ mod tests {
         let (segs, _) = annotate(&words, &furigana(&words, "取り扱いに注意してください。"));
         let text: String = segs.iter().map(|s| s.text.as_str()).collect();
         assert_eq!(text, "取り扱いに注意してください。");
+    }
+
+    #[test]
+    fn a_reply_without_markup_gets_furigana_and_marked_ones_stay() {
+        let words = Words::new().unwrap();
+        assert_eq!(
+            complete(&words, "何が好きですか。"),
+            furigana(&words, "何が好きですか。")
+        );
+        assert!(complete(&words, "何が好きですか。").contains("{好|す}"));
+        // The scenario's (or tutor's) reading wins, `new` stays.
+        assert_eq!(
+            complete(&words, "{田中|たなか}です。{駅|えき|new}まで歩いて"),
+            "{田中|たなか}です。{駅|えき|new}まで{歩|ある}いて"
+        );
+        // Kana only: unchanged.
+        assert_eq!(complete(&words, "はい、そうです。"), "はい、そうです。");
     }
 
     #[test]

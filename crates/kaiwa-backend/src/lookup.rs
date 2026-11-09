@@ -22,8 +22,12 @@ pub fn words() -> &'static Words {
 
 /// A character's line for KanteRubyText (Kante 1.33): `segments` with word numbers and the
 /// `words` behind them.
+///
+/// Kanji without furigana in the markup get IPADIC's (a tutor reply comes without markup;
+/// the reading aid over every kanji is the default, /LF110/).
 pub fn line(markup: &str) -> Value {
-    let (segments, words) = annotate(words(), markup);
+    let markup = kaiwa_lang::complete(words(), markup);
+    let (segments, words) = annotate(words(), &markup);
     json!({ "segments": segments, "words": words })
 }
 

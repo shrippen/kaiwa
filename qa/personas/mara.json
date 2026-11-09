@@ -282,7 +282,7 @@
             "/LF110/",
             "/LF112/"
           ],
-          "assert": "Klick auf プロデューサー zeigt Lesung, Bedeutung und Wortart, spielt das Wort ab und übernimmt es auf Wunsch in die Wiederholung. Auch Maras eigener Satz hat Furigana (仕事 mit しごと) und Wörter zum Nachschlagen; Zahl mit Zählwort (二人) bekommt keine geratene Lesung."
+          "assert": "Klick auf プロデューサー zeigt Lesung, Bedeutung und Wortart, spielt das Wort ab und übernimmt es auf Wunsch in die Wiederholung. Die Antworten der Figur haben über jedem Kanji Furigana, auch ohne Markup vom Tutor (好 mit す). Auch Maras eigener Satz hat Furigana (仕事 mit しごと) und Wörter zum Nachschlagen; Zahl mit Zählwort (二人) bekommt keine geratene Lesung."
         },
         {
           "id": "mara_diff_audio",

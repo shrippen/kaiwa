@@ -180,7 +180,8 @@ pub fn review(st: &Backend, now: Moment, limit: usize) -> anyhow::Result<Value> 
                     // Taken over from the word lookup (/LF112/).
                     "fromLookup": i.source == kaiwa_core::srs::Source::Lookup,
                     // The character's line to answer: a mini conversation (/LF230/).
-                    "cue": i.cue,
+                    // The line it answered, with furigana over every kanji like in the talk.
+                    "cue": i.cue.as_deref().map(|c| kaiwa_lang::complete(crate::lookup::words(), c)),
                     // What the correction was about, in words (Höflichkeit, Partikeln …).
                     "practises": match &i.source {
                         kaiwa_core::srs::Source::Correction { kind } => kind_word(kind, de),
