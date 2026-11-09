@@ -279,9 +279,10 @@
         {
           "id": "mara_word_lookup",
           "requirements": [
+            "/LF110/",
             "/LF112/"
           ],
-          "assert": "Klick auf プロデューサー zeigt Lesung, Bedeutung und Wortart, spielt das Wort ab und übernimmt es auf Wunsch in die Wiederholung."
+          "assert": "Klick auf プロデューサー zeigt Lesung, Bedeutung und Wortart, spielt das Wort ab und übernimmt es auf Wunsch in die Wiederholung. Auch Maras eigener Satz hat Furigana (仕事 mit しごと) und Wörter zum Nachschlagen; Zahl mit Zählwort (二人) bekommt keine geratene Lesung."
         },
         {
           "id": "mara_diff_audio",

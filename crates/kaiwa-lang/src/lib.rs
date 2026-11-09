@@ -305,12 +305,25 @@ mod tests {
         let words = Words::new().unwrap();
         assert_eq!(
             furigana(&words, "駅まで歩いて五分です。"),
-            "{駅|えき}まで{歩|ある}いて{五分|ごふん}です。"
+            "{駅|えき}まで{歩|ある}いて五分です。"
         );
         assert_eq!(
             furigana(&words, "コーヒーが好きです。"),
             "コーヒーが{好|す}きです。"
         );
+        // A number with its counter has no reliable reading from IPADIC (ににん, いちほん):
+        // no furigana rather than wrong ones.
+        for (text, group) in [
+            ("二人です。", "二人"),
+            ("一本ください。", "一本"),
+            ("三日に来ました。", "三日"),
+            ("三千円です。", "三千円"),
+            ("二十歳です。", "二十歳"),
+            ("一人で来ました。", "一人"),
+        ] {
+            let m = furigana(&words, text);
+            assert!(m.starts_with(group), "{m}");
+        }
         // Kana only, latin letters and marks stay as they are; braces stay text.
         assert_eq!(furigana(&words, "はい、OK {x}"), "はい、OK ｛x｝");
         // The markup reads back as the same text.

@@ -23,7 +23,9 @@ pub struct Word {
     /// What to look up: the dictionary form of its first token (食べる for 食べました), or the
     /// surface for a noun group (五分).
     pub key: String,
-    /// The reading of the surface in hiragana, from IPADIC ("" when unknown).
+    /// The reading of the surface in hiragana, from IPADIC ("" when unknown). A number group
+    /// (二人, 一本, 三日) has none: its tokens' readings strung together miss the sound changes
+    /// and special readings (ににん, いちほん, さんにち).
     pub reading: String,
     /// Whether the surface is the dictionary form (then the reading belongs to the key).
     pub plain: bool,
@@ -95,6 +97,8 @@ impl Words {
     pub fn words(&self, text: &str) -> Vec<Word> {
         let mut out: Vec<Word> = Vec::new();
         let mut prev: Option<(String, String)> = None;
+        // The last word is a number group: its reading stays unknown.
+        let mut counted = false;
         for t in self.tokens(text) {
             if t.pos == "記号" || t.pos.is_empty() || !t.surface.chars().any(japanese) {
                 prev = None;
@@ -131,7 +135,12 @@ impl Words {
                 }
                 w.surface.push_str(&t.surface);
                 w.end = t.end;
-                w.reading.push_str(&t.reading);
+                counted |= prev.as_ref().is_some_and(|(_, sub)| sub == "数") || t.sub == "数";
+                if counted {
+                    w.reading.clear();
+                } else {
+                    w.reading.push_str(&t.reading);
+                }
                 if w.pos == "名詞" {
                     // A noun group is looked up as written (五分), its first token as a fallback.
                     w.key = w.surface.clone();
@@ -139,6 +148,7 @@ impl Words {
                     w.plain = false;
                 }
             } else {
+                counted = false;
                 out.push(Word {
                     plain: t.surface == t.base,
                     key: t.base.clone(),

@@ -661,6 +661,31 @@ fn word_lookup(root: &Path) -> Result<Option<String>> {
         )));
     };
     let mut found = Vec::new();
+    // Mara's own line has furigana too, and its words are looked up the same way; a number
+    // with its counter gets none rather than a wrong one (ににん).
+    let own = lookup::own_line("仕事はプロデューサーです。");
+    if !own["markup"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("{仕事|しごと}")
+    {
+        found.push(format!(
+            "no furigana しごと in her own line: {}",
+            own["markup"]
+        ));
+    }
+    let own_words: Vec<kaiwa_lang::LineWord> = serde_json::from_value(own["words"].clone())?;
+    if !own_words.iter().any(|w| w.text == "プロデューサー") {
+        found.push("プロデューサー is no word of her own line".into());
+    }
+    let two = lookup::own_line("二人です。");
+    if two["markup"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("{二人|")
+    {
+        found.push(format!("a guessed reading over 二人: {}", two["markup"]));
+    }
     let b = demo("lookup", "de")?;
     let dict = root.join("data/dict/kaiwa-dict-excerpt.sqlite");
     let v = lookup::lookup_in(&dict, &b, word, "de");

@@ -1,4 +1,4 @@
-//! The word lookup (/LF112/): the words of the character's lines, what a click shows, and
+//! The word lookup (/LF112/): the words of the character's lines and the learner's own, what a click shows, and
 //! taking a word over into the review (/LF230/). The dictionary is the data package kaiwa-data
 //! (L-06), downloaded only after the learner asks for it (M-03); without it the view says so
 //! and offers the download. A word JMdict does not have may be a name (JMnedict, Q-13): then
