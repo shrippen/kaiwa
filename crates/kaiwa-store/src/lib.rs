@@ -265,6 +265,13 @@ const MIGRATIONS: &[&str] = &[
     // 2: unit and scenario ids in path order (2026-10-14, before the first release); the
     // rewrite of the stored ids is `rename_unit_ids`.
     "SELECT 1;",
+    // 3: tutor presets (2026-11-09, before the first release): "openai" meant any
+    // OpenAI-compatible server and is now the provider OpenAI; without a server it was
+    // Ollama on this computer, with one it is "custom".
+    "UPDATE settings SET value = json_set(value, '$.tutor.provider',
+        CASE WHEN coalesce(json_extract(value, '$.tutor.base_url'), '') = ''
+             THEN 'ollama' ELSE 'custom' END)
+     WHERE key = 'profile' AND json_extract(value, '$.tutor.provider') = 'openai';",
 ];
 
 /// Migration 2: unit ids before → after (scenario ids carry the unit id as prefix). Frozen;

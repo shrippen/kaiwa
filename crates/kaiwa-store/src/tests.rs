@@ -303,3 +303,33 @@ fn every_shown_correction_comes_back_as_a_mini_conversation() {
         assert_eq!(item.original.as_deref(), Some(old), "{better}");
     }
 }
+
+#[test]
+fn migration_3_names_the_tutor_by_its_preset() {
+    let stored = |provider: &str, base: &str| {
+        let mut v = serde_json::to_value(Profile::default()).unwrap();
+        v["name"] = "Mara".into();
+        v["tutor"] =
+            serde_json::json!({ "provider": provider, "model": "qwen3:14b", "base_url": base });
+        let db = rusqlite::Connection::open_in_memory().unwrap();
+        db.execute_batch(super::MIGRATIONS[0]).unwrap();
+        db.pragma_update(None, "user_version", 2).unwrap();
+        db.execute(
+            "INSERT INTO settings VALUES ('profile', ?1)",
+            [v.to_string()],
+        )
+        .unwrap();
+        Store::init(db).unwrap().profile().unwrap()
+    };
+    for (provider, base, after) in [
+        ("openai", "", "ollama"),
+        ("openai", "http://gpu.lan:8080/v1", "custom"),
+        ("anthropic", "", "anthropic"),
+    ] {
+        let p = stored(provider, base);
+        assert_eq!(p.tutor.provider, after);
+        assert_eq!(p.tutor.model, "qwen3:14b");
+        assert_eq!(p.tutor.base_url, base);
+        assert_eq!(p.name, "Mara");
+    }
+}

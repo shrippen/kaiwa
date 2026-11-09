@@ -449,24 +449,49 @@ pub fn grammar(st: &Backend, scenario: &str, lang: &str) -> Value {
 }
 
 /// The tutor set up in the settings (Q-15): provider, model and server as stored, what the
-/// environment overrides (local test), and whether a conversation can start.
+/// environment overrides (local test), whether a conversation can start, and the presets to
+/// choose from.
 pub fn tutor_view(st: &Backend, lang: &str) -> Value {
+    use kaiwa_ai::presets::{PRESETS, preset};
     let t = st.tutor();
     let env = st.tutor_env();
     let provider = env("KAIWA_PROVIDER").unwrap_or_default();
     let overridden = std::env::var("KAIWA_PROVIDER").is_ok_and(|v| !v.is_empty());
     let ready = kaiwa_ai::provider_from(st.tutor_env()).is_ok_and(|p| p.is_some());
     let de = lang != "en";
-    let status = match (provider.as_str(), ready, de) {
+    let p = preset(&provider);
+    let missing_key =
+        p.is_some_and(|p| p.needs_key()) && kaiwa_ai::secrets::key(&provider, &env).is_none();
+    let missing_server = p.is_some_and(|p| p.base_url(&env).is_none());
+    let status = match (provider.as_str(), p, de) {
         ("", _, true) => "Kein Tutor eingerichtet. Ohne Tutor gibt es keine Gespräche.",
         ("", _, false) => "No tutor set up. Without a tutor there are no conversations.",
-        (_, true, true) => "Bereit.",
-        (_, true, false) => "Ready.",
-        ("anthropic", false, true) => "Es fehlt der API-Schlüssel.",
-        ("anthropic", false, false) => "The API key is missing.",
-        (_, false, true) => "Es fehlt der Name des Modells.",
-        (_, false, false) => "The model name is missing.",
+        (_, None, true) => "Diesen Anbieter kennt Kaiwa nicht.",
+        (_, None, false) => "Kaiwa does not know this provider.",
+        _ if ready && de => "Bereit.",
+        _ if ready => "Ready.",
+        _ if missing_key && de => "Es fehlt der API-Schlüssel.",
+        _ if missing_key => "The API key is missing.",
+        _ if missing_server && de => "Es fehlt die Adresse des Servers.",
+        _ if missing_server => "The server address is missing.",
+        (_, _, true) => "Es fehlt der Name des Modells.",
+        (_, _, false) => "The model name is missing.",
     };
+    let presets: Vec<Value> = PRESETS
+        .iter()
+        .map(|p| {
+            json!({
+                "id": p.id,
+                "label": if p.id == "custom" && !de { "OpenAI-compatible" } else { p.label },
+                "local": p.local,
+                "needsModel": p.needs_model(),
+                "needsServer": p.base.is_empty(),
+                "server": p.base,
+                "exampleModel": p.example_model,
+                "keysAt": p.keys_at,
+            })
+        })
+        .collect();
     json!({
         "provider": t.provider,
         "model": t.model,
@@ -475,16 +500,22 @@ pub fn tutor_view(st: &Backend, lang: &str) -> Value {
         "fromEnvironment": overridden,
         "ready": ready,
         "status": status,
+        "presets": presets,
     })
 }
 
-/// The tutor's API key (/LF713/): which provider, where its key comes from, in words.
+/// The tutor's API key (/LF713/): which provider, where its key comes from, in words; `null`
+/// for a provider without a key (a server on this computer).
 pub fn key_view(st: &Backend, lang: &str) -> Value {
     use kaiwa_ai::secrets::{KeyState, state};
     let env = st.tutor_env();
-    let Some(provider) = env("KAIWA_PROVIDER").filter(|p| p == "anthropic" || p == "openai") else {
+    let Some(p) = env("KAIWA_PROVIDER")
+        .and_then(|id| kaiwa_ai::presets::preset(&id))
+        .filter(|p| p.key_env.is_some())
+    else {
         return Value::Null;
     };
+    let provider = p.id.to_string();
     let de = lang != "en";
     let s = state(&provider, env);
     let text = match (&s, de) {
@@ -492,17 +523,26 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
         (KeyState::Environment, false) => "From the environment (local test).".to_string(),
         (KeyState::Keyring, true) => "Im Schlüsselbund des Systems gespeichert.".to_string(),
         (KeyState::Keyring, false) => "Kept in the system keyring.".to_string(),
+        (KeyState::Missing, true) if p.needs_key() => format!(
+            "Fehlt. Du bekommst ihn unter {}. Er wird im Schlüsselbund gespeichert, nie in einer Datei.",
+            p.keys_at
+        ),
+        (KeyState::Missing, false) if p.needs_key() => format!(
+            "Missing. You get it at {}. It is kept in the keyring, never in a file.",
+            p.keys_at
+        ),
         (KeyState::Missing, true) => {
-            "Fehlt. Er wird im Schlüsselbund gespeichert, nie in einer Datei.".to_string()
+            "Nur nötig, wenn der Server einen verlangt. Er wird im Schlüsselbund gespeichert, nie in einer Datei.".to_string()
         }
         (KeyState::Missing, false) => {
-            "Missing. It is kept in the keyring, never in a file.".to_string()
+            "Only needed when the server asks for one. It is kept in the keyring, never in a file.".to_string()
         }
         (KeyState::Unavailable(e), true) => format!("Kein Schlüsselbund erreichbar ({e})."),
         (KeyState::Unavailable(e), false) => format!("No keyring reachable ({e})."),
     };
     json!({
         "provider": provider,
+        "label": p.label,
         "stored": matches!(s, KeyState::Keyring | KeyState::Environment),
         "canStore": !matches!(s, KeyState::Unavailable(_) | KeyState::Environment),
         "text": text,
@@ -546,7 +586,7 @@ mod tests {
         assert_eq!(v["ready"], false);
         assert!(v["status"].as_str().unwrap().starts_with("Kein Tutor"));
         let mut p = b.store.profile().unwrap();
-        p.tutor.provider = "openai".into();
+        p.tutor.provider = "ollama".into();
         b.store.set_profile(&p).unwrap();
         let v = tutor_view(&b, "de");
         assert_eq!(v["ready"], false);
@@ -555,12 +595,30 @@ mod tests {
         b.store.set_profile(&p).unwrap();
         let v = tutor_view(&b, "en");
         assert_eq!(v["ready"], true);
-        assert_eq!(v["effective"], "openai");
-        // The local server sends nothing out.
+        assert_eq!(v["effective"], "ollama");
+        assert!(
+            v["presets"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|p| p["id"] == "openrouter")
+        );
+        // The local server sends nothing out and takes no key.
         let rows = privacy(&b, "en");
         assert!(rows.as_array().unwrap().iter().all(|r| r["cloud"] == false));
+        assert_eq!(key_view(&b, "en"), Value::Null);
         let (_, demo) = b.provider("n5-01-aisatsu");
         assert!(!demo, "a tutor set up is used, not the recordings");
+        // Any OpenAI-compatible server needs its address.
+        p.tutor.provider = "custom".into();
+        b.store.set_profile(&p).unwrap();
+        let v = tutor_view(&b, "en");
+        assert_eq!(v["ready"], false);
+        assert!(v["status"].as_str().unwrap().contains("server address"));
+        p.tutor.base_url = "http://localhost:8080/v1".into();
+        b.store.set_profile(&p).unwrap();
+        assert_eq!(tutor_view(&b, "en")["ready"], true);
+        assert_eq!(key_view(&b, "en")["provider"], "custom");
     }
 
     #[test]

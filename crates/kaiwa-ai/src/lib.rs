@@ -13,6 +13,7 @@ pub mod anthropic;
 pub mod cost;
 pub mod mock;
 pub mod openai;
+pub mod presets;
 pub mod privacy;
 pub mod secrets;
 pub mod transport;
@@ -76,44 +77,58 @@ pub fn provider_from_env() -> Result<Option<std::sync::Arc<dyn ChatProvider>>, S
 }
 
 /// The tutor named by `env` (the settings with the environment on top, [`Tutor::lookup`]);
-/// `None` when none is configured.
+/// `None` when none is configured. `KAIWA_PROVIDER` is a preset id ([`presets::PRESETS`]):
 ///
-///   KAIWA_PROVIDER=anthropic  [ANTHROPIC_API_KEY=…, else the system keyring]
-///   KAIWA_PROVIDER=openai     KAIWA_MODEL=…  [KAIWA_OPENAI_BASE=http://localhost:11434/v1]  [KAIWA_API_KEY=…, else the keyring]
+///   KAIWA_PROVIDER=anthropic   [ANTHROPIC_API_KEY=…, else the system keyring]
+///   KAIWA_PROVIDER=openrouter  KAIWA_MODEL=…  [OPENROUTER_API_KEY=…, else the keyring]
+///   KAIWA_PROVIDER=ollama      KAIWA_MODEL=…  [KAIWA_OPENAI_BASE=… over the preset's server]
+///   KAIWA_PROVIDER=custom      KAIWA_MODEL=…  KAIWA_OPENAI_BASE=…  [KAIWA_API_KEY=…]
 pub fn provider_from(
     env: impl Fn(&str) -> Option<String>,
 ) -> Result<Option<std::sync::Arc<dyn ChatProvider>>, String> {
     let env = |k: &str| env(k).filter(|v| !v.is_empty());
-    match env("KAIWA_PROVIDER").as_deref() {
-        None => Ok(None),
-        Some("anthropic") => {
-            let key = secrets::key("anthropic", env).ok_or(
-                "KAIWA_PROVIDER=anthropic needs a key: in the settings (system keyring) or ANTHROPIC_API_KEY",
-            )?;
-            let p = anthropic::AnthropicProvider::preset(key);
+    let Some(id) = env("KAIWA_PROVIDER") else {
+        return Ok(None);
+    };
+    let Some(p) = presets::preset(&id) else {
+        let known: Vec<_> = presets::PRESETS.iter().map(|p| p.id).collect();
+        return Err(format!(
+            "KAIWA_PROVIDER={id}: expected one of {}",
+            known.join(", ")
+        ));
+    };
+    let key = secrets::key(p.id, env);
+    if p.needs_key() && key.is_none() {
+        return Err(format!(
+            "KAIWA_PROVIDER={id} needs a key: in the settings (system keyring) or {}",
+            p.key_env.unwrap_or_default()
+        ));
+    }
+    match p.api {
+        presets::Api::Anthropic => {
+            let a = anthropic::AnthropicProvider::preset(key.unwrap_or_default());
             Ok(Some(std::sync::Arc::new(anthropic::AnthropicProvider {
-                url: p.url,
-                api_key: p.api_key,
-                reply_model: p.reply_model,
-                analysis_model: p.analysis_model,
-                transport: cost::Metered::new(p.transport),
+                url: a.url,
+                api_key: a.api_key,
+                reply_model: a.reply_model,
+                analysis_model: a.analysis_model,
+                transport: cost::Metered::new(a.transport),
             })))
         }
-        Some("openai") => {
-            let model = env("KAIWA_MODEL").ok_or("KAIWA_PROVIDER=openai needs KAIWA_MODEL")?;
-            let base =
-                env("KAIWA_OPENAI_BASE").unwrap_or_else(|| "http://localhost:11434/v1".into());
-            let p = openai::OpenAiCompatible::new(base, model);
+        presets::Api::OpenAi => {
+            let model =
+                env("KAIWA_MODEL").ok_or(format!("KAIWA_PROVIDER={id} needs KAIWA_MODEL"))?;
+            let base = p
+                .base_url(env)
+                .ok_or(format!("KAIWA_PROVIDER={id} needs KAIWA_OPENAI_BASE"))?;
+            let o = openai::OpenAiCompatible::new(base, model);
             Ok(Some(std::sync::Arc::new(openai::OpenAiCompatible {
-                base_url: p.base_url,
-                api_key: secrets::key("openai", env).unwrap_or_default(),
-                reply_model: p.reply_model,
-                analysis_model: p.analysis_model,
-                transport: cost::Metered::new(p.transport),
+                base_url: o.base_url,
+                api_key: key.unwrap_or_default(),
+                reply_model: o.reply_model,
+                analysis_model: o.analysis_model,
+                transport: cost::Metered::new(o.transport),
             })))
         }
-        Some(other) => Err(format!(
-            "KAIWA_PROVIDER={other}: expected anthropic or openai"
-        )),
     }
 }
