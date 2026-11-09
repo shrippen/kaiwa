@@ -324,6 +324,19 @@ mod tests {
             let m = furigana(&words, text);
             assert!(m.starts_with(group), "{m}");
         }
+        // The same with the number in digits, as speech recognition often writes it.
+        for (text, head) in [
+            ("2人です。", "2人です"),
+            ("３本ください。", "３本ください"),
+            ("3日に来ました。", "3日に"),
+            ("5分です。", "5分です"),
+            ("1,000円です。", "1,000円です"),
+        ] {
+            let m = furigana(&words, text);
+            assert!(m.starts_with(head), "{m}");
+        }
+        // A noun not right after the digits keeps its reading.
+        assert_eq!(furigana(&words, "2時に駅です。"), "2時に{駅|えき}です。");
         // Kana only, latin letters and marks stay as they are; braces stay text.
         assert_eq!(furigana(&words, "はい、OK {x}"), "はい、OK ｛x｝");
         // The markup reads back as the same text.

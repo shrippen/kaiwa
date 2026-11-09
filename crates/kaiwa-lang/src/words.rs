@@ -99,9 +99,17 @@ impl Words {
         let mut prev: Option<(String, String)> = None;
         // The last word is a number group: its reading stays unknown.
         let mut counted = false;
+        // Where a number in digits ends (2人, ３本): the counter after it has no reading of
+        // its own either (ふたり, さんぼん, not にん, ほん).
+        let mut digits_end = None;
         for t in self.tokens(text) {
             if t.pos == "記号" || t.pos.is_empty() || !t.surface.chars().any(japanese) {
                 prev = None;
+                digits_end = t
+                    .surface
+                    .chars()
+                    .all(|c| c.is_ascii_digit() || ('０'..='９').contains(&c) || c == ',')
+                    .then_some(t.end);
                 continue;
             }
             // IPADIC cuts kana it does not know before a small kana (し・ゅみ for しゅみ); no
@@ -148,18 +156,23 @@ impl Words {
                     w.plain = false;
                 }
             } else {
-                counted = false;
+                counted = digits_end == Some(t.start) && t.pos == "名詞";
                 out.push(Word {
                     plain: t.surface == t.base,
                     key: t.base.clone(),
                     surface: t.surface.clone(),
                     start: t.start,
                     end: t.end,
-                    reading: t.reading.clone(),
+                    reading: if counted {
+                        String::new()
+                    } else {
+                        t.reading.clone()
+                    },
                     pos: t.pos.clone(),
                     fallback: None,
                 });
             }
+            digits_end = None;
             prev = Some((t.pos, t.sub));
         }
         out
