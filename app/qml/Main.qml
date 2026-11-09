@@ -62,7 +62,11 @@ Kirigami.ApplicationWindow {
     }
 
     // One page at a time: a conversation takes the whole window.
-    Component.onCompleted: pageStack.columnView.columnResizeMode = Kirigami.ColumnView.SingleColumn
+    // No swiping between pages: a conversation is left through back, which asks first.
+    Component.onCompleted: {
+        pageStack.columnView.columnResizeMode = Kirigami.ColumnView.SingleColumn
+        pageStack.interactive = false
+    }
 
     pageStack.initialPage: Kirigami.Page {
         id: home
