@@ -300,14 +300,23 @@ fn summary_json(s: &Summary, lang: &str) -> Value {
 
 impl qobject::Conversation {
     fn publish_turns(mut self: Pin<&mut Self>) {
-        // The character's lines as words to look up (/LF112/, Kante 1.33), once per line.
+        // Every line as words to look up (/LF112/, Kante 1.33), once per line: the
+        // character's with the tutor's furigana, the learner's own with IPADIC's (/LF110/).
         for entry in self.as_mut().rust_mut().log.iter_mut() {
-            if entry["who"] == "character" && entry.get("segments").is_none() {
-                let line =
-                    kaiwa_backend::lookup::line(entry["markup"].as_str().unwrap_or_default());
-                entry["segments"] = line["segments"].clone();
-                entry["words"] = line["words"].clone();
+            if entry.get("segments").is_some() {
+                continue;
             }
+            let line = match entry["who"].as_str() {
+                Some("character") => {
+                    kaiwa_backend::lookup::line(entry["markup"].as_str().unwrap_or_default())
+                }
+                Some("learner") => {
+                    kaiwa_backend::lookup::own_line(entry["text"].as_str().unwrap_or_default())
+                }
+                _ => continue,
+            };
+            entry["segments"] = line["segments"].clone();
+            entry["words"] = line["words"].clone();
         }
         let text = Value::Array(self.log.clone()).to_string();
         self.as_mut().set_turns(QString::from(&text));
@@ -933,12 +942,9 @@ impl qobject::Conversation {
         }
     }
 
-    /// The word `word` of the character's line at `log_index`.
+    /// The word `word` of the line at `log_index` (the character's or the learner's own).
     fn line_word(&self, log_index: i32, word: i32) -> Option<kaiwa_lang::LineWord> {
-        let entry = self
-            .log
-            .get(usize::try_from(log_index).ok()?)
-            .filter(|e| e["who"] == "character")?;
+        let entry = self.log.get(usize::try_from(log_index).ok()?)?;
         serde_json::from_value(entry["words"].get(usize::try_from(word).ok()?)?.clone()).ok()
     }
 

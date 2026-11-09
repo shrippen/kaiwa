@@ -16,6 +16,3 @@
 の
 こと
 とき
-# Counters for people: tanos has ひとり and ふたり at N1, every course has them at N5.
-一人
-二人
