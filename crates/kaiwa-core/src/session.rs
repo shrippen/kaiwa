@@ -406,13 +406,15 @@ impl Session {
             &self.difficulty,
             &self.grammar,
         ))) {
-            Ok(r) => r,
+            // The reply with the readings the tutor wrote (/LF110/); the model's own history
+            // gets it without, as the opening.
+            Ok(r) => crate::clean_markup(&r),
             Err(e) => {
                 self.messages.pop();
                 return Err(e);
             }
         };
-        self.messages.push(ChatMessage::assistant(reply.clone()));
+        self.messages.push(ChatMessage::assistant(plain(&reply)));
 
         let playable: Vec<String> = self.goals().iter().map(|g| g.id.clone()).collect();
         let goals_met_now: Vec<String> = analysis
@@ -872,6 +874,17 @@ mod tests {
     fn the_opening_goes_to_the_model_without_furigana_markup() {
         let s = Session::new(scenario(), provider(), Amount::Little, "de");
         assert_eq!(s.messages[0].content, "はじめまして。田中です。お名前は？");
+    }
+
+    #[test]
+    fn a_reply_keeps_the_tutors_readings_and_the_history_has_none() {
+        let p: Arc<dyn ChatProvider> = Arc::new(
+            MockProvider::new([]).with_fallback("お{仕事|しごと}は{何|なん}ですか。{角|kado}"),
+        );
+        let mut s = Session::new(scenario(), p, Amount::Little, "de");
+        let out = s.turn("こんにちは。", Input::Typed).unwrap();
+        assert_eq!(out.reply, "お{仕事|しごと}は{何|なん}ですか。角");
+        assert_eq!(s.messages.last().unwrap().content, "お仕事は何ですか。角");
     }
 
     #[test]

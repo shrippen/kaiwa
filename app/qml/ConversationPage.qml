@@ -163,14 +163,17 @@ Kirigami.ScrollablePage {
                 Layout.fillWidth: true
                 from: modelData.who === "learner" ? KanteMessage.From.Own : KanteMessage.From.Other
                 author: modelData.who === "learner" ? (modelData.typed ? page.t("Du · getippt", "You · typed") : page.t("Du", "You")) : conv.character
-                text: modelData.who === "learner" ? modelData.text : ""
+                // /LF110/: the learner's own line with furigana too (from IPADIC), as text
+                // only until they are there.
+                text: modelData.who === "learner" && !modelData.segments ? modelData.text : ""
 
-                // /LF112/: a click on a word (or Tab, arrows, Enter) looks it up.
+                // /LF112/: a click on a word (or Tab, arrows, Enter) looks it up, in the
+                // character's lines and in the learner's own.
                 KanteRubyText {
                     id: line
-                    visible: modelData.who === "character"
+                    visible: modelData.who === "character" || !!modelData.segments
                     Layout.fillWidth: true
-                    segments: modelData.who === "character" && modelData.segments ? modelData.segments : []
+                    segments: modelData.segments ? modelData.segments : []
                     markup: modelData.who === "character" && !modelData.segments ? modelData.markup : ""
                     density: KanteRubyText.Density.All
                     interactive: true
@@ -699,19 +702,40 @@ Kirigami.ScrollablePage {
             info = JSON.parse(conv.lookup(line, word))
             added = false
         }
+        // The word in the overlay's coordinates, kept so the popup can move when its
+        // height changes (the dictionary arrives, a sense list is long).
+        property rect wordBox: Qt.rect(0, 0, 0, 0)
         function show(anchor, lineIndex, wordIndex) {
             line = lineIndex
             word = wordIndex
             reload()
             var r = anchor.wordRect(wordIndex)
-            var p = anchor.mapToItem(parent, r.x, r.y + r.height)
-            x = Math.max(0, Math.min(p.x, parent.width - width))
-            y = p.y + KanteStyle.unit(4)
+            var p = anchor.mapToItem(parent, r.x, r.y)
+            wordBox = Qt.rect(p.x, p.y, r.width, r.height)
+            place()
             open()
         }
+        // Below the word; when it does not fit there, above it; never out of the window.
+        function place() {
+            if (!parent)
+                return
+            var gap = KanteStyle.unit(4)
+            var h = height
+            var below = wordBox.y + wordBox.height + gap
+            var above = wordBox.y - gap - h
+            var fitsBelow = below + h <= parent.height
+            var fitsAbove = above >= 0
+            y = fitsBelow || !fitsAbove && parent.height - wordBox.y - wordBox.height >= wordBox.y
+                ? Math.max(0, Math.min(below, parent.height - h))
+                : Math.max(0, above)
+            x = Math.max(0, Math.min(wordBox.x, parent.width - width))
+        }
+        onHeightChanged: if (opened || visible) place()
 
         parent: QQC2.Overlay.overlay
         width: Math.min(KanteStyle.unit(420), parent ? parent.width - KanteStyle.unit(16) : KanteStyle.unit(420))
+        // Never taller than the window; a long entry scrolls inside.
+        height: parent ? Math.min(implicitHeight, parent.height - KanteStyle.unit(16)) : implicitHeight
         padding: KanteStyle.unit(14)
         modal: false
         focus: true
@@ -725,128 +749,136 @@ Kirigami.ScrollablePage {
             }
         }
 
-        contentItem: ColumnLayout {
-            spacing: KanteStyle.unit(8)
-            KantePopupSkin { popup: wordPopup }
+        // Scrolls when the window is lower than the entry, so the buttons stay reachable.
+        contentItem: QQC2.ScrollView {
+            id: wordScroll
+            contentWidth: availableWidth
+            implicitHeight: wordColumn.implicitHeight
+            ColumnLayout {
+                id: wordColumn
+                width: wordScroll.availableWidth
+                spacing: KanteStyle.unit(8)
+                KantePopupSkin { popup: wordPopup }
 
-            KanteRubyText {
-                Layout.fillWidth: true
-                markup: !wordPopup.info ? "" : wordPopup.found && wordPopup.info.reading !== wordPopup.info.word
-                    ? "{" + wordPopup.info.word + "|" + wordPopup.info.reading + "}" : (wordPopup.found ? wordPopup.info.word : wordPopup.info.text)
-            }
-            Text {
-                visible: wordPopup.found && wordPopup.info.pos.length > 0
-                Layout.fillWidth: true
-                text: wordPopup.found ? wordPopup.info.pos.join(" · ") : ""
-                color: KanteStyle.mutedTextColor
-                font: KanteStyle.smallFont
-                wrapMode: Text.Wrap
-            }
-            Repeater {
-                model: wordPopup.found ? wordPopup.info.senses : []
-                delegate: Text {
-                    required property var modelData
-                    required property int index
+                KanteRubyText {
                     Layout.fillWidth: true
-                    text: (index + 1) + ". " + modelData.join(", ")
+                    markup: !wordPopup.info ? "" : wordPopup.found && wordPopup.info.reading !== wordPopup.info.word
+                        ? "{" + wordPopup.info.word + "|" + wordPopup.info.reading + "}" : (wordPopup.found ? wordPopup.info.word : wordPopup.info.text)
+                }
+                Text {
+                    visible: wordPopup.found && wordPopup.info.pos.length > 0
+                    Layout.fillWidth: true
+                    text: wordPopup.found ? wordPopup.info.pos.join(" · ") : ""
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.smallFont
+                    wrapMode: Text.Wrap
+                }
+                Repeater {
+                    model: wordPopup.found ? wordPopup.info.senses : []
+                    delegate: Text {
+                        required property var modelData
+                        required property int index
+                        Layout.fillWidth: true
+                        text: (index + 1) + ". " + modelData.join(", ")
+                        color: KanteStyle.textColor
+                        font: KanteStyle.defaultFont
+                        wrapMode: Text.Wrap
+                    }
+                }
+                Text {
+                    visible: wordPopup.found && wordPopup.info.fallback === true
+                    Layout.fillWidth: true
+                    text: page.t("Auf Englisch: JMdict hat für dieses Wort keine deutsche Bedeutung.", "")
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.smallFont
+                    wrapMode: Text.Wrap
+                }
+                KantePitchCurve {
+                    visible: wordPopup.found && wordPopup.info.accent !== null && wordPopup.info.accent !== undefined
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: KanteStyle.unit(130)
+                    morae: visible ? wordPopup.info.accent.morae : []
+                    target: visible ? wordPopup.info.accent.target : []
+                    kernel: visible ? wordPopup.info.accent.kernel : -1
+                    targetLabel: page.t("Akzent", "Accent")
+                    kernelLabel: page.t("Akzentkern", "Accent kernel")
+                    flatText: page.t("flach, ohne Abfall", "flat, no fall")
+                    fallText: page.t("Abfall nach", "falls after")
+                }
+                Text {
+                    visible: wordPopup.info !== null && wordPopup.info.found === false
+                    Layout.fillWidth: true
+                    text: page.t("Dieses Wort steht nicht im Wörterbuch.", "This word is not in the dictionary.")
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.defaultFont
+                    wrapMode: Text.Wrap
+                }
+                Text {
+                    visible: wordPopup.missing
+                    Layout.fillWidth: true
+                    text: wordPopup.missing && wordPopup.info.download
+                        ? page.t("Zum Nachschlagen braucht Kaiwa das Wörterbuch (" + wordPopup.info.download.name + ", " + wordPopup.info.download.licence + ", von " + wordPopup.info.download.origin + "): Download " + wordPopup.info.download.downloadMB + " MB, danach " + wordPopup.info.download.diskMB + " MB auf der Platte. Kaiwa lädt es nur, wenn du hier tippst; die Datei wird vor der Benutzung geprüft.",
+                                 "To look words up, Kaiwa needs the dictionary (" + wordPopup.info.download.name + ", " + wordPopup.info.download.licence + ", from " + wordPopup.info.download.origin + "): download " + wordPopup.info.download.downloadMB + " MB, then " + wordPopup.info.download.diskMB + " MB on disk. Kaiwa downloads it only when you tap here; the file is checked before it is used.")
+                        : ""
                     color: KanteStyle.textColor
                     font: KanteStyle.defaultFont
                     wrapMode: Text.Wrap
                 }
-            }
-            Text {
-                visible: wordPopup.found && wordPopup.info.fallback === true
-                Layout.fillWidth: true
-                text: page.t("Auf Englisch: JMdict hat für dieses Wort keine deutsche Bedeutung.", "")
-                color: KanteStyle.mutedTextColor
-                font: KanteStyle.smallFont
-                wrapMode: Text.Wrap
-            }
-            KantePitchCurve {
-                visible: wordPopup.found && wordPopup.info.accent !== null && wordPopup.info.accent !== undefined
-                Layout.fillWidth: true
-                Layout.preferredHeight: KanteStyle.unit(130)
-                morae: visible ? wordPopup.info.accent.morae : []
-                target: visible ? wordPopup.info.accent.target : []
-                kernel: visible ? wordPopup.info.accent.kernel : -1
-                targetLabel: page.t("Akzent", "Accent")
-                kernelLabel: page.t("Akzentkern", "Accent kernel")
-                flatText: page.t("flach, ohne Abfall", "flat, no fall")
-                fallText: page.t("Abfall nach", "falls after")
-            }
-            Text {
-                visible: wordPopup.info !== null && wordPopup.info.found === false
-                Layout.fillWidth: true
-                text: page.t("Dieses Wort steht nicht im Wörterbuch.", "This word is not in the dictionary.")
-                color: KanteStyle.mutedTextColor
-                font: KanteStyle.defaultFont
-                wrapMode: Text.Wrap
-            }
-            Text {
-                visible: wordPopup.missing
-                Layout.fillWidth: true
-                text: wordPopup.missing && wordPopup.info.download
-                    ? page.t("Zum Nachschlagen braucht Kaiwa das Wörterbuch (" + wordPopup.info.download.name + ", " + wordPopup.info.download.licence + ", von " + wordPopup.info.download.origin + "): Download " + wordPopup.info.download.downloadMB + " MB, danach " + wordPopup.info.download.diskMB + " MB auf der Platte. Kaiwa lädt es nur, wenn du hier tippst; die Datei wird vor der Benutzung geprüft.",
-                             "To look words up, Kaiwa needs the dictionary (" + wordPopup.info.download.name + ", " + wordPopup.info.download.licence + ", from " + wordPopup.info.download.origin + "): download " + wordPopup.info.download.downloadMB + " MB, then " + wordPopup.info.download.diskMB + " MB on disk. Kaiwa downloads it only when you tap here; the file is checked before it is used.")
-                    : ""
-                color: KanteStyle.textColor
-                font: KanteStyle.defaultFont
-                wrapMode: Text.Wrap
-            }
-            KanteProgressBar {
-                visible: wordPopup.loading
-                Layout.fillWidth: true
-                value: {
-                    if (!wordPopup.loading) return 0
-                    var d = JSON.parse(page.kaiwa.download)
-                    return d.total > 0 ? d.done / d.total : 0
-                }
-                Accessible.name: page.t("Download des Wörterbuchs", "Download of the dictionary")
-            }
-            RowLayout {
-                spacing: KanteStyle.unit(8)
-                KanteButton {
-                    visible: wordPopup.found
-                    size: KanteButton.Size.Small
-                    text: page.t("Anhören", "Listen")
-                    enabled: conv.voice.length > 0 && conv.voiceOn
-                    Accessible.description: page.t("Die Figur sagt das Wort.", "The character says the word.")
-                    onClicked: conv.sayWord(wordPopup.line, wordPopup.word)
-                }
-                KanteButton {
-                    // A name goes into no review (Q-13).
-                    visible: wordPopup.found && wordPopup.info.name !== true
-                    size: KanteButton.Size.Small
-                    emphasis: KanteButton.Emphasis.Primary
-                    enabled: wordPopup.found && !wordPopup.info.inReview && !wordPopup.added
-                    text: wordPopup.found && (wordPopup.info.inReview || wordPopup.added)
-                        ? page.t("In der Wiederholung", "In the review") : page.t("In die Wiederholung", "Add to review")
-                    onClicked: wordPopup.added = conv.remember(wordPopup.line, wordPopup.word) || wordPopup.added
-                }
-                KanteButton {
-                    visible: wordPopup.missing && !wordPopup.loading && page.kaiwa !== null
-                    size: KanteButton.Size.Small
-                    emphasis: KanteButton.Emphasis.Primary
-                    text: page.t("Wörterbuch herunterladen", "Download the dictionary")
-                    onClicked: page.kaiwa.downloadModel(wordPopup.info.download.dir)
-                }
-                KanteButton {
+                KanteProgressBar {
                     visible: wordPopup.loading
-                    size: KanteButton.Size.Small
-                    emphasis: KanteButton.Emphasis.Quiet
-                    text: page.t("Abbrechen", "Stop")
-                    onClicked: page.kaiwa.stopDownload()
+                    Layout.fillWidth: true
+                    value: {
+                        if (!wordPopup.loading) return 0
+                        var d = JSON.parse(page.kaiwa.download)
+                        return d.total > 0 ? d.done / d.total : 0
+                    }
+                    Accessible.name: page.t("Download des Wörterbuchs", "Download of the dictionary")
                 }
-            }
-            Text {
-                visible: wordPopup.found
-                Layout.fillWidth: true
-                text: wordPopup.found && wordPopup.info.name === true
-                    ? "JMnedict (EDRDG) · CC BY-SA 4.0"
-                    : "JMdict (EDRDG), Kanjium · CC BY-SA 4.0"
-                color: KanteStyle.mutedTextColor
-                font: KanteStyle.smallFont
-                wrapMode: Text.Wrap
+                RowLayout {
+                    spacing: KanteStyle.unit(8)
+                    KanteButton {
+                        visible: wordPopup.found
+                        size: KanteButton.Size.Small
+                        text: page.t("Anhören", "Listen")
+                        enabled: conv.voice.length > 0 && conv.voiceOn
+                        Accessible.description: page.t("Die Figur sagt das Wort.", "The character says the word.")
+                        onClicked: conv.sayWord(wordPopup.line, wordPopup.word)
+                    }
+                    KanteButton {
+                        // A name goes into no review (Q-13).
+                        visible: wordPopup.found && wordPopup.info.name !== true
+                        size: KanteButton.Size.Small
+                        emphasis: KanteButton.Emphasis.Primary
+                        enabled: wordPopup.found && !wordPopup.info.inReview && !wordPopup.added
+                        text: wordPopup.found && (wordPopup.info.inReview || wordPopup.added)
+                            ? page.t("In der Wiederholung", "In the review") : page.t("In die Wiederholung", "Add to review")
+                        onClicked: wordPopup.added = conv.remember(wordPopup.line, wordPopup.word) || wordPopup.added
+                    }
+                    KanteButton {
+                        visible: wordPopup.missing && !wordPopup.loading && page.kaiwa !== null
+                        size: KanteButton.Size.Small
+                        emphasis: KanteButton.Emphasis.Primary
+                        text: page.t("Wörterbuch herunterladen", "Download the dictionary")
+                        onClicked: page.kaiwa.downloadModel(wordPopup.info.download.dir)
+                    }
+                    KanteButton {
+                        visible: wordPopup.loading
+                        size: KanteButton.Size.Small
+                        emphasis: KanteButton.Emphasis.Quiet
+                        text: page.t("Abbrechen", "Stop")
+                        onClicked: page.kaiwa.stopDownload()
+                    }
+                }
+                Text {
+                    visible: wordPopup.found
+                    Layout.fillWidth: true
+                    text: wordPopup.found && wordPopup.info.name === true
+                        ? "JMnedict (EDRDG) · CC BY-SA 4.0"
+                        : "JMdict (EDRDG), Kanjium · CC BY-SA 4.0"
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.smallFont
+                    wrapMode: Text.Wrap
+                }
             }
         }
     }

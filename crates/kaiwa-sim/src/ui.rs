@@ -654,6 +654,8 @@ fn word_lookup(root: &Path) -> Result<Option<String>> {
         ));
     };
     let line = lookup::line(reply);
+    // The recorded reply has no markup: its kanji get furigana all the same (/LF110/).
+    let reading_aid = annotate_markup(&line);
     let words: Vec<kaiwa_lang::LineWord> = serde_json::from_value(line["words"].clone())?;
     let Some(word) = words.iter().find(|w| w.text == "プロデューサー") else {
         return Ok(Some(format!(
@@ -661,6 +663,34 @@ fn word_lookup(root: &Path) -> Result<Option<String>> {
         )));
     };
     let mut found = Vec::new();
+    if !reading_aid.contains("{好|す}") {
+        found.push(format!("no furigana over 好 in the reply: {reading_aid}"));
+    }
+    // Mara's own line has furigana too, and its words are looked up the same way; a number
+    // with its counter gets none rather than a wrong one (ににん).
+    let own = lookup::own_line("仕事はプロデューサーです。");
+    if !own["markup"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("{仕事|しごと}")
+    {
+        found.push(format!(
+            "no furigana しごと in her own line: {}",
+            own["markup"]
+        ));
+    }
+    let own_words: Vec<kaiwa_lang::LineWord> = serde_json::from_value(own["words"].clone())?;
+    if !own_words.iter().any(|w| w.text == "プロデューサー") {
+        found.push("プロデューサー is no word of her own line".into());
+    }
+    let two = lookup::own_line("二人です。");
+    if two["markup"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("{二人|")
+    {
+        found.push(format!("a guessed reading over 二人: {}", two["markup"]));
+    }
     let b = demo("lookup", "de")?;
     let dict = root.join("data/dict/kaiwa-dict-excerpt.sqlite");
     let v = lookup::lookup_in(&dict, &b, word, "de");
@@ -771,4 +801,20 @@ fn own_lines(body: &str) -> String {
         depth = depth.max(0);
     }
     out
+}
+
+/// The segments of a line back as markup (what KanteRubyText shows).
+fn annotate_markup(line: &Value) -> String {
+    line["segments"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|s| {
+            let text = s["text"].as_str().unwrap_or_default();
+            match s["reading"].as_str().unwrap_or_default() {
+                "" => text.to_string(),
+                r => format!("{{{text}|{r}}}"),
+            }
+        })
+        .collect()
 }
