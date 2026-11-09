@@ -9,7 +9,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
 | Muss | 49 | 22 | 5 | 3 | 0 |
-| Soll | 7 | 11 | 5 | 0 | 0 |
+| Soll | 7 | 12 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
 | ID | Prio | Anforderung | Code | Stand | Prüfregeln |
@@ -24,6 +24,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, speech, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core, speech | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
+| /LF104/ | S | Das Mikrofon ist in den Einstellungen wählbar (Standard: das des … | app | Code | – |
 | /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, store | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF112/ | M | Ein Klick auf ein Wort zeigt Lesung, Bedeutung und Wortart und spielt … | app, backend, core, lang, store | geprüft | 1 von 1 automatisch grün: `mara_word_lookup` |

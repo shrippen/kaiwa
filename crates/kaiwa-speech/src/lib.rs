@@ -103,9 +103,10 @@ pub(crate) fn buffer_for(
 
 /// The stream config to open: the device's default, but as f32 when the default format is
 /// one the streams do not take (PulseAudio offers s24 first and converts to anything).
-pub(crate) fn usable_config(
+/// `ranges` is asked only then: under ALSA it opens the device once more.
+pub(crate) fn usable_config<R: Iterator<Item = cpal::SupportedStreamConfigRange>>(
     default: cpal::SupportedStreamConfig,
-    ranges: impl Iterator<Item = cpal::SupportedStreamConfigRange>,
+    ranges: impl FnOnce() -> R,
 ) -> cpal::SupportedStreamConfig {
     use cpal::SampleFormat::{F32, I16, I32, U16};
     if matches!(default.sample_format(), F32 | I16 | U16 | I32) {
@@ -113,7 +114,7 @@ pub(crate) fn usable_config(
     }
     let rate = default.sample_rate();
     let channels = default.channels();
-    let mut ranges: Vec<_> = ranges.filter(|r| r.sample_format() == F32).collect();
+    let mut ranges: Vec<_> = ranges().filter(|r| r.sample_format() == F32).collect();
     // The default channel count first, so a mono microphone stays mono.
     ranges.sort_by_key(|r| r.channels() != channels);
     ranges

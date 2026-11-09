@@ -84,7 +84,7 @@ impl Player {
                     device
                         .default_output_config()
                         .map_err(|e| SpeechError::Speaker(e.to_string()))?,
-                    device.supported_output_configs().into_iter().flatten(),
+                    || device.supported_output_configs().into_iter().flatten(),
                 );
                 let rate = supported.sample_rate();
                 let mut config = supported.config();

@@ -231,7 +231,7 @@ impl Capture {
                     device
                         .default_input_config()
                         .map_err(|e| SpeechError::Microphone(e.to_string()))?,
-                    device.supported_input_configs().into_iter().flatten(),
+                    || device.supported_input_configs().into_iter().flatten(),
                 );
                 let rate = supported.sample_rate();
                 let buffer = Arc::new(Mutex::new(Vec::new()));

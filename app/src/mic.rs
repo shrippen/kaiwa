@@ -1,4 +1,4 @@
-//! The microphone test in the settings: pick the microphone, record a sentence with a live
+//! The microphone test in the settings (/LF104/): pick the microphone, record a sentence with a live
 //! level, then hear it back, see whether it is loud and clear enough (`capture::check`) and,
 //! with ReazonSpeech present, what the recognition understood. Nothing is stored or sent;
 //! the recording lives only in this object.
@@ -238,7 +238,13 @@ impl qobject::MicTest {
                     v["heard"] = text.trim().into();
                     v["recognition"] = "ok".into();
                 }
-                Err(_) => v["recognition"] = "missing".into(),
+                Err(kaiwa_speech::SpeechError::ModelMissing(_)) => {
+                    v["recognition"] = "missing".into()
+                }
+                Err(e) => {
+                    v["recognition"] = "failed".into();
+                    v["why"] = crate::conversation::speech_text(&e, &lang).into();
+                }
             }
             let _ = thread.queue(move |mut q| {
                 q.as_mut().set_result(QString::from(&v.to_string()));
@@ -257,6 +263,7 @@ impl qobject::MicTest {
                 Err(e) => {
                     let text = crate::conversation::speech_text(&e, &lang());
                     self.as_mut().set_error(QString::from(&text));
+                    self.as_mut().set_phase(ERROR);
                     return;
                 }
             }

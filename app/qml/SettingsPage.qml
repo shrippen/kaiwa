@@ -5,7 +5,7 @@ import Kante
 import org.shrippen.kaiwa
 
 // Settings (Lastenheft Kap. 7): daily goal (/LF601/), feedback amount (/LF304/), script
-// (/LF110/), end of a spoken turn (/LF101/), the microphone and its test, mora hints (/LF320/), gamification (/LF605/),
+// (/LF110/), end of a spoken turn (/LF101/), the microphone and its test (/LF104/), mora hints (/LF320/), gamification (/LF605/),
 // pause mode (/LF602/),
 // reminder (/LF620/: at most one a day, off by default), style and language; the tutor and
 // its key (Q-15, /LF713/); what leaves the device (/LF711/); export and deletion of all data
@@ -224,6 +224,7 @@ QQC2.ScrollView {
                 font: KanteStyle.defaultFont
                 text: !micResult.r ? ""
                     : micResult.r.recognition === "checking" ? page.t("Die Spracherkennung hört zu …", "The recognition is listening …")
+                    : micResult.r.recognition === "failed" ? micResult.r.why
                     : micResult.r.recognition === "missing" ? page.t("Was die Spracherkennung versteht, zeigt sich, sobald ReazonSpeech unter „Modelle“ geladen ist.", "What the recognition understands shows once ReazonSpeech is downloaded under “Models”.")
                     : micResult.r.heard.length > 0 ? page.t("Verstanden: ", "Understood: ") + micResult.r.heard
                     : page.t("Die Spracherkennung hat nichts verstanden.", "The recognition understood nothing.")
