@@ -6,7 +6,14 @@ Rechner: … · Tutor: … (Anbieter, Modell) · Kaiwa-Commit: `git rev-parse --
 
 ## 1. `kaiwa-sim run --live`
 
-`live.json` und `live.txt` liegen im Ordner. Wenn etwas auffiel:
+`live.json` und `live.txt` liegen im Ordner.
+
+| Was `kaiwa-sim` nicht selbst prüft | ok | nicht ok | Notiz |
+|---|---|---|---|
+| `theo_fp`: Vorschläge zu korrekten Sätzen nur als „Auch möglich“ | | | |
+| `mara_explain_de`: keine Fachbegriffe ohne Erklärung | | | |
+
+Wenn sonst etwas auffiel:
 
 - …
 
@@ -30,6 +37,7 @@ Rechner: … · Tutor: … (Anbieter, Modell) · Kaiwa-Commit: `git rev-parse --
 | `hinnerk_no_cutoff`: kein Zug abgeschnitten, Angebot längerer Pause | | | |
 | `mara_mora_hint`: höchstens ein Moren-Hinweis, keiner bei richtigem Satz | | | |
 | `hinnerk_german_word_help` (Audio): とうだい langsam gesprochen | | | |
+| `mara_codeswitch` (Audio): プロデューサー hörbar gesprochen | | | |
 | `theo_latency`: Median … s, 95 % … s, „denkt nach“ sichtbar | | | |
 
 ## 4. Rechner und Oberfläche

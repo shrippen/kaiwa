@@ -37,12 +37,22 @@ Alle Reisen laufen mit dem echten Tutor statt mit den Aufzeichnungen, rund 70 Z�
 | `theo_fp` | Höchstens 2 von 40 korrekten Sätzen bekommen eine Korrektur mit „falsch“ oder schlimmer (Fehlalarme, /LL110/). | `qa/scripts/theo_false_alarms.json` |
 | `theo_tp` | Mindestens 5 der 6 eingebauten Fehler werden gefunden, ドアが開けました als „falsch“ (/LL111/). | dasselbe |
 | `emi_keigo_detect` | Jeder Keigo-Fehler von Emi wird gefunden, 二重敬語 als „unnatürlich“, ご苦労様 als „falsch“ mit Begründung. | `qa/scripts/emi_interview.json` (Empfangsszene, bis es ein Vorstellungsgespräch gibt) |
-| `mara_codeswitch` | Auf „Wie sagt man Produzentin auf Japanisch?“ nennt die Figur プロデューサー (/LF122/). | `qa/scripts/mara_first_talk.json` |
-| `mara_explain_de` | Jede Erklärung ist auf Deutsch und hat ein japanisches Beispiel. Die Sprache erkennt eine Faustregel; lies die Erklärungen in `live.json` trotzdem einmal quer. | dasselbe |
+| `mara_codeswitch` | Auf „Wie sagt man Produzentin auf Japanisch?“ nennt die Figur プロデューサー und bittet ums Nachsprechen (/LF122/). Ob sie es hörbar spricht, gehört zu Schritt 3. | `qa/scripts/mara_first_talk.json` |
+| `mara_explain_de` | Jede Erklärung ist auf Deutsch und hat ein japanisches Beispiel. Die Sprache erkennt eine Faustregel. Ob Fachbegriffe erklärt sind, beurteilst du (Vorlage). | dasselbe |
+
+Für `theo_fp` siehst du außerdem in `live.txt` nach, ob Vorschläge zu den korrekten Sätzen nur als „Auch möglich“ kommen (Vorlage).
+
+Bricht ein Aufruf des Anbieters ab (Limit, Netz), steht bei den Prüfregeln dieser Reise `FAIL … tutor: …`, und der Lauf geht mit der nächsten Reise weiter. Dann den Lauf einfach wiederholen.
 
 Die übrigen Prüfregeln laufen dabei auch mit dem echten Tutor. Interessant ist dort, was mit den Aufzeichnungen grün ist und mit dem Tutor rot wird, vor allem `mara_recall` und `selin_register_flag`. Ein `FAIL` ist kein Fehler deines Tests, sondern ein Befund: Die Zeile nennt den Grund.
 
 ## 2. Der Tutor in der App (von Hand)
+
+**Erst die Variablen aus Schritt 1 entfernen** (oder ein neues Terminal öffnen). Sie haben Vorrang vor den Einstellungen; sonst redest du ab hier mit dem Tutor aus Schritt 1, und die lokalen Messungen in 3.5 und 4.3 stimmen nicht:
+
+```sh
+unset KAIWA_PROVIDER KAIWA_MODEL KAIWA_OPENAI_BASE ANTHROPIC_API_KEY
+```
 
 `cargo run -p kaiwa-app` (wie im Paket, ohne Demo), dann Einstellungen › Tutor: „Lokal (OpenAI-kompatibel)“ mit Modell und Server (leer ist Ollama auf diesem Rechner) oder „Anthropic Claude“ mit dem Schlüssel, der im Schlüsselbund landet. Gesetzte Umgebungsvariablen haben Vorrang vor den Einstellungen.
 
@@ -63,14 +73,14 @@ ReazonSpeech, Kokoro und kaiwa-kana-ctc in den Einstellungen unter „Modelle“
 1. **Verstanden?** Wird erkannt, was du sagst? Klingt die Übergangsstimme verständlich, stören falsche Lesarten oder Pausen?
 2. **Nicht abgeschnitten** (`hinnerk_no_cutoff`): Freisprechen an (Einstellungen › Sprechen). Sprich langsam, mit Pausen von 2–3 s mitten im Satz. Kein Zug darf vor seinem Ende abgeschlossen werden. Nach zwei knappen Fällen soll die App anbieten, die Pause zu verlängern.
 3. **Moren-Hinweis** (`mara_mora_hint`): Sprich ありがとございます (kurzes とう) und ちょと待てください. Höchstens ein Hinweis zur Moren-Länge je Satz, nichts bei ありがとうございます.
-4. **Langsam** (`hinnerk_german_word_help`, Teil Audio): Die Figur spricht とうだい aus Schritt 2.5 langsam?
-5. **Latenz** (`theo_latency`): 20 Züge im freien Gespräch, alles lokal (Ollama, ReazonSpeech, Kokoro). Miss je Zug die Zeit vom Ende deines Satzes bis zum ersten Ton der Figur, mit Stoppuhr oder Bildschirmaufnahme. Ziel: Median ≤ 3 s, 95 % ≤ 5 s, „denkt nach“ ist währenddessen sichtbar.
+4. **Langsam** (`hinnerk_german_word_help`, Teil Audio): Die Figur spricht とうだい aus Schritt 2.5 langsam? Ebenso hörbar: Auf „Wie sagt man Produzentin auf Japanisch?“ spricht sie プロデューサー (`mara_codeswitch`).
+5. **Latenz** (`theo_latency`): 20 Züge im freien Gespräch, alles lokal (Ollama in den Einstellungen, ReazonSpeech, Kokoro; keine `KAIWA_*`-Variablen gesetzt). Miss je Zug die Zeit vom Ende deines Satzes bis zum ersten Ton der Figur, mit Stoppuhr oder Bildschirmaufnahme. Ziel: Median ≤ 3 s, 95 % ≤ 5 s, „denkt nach“ ist währenddessen sichtbar.
 
 ## 4. Rechner und Oberfläche (Framework 13)
 
 1. **Speicher im Leerlauf** (`lena_idle_memory`): Ein Gespräch mit Sprechen führen, dann 10 Minuten nichts tun und `ps -o rss= -C kaiwa` ausgeben (in KB). Die Modelle müssen entladen sein, Ziel ≤ 150 MB.
 2. **Flüssig** (`lena_responsive`): `QSG_RENDER_TIMING=1 cargo run -p kaiwa-app 2> qa/local/<datum>/frames.log` und ein Gespräch mit Sprechen führen. Die Bildzeiten stehen im Log, Ziel < 50 ms. „Denkt nach“ sichtbar, Abbrechen geht jederzeit?
-3. **Nichts geht nach draußen** (`lena_zero_egress`): Tutor lokal (Ollama), Modelle geladen, dann
+3. **Nichts geht nach draußen** (`lena_zero_egress`): Tutor lokal (Ollama in den Einstellungen, keine `KAIWA_*`-Variablen gesetzt), Modelle geladen, dann
    `strace -f -e trace=connect,sendto,sendmsg -o qa/local/<datum>/egress.log ./target/debug/kaiwa` und ein Gespräch führen. Erlaubt sind nur Verbindungen zu `127.0.0.1`/`::1` (Ollama) und lokale Sockets (D-Bus, PipeWire). Jede andere Adresse und jede DNS-Anfrage (Port 53) ist ein Befund.
 4. **Große Schrift** (`hinnerk_font`): Systemschrift auf 160 % oder in Kaiwa Textgröße 160 %, dann jede Ansicht durchgehen. Nichts abgeschnitten, Furigana und Kana mitskaliert, keine Bedienelemente überlappen. Screenshots bei Auffälligkeiten in den Ordner.
 

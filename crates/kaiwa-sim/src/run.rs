@@ -273,13 +273,16 @@ pub fn live_check(id: &str, run: &Run) -> Option<Outcome> {
     let fail = |m: String| Some(Outcome::Fail(m));
     let real = |s: &&kaiwa_core::feedback::Shown| !s.correction.also_possible;
     match id {
-        // /LF122/: asked in German for a word, the character gives the Japanese one.
+        // /LF122/: asked in German for a word, the character gives the Japanese one and asks
+        // the learner to say it (言って…, 言えますか, 言いましょう). Hearing it is the local test's.
         "mara_codeswitch" => {
             let (_, o) = turns(run).find(|(p, _)| p.iter().any(|x| x == "mara_codeswitch"))?;
-            if o.reply.contains("プロデューサー") {
-                Some(Outcome::Pass)
-            } else {
+            if !o.reply.contains("プロデューサー") {
                 fail(format!("no プロデューサー in: {}", o.reply))
+            } else if !o.reply.contains('言') {
+                fail(format!("does not ask to say it: {}", o.reply))
+            } else {
+                Some(Outcome::Pass)
             }
         }
         // /LL112/: every explanation in German, with a Japanese example.
@@ -338,6 +341,7 @@ pub fn live_check(id: &str, run: &Run) -> Option<Outcome> {
                 .is_some_and(|(_, o)| {
                     o.shown
                         .iter()
+                        .filter(real)
                         .any(|s| s.correction.severity == Severity::Wrong)
                 });
             match (found >= 5, transitive) {
@@ -351,17 +355,23 @@ pub fn live_check(id: &str, run: &Run) -> Option<Outcome> {
         "emi_keigo_detect" => {
             for (p, o) in turns(run).filter(|(p, _)| !p.is_empty()) {
                 let id = &p[0];
-                let Some(s) = o.shown.iter().find(|s| real(s)) else {
+                let found: Vec<_> = o.shown.iter().filter(real).collect();
+                if found.is_empty() {
                     return fail(format!("{id} not found"));
-                };
+                }
                 let want = match id.as_str() {
                     "emi_double_keigo" => Some(Severity::Unnatural),
                     "emi_gokurou" => Some(Severity::Wrong),
                     _ => None,
                 };
-                if want.is_some_and(|w| s.correction.severity != w) {
-                    return fail(format!("{id} as {:?}", s.correction.severity));
-                }
+                // Any of the turn's corrections may carry it (much feedback shows style too).
+                let hit = found
+                    .iter()
+                    .find(|s| want.is_none_or(|w| s.correction.severity == w));
+                let Some(s) = hit else {
+                    let got: Vec<_> = found.iter().map(|s| s.correction.severity).collect();
+                    return fail(format!("{id} as {got:?}"));
+                };
                 if id == "emi_gokurou" && s.correction.explanation.trim().is_empty() {
                     return fail("emi_gokurou without a reason".into());
                 }
@@ -672,9 +682,28 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
             if script.journey != jid {
                 bail!("{} names journey {}", script_path.display(), script.journey);
             }
-            (live || !script.live_only)
-                .then(|| play(root, &persona, &script, live))
-                .transpose()?
+            match (live || !script.live_only).then(|| play(root, &persona, &script, live)) {
+                Some(Ok(r)) => Some(r),
+                // With a real tutor one failed call (a limit, the network) is a finding of this
+                // journey, not the end of the run: the report still gets written.
+                Some(Err(e)) if live => {
+                    let mut checks = BTreeMap::new();
+                    for c in journey["checks"].as_array().into_iter().flatten() {
+                        let cid = c["id"].as_str().unwrap_or_default().to_string();
+                        checks.insert(cid, Outcome::Fail(format!("tutor: {e:#}")));
+                    }
+                    reports.push(JourneyReport {
+                        persona: persona_id.into(),
+                        journey: jid,
+                        checks,
+                        requirements: requirements_of(journey),
+                        curve: Vec::new(),
+                    });
+                    continue;
+                }
+                Some(Err(e)) => return Err(e),
+                None => None,
+            }
         } else {
             None
         };
@@ -827,7 +856,7 @@ mod tests {
             move |s: &Script| {
                 tutor(s, move |_, _, p| {
                     let c = match p.first().map(String::as_str) {
-                        Some("emi_double_keigo") => vec![(double, why)],
+                        Some("emi_double_keigo") => vec![("style", why), (double, why)],
                         Some(_) => vec![("wrong", why)],
                         None => vec![],
                     };
@@ -869,6 +898,11 @@ mod tests {
         };
         let de = "好き verlangt が: コーヒーが好きです。";
         let ok = with("プロデューサーです。言ってみてください。", de);
+        let mute = with("プロデューサーです。", de);
+        assert!(matches!(
+            live("mara", "mara_first_talk", "mara_codeswitch", &mute),
+            Outcome::Fail(_)
+        ));
         assert_eq!(
             live("mara", "mara_first_talk", "mara_codeswitch", &ok),
             Outcome::Pass
