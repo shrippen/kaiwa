@@ -106,6 +106,8 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
         "selin_profile_split" => profile_split(p),
         "emi_ceiling" => ceiling(p),
         "selin_casual_ok" => casual_ok(root),
+        "theo_free_talk" => free_talk(p),
+        "jonas_cost_limit" => cost_limit(),
         _ => return None,
     };
     Some(match r {
@@ -113,6 +115,265 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
         Ok(Some(why)) => Outcome::Fail(why),
         Err(e) => Outcome::Fail(format!("{e:#}")),
     })
+}
+
+/// A provider's answer with a bill: one call of the dearest model in the price list.
+struct Billing;
+
+impl kaiwa_ai::transport::Transport for Billing {
+    fn post_json(
+        &self,
+        _: &str,
+        _: &[(&str, String)],
+        _: &Value,
+    ) -> Result<Value, kaiwa_ai::AiError> {
+        Ok(serde_json::json!({
+            "model": "claude-opus-5-5",
+            "usage": { "input_tokens": 20_000, "output_tokens": 2_000 }
+        }))
+    }
+}
+
+/// /LF714/: Jonas talks with a cloud tutor on the way and a local one on the PC. The settings
+/// name the month's estimated cost and the cost per talk; nothing brakes before he sets a limit
+/// (I-06); at his limit the cloud tutor stops answering and the local one goes on; local talks
+/// cost nothing and do not thin out the cost per talk; the next month starts at zero.
+fn cost_limit() -> Result<Option<String>> {
+    use kaiwa_ai::cost::{Metered, meter};
+    use kaiwa_ai::transport::Transport;
+    // The meter is the process's: one run of this check at a time.
+    static ONE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _one = ONE.lock().unwrap_or_else(|e| e.into_inner());
+    let b = kaiwa_backend::TempBackend::new("sim-cost", false)?;
+    let now = kaiwa_core::Day::from_ymd(2026, 10, 20)
+        .start(120)
+        .plus_secs(8 * 3600);
+    let (cloud, local) = (Metered::new(Billing, true), Metered::new(Billing, false));
+    let call = |t: &Metered<Billing>| t.post_json("u", &[], &Value::Null);
+    let mut found = Vec::new();
+    meter().take();
+
+    // No limit until he sets one: a talk of 20 calls goes through.
+    if b.store.profile()?.cost_limit_cents.is_some() {
+        found.push("a limit is preset".into());
+    }
+    b.arm_brake(now)?;
+    for _ in 0..20 {
+        if call(&cloud).is_err() {
+            found.push("braked without a limit".into());
+            break;
+        }
+        b.book_costs(now, false)?;
+    }
+    b.book_costs(now, true)?;
+    let first = b.month_cost(now)?.cents;
+    let view = b.cost_view(now)?;
+    let euro = format!("{:.2} €", first / 100.0).replace('.', ",");
+    let text = view["text"].as_str().unwrap_or_default();
+    if first <= 0.0 || !text.contains(&euro) || !text.contains("pro Gespräch") {
+        found.push(format!("the month's cost ({euro}) is not named: {text}"));
+    }
+    // A talk on the PC, local: free, and not a talk the cost is spread over.
+    for _ in 0..20 {
+        call(&local)?;
+        b.book_costs(now, false)?;
+    }
+    b.book_costs(now, true)?;
+    let view = b.cost_view(now)?;
+    if b.month_cost(now)?.cents != first {
+        found.push("a local talk cost something".into());
+    }
+    if view["perSession"].as_f64() != Some(first) {
+        found.push(format!(
+            "the cost per talk counts the local one: {} instead of {first}",
+            view["perSession"]
+        ));
+    }
+
+    // His own limit, a little above what the month cost so far: the cloud tutor stops there.
+    let limit = (first / 100.0).ceil() as u32 * 100 + 200;
+    let mut profile = b.store.profile()?;
+    profile.cost_limit_cents = Some(limit);
+    b.store.set_profile(&profile)?;
+    b.arm_brake(now)?;
+    let mut refused = false;
+    for _ in 0..40 {
+        match call(&cloud) {
+            Ok(_) => {
+                b.book_costs(now, false)?;
+            }
+            Err(kaiwa_ai::AiError::Budget) => {
+                refused = true;
+                break;
+            }
+            Err(e) => found.push(format!("{e}")),
+        }
+    }
+    let spent = b.month_cost(now)?.cents;
+    let one_call = first / 20.0;
+    if !refused {
+        found.push(format!(
+            "no brake at {spent:.0} ct with a limit of {limit} ct"
+        ));
+    } else if spent < f64::from(limit) || spent > f64::from(limit) + one_call {
+        found.push(format!("braked at {spent:.0} ct, the limit is {limit} ct"));
+    }
+    if !b.over_budget(now)? || b.cost_view(now)?["over"] != true {
+        found.push("the settings do not show the limit as reached".into());
+    }
+    if call(&local).is_err() {
+        found.push("at the limit the local tutor does not answer either".into());
+    }
+    b.book_costs(now, true)?;
+
+    // November starts at zero.
+    let next = kaiwa_core::Day::from_ymd(2026, 11, 1)
+        .start(60)
+        .plus_secs(8 * 3600);
+    b.arm_brake(next)?;
+    if b.month_cost(next)?.cents != 0.0 || b.over_budget(next)? || call(&cloud).is_err() {
+        found.push("the new month does not start at zero".into());
+    }
+    meter().take();
+    meter().set_budget(None);
+    Ok((!found.is_empty()).then(|| found.join("; ")))
+}
+
+/// A tutor that reaches every goal named to it.
+struct Listening {
+    goals: Vec<String>,
+}
+
+impl kaiwa_ai::ChatProvider for Listening {
+    fn reply(&self, _: &kaiwa_ai::TurnRequest) -> Result<String, kaiwa_ai::AiError> {
+        Ok("そうですか。".into())
+    }
+
+    fn analyse(&self, _: &kaiwa_ai::TurnRequest) -> Result<kaiwa_ai::Analysis, kaiwa_ai::AiError> {
+        Ok(kaiwa_ai::Analysis {
+            understood: true,
+            goals_met: self.goals.clone(),
+            corrections: Vec::new(),
+            new_words: Vec::new(),
+            reading: String::new(),
+        })
+    }
+}
+
+/// /LF116/: the start page offers free talks on topics, outside the learning path; a free
+/// talk started or continued as the app does it tells the character the persona's own level;
+/// and finished free talks leave the path where it was, while the day counts them as practice.
+fn free_talk(p: &Value) -> Result<Option<String>> {
+    let b = kaiwa_backend::TempBackend::new("sim-free", false)?;
+    let now = kaiwa_core::Day::from_ymd(2026, 10, 5)
+        .start(120)
+        .plus_secs(19 * 3600);
+    let mut found = Vec::new();
+
+    // Offered on the start page, in both languages, none of them a scenario of the path.
+    let mut topics = Vec::new();
+    for lang in ["de", "en"] {
+        let mut profile = b.store.profile()?;
+        profile.ui_lang = lang.into();
+        b.store.set_profile(&profile)?;
+        let today = kaiwa_backend::views::today(&b, now)?;
+        let free: Vec<(String, String)> = today["free"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|f| {
+                let text = |k: &str| f[k].as_str().unwrap_or_default().to_string();
+                (text("id"), text("topic"))
+            })
+            .collect();
+        if free.len() < 2 {
+            found.push(format!("{} free topics offered ({lang})", free.len()));
+        }
+        for (id, topic) in &free {
+            if topic.is_empty() || topic.contains(':') {
+                found.push(format!("{id}: topic {topic:?} ({lang})"));
+            }
+            if b.curriculum.unit_of(id).is_some() {
+                found.push(format!("{id} is a scenario of the path"));
+            }
+        }
+        topics.push(free);
+    }
+    if topics[0]
+        .iter()
+        .map(|t| &t.1)
+        .eq(topics[1].iter().map(|t| &t.1))
+    {
+        found.push("the topics read the same in German and English".into());
+    }
+    let Some((id, _)) = topics[0].first().cloned() else {
+        return Ok(Some(found.join("; ")));
+    };
+    let scenario = b.scenarios.get(&id).cloned().with_context(|| id.clone())?;
+
+    // His level: the profile holds his placement, and a talk started the way the app starts
+    // it (`Backend::new_talk`) names the level of his `start_level.speaking` to the
+    // character. So does the same talk continued later.
+    let model = simulate_placement(p).result();
+    let own = model.level(Skill::Speaking);
+    b.store.set_placement(model.clone())?;
+    let want = match p["start_level"]["speaking"].as_str().unwrap_or_default() {
+        "none" | "a0" | "n5_low" | "n5" => "N5",
+        "n4_low" | "n4" => "N4",
+        "n3" => "N3",
+        "n2" => "N2",
+        _ => "N1",
+    };
+    let (started, _) = b.new_talk(scenario.clone())?;
+    let (continued, _) = b.continued_talk(scenario.clone(), started.snapshot())?;
+    for (how, told) in [
+        ("started", started.reply_instructions()),
+        ("continued", continued.reply_instructions()),
+    ] {
+        if !told.contains(&format!("JLPT {want})")) && !told.contains(&format!("JLPT {want} ")) {
+            found.push(format!(
+                "speaking {own:.1}, a talk {how} does not tell the character JLPT {want}: {}",
+                told.lines().nth(1).unwrap_or_default()
+            ));
+        }
+    }
+    let goals: Vec<String> = scenario.goals.iter().map(|g| g.id.clone()).collect();
+    let talk = || -> Result<Session> {
+        let tutor = Arc::new(Listening {
+            goals: goals.clone(),
+        });
+        let mut s = Session::new(scenario.clone(), tutor, Amount::Normal, "en")
+            .with_difficulty(Difficulty::for_learner(&model));
+        s.turn("映画音楽をよく聞きます。", Input::Spoken)?;
+        Ok(s)
+    };
+
+    // Outside the path: free talks with every goal reached, more often than a scenario of the
+    // path needs to count as done, leave the path as it was; the day counts them.
+    let before = b.store.learning()?.course;
+    let next = b.curriculum.next_scenario(&before);
+    for k in 0..=i64::from(kaiwa_core::curriculum::COMPLETIONS) {
+        let s = talk()?;
+        if !s.done() {
+            found.push("the free talk does not end with its goals".into());
+            break;
+        }
+        let start = now.plus_secs(k * 900);
+        let sid = b.store.begin_session(&s.snapshot(), start)?;
+        b.store
+            .record(sid, &s, start, start.plus_secs(300), Some(&b.curriculum))?;
+    }
+    let after = b.store.learning()?.course;
+    if b.curriculum.next_scenario(&after) != next
+        || b.curriculum.path(&after, "de") != b.curriculum.path(&before, "de")
+    {
+        found.push("free talks moved the learning path".into());
+    }
+    let day = b.store.day(now.day())?;
+    if day.speaking_secs == 0 || day.scenarios_done == 0 {
+        found.push(format!("the day does not count the free talks: {day:?}"));
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
 /// /LF603/: one-word answers, rōmaji, repeats and reading out help earn at most half the XP of

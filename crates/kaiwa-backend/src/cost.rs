@@ -15,8 +15,11 @@ pub struct Month {
     pub cents: f64,
     pub calls: u32,
     pub unknown_calls: u32,
-    /// Sessions that called a cloud tutor.
+    /// Sessions that cost something (a talk with a local tutor is not one of them).
     pub sessions: u32,
+    /// The talk going on has cost something; it counts as a session when it ends.
+    #[serde(default)]
+    pub paid: bool,
 }
 
 fn key(now: Moment) -> String {
@@ -39,7 +42,8 @@ impl Backend {
         m.cents += spent.cents;
         m.calls += spent.calls;
         m.unknown_calls += spent.unknown_calls;
-        if session_ended && m.calls > 0 {
+        m.paid |= spent.cents > 0.0;
+        if session_ended && std::mem::take(&mut m.paid) {
             m.sessions += 1;
         }
         self.store.set_state_value(&key(now), &m)?;
@@ -72,9 +76,9 @@ impl Backend {
             if de { s.replace('.', ",") } else { s }
         };
         let per_session = (m.sessions > 0).then(|| m.cents / f64::from(m.sessions));
-        let text = match (m.calls, de) {
-            (0, true) => "Diesen Monat noch keine Kosten.".to_string(),
-            (0, false) => "No costs this month yet.".to_string(),
+        let text = match (m.cents > 0.0, de) {
+            (false, true) => "Diesen Monat noch keine Kosten.".to_string(),
+            (false, false) => "No costs this month yet.".to_string(),
             (_, true) => format!(
                 "Diesen Monat etwa {}{}.",
                 euro(m.cents),
@@ -138,6 +142,14 @@ mod tests {
         b.book(spent, now, true).unwrap();
         assert!(b.over_budget(now).unwrap());
         assert!(meter().exhausted(), "the meter refuses further calls");
+        // Talks with a tutor on this computer cost nothing and do not thin out the average.
+        let local = Spent {
+            cents: 0.0,
+            calls: 6,
+            unknown_calls: 0,
+        };
+        b.book(local, now, true).unwrap();
+        assert_eq!(b.cost_view(now).unwrap()["perSession"], 60.0);
         // A new month starts at zero.
         let next = Moment::new(1_791_100_000 + 31 * 86_400, 120);
         assert!(!b.over_budget(next).unwrap());

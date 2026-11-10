@@ -205,6 +205,9 @@ pub struct Session {
     /// The grammar points of the scenario's unit, for the tutor's instructions; set by the
     /// caller from the curriculum, not part of the saved state.
     grammar: Vec<String>,
+    /// The learner's own speaking level on the learner model's scale, for a free talk
+    /// (/LF116/); set by the caller from the learner model, not part of the saved state.
+    learner_level: Option<f64>,
 }
 
 impl Session {
@@ -234,7 +237,20 @@ impl Session {
             stuck: 0,
             live: Live::default(),
             grammar: Vec::new(),
+            learner_level: None,
         }
+    }
+
+    /// What the character is told for its next reply: role, register, the difficulty in
+    /// words, the level, the unit's grammar and the goals ([`crate::prompts::reply_system`]).
+    pub fn reply_instructions(&self) -> String {
+        reply_system(
+            &self.scenario,
+            &self.lang,
+            &self.difficulty,
+            &self.grammar,
+            self.learner_level,
+        )
     }
 
     /// The unit's grammar labels given with [`Session::with_grammar`].
@@ -246,6 +262,13 @@ impl Session {
     /// fits, the analysis knows what the unit practises (/LF211/, ADR-009).
     pub fn with_grammar(mut self, labels: Vec<String>) -> Self {
         self.grammar = labels;
+        self
+    }
+
+    /// The learner's own speaking level ([`crate::learner::LEVELS`]): a free talk, which has
+    /// no unit, names it to the character instead of the beginner levels (/LF116/).
+    pub fn with_learner_level(mut self, level: f64) -> Self {
+        self.learner_level = Some(level);
         self
     }
 
@@ -277,6 +300,7 @@ impl Session {
             stuck: st.stuck,
             live: st.live,
             grammar: Vec::new(),
+            learner_level: None,
         }
     }
 
@@ -417,12 +441,10 @@ impl Session {
             analysis.corrections = cross_check(&analysis.corrections, &second.corrections);
         }
         fit_register(&mut analysis.corrections, self.scenario.register);
-        let reply = match self.provider.reply(&self.request(reply_system(
-            &self.scenario,
-            &self.lang,
-            &self.difficulty,
-            &self.grammar,
-        ))) {
+        let reply = match self
+            .provider
+            .reply(&self.request(self.reply_instructions()))
+        {
             // The reply with the readings the tutor wrote (/LF110/); the model's own history
             // gets it without, as the opening.
             Ok(r) => crate::clean_markup(&r),

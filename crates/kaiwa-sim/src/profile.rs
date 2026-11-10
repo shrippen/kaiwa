@@ -105,6 +105,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "lena_stats_fast" => fast(root),
         "jonas_local_switch" => local_switch(root),
         "emi_srs_keigo" => srs_keigo(root),
+        "hinnerk_own_profile" => own_profile(root),
         _ => return None,
     };
     Some(match r {
@@ -112,6 +113,174 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         Ok(Some(why)) => Outcome::Fail(why),
         Err(e) => Outcome::Fail(format!("{e:#}")),
     })
+}
+
+/// /LF720/: Hinnerk's grandson tries the app in a profile of his own on the same computer.
+/// It starts from zero in the language of the interface, takes nothing of Hinnerk's and gives
+/// nothing to it: his settings (text size, no gamification, cost limit), level, path, review,
+/// days and the month's costs are as before, whatever the grandson does. The list names both
+/// with exactly one in use; the profile chosen last is the one the app opens next time; a
+/// name cannot leave the profiles' directory.
+fn own_profile(root: &Path) -> Result<Option<String>> {
+    use kaiwa_backend::{Backend, profiles, views};
+    let dir = temp_dir("own-profile");
+    let c = curriculum(root)?;
+    let now = at(3, 19 * 3600);
+    let talk = |b: &Backend, day: i64| -> Result<()> {
+        let mut s = session(root)?;
+        let id = b.store.begin_session(&s.snapshot(), at(day, 9 * 3600))?;
+        for t in ["マラです。よろしくおねがいします。", "コーヒーを好きです。"]
+        {
+            s.turn(t, Input::Spoken)?;
+        }
+        b.store
+            .record(id, &s, at(day, 9 * 3600), at(day, 9 * 3600 + 400), Some(&c))?;
+        Ok(())
+    };
+    // Everything the app shows of a profile, and what it keeps.
+    let all = |b: &Backend| -> Result<serde_json::Value> {
+        let mut profile = views::profile(b)?;
+        // The list of profiles and the keyring are the device's, not this profile's.
+        for shared in ["profiles", "key", "tutor", "path"] {
+            profile[shared] = serde_json::Value::Null;
+        }
+        Ok(serde_json::json!({
+            "profile": profile,
+            "today": views::today(b, now)?,
+            "path": views::path(b)?,
+            "review": views::review(b, now, 50)?,
+            "learner": views::learner(b)?,
+            "stats": views::stats(b, now)?,
+            "export": b.store.export(now)?,
+            "cost": b.month_cost(now)?,
+        }))
+    };
+    let mut found = Vec::new();
+
+    // Hinnerk: his settings, two talks, a month's cost.
+    let hinnerk = Backend::open_at(profiles::current_in(&dir), false)?;
+    let mut p = hinnerk.store.profile()?;
+    p.name = "Hinnerk".into();
+    p.text_scale = 1.6;
+    p.gamification = false;
+    p.cost_limit_cents = Some(500);
+    hinnerk.store.set_profile(&p)?;
+    talk(&hinnerk, 0)?;
+    talk(&hinnerk, 1)?;
+    hinnerk.store.set_state_value(
+        "cost.2026-10",
+        &kaiwa_backend::cost::Month {
+            cents: 42.0,
+            calls: 12,
+            sessions: 2,
+            ..Default::default()
+        },
+    )?;
+    let before = all(&hinnerk)?;
+    if before["cost"]["cents"] != 42.0 {
+        found.push(format!("the month's cost is not his: {}", before["cost"]));
+    }
+    let his_file = hinnerk.path.clone();
+    drop(hinnerk);
+
+    // The grandson's own profile: from zero, in the interface's language (English here, to
+    // tell it from a new profile's default), now the one in use.
+    let file = profiles::create(&dir, "Ole", "en")?;
+    if profiles::current_in(&dir) != file {
+        found.push("the new profile is not the one in use".into());
+    }
+    let ole = Backend::open_at(file.clone(), false)?;
+    let op = ole.store.profile()?;
+    let fresh = kaiwa_store::Profile::default();
+    if op.name != "Ole" || op.ui_lang != "en" {
+        found.push(format!("the new profile: {} / {}", op.name, op.ui_lang));
+    }
+    if op.text_scale != fresh.text_scale
+        || op.gamification != fresh.gamification
+        || op.cost_limit_cents.is_some()
+        || op.placed
+    {
+        found.push("the new profile took over settings".into());
+    }
+    if !ole.store.items()?.is_empty()
+        || !ole.store.days()?.is_empty()
+        || !ole.store.sessions(10)?.is_empty()
+        || ole.month_cost(now)?.cents != 0.0
+        || ole.store.learning()?.course != Default::default()
+    {
+        found.push("the new profile does not start from zero".into());
+    }
+    let list = ole.profiles();
+    let names: Vec<&str> = list.iter().filter_map(|v| v["name"].as_str()).collect();
+    if names.len() != 2 || !names.contains(&"Hinnerk") || !names.contains(&"Ole") {
+        found.push(format!("the list of profiles: {names:?}"));
+    }
+    if list.iter().filter(|v| v["current"] == true).count() != 1
+        || !list
+            .iter()
+            .any(|v| v["current"] == true && v["name"] == "Ole")
+    {
+        found.push("not exactly the grandson's profile is marked as in use".into());
+    }
+    // He plays with it: talks, other settings.
+    talk(&ole, 2)?;
+    talk(&ole, 3)?;
+    let mut op = ole.store.profile()?;
+    op.ui_lang = "de".into();
+    op.text_scale = 1.0;
+    op.gamification = true;
+    op.cost_limit_cents = Some(2000);
+    ole.store.set_profile(&op)?;
+    drop(ole);
+
+    // Back to Hinnerk's: as he left it. And the app opens the profile chosen last.
+    let name = his_file
+        .file_name()
+        .map(|f| f.to_string_lossy().to_string())
+        .unwrap_or_default();
+    profiles::set_current(&dir, &name)?;
+    if profiles::current_in(&dir) != his_file {
+        found.push("the profile chosen last is not the one opened".into());
+    }
+    let hinnerk = Backend::open_at(profiles::current_in(&dir), false)?;
+    let after = all(&hinnerk)?;
+    if after != before {
+        let part = before
+            .as_object()
+            .into_iter()
+            .flatten()
+            .find(|(k, v)| after[k.as_str()] != **v)
+            .map(|(k, _)| k.clone())
+            .unwrap_or_default();
+        found.push(format!("Hinnerk's profile changed: {part}"));
+    }
+    drop(hinnerk);
+    // A name with a path in it stays a file in the directory.
+    let odd = profiles::create(&dir, "../../Ole", "de")?;
+    if odd.parent() != Some(&*dir) {
+        found.push(format!(
+            "a profile outside the directory: {}",
+            odd.display()
+        ));
+    }
+    // Nor can a profile that exists outside the directory be chosen from in it.
+    let outside = temp_dir("own-profile-outside");
+    drop(Backend::open_at(outside.join("x.kaiwa"), false)?);
+    let name = outside
+        .file_name()
+        .map(|n| format!("../{}/x.kaiwa", n.to_string_lossy()))
+        .unwrap_or_default();
+    if !dir.join(&name).exists() {
+        found.push("the profile outside was not made".into());
+    }
+    if profiles::set_current(&dir, &name).is_ok() || profiles::current_in(&dir) == dir.join(&name) {
+        found.push("a profile outside the directory can be chosen".into());
+    }
+    std::fs::write(dir.join("current"), &name)?;
+    if profiles::current_in(&dir) == dir.join(&name) {
+        found.push("a profile outside the directory is opened".into());
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
 /// /LF230/: Emi's register corrections come back the next day as a mini conversation, not as a

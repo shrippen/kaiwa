@@ -9,7 +9,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
 | Muss | 49 | 22 | 5 | 3 | 0 |
-| Soll | 9 | 10 | 5 | 0 | 0 |
+| Soll | 12 | 7 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
 | ID | Prio | Anforderung | Code | Stand | Prüfregeln |
@@ -31,10 +31,10 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF113/ | M | Das Transkript der eigenen Äußerung wird angezeigt (was die KI … | app, core | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LF114/ | M | Wer feststeckt, bekommt eine Hilfe in drei Stufen: Stichwort → … | core | geprüft | 1 von 1 automatisch grün: `mara_hint_offered` |
 | /LF115/ | M | Es gibt Szenarien mit Rolle, Ort, Ziel und Erfolgsbedingung (z. B. … | core | Code | 0 von 1 automatisch grün: `jonas_follow_up` |
-| /LF116/ | S | Freies Gespräch zu einem gewählten Thema auf dem eigenen Niveau. | app, backend | Code | – |
+| /LF116/ | S | Freies Gespräch zu einem gewählten Thema auf dem eigenen Niveau. | app, backend, core | geprüft | 1 von 1 automatisch grün: `theo_free_talk` |
 | /LF117/ | S | KI-Figuren mit festem Charakter, Sprechstil und Stimme (z. B. … | app, core, speech | geprüft | 1 von 1 automatisch grün: `selin_register_flag` |
 | /LF120/ | M | Tippen statt Sprechen (Kana-IME oder Rōmaji mit Umwandlung). | app, core | geprüft | 1 von 1 automatisch grün: `jonas_typed_marked` |
-| /LF121/ | M | Ein Gespräch lässt sich unterbrechen und später an derselben Stelle … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_resume` |
+| /LF121/ | M | Ein Gespräch lässt sich unterbrechen und später an derselben Stelle … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_resume` |
 | /LF122/ | S | Lernende dürfen in die UI-Sprache wechseln („Wie sagt man …?“). | core | Code | 0 von 2 automatisch grün: `hinnerk_german_word_help`, `mara_codeswitch` |
 | /LF200/ | M | Einstufung per Gespräch (5–8 min) mit steigender Schwierigkeit. | app, core, store | geprüft | 2 von 2 automatisch grün: `emi_ceiling`, `selin_profile_split` |
 | /LF201/ | M | Das Lernermodell führt getrennte Fähigkeiten: Hörverstehen (Tempo … | app, backend, core, store | geprüft | 2 von 2 automatisch grün: `emi_ceiling`, `selin_profile_split` |
@@ -87,8 +87,8 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF711/ | M | Die Ansicht „Was verlässt das Gerät?“ zeigt je Baustein (STT, LLM … | ai, app, backend | geprüft | 2 von 2 automatisch grün: `lena_transparency`, `selin_win_mixed` |
 | /LF712/ | M | Aufnahmen werden standardmäßig nicht gespeichert. | app, backend, store | geprüft | 2 von 2 automatisch grün: `lena_default_no_audio`, `lena_retention` |
 | /LF713/ | M | API-Schlüssel liegen im System-Schlüsselbund (KWallet, Secret … | ai, app, backend | Code | 0 von 1 automatisch grün: `selin_win_keys` |
-| /LF714/ | S | Kostenbremse für Cloud-Anbieter: geschätzte Kosten pro Sitzung und … | ai, app, backend, store | Code | – |
-| /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. | app, backend, store | Code | – |
+| /LF714/ | S | Kostenbremse für Cloud-Anbieter: geschätzte Kosten pro Sitzung und … | ai, app, backend, store | geprüft | 1 von 1 automatisch grün: `jonas_cost_limit` |
+| /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. | app, backend, store | geprüft | 1 von 1 automatisch grün: `hinnerk_own_profile` |
 | /LL010/ | M | Antwortlatenz (Sprechende → erster Ton der KI): p50 ≤ 1,5 s und p95 ≤ … | app, backend | geprüft | 1 von 3 automatisch grün: `lena_responsive`, `lena_suggest_smaller`, `theo_latency` |
 | /LL011/ | M | Das Plasmoid öffnet in ≤ 300 ms (Dienst läuft) und ist ≤ 2 s nach … | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_fast` |
 | /LL012/ | S | Speicher im Leerlauf ≤ 150 MB (ohne geladene Modelle). | app, lang, store | Code | 0 von 1 automatisch grün: `lena_idle_memory` |

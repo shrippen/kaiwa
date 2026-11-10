@@ -350,6 +350,43 @@ impl Backend {
         Ok(())
     }
 
+    /// A new talk on `scenario` as this profile has it: its tutor, its amount of feedback, the
+    /// difficulty the regulator set, the unit's grammar and the learner's own speaking level,
+    /// which a free talk names to the character (/LF116/). With it: whether the answers are
+    /// the recorded ones. The app and `kaiwa-sim` both start a talk here.
+    pub fn new_talk(&self, scenario: Scenario) -> anyhow::Result<(kaiwa_core::Session, bool)> {
+        let profile = self.store.profile()?;
+        let learning = self.store.learning()?;
+        let (provider, demo) = self.provider(&scenario.id);
+        let grammar = self.unit_grammar(&scenario.id);
+        let session =
+            kaiwa_core::Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
+                .with_difficulty(learning.regulator.difficulty.clone())
+                .with_grammar(grammar)
+                .with_learner_level(learning.model.level(kaiwa_core::learner::Skill::Speaking));
+        Ok((session, demo))
+    }
+
+    /// A talk continued from its kept `state` (/LF121/), with what the state does not keep:
+    /// the tutor, the unit's grammar and the learner's level as it is now.
+    pub fn continued_talk(
+        &self,
+        scenario: Scenario,
+        state: kaiwa_core::session::SessionState,
+    ) -> anyhow::Result<(kaiwa_core::Session, bool)> {
+        let level = self
+            .store
+            .learning()?
+            .model
+            .level(kaiwa_core::learner::Skill::Speaking);
+        let (provider, demo) = self.provider(&scenario.id);
+        let grammar = self.unit_grammar(&scenario.id);
+        let session = kaiwa_core::Session::restore(scenario, provider, state)
+            .with_grammar(grammar)
+            .with_learner_level(level);
+        Ok((session, demo))
+    }
+
     /// The grammar labels of a scenario's unit, for the tutor's instructions; none for free
     /// talk.
     pub fn unit_grammar(&self, scenario: &str) -> Vec<String> {

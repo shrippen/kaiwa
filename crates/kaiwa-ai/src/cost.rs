@@ -3,7 +3,7 @@
 //!
 //! [`Metered`] wraps the transport of a provider: it reads the usage of every answer (Anthropic
 //! `input_tokens`/`output_tokens`, OpenAI `prompt_tokens`/`completion_tokens`) into the
-//! process-wide [`meter`], and refuses a call once the budget is spent ([`AiError::Budget`]).
+//! process-wide [`meter`], and refuses a cloud call once the budget is spent ([`AiError::Budget`]).
 //! The profile keeps the month's total; the app books the meter into it after each turn.
 
 use std::collections::BTreeMap;
@@ -160,7 +160,9 @@ impl<T: Transport> Transport for Metered<T> {
         headers: &[(&str, String)],
         body: &Value,
     ) -> Result<Value, AiError> {
-        if self.meter.exhausted() {
+        // The limit is for what costs money: a server on this computer answers at the limit
+        // too (the app says "or switch to a local tutor").
+        if self.cloud && self.meter.exhausted() {
             return Err(AiError::Budget);
         }
         let answer = self.inner.post_json(url, headers, body)?;
@@ -211,9 +213,21 @@ mod tests {
             t.post_json("u", &[], &json!({})),
             Err(AiError::Budget)
         ));
+        // A tutor on this computer still answers at the limit, and costs nothing.
+        let local = Metered {
+            inner: FakeTransport::new(json!({
+                "model": "qwen3:14b",
+                "usage": { "prompt_tokens": 2000, "completion_tokens": 300 }
+            })),
+            meter: m,
+            cloud: false,
+        };
+        assert!(local.post_json("u", &[], &json!({})).is_ok());
+        assert_eq!(m.peek().cents, spent.cents);
+        assert_eq!(m.take().calls, 2);
         m.set_budget(None);
         assert!(t.post_json("u", &[], &json!({})).is_ok());
-        assert_eq!(m.take().calls, 2);
+        assert_eq!(m.take().calls, 1);
         assert_eq!(m.peek().calls, 0);
     }
 

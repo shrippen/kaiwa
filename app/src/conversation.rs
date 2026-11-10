@@ -690,10 +690,11 @@ impl qobject::Conversation {
             return;
         };
         let log = log_of(&scenario, &state, &lang);
-        let (provider, demo) = crate::state::state().provider(&scenario.id);
-        let grammar = crate::state::state().unit_grammar(&scenario.id);
-        let session = Session::restore(scenario, provider, state).with_grammar(grammar);
-        self.begin(session, Some(id), demo, log, lang);
+        let continued = crate::state::state().continued_talk(scenario, state);
+        match continued {
+            Ok((session, demo)) => self.begin(session, Some(id), demo, log, lang),
+            Err(e) => eprintln!("kaiwa: {e:#}"),
+        }
     }
 
     fn start(mut self: Pin<&mut Self>, scenario: &QString) {
@@ -711,21 +712,21 @@ impl qobject::Conversation {
             } else {
                 wanted
             };
-            st.scenarios
-                .get(&id)
-                .cloned()
-                .map(|s| (s, profile, learning))
+            st.scenarios.get(&id).cloned().map(|s| (s, profile))
         };
-        let Some((scenario, profile, learning)) = prepared else {
+        let Some((scenario, profile)) = prepared else {
             return;
         };
-        let (provider, demo) = state().provider(&scenario.id);
         let _ = state().arm_brake(now());
-        let grammar = state().unit_grammar(&scenario.id);
         let opening = scenario.opening.clone();
-        let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
-            .with_difficulty(learning.regulator.difficulty.clone())
-            .with_grammar(grammar);
+        let talk = state().new_talk(scenario);
+        let (session, demo) = match talk {
+            Ok(t) => t,
+            Err(e) => {
+                eprintln!("kaiwa: {e:#}");
+                return;
+            }
+        };
         let id = state().store.begin_session(&session.snapshot(), now()).ok();
         let log = vec![json!({ "who": "character", "markup": opening })];
         self.begin(session, id, demo, log, profile.ui_lang);
