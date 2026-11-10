@@ -62,10 +62,22 @@ pub struct StageResult {
     pub register_mistakes: u32,
 }
 
+/// Whether a stage is over: after [`TURNS_PER_STAGE`] turns that can be judged (`judged`:
+/// [`Stats::turns`], without those the tutor analysed with gaps, T-11), when its goals are
+/// reached, or after twice as many turns in all (a tutor whose analyses all have gaps).
+pub fn stage_over(turns: u32, judged: u32, done: bool) -> bool {
+    done || judged >= TURNS_PER_STAGE || turns >= 2 * TURNS_PER_STAGE
+}
+
 impl StageResult {
-    pub fn from_stats(level: f64, st: &Stats) -> Self {
-        let n = f64::from(st.turns.max(1));
-        Self {
+    /// What a stage showed; `None` when no turn of it could be judged, which is no result
+    /// (not a failed stage).
+    pub fn from_stats(level: f64, st: &Stats) -> Option<Self> {
+        if st.turns == 0 {
+            return None;
+        }
+        let n = f64::from(st.turns);
+        Some(Self {
             level,
             turns: st.turns,
             listening: f64::from(st.understood_unaided) / n,
@@ -76,7 +88,7 @@ impl StageResult {
                 0.0
             },
             register_mistakes: st.register_mistakes,
-        }
+        })
     }
 
     pub fn success(&self) -> f64 {
@@ -184,6 +196,25 @@ mod tests {
             fluency: speaking,
             register_mistakes: 0,
         }
+    }
+
+    #[test]
+    fn a_stage_waits_for_turns_that_can_be_judged() {
+        // T-11: turns the tutor analysed with gaps do not end a stage as failures.
+        assert!(!stage_over(4, 0, false) && !stage_over(7, 3, false));
+        assert!(stage_over(4, 4, false) && stage_over(6, 4, false));
+        // Its goals reached, or a tutor that never gives a whole analysis: over.
+        assert!(stage_over(2, 2, true) && stage_over(8, 0, false));
+        // No judged turn is no result, not a stage failed.
+        assert_eq!(StageResult::from_stats(1.5, &Stats::default()), None);
+        let st = Stats {
+            turns: 1,
+            understood_unaided: 1,
+            clean_turns: 1,
+            ..Default::default()
+        };
+        let r = StageResult::from_stats(1.5, &st).unwrap();
+        assert_eq!((r.turns, r.listening, r.speaking), (1, 1.0, 1.0));
     }
 
     #[test]

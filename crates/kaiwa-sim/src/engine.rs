@@ -281,7 +281,8 @@ fn analysis_gaps(root: &Path) -> Result<Option<String>> {
         )?)?;
         let recorded = MockProvider::from_json(&std::fs::read_to_string(
             root.join(format!("qa/fixtures/{scenario}.json")),
-        )?)?;
+        )?)?
+        .with_fallback("すみません、もう一度お願いします。");
         Ok(Session::new(
             sc,
             Arc::new(Gappy { recorded, extra }),
@@ -336,6 +337,37 @@ fn analysis_gaps(root: &Path) -> Result<Option<String>> {
     }
     if s.stats().turns != 0 {
         found.push("a turn with a readable correction and a gap counts for the level".into());
+    }
+    // A goal reached in such a turn is reached for the talk, and no success for the level;
+    // two such turns not understood do not make the talk easier either.
+    let mut s = gappy(true)?;
+    let out = s.turn("マラです。よろしくおねがいします。", Input::Spoken)?;
+    let st = s.stats();
+    if out.goals_met_now.is_empty() || s.summary().goals_met.is_empty() {
+        found.push("a goal read from an analysis with gaps is not reached for the talk".into());
+    }
+    if !out.incomplete || st.goals_met != 0 || st.goals_unaided != 0 || st.success() != 0.0 {
+        found.push(format!(
+            "a goal from a turn with gaps counts for the level: {} goals, success {}",
+            st.goals_met,
+            st.success()
+        ));
+    }
+    if s.evidence()
+        .at_level
+        .contains_key(&kaiwa_core::learner::Skill::Fluency)
+    {
+        found.push("a goal from a turn with gaps is evidence of fluency".into());
+    }
+    let state = s.snapshot();
+    if state.goals_unjudged.is_empty() {
+        found.push("a continued talk forgets which goals are no evidence".into());
+    }
+    let mut s = gappy(true)?;
+    for _ in 0..2 {
+        if s.turn("えっと", Input::Spoken)?.eased.is_some() {
+            found.push("turns with gaps make the rest of the talk easier".into());
+        }
     }
     // The kept session says it too (the page of a continued talk).
     if !s.turns()[0].incomplete {

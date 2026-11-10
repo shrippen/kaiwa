@@ -474,7 +474,7 @@ impl qobject::Conversation {
             let s = session.lock().expect("session lock");
             (s.turns().len() as u32, s.done(), s.stats())
         };
-        if turns < TURNS_PER_STAGE && !done {
+        if !kaiwa_core::placement::stage_over(turns, stats.turns, done) {
             return;
         }
         let next = {
@@ -483,8 +483,15 @@ impl qobject::Conversation {
                 return;
             };
             let level = STAGES[p.results.len()].1;
-            p.add(StageResult::from_stats(level, &stats));
-            p.next_stage()
+            // A stage of which no turn could be judged (T-11) is no result: the placement
+            // ends with what the stages before it showed.
+            match StageResult::from_stats(level, &stats) {
+                Some(r) => {
+                    p.add(r);
+                    p.next_stage()
+                }
+                None => None,
+            }
         };
         match next {
             Some(i) => self.begin_stage(i),

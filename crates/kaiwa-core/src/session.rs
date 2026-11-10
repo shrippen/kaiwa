@@ -175,6 +175,10 @@ pub struct SessionState {
     pub turns: Vec<TurnRecord>,
     pub goals_met: BTreeSet<String>,
     pub goals_helped: BTreeSet<String>,
+    /// Goals reached in a turn whose analysis had gaps (T-11): reached for the talk, no
+    /// evidence of the level.
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    pub goals_unjudged: BTreeSet<String>,
     pub help_level: u8,
     pub helps_used: u32,
     pub aids: BTreeMap<Aid, u32>,
@@ -263,6 +267,7 @@ pub struct Session {
     turns: Vec<TurnRecord>,
     goals_met: BTreeSet<String>,
     goals_helped: BTreeSet<String>,
+    goals_unjudged: BTreeSet<String>,
     help_level: u8,
     helps_used: u32,
     aids: BTreeMap<Aid, u32>,
@@ -298,6 +303,7 @@ impl Session {
             turns: Vec::new(),
             goals_met: BTreeSet::new(),
             goals_helped: BTreeSet::new(),
+            goals_unjudged: BTreeSet::new(),
             help_level: 0,
             helps_used: 0,
             aids: BTreeMap::new(),
@@ -372,6 +378,7 @@ impl Session {
             turns: st.turns,
             goals_met: st.goals_met,
             goals_helped: st.goals_helped,
+            goals_unjudged: st.goals_unjudged,
             help_level: st.help_level,
             helps_used: st.helps_used,
             aids: st.aids,
@@ -394,6 +401,7 @@ impl Session {
             turns: self.turns.clone(),
             goals_met: self.goals_met.clone(),
             goals_helped: self.goals_helped.clone(),
+            goals_unjudged: self.goals_unjudged.clone(),
             help_level: self.help_level,
             helps_used: self.helps_used,
             aids: self.aids.clone(),
@@ -546,6 +554,10 @@ impl Session {
             .filter(|g| playable.contains(g) && self.goals_met.insert((*g).clone()))
             .cloned()
             .collect();
+        // Reached for the talk, but a turn analysed with gaps shows nothing about the level.
+        if analysis.incomplete {
+            self.goals_unjudged.extend(goals_met_now.iter().cloned());
+        }
 
         let from_help = self.help_level == 3
             && self
@@ -577,7 +589,12 @@ impl Session {
             None
         };
 
-        let eased = self.live.turn(analysis.understood, &self.difficulty);
+        // The regulator inside the session takes no step from a turn analysed with gaps.
+        let eased = if analysis.incomplete {
+            None
+        } else {
+            self.live.turn(analysis.understood, &self.difficulty)
+        };
         if let Some(d) = &eased {
             self.difficulty = d.clone();
         }
@@ -775,12 +792,13 @@ impl Session {
             }
             s.clean_turns += u32::from(kinds.is_empty());
         }
-        s.goals_met = self.goals_met.len() as u32;
-        s.goals_unaided = self
-            .goals_met
-            .iter()
-            .filter(|g| !self.goals_helped.contains(*g))
-            .count() as u32;
+        let judged = || {
+            self.goals_met
+                .iter()
+                .filter(|g| !self.goals_unjudged.contains(*g))
+        };
+        s.goals_met = judged().count() as u32;
+        s.goals_unaided = judged().filter(|g| !self.goals_helped.contains(*g)).count() as u32;
         s
     }
 

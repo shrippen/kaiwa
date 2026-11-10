@@ -121,7 +121,8 @@ fn spoken(text: &str) -> String {
 
 /// The JSON in the message content (`Analysis::from_text`): servers that ignore
 /// `response_format` and small local models wrap it in a code fence, their thinking or a
-/// sentence. An object that strays from the schema is an error (ADR-004).
+/// sentence. What of the object strays from the schema is left out and marks the analysis
+/// incomplete; without `understood` it is an error (ADR-004, T-11).
 pub fn parse_analysis(answer: &Value) -> Result<Analysis, AiError> {
     Analysis::from_text(content(answer)?)
 }
