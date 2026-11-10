@@ -169,7 +169,8 @@
         "Schriftgröße 160 % (Systemeinstellung) ist aktiv",
         "Mikrofon-Test im Einrichtungsassistenten, dabei 3 s zögern",
         "Einstufung überspringen, Gamification ausschalten",
-        "Erstes Gespräch 'Begrüßung'"
+        "Erstes Gespräch 'Begrüßung'",
+        "Der Enkel legt sich zum Ausprobieren ein eigenes Profil an und wechselt danach zurück"
       ],
       "checks": [
         {
@@ -214,6 +215,13 @@
             "/LL201/"
           ],
           "assert": "Jedes Bedienelement der Reise hat einen Accessible-Namen und eine Rolle im AT-SPI-Baum (sonst kann der gui-Modus es nicht finden: Lauf scheitert)."
+        },
+        {
+          "id": "hinnerk_own_profile",
+          "requirements": [
+            "/LF720/"
+          ],
+          "assert": "Das Profil des Enkels beginnt bei null und in der Sprache der Oberfläche. Hinnerks Profil ist danach wie zuvor: Einstellungen (Schriftgröße, keine Gamification, Kostenlimit), Stand, Lernpfad, Wiederholung, Tage und Kosten des Monats. Die Liste nennt beide Profile, genau eines als benutzt; beim nächsten Start öffnet die App das zuletzt gewählte. Ein Profilname kann den Profilordner nicht verlassen."
         }
       ]
     },

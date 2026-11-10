@@ -692,7 +692,15 @@ impl qobject::Conversation {
         let log = log_of(&scenario, &state, &lang);
         let (provider, demo) = crate::state::state().provider(&scenario.id);
         let grammar = crate::state::state().unit_grammar(&scenario.id);
-        let session = Session::restore(scenario, provider, state).with_grammar(grammar);
+        let level = crate::state::state()
+            .store
+            .learning()
+            .unwrap_or_default()
+            .model
+            .level(kaiwa_core::learner::Skill::Speaking);
+        let session = Session::restore(scenario, provider, state)
+            .with_grammar(grammar)
+            .with_learner_level(level);
         self.begin(session, Some(id), demo, log, lang);
     }
 
@@ -725,7 +733,8 @@ impl qobject::Conversation {
         let opening = scenario.opening.clone();
         let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
             .with_difficulty(learning.regulator.difficulty.clone())
-            .with_grammar(grammar);
+            .with_grammar(grammar)
+            .with_learner_level(learning.model.level(kaiwa_core::learner::Skill::Speaking));
         let id = state().store.begin_session(&session.snapshot(), now()).ok();
         let log = vec![json!({ "who": "character", "markup": opening })];
         self.begin(session, id, demo, log, profile.ui_lang);

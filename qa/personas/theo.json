@@ -232,6 +232,13 @@
             "/LL112/"
           ],
           "assert": "Mit UI-Sprache Englisch sind alle Oberflächentexte und Erklärungen Englisch; kein deutscher Rest (String-Prüfung gegen die en-Übersetzung)."
+        },
+        {
+          "id": "theo_free_talk",
+          "requirements": [
+            "/LF116/"
+          ],
+          "assert": "Die Startseite bietet freie Gespräche zu Themen an, außerhalb des Lernpfads. Die Figur bekommt sein eigenes Niveau genannt (N4), nicht das einer Anfängerin. Beendete freie Gespräche lassen den Lernpfad, wo er war, und zählen für den Tag als Übung."
         }
       ]
     },
