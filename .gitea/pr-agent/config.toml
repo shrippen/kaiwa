@@ -12,7 +12,7 @@ publish_output_progress = false
 enable_claude_adaptive_thinking = true
 reasoning_effort = "high"
 # The repository rules and the review guide go along as context.
-repo_context_files = ["agent.md", "REVIEW.md"]
+repo_context_files = ["agent.md", "RULES.md", "REVIEW.md"]
 
 [ignore]
 # Measurement results of the spikes (one line per trial, hundreds of thousands of lines) are data,
@@ -41,7 +41,7 @@ Report only findings that matter:
 - A feature without its requirement id (spec/LASTENHEFT.md), tests or
   persona journey; personas changed to make a run pass.
 - Docs (ROADMAP, spec, ADRs) that the change made wrong.
-- Other breaches of the repository rules (agent.md).
+- Other breaches of the repository rules (agent.md, RULES.md).
 
 Label each finding **Wichtig**, **Kleinigkeit** or **Bestand** as REVIEW.md
 defines them, at the start of its title.
