@@ -1055,6 +1055,32 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
         if !progress::blameless(text) {
             found.push(format!("blame in: {text}"));
         }
+        // As the run had it: per turn, the later half of her talks against the earlier.
+        let kind = m["kind"].as_str().unwrap_or_default();
+        let counted = |s: &SimSession| {
+            s.mistakes
+                .iter()
+                .take(s.turns as usize)
+                .filter(|(k, severity)| k == kind && severity != "style")
+                .count() as f64
+        };
+        let rate = |half: &[SimSession]| {
+            half.iter().map(counted).sum::<f64>()
+                / half
+                    .iter()
+                    .map(|s| f64::from(s.turns))
+                    .sum::<f64>()
+                    .max(1.0)
+        };
+        let (early, late) = run.sessions.split_at(run.sessions.len() / 2);
+        let want = match (rate(early), rate(late)) {
+            (e, l) if l < 0.75 * e => "seltener",
+            (e, l) if l > 1.25 * e => "häufiger",
+            _ => "gleich",
+        };
+        if run.sessions.len() >= 4 && !text.contains(want) {
+            found.push(format!("{kind} should read {want}: {text}"));
+        }
         // Mara's particle and counter mistakes fade after four corrections each.
         if ["particle", "counter"].contains(&m["kind"].as_str().unwrap_or_default())
             && (text.contains("häufiger") || text.contains("more often"))

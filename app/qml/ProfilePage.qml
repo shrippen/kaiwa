@@ -195,7 +195,7 @@ QQC2.ScrollView {
             Layout.rightMargin: KanteStyle.unit(18)
             text: moved.length > 0
                 ? moved.map(function (s) { return s.text }).join(" · ")
-                : page.t("Deine Fähigkeiten stehen etwa wie vor einer Woche.", "Your skills are about where they were a week ago.")
+                : page.t("Deine Fähigkeiten stehen etwa wie zu Beginn der Woche.", "Your skills are about where they were at the start of the week.")
             wrapMode: Text.Wrap
             color: KanteStyle.textColor
             font: KanteStyle.defaultFont

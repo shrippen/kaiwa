@@ -502,6 +502,14 @@ impl Store {
         l.regulator = Regulator::new(Difficulty::for_learner(&model));
         l.model = model;
         self.set_learning(&l)?;
+        // The levels the days started from belong to the old model: a new placement is no
+        // progress, so the week's comparison starts again with the next talk (/LF604/).
+        for (day, mut record) in self.days()? {
+            if !record.levels_at_start.is_empty() {
+                record.levels_at_start.clear();
+                self.put_day(day, &record)?;
+            }
+        }
         let mut p = self.profile()?;
         p.placed = true;
         self.set_profile(&p)

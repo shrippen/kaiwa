@@ -253,32 +253,38 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
     }))
 }
 
-/// How a kind of mistake developed over the weeks since the first talk (/LF610/): the
-/// later half against the earlier, per week. Under two weeks of practice there is no trend yet,
-/// only the count; a learner of four weeks is not compared with six weeks she did not practise.
-fn trend(word: &str, weeks: &[u32], de: bool) -> String {
-    use std::cmp::Ordering;
-    if weeks.len() < 2 {
-        let n: u32 = weeks.iter().sum();
+/// Talks before a kind of mistake gets a trend; with fewer there is only the count.
+const TREND_TALKS: usize = 4;
+
+/// How a kind of mistake developed (/LF610/): how often it came up per turn in the later half
+/// of the talks against the earlier half. `talks` are the talks in order, each with its turns
+/// and its mistakes of this kind. Talks, not weeks: a week that has just begun, or the one the
+/// learner started in, holds few talks and would read as a change. A quarter more or less
+/// counts as a change.
+fn trend(word: &str, talks: &[(u32, u32)], de: bool) -> String {
+    let rate = |t: &[(u32, u32)]| {
+        let (turns, mistakes) = t
+            .iter()
+            .fold((0, 0), |(a, b), (turns, m)| (a + turns, b + m));
+        f64::from(mistakes) / f64::from(turns.max(1))
+    };
+    if talks.len() < TREND_TALKS {
+        let n: u32 = talks.iter().map(|t| t.1).sum();
         return if de {
             format!("{word}: bisher {n}×")
         } else {
             format!("{word}: {n}× so far")
         };
     }
-    let (early, late) = weeks.split_at(weeks.len() / 2);
-    let sum = |w: &[u32]| w.iter().sum::<u32>() as usize;
-    // Per week: the later half may be a week longer.
-    match (
-        (sum(late) * early.len()).cmp(&(sum(early) * late.len())),
-        de,
-    ) {
-        (Ordering::Less, true) => format!("{word}: seltener als in den Wochen davor"),
-        (Ordering::Less, false) => format!("{word}: less often than in the weeks before"),
-        (Ordering::Greater, true) => {
+    let (early, late) = talks.split_at(talks.len() / 2);
+    let (early, late) = (rate(early), rate(late));
+    match (late, de) {
+        (l, true) if l < 0.75 * early => format!("{word}: seltener als in den Gesprächen davor"),
+        (l, false) if l < 0.75 * early => format!("{word}: less often than in the talks before"),
+        (l, true) if l > 1.25 * early => {
             format!("{word}: zuletzt häufiger, ein Fall für die Wiederholung")
         }
-        (Ordering::Greater, false) => format!("{word}: more often lately, one for the review"),
+        (l, false) if l > 1.25 * early => format!("{word}: more often lately, one for the review"),
         (_, true) => format!("{word}: etwa gleich oft"),
         (_, false) => format!("{word}: about as often"),
     }
@@ -310,18 +316,22 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let de = st.store.profile()?.ui_lang != "en";
     let from = start.start(now.offset_min).unix;
     let mut weeks: BTreeMap<String, [u32; 12]> = BTreeMap::new();
-    // The first of the twelve weeks with a talk: the trend compares only weeks with practice.
-    let mut first = 11;
+    // The talks in order, for the trend: the turns of each and its mistakes per kind.
+    let mut talks: Vec<(u32, BTreeMap<String, u32>)> = Vec::new();
     for row in st.store.finished_since(from)? {
         let Ok(state) = st.store.session_state(row.id) else {
             continue;
         };
         let w = ((row.started.day().0 - start.0) / 7).clamp(0, 11) as usize;
-        first = first.min(w);
+        let mut made: BTreeMap<String, u32> = BTreeMap::new();
         for t in &state.turns {
             for k in kaiwa_core::session::mistake_kinds(t) {
+                *made.entry(k.clone()).or_default() += 1;
                 weeks.entry(k).or_default()[w] += 1;
             }
+        }
+        if !state.turns.is_empty() {
+            talks.push((state.turns.len() as u32, made));
         }
     }
     let mut kinds: Vec<(String, [u32; 12])> = weeks.into_iter().collect();
@@ -331,7 +341,11 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         .take(3)
         .map(|(k, w)| {
             let word = kind_word(k, de);
-            json!({ "kind": k, "word": word, "weeks": w, "text": trend(word, &w[first..], de) })
+            let of_kind: Vec<(u32, u32)> = talks
+                .iter()
+                .map(|(turns, made)| (*turns, made.get(k).copied().unwrap_or(0)))
+                .collect();
+            json!({ "kind": k, "word": word, "weeks": w, "text": trend(word, &of_kind, de) })
         })
         .collect();
     // Words and phrases per level, from the unit they came from ("n5-04" is N5).
@@ -421,12 +435,14 @@ pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
                     let change = skill_change(from, model.level(*s));
                     let name = s.word(lang);
                     let text = match (change, de) {
-                        ("up", true) => format!("{name}: sicherer als vor einer Woche"),
-                        ("up", false) => format!("{name}: more secure than a week ago"),
+                        ("up", true) => format!("{name}: sicherer als zu Beginn der Woche"),
+                        ("up", false) => {
+                            format!("{name}: more secure than at the start of the week")
+                        }
                         ("down", true) => format!("{name}: braucht wieder etwas Übung"),
                         ("down", false) => format!("{name}: could do with some practice again"),
-                        (_, true) => format!("{name}: etwa wie vor einer Woche"),
-                        (_, false) => format!("{name}: about as a week ago"),
+                        (_, true) => format!("{name}: etwa wie zu Beginn der Woche"),
+                        (_, false) => format!("{name}: about as at the start of the week"),
                     };
                     Some(json!({
                         "skill": serde_json::to_value(s).unwrap_or_default(),
@@ -829,14 +845,43 @@ mod tests {
     }
 
     #[test]
-    fn the_trend_counts_only_weeks_with_practice() {
-        // Four weeks of practice, fading: not "more often" against weeks never practised.
-        assert!(trend("Partikeln", &[6, 3, 1, 0], true).contains("seltener"));
-        assert!(trend("Particles", &[0, 1, 3, 6], false).contains("more often"));
-        // An odd number of weeks: compared per week (4 in one week, 4 in two: fewer).
-        assert!(trend("Partikeln", &[4, 2, 2], true).contains("seltener"));
-        assert!(trend("Partikeln", &[2, 2], true).contains("gleich"));
-        assert_eq!(trend("Partikeln", &[3], true), "Partikeln: bisher 3×");
+    fn the_trend_compares_talks_not_weeks() {
+        // (turns, mistakes) per talk. Fading over eight talks, and the other way round.
+        let fading = [
+            (4, 3),
+            (4, 3),
+            (4, 2),
+            (4, 2),
+            (4, 1),
+            (4, 1),
+            (4, 0),
+            (4, 0),
+        ];
+        assert!(trend("Partikeln", &fading, true).contains("seltener"));
+        let mut rising = fading;
+        rising.reverse();
+        assert!(trend("Particles", &rising, false).contains("more often"));
+        // A week of one mistake a talk, then a Monday talk with four: more often, although
+        // the new week has fewer mistakes than the last (review #67).
+        let monday = [
+            (4, 1),
+            (4, 1),
+            (4, 1),
+            (4, 1),
+            (4, 1),
+            (4, 1),
+            (4, 1),
+            (4, 4),
+        ];
+        assert!(trend("Partikeln", &monday, true).contains("häufiger"));
+        // Two days of practice are no trend, whichever weeks they fall into.
+        assert_eq!(
+            trend("Partikeln", &[(4, 1), (4, 3)], true),
+            "Partikeln: bisher 4×"
+        );
+        // Longer talks with as many mistakes per turn: the same.
+        let longer = [(4, 1), (4, 1), (8, 2), (8, 2)];
+        assert!(trend("Partikeln", &longer, true).contains("gleich"));
         assert_eq!(trend("Particles", &[], false), "Particles: 0× so far");
     }
 

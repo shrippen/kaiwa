@@ -145,6 +145,20 @@ fn recording_a_session_feeds_model_path_review_and_day() {
         .record(id2, &second, at(0, 20), at(0, 20).plus_secs(60), Some(&c))
         .unwrap();
     assert_eq!(&r2.day.levels_at_start, kept);
+    // A new placement is no progress: the days forget where they started from.
+    store
+        .set_placement(kaiwa_core::LearnerModel::placed(&[(
+            kaiwa_core::learner::Skill::Speaking,
+            "n4",
+        )]))
+        .unwrap();
+    assert!(
+        store
+            .day(at(0, 9).day())
+            .unwrap()
+            .levels_at_start
+            .is_empty()
+    );
     // The next day the item is due and can be reviewed.
     let due = store.due(at(1, 9), 10).unwrap();
     assert!(due.iter().any(|i| i.text == "コーヒーが好きです"));
