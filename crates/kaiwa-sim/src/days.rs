@@ -367,14 +367,14 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
             // only when it is played through; then the learner reviews instead (R-02): items
             // with a unit, due or not, ten at most.
             let Some(scenario) = curriculum.next_scenario(&course) else {
-                let shaky: Vec<String> = items
+                let to_review: Vec<String> = items
                     .iter()
                     .filter(|i| i.unit.is_some())
                     .map(|i| i.text.clone())
                     .take(10)
                     .collect();
                 let mut extra = 0;
-                for text in &shaky {
+                for text in &to_review {
                     let Some(item) = items.iter_mut().find(|i| &i.text == text) else {
                         continue;
                     };
