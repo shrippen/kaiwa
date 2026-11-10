@@ -159,5 +159,7 @@ mod tests {
         set_current(&dir, "default.kaiwa").unwrap();
         assert_eq!(current_in(&dir), dir.join(DEFAULT));
         assert!(set_current(&dir, "../x.kaiwa").is_err());
+        drop((mara, tom));
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 }

@@ -642,9 +642,7 @@ mod tests {
 
     #[test]
     fn privacy_is_local_without_a_cloud_provider() {
-        let dir = std::env::temp_dir().join(format!("kaiwa-privacy-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let b = Backend::open_at(dir.join("p.kaiwa"), false).unwrap();
+        let b = crate::TempBackend::new("privacy", false).unwrap();
         let rows = privacy(&b, "de");
         let rows = rows.as_array().unwrap();
         assert_eq!(rows.len(), 3);
@@ -661,9 +659,7 @@ mod tests {
         if std::env::var_os("KAIWA_PROVIDER").is_some() {
             return; // the local test's environment wins over the settings
         }
-        let dir = std::env::temp_dir().join(format!("kaiwa-tutor-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let b = Backend::open_at(dir.join("t.kaiwa"), false).unwrap();
+        let b = crate::TempBackend::new("tutor", false).unwrap();
         let v = tutor_view(&b, "de");
         assert_eq!(v["ready"], false);
         assert!(v["status"].as_str().unwrap().starts_with("Kein Tutor"));
@@ -705,9 +701,7 @@ mod tests {
 
     #[test]
     fn the_learner_view_lists_grammar_still_practised() {
-        let dir = std::env::temp_dir().join(format!("kaiwa-gstate-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let b = Backend::open_at(dir.join("g.kaiwa"), false).unwrap();
+        let b = crate::TempBackend::new("gstate", false).unwrap();
         let mut l = b.store.learning().unwrap();
         l.grammar.insert(
             "ga-suki".into(),
@@ -739,9 +733,7 @@ mod tests {
 
     #[test]
     fn a_conversation_shows_its_units_grammar() {
-        let dir = std::env::temp_dir().join(format!("kaiwa-grammar-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let b = Backend::open_at(dir.join("g.kaiwa"), false).unwrap();
+        let b = crate::TempBackend::new("grammar", false).unwrap();
         let g = grammar(&b, "n5-08-onsen", "de");
         let labels: Vec<&str> = g
             .as_array()
@@ -757,9 +749,7 @@ mod tests {
 
     #[test]
     fn free_talk_offers_the_topics_outside_the_path() {
-        let dir = std::env::temp_dir().join(format!("kaiwa-free-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let b = Backend::open_at(dir.join("demo.kaiwa"), true).unwrap();
+        let b = crate::TempBackend::new("free", true).unwrap();
         let v = today(&b, crate::now()).unwrap();
         let free = v["free"].as_array().unwrap();
         assert_eq!(free.len(), 4);
@@ -772,9 +762,7 @@ mod tests {
 
     #[test]
     fn the_week_adds_up_the_last_seven_days() {
-        let dir = std::env::temp_dir().join(format!("kaiwa-week-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let b = Backend::open_at(dir.join("demo.kaiwa"), true).unwrap();
+        let b = crate::TempBackend::new("week", true).unwrap();
         let now = crate::now();
         let w = week(&b, now).unwrap();
         let days = b.store.days().unwrap();
@@ -887,9 +875,7 @@ mod tests {
 
     #[test]
     fn mistakes_over_twelve_weeks() {
-        let dir = std::env::temp_dir().join(format!("kaiwa-stats-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let b = Backend::open_at(dir.join("demo.kaiwa"), true).unwrap();
+        let b = crate::TempBackend::new("stats", true).unwrap();
         let v = stats(&b, crate::now()).unwrap();
         let m = v["mistakes"].as_array().unwrap();
         let particle = m

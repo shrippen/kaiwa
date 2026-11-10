@@ -87,6 +87,7 @@ fn an_interrupted_session_continues_where_it_stopped() {
         "not from the start"
     );
     delete_profile(&path).unwrap();
+    std::fs::remove_dir(path.parent().unwrap()).unwrap();
 }
 
 #[test]
@@ -238,6 +239,7 @@ fn deleting_a_profile_leaves_no_file() {
         std::fs::read_dir(&dir).unwrap().next().is_none(),
         "no database, no side files"
     );
+    std::fs::remove_dir(&dir).unwrap();
 }
 
 #[test]

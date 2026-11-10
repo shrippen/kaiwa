@@ -114,10 +114,8 @@ impl Backend {
 mod tests {
     use super::*;
 
-    fn backend(name: &str) -> Backend {
-        let dir = std::env::temp_dir().join(format!("kaiwa-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        Backend::open_at(dir.join("t.kaiwa"), false).unwrap()
+    fn backend(name: &str) -> crate::TempBackend {
+        crate::TempBackend::new(name, false).unwrap()
     }
 
     #[test]

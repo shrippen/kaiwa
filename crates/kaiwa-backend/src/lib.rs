@@ -383,6 +383,49 @@ impl Backend {
     }
 }
 
+/// A backend on a profile in a directory of its own under the temp directory, for tests and
+/// `kaiwa-sim`; the directory goes when this is dropped.
+#[cfg(any(test, feature = "demo"))]
+pub struct TempBackend {
+    backend: Option<Backend>,
+    pub dir: PathBuf,
+}
+
+#[cfg(any(test, feature = "demo"))]
+impl TempBackend {
+    /// `name` tells the directories apart in the temp directory; `demo` fills the profile with
+    /// the demo data.
+    pub fn new(name: &str, demo: bool) -> anyhow::Result<Self> {
+        static COUNT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let n = COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("kaiwa-{name}-{}-{n}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir)?;
+        let backend = Backend::open_at(dir.join("profile.kaiwa"), demo)?;
+        Ok(Self {
+            backend: Some(backend),
+            dir,
+        })
+    }
+}
+
+#[cfg(any(test, feature = "demo"))]
+impl std::ops::Deref for TempBackend {
+    type Target = Backend;
+    fn deref(&self) -> &Backend {
+        self.backend.as_ref().expect("open until dropped")
+    }
+}
+
+#[cfg(any(test, feature = "demo"))]
+impl Drop for TempBackend {
+    fn drop(&mut self) {
+        // The profile closes first, then its directory goes.
+        self.backend = None;
+        let _ = std::fs::remove_dir_all(&self.dir);
+    }
+}
+
 /// Now, in the local time zone (or `KAIWA_NOW`).
 pub fn now() -> Moment {
     if let Some(v) = std::env::var_os("KAIWA_NOW")

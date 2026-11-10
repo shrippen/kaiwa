@@ -91,10 +91,8 @@ mod tests {
     use super::*;
     use kaiwa_core::progress::BLAME_WORDS;
 
-    fn backend(name: &str, reminder: Option<u32>) -> Backend {
-        let dir = std::env::temp_dir().join(format!("kaiwa-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let b = Backend::open_at(dir.join("t.kaiwa"), false).unwrap();
+    fn backend(name: &str, reminder: Option<u32>) -> crate::TempBackend {
+        let b = crate::TempBackend::new(name, false).unwrap();
         let mut p = b.store.profile().unwrap();
         p.reminder = reminder;
         b.store.set_profile(&p).unwrap();
