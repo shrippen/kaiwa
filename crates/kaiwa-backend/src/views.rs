@@ -253,12 +253,15 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
     }))
 }
 
-/// Talks before a kind of mistake gets a trend; with fewer there is only the count.
+/// Talks before a kind of mistake gets a trend, and how often it must have come up in them;
+/// with fewer there is only the count (one mistake is no trend).
 const TREND_TALKS: usize = 4;
+const TREND_MISTAKES: u32 = 3;
 
 /// How a kind of mistake developed (/LF610/): how often it came up per turn in the later half
 /// of the talks against the earlier half. `talks` are the talks in order, each with its turns
-/// and its mistakes of this kind. Talks, not weeks: a week that has just begun, or the one the
+/// (without those marked as misrecognised, whose mistakes do not count either) and its
+/// mistakes of this kind. Talks, not weeks: a week that has just begun, or the one the
 /// learner started in, holds few talks and would read as a change. A quarter more or less
 /// counts as a change.
 fn trend(word: &str, talks: &[(u32, u32)], de: bool) -> String {
@@ -268,8 +271,8 @@ fn trend(word: &str, talks: &[(u32, u32)], de: bool) -> String {
             .fold((0, 0), |(a, b), (turns, m)| (a + turns, b + m));
         f64::from(mistakes) / f64::from(turns.max(1))
     };
-    if talks.len() < TREND_TALKS {
-        let n: u32 = talks.iter().map(|t| t.1).sum();
+    let n: u32 = talks.iter().map(|t| t.1).sum();
+    if talks.len() < TREND_TALKS || n < TREND_MISTAKES {
         return if de {
             format!("{word}: bisher {n}×")
         } else {
@@ -330,8 +333,9 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
                 weeks.entry(k).or_default()[w] += 1;
             }
         }
-        if !state.turns.is_empty() {
-            talks.push((state.turns.len() as u32, made));
+        let turns = state.turns.iter().filter(|t| !t.misrecognized).count();
+        if turns > 0 {
+            talks.push((turns as u32, made));
         }
     }
     let mut kinds: Vec<(String, [u32; 12])> = weeks.into_iter().collect();
@@ -871,6 +875,12 @@ mod tests {
         let longer = [(4, 1), (4, 1), (8, 2), (8, 2)];
         assert!(trend("Partikeln", &longer, true).contains("gleich"));
         assert_eq!(trend("Particles", &[], false), "Particles: 0× so far");
+        // One mistake in twenty talks is no trend, wherever it falls (review #67).
+        let mut once = [(4, 0); 20];
+        once[10].1 = 1;
+        assert_eq!(trend("Partikeln", &once, true), "Partikeln: bisher 1×");
+        once[0].1 = 2;
+        assert!(trend("Partikeln", &once, true).contains("seltener"));
     }
 
     #[test]

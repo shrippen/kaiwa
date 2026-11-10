@@ -1074,11 +1074,15 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
         };
         let (early, late) = run.sessions.split_at(run.sessions.len() / 2);
         let want = match (rate(early), rate(late)) {
+            // Under four talks or three mistakes there is no trend, only the count.
+            _ if run.sessions.len() < 4 || run.sessions.iter().map(counted).sum::<f64>() < 3.0 => {
+                "bisher"
+            }
             (e, l) if l < 0.75 * e => "seltener",
             (e, l) if l > 1.25 * e => "häufiger",
             _ => "gleich",
         };
-        if run.sessions.len() >= 4 && !text.contains(want) {
+        if !text.contains(want) {
             found.push(format!("{kind} should read {want}: {text}"));
         }
         // Mara's particle and counter mistakes fade after four corrections each.
