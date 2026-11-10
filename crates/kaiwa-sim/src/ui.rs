@@ -664,8 +664,8 @@ fn word_lookup(root: &Path) -> Result<Option<String>> {
     if !reading_aid.contains("{好|す}") {
         found.push(format!("no furigana over 好 in the reply: {reading_aid}"));
     }
-    // Mara's own line has furigana too, and its words are looked up the same way; a number
-    // with its counter gets none rather than a wrong one (ににん).
+    // Mara's own line has furigana too, and its words are looked up the same way (a number
+    // with its counter: below).
     let own = lookup::own_line("仕事はプロデューサーです。");
     if !own["markup"]
         .as_str()
