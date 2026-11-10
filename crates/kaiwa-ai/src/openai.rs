@@ -88,11 +88,35 @@ fn content(answer: &Value) -> Result<&str, AiError> {
 }
 
 pub fn parse_reply(answer: &Value) -> Result<String, AiError> {
-    let text = content(answer)?.trim();
+    let text = spoken(content(answer)?);
+    let text = text.trim();
     if text.is_empty() {
         return Err(AiError::Format("empty reply".into()));
     }
     Ok(text.to_string())
+}
+
+/// The text without what a local model thought aloud (`<think>…</think>` in the content; the
+/// learner would read and hear it as the character's line). A closing tag without an opening
+/// (chat templates that put the opening into the prompt) makes all before it thinking;
+/// thinking that never closes has no line behind it.
+fn spoken(text: &str) -> String {
+    const OPEN: &str = "<think>";
+    const CLOSE: &str = "</think>";
+    let mut rest = match text.find(CLOSE) {
+        Some(end) if !text[..end].contains(OPEN) => &text[end + CLOSE.len()..],
+        _ => text,
+    };
+    let mut out = String::new();
+    while let Some(a) = rest.find(OPEN) {
+        out.push_str(&rest[..a]);
+        rest = match rest[a..].find(CLOSE) {
+            Some(end) => &rest[a + end + CLOSE.len()..],
+            None => "",
+        };
+    }
+    out.push_str(rest);
+    out
 }
 
 /// The JSON in the message content (`Analysis::from_text`): servers that ignore
@@ -188,5 +212,23 @@ mod tests {
         assert!(parse_analysis(&answer("Gut gemacht!")).is_err());
         assert!(parse_analysis(&answer(r#"{"understood": "ja"}"#)).is_err());
         assert!(parse_reply(&json!({ "choices": [] })).is_err());
+        // What a local model thought aloud is not the character's line.
+        for (content, line) in [
+            (
+                "<think>She asked my name.</think>\nマラです。",
+                "マラです。",
+            ),
+            ("She asked my name.</think>マラです。", "マラです。"),
+            (
+                "<think>a</think>こんにちは。<think>b</think>マラです。",
+                "こんにちは。マラです。",
+            ),
+            ("マラです。", "マラです。"),
+        ] {
+            assert_eq!(parse_reply(&answer(content)).unwrap(), line);
+        }
+        for only_thinking in ["<think>She asked my name.</think>", "<think>She asked my"] {
+            assert!(parse_reply(&answer(only_thinking)).is_err());
+        }
     }
 }
