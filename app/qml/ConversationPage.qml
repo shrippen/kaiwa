@@ -206,7 +206,7 @@ Kirigami.ScrollablePage {
                         size: KanteButton.Size.Small
                         emphasis: KanteButton.Emphasis.Quiet
                         text: page.t("Übersetzen", "Translate")
-                        enabled: msg.modelData.translation === undefined
+                        enabled: msg.modelData.translation === undefined && msg.modelData.translating !== true
                         Accessible.description: page.t("Zeigt den Satz auf Deutsch.", "Shows the line in English.")
                         onClicked: conv.listen(msg.index, 2)
                     }
@@ -271,7 +271,7 @@ Kirigami.ScrollablePage {
                 }
                 // /LF113/: what Kaiwa heard; a misrecognition is no learning mistake.
                 KanteButton {
-                    visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized
+                    visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized && !msg.modelData.failed
                     size: KanteButton.Size.Small
                     emphasis: KanteButton.Emphasis.Quiet
                     text: page.t("Falsch erkannt", "Misheard")

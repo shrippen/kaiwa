@@ -233,7 +233,8 @@ pub struct ConversationRust {
     placement: Option<Placement>,
     lang: String,
     session_id: Option<i64>,
-    started: Option<kaiwa_core::Moment>,
+    /// Since when the time in this talk has not been added to the session.
+    sitting: Option<std::time::Instant>,
     session: Option<Arc<Mutex<Session>>>,
     log: Vec<Value>,
     /// Any engine behind the traits (/LL504/); ReazonSpeech and Kokoro today.
@@ -340,8 +341,17 @@ impl qobject::Conversation {
         };
         let lang = self.lang.clone();
         let session_id = self.session_id;
-        let started = self.started;
-        let guard = session.lock().expect("session lock");
+        let mut guard = session.lock().expect("session lock");
+        // The time since the talk began here, or since it was last kept, counts as spent in
+        // it; a talk continued later keeps what it had (/LF121/).
+        if let Some(since) = self
+            .as_mut()
+            .rust_mut()
+            .sitting
+            .replace(std::time::Instant::now())
+        {
+            guard.spend(since.elapsed().as_secs().min(3600) as u32);
+        }
         let met = guard.summary().goals_met;
         let goals: Vec<Value> = guard
             .goals()
@@ -356,13 +366,12 @@ impl qobject::Conversation {
             match session_id {
                 Some(id) if done && !*self.finished() => {
                     let end = now();
-                    match st.store.record(
-                        id,
-                        &guard,
-                        started.unwrap_or(end),
-                        end,
-                        Some(&st.curriculum),
-                    ) {
+                    // Practice time is the time spent in the talk, over every sitting.
+                    let begun = end.plus_secs(-i64::from(guard.spent_secs()));
+                    match st
+                        .store
+                        .record(id, &guard, begun, end, Some(&st.curriculum))
+                    {
                         Ok(r) => {
                             if let Err(e) = st.track_grammar(&guard, end) {
                                 eprintln!("kaiwa: {e:#}");
@@ -511,6 +520,11 @@ impl qobject::Conversation {
         log: Vec<Value>,
         lang: String,
     ) {
+        // The cost limit holds from the first call of every talk: a new one, one continued
+        // and the placement (/LF714/).
+        if let Err(e) = state().arm_brake(now()) {
+            eprintln!("kaiwa: {e}");
+        }
         let title = session.scenario.title.get(&lang).to_string();
         let scenario = session.scenario.id.clone();
         let character = session.scenario.name.clone().unwrap_or_else(|| {
@@ -541,7 +555,7 @@ impl qobject::Conversation {
             rust.log = log;
             rust.lang = lang;
             rust.session_id = id;
-            rust.started = Some(now());
+            rust.sitting = Some(std::time::Instant::now());
             rust.last_use = Some(std::time::Instant::now());
             // Another conversation: nothing said before counts.
             if let Ok(mut c) = rust.said.lock() {
@@ -602,15 +616,9 @@ impl qobject::Conversation {
         });
     }
 
-    /// The session's turn index of a log entry (learner entries before it).
+    /// The session's turn index of a log entry; a line the tutor never answered has none.
     fn turn_of(&self, log_index: i32) -> Option<usize> {
-        let i = usize::try_from(log_index).ok()?;
-        (self.log.get(i)?["who"] == "learner").then(|| {
-            self.log[..i]
-                .iter()
-                .filter(|e| e["who"] == "learner")
-                .count()
-        })
+        kaiwa_backend::talk::turn_of(&self.log, usize::try_from(log_index).ok()?)
     }
 
     fn save(&self) {
@@ -717,7 +725,6 @@ impl qobject::Conversation {
         let Some((scenario, profile)) = prepared else {
             return;
         };
-        let _ = state().arm_brake(now());
         let opening = scenario.opening.clone();
         let talk = state().new_talk(scenario);
         let (session, demo) = match talk {
@@ -918,7 +925,8 @@ impl qobject::Conversation {
             return;
         };
         let markup = entry["markup"].as_str().unwrap_or_default().to_string();
-        let translated = entry.get("translation").is_some();
+        // Already there, or on its way (a second click asks the tutor no second time).
+        let translated = entry.get("translation").is_some() || entry["translating"] == true;
         let Some(session) = self.session.clone() else {
             return;
         };
@@ -935,15 +943,35 @@ impl qobject::Conversation {
             2 if !translated => {
                 let lang = self.lang.clone();
                 let thread = self.qt_thread();
+                if let Some(e) = self.as_mut().rust_mut().log.get_mut(i) {
+                    e["translating"] = json!(true);
+                }
+                self.as_mut().publish_turns();
                 std::thread::spawn(move || {
                     let line = kaiwa_core::plain(&markup);
-                    let result = session.lock().ok().map(|mut s| s.translate(&line));
+                    // Asked without holding the session (the window needs it meanwhile).
+                    let asking = session.lock().ok().map(|s| s.translating(&line));
+                    let result = asking.map(|a| a.run());
                     let _ = thread.queue(move |mut q| {
+                        if let Some(e) = q.as_mut().rust_mut().log.get_mut(i)
+                            && let Some(e) = e.as_object_mut()
+                        {
+                            e.remove("translating");
+                        }
+                        // What the translation cost (/LF714/), not only with the next turn.
+                        if let Err(e) = state().book_costs(now(), false) {
+                            eprintln!("kaiwa: {e}");
+                        }
                         match result {
                             Some(Ok(text)) => {
+                                // It counts as help once the learner has it (/LF212/).
+                                if let Ok(mut s) = session.lock() {
+                                    s.aid(Aid::Translate);
+                                }
                                 if let Some(e) = q.as_mut().rust_mut().log.get_mut(i) {
                                     e["translation"] = json!(text);
                                 }
+                                q.save();
                                 q.as_mut().publish_turns();
                             }
                             Some(Err(kaiwa_ai::AiError::NoFixture)) => {
@@ -964,6 +992,7 @@ impl qobject::Conversation {
                             }
                             None => {}
                         }
+                        q.as_mut().publish_turns();
                     });
                 });
             }
@@ -1228,7 +1257,7 @@ impl qobject::Conversation {
         }
         // Kept only with the opt-in, for the chosen days (/LF712/).
         if let Some(id) = self.session_id {
-            let turn = self.log.iter().filter(|e| e["who"] == "learner").count();
+            let turn = kaiwa_backend::talk::turns(&self.log);
             if let Err(e) = state().keep_recording(id, turn, &rec.samples, rec.sample_rate, now()) {
                 eprintln!("kaiwa: {e:#}");
             }
@@ -1332,10 +1361,18 @@ impl qobject::Conversation {
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let input = if typed { Input::Typed } else { Input::Spoken };
-            let result: Result<TurnOutcome, String> = session
-                .lock()
+            // The session is held only to ask and to take the answer, not while the tutor
+            // thinks: the window locks it for help and the listening aids.
+            let asking = session.lock().map(|s| s.ask(&text));
+            let result: Result<TurnOutcome, String> = asking
                 .map_err(|e| e.to_string())
-                .and_then(|mut s| s.turn(&text, input).map_err(|e| e.to_string()));
+                .and_then(|a| a.run().map_err(|e| e.to_string()))
+                .and_then(|answer| {
+                    session
+                        .lock()
+                        .map(|mut s| s.take(&text, input, answer))
+                        .map_err(|e| e.to_string())
+                });
             let _ = thread.queue(move |mut q| {
                 match result {
                     Ok(outcome) => {
@@ -1368,8 +1405,10 @@ impl qobject::Conversation {
                         }
                     }
                     Err(e) => {
+                        // The line stays to be read, but it is no turn of the session.
                         if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index) {
                             turn["pending"] = json!(false);
+                            turn["failed"] = json!(true);
                         }
                         let budget = e == kaiwa_ai::AiError::Budget.to_string();
                         let no_tutor = e == kaiwa_ai::AiError::NoTutor.to_string();

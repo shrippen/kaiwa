@@ -175,6 +175,64 @@ pub struct SessionState {
     pub live: Live,
     #[serde(default)]
     pub limit_goals: bool,
+    /// Seconds spent in this talk so far, over every sitting (/LF121/): a talk continued
+    /// later counts all of its time as practice, not only the last sitting.
+    #[serde(default)]
+    pub spent_secs: u32,
+}
+
+/// The tutor's two calls for one turn ([`Session::ask`]), free of the session.
+pub struct Asking {
+    provider: Arc<dyn ChatProvider>,
+    analysis: TurnRequest,
+    reply: TurnRequest,
+    cross_check: bool,
+    register: crate::scenario::Register,
+}
+
+/// What the tutor said to one turn: the analysis (cross-checked and fitted to the scenario's
+/// register) and the character's reply with its readings.
+pub struct Answer {
+    analysis: Analysis,
+    reply: String,
+}
+
+impl Asking {
+    /// Calls the tutor: the analysis, then the reply. An error leaves nothing behind.
+    pub fn run(&self) -> Result<Answer, AiError> {
+        let mut analysis = self.provider.analyse(&self.analysis)?;
+        if self.cross_check
+            && analysis
+                .corrections
+                .iter()
+                .any(|c| c.severity >= kaiwa_ai::Severity::Wrong)
+        {
+            let second = self.provider.analyse(&self.analysis)?;
+            analysis.corrections = cross_check(&analysis.corrections, &second.corrections);
+        }
+        fit_register(&mut analysis.corrections, self.register);
+        // The reply with the readings the tutor wrote (/LF110/); the model's own history
+        // gets it without, as the opening.
+        let reply = crate::clean_markup(&self.provider.reply(&self.reply)?);
+        Ok(Answer { analysis, reply })
+    }
+}
+
+/// A translation to fetch ([`Session::translating`]), free of the session.
+pub struct Translating {
+    provider: Arc<dyn ChatProvider>,
+    line: String,
+    lang: String,
+    known: Option<String>,
+}
+
+impl Translating {
+    pub fn run(&self) -> Result<String, AiError> {
+        match &self.known {
+            Some(t) => Ok(t.clone()),
+            None => self.provider.translate(&self.line, &self.lang),
+        }
+    }
 }
 
 /// Seconds of silence after which help is offered (/LF114/), unless the difficulty says later.
@@ -205,6 +263,7 @@ pub struct Session {
     /// The grammar points of the scenario's unit, for the tutor's instructions; set by the
     /// caller from the curriculum, not part of the saved state.
     grammar: Vec<String>,
+    spent_secs: u32,
     /// The learner's own speaking level on the learner model's scale, for a free talk
     /// (/LF116/); set by the caller from the learner model, not part of the saved state.
     learner_level: Option<f64>,
@@ -237,6 +296,7 @@ impl Session {
             stuck: 0,
             live: Live::default(),
             grammar: Vec::new(),
+            spent_secs: 0,
             learner_level: None,
         }
     }
@@ -251,6 +311,16 @@ impl Session {
             &self.grammar,
             self.learner_level,
         )
+    }
+
+    /// Adds time the learner spent in this talk (the caller has the clock).
+    pub fn spend(&mut self, secs: u32) {
+        self.spent_secs = self.spent_secs.saturating_add(secs);
+    }
+
+    /// Seconds spent in this talk so far, sittings before a break included (/LF121/).
+    pub fn spent_secs(&self) -> u32 {
+        self.spent_secs
     }
 
     /// The unit's grammar labels given with [`Session::with_grammar`].
@@ -300,6 +370,7 @@ impl Session {
             stuck: st.stuck,
             live: st.live,
             grammar: Vec::new(),
+            spent_secs: st.spent_secs,
             learner_level: None,
         }
     }
@@ -320,6 +391,7 @@ impl Session {
             stuck: self.stuck,
             live: self.live.clone(),
             limit_goals: self.limit_goals,
+            spent_secs: self.spent_secs,
         }
     }
 
@@ -401,58 +473,61 @@ impl Session {
     /// The opening comes from the scenario when it has a translation, every other line from
     /// the tutor.
     pub fn translate(&mut self, line: &str) -> Result<String, AiError> {
+        let text = self.translating(line).run()?;
         self.aid(Aid::Translate);
-        if let Some(t) = &self.scenario.opening_translation
-            && line == plain(&self.scenario.opening)
-        {
-            return Ok(t.get(&self.lang).to_string());
-        }
-        self.provider.translate(line, &self.lang)
+        Ok(text)
     }
 
-    fn request(&self, system: String) -> TurnRequest {
-        TurnRequest {
-            system,
-            messages: self.messages.clone(),
-            max_tokens: 600,
+    /// The translation of a line, to run without the session (as [`Session::ask`]); the
+    /// caller counts the aid ([`Aid::Translate`]) once the learner has it.
+    pub fn translating(&self, line: &str) -> Translating {
+        let known = self
+            .scenario
+            .opening_translation
+            .as_ref()
+            .filter(|_| line == plain(&self.scenario.opening))
+            .map(|t| t.get(&self.lang).to_string());
+        Translating {
+            provider: self.provider.clone(),
+            line: line.to_string(),
+            lang: self.lang.clone(),
+            known,
         }
     }
 
-    /// The learner's turn: analyse it, then let the character answer.
+    /// The learner's turn: analyse it, then let the character answer. The two halves are
+    /// [`Session::ask`] (with [`Asking::run`]) and [`Session::take`]; a caller that must not
+    /// hold the session while the tutor thinks (the app: its window locks the session for help
+    /// and the listening aids) runs them itself.
     pub fn turn(&mut self, text: &str, input: Input) -> Result<TurnOutcome, AiError> {
-        self.messages.push(ChatMessage::user(text));
-        let analysis_request =
-            self.request(analysis_system(&self.scenario, &self.lang, &self.grammar));
-        let analysed = self.provider.analyse(&analysis_request);
-        let mut analysis: Analysis = match analysed {
-            Ok(a) => a,
-            Err(e) => {
-                self.messages.pop();
-                return Err(e);
-            }
+        let answer = self.ask(text).run()?;
+        Ok(self.take(text, input, answer))
+    }
+
+    /// What the tutor is asked about the learner's `text`: both calls with everything they
+    /// need, so they run without the session. The session itself does not change.
+    pub fn ask(&self, text: &str) -> Asking {
+        let mut messages = self.messages.clone();
+        messages.push(ChatMessage::user(text));
+        let request = |system: String| TurnRequest {
+            system,
+            messages: messages.clone(),
+            max_tokens: 600,
         };
-        if self.cross_check
-            && analysis
-                .corrections
-                .iter()
-                .any(|c| c.severity >= kaiwa_ai::Severity::Wrong)
-        {
-            let second = self.provider.analyse(&analysis_request)?;
-            analysis.corrections = cross_check(&analysis.corrections, &second.corrections);
+        Asking {
+            provider: self.provider.clone(),
+            analysis: request(analysis_system(&self.scenario, &self.lang, &self.grammar)),
+            reply: request(self.reply_instructions()),
+            cross_check: self.cross_check,
+            register: self.scenario.register,
         }
-        fit_register(&mut analysis.corrections, self.scenario.register);
-        let reply = match self
-            .provider
-            .reply(&self.request(self.reply_instructions()))
-        {
-            // The reply with the readings the tutor wrote (/LF110/); the model's own history
-            // gets it without, as the opening.
-            Ok(r) => crate::clean_markup(&r),
-            Err(e) => {
-                self.messages.pop();
-                return Err(e);
-            }
-        };
+    }
+
+    /// Takes the tutor's answer to the learner's `text` into the session: the turn with its
+    /// corrections, goals, XP and help.
+    pub fn take(&mut self, text: &str, input: Input, answer: Answer) -> TurnOutcome {
+        let Answer { analysis, reply } = answer;
+        self.messages.push(ChatMessage::user(text));
         self.messages.push(ChatMessage::assistant(plain(&reply)));
 
         let playable: Vec<String> = self.goals().iter().map(|g| g.id.clone()).collect();
@@ -516,7 +591,7 @@ impl Session {
             markup: own_markup.clone(),
         });
         self.aid_on_line = false;
-        Ok(TurnOutcome {
+        TurnOutcome {
             own_markup,
             reply,
             understood: analysis.understood,
@@ -527,7 +602,7 @@ impl Session {
             xp_reason,
             eased,
             help,
-        })
+        }
     }
 
     /// The learner marks a turn's transcript as misrecognised (/LF113/): its corrections no longer
@@ -819,6 +894,49 @@ mod tests {
                 .unwrap()
                 .with_fallback("すみません、もう一度お願いします。"),
         )
+    }
+
+    /// The recorded answers without a fallback: an unknown line is a tutor that fails.
+    fn strict() -> Arc<dyn ChatProvider> {
+        Arc::new(
+            MockProvider::from_json(include_str!("../../../qa/fixtures/n5-02-jikoshoukai.json"))
+                .unwrap(),
+        )
+    }
+
+    #[test]
+    fn a_failed_tutor_call_leaves_the_session_as_it_was() {
+        let mut s = Session::new(scenario(), strict(), Amount::Normal, "de");
+        s.turn("マラです。よろしくおねがいします。", Input::Spoken)
+            .unwrap();
+        let before = s.snapshot();
+        assert!(s.turn("これはきろくにありません。", Input::Spoken).is_err());
+        assert_eq!(s.snapshot(), before);
+        // A translation that fails is no aid (/LF212/): the learner got nothing.
+        assert!(s.translate("これもありません。").is_err());
+        assert_eq!(s.snapshot(), before);
+    }
+
+    #[test]
+    fn asking_without_the_session_gives_the_same_turn() {
+        let line = "コーヒーを好きです。";
+        let mut whole = Session::new(scenario(), provider(), Amount::Normal, "de");
+        let a = whole.turn(line, Input::Spoken).unwrap();
+        let mut halves = Session::new(scenario(), provider(), Amount::Normal, "de");
+        let asking = halves.ask(line);
+        // What the window does while the tutor thinks reaches the turn: help was used.
+        halves.aid(Aid::Repeat);
+        let b = halves.take(line, Input::Spoken, asking.run().unwrap());
+        assert_eq!(
+            (a.reply, a.xp, a.shown.len()),
+            (b.reply, b.xp, b.shown.len())
+        );
+        assert!(halves.turns()[0].aided && !whole.turns()[0].aided);
+        let (mut w, mut h) = (whole.snapshot(), halves.snapshot());
+        w.aids.clear();
+        h.aids.clear();
+        w.turns[0].aided = true;
+        assert_eq!(w, h);
     }
 
     #[test]
