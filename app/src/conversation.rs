@@ -1156,6 +1156,7 @@ impl qobject::Conversation {
     }
 
     fn barge_in(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().empty_turns.reset();
         self.as_mut().interrupt();
         self.listen_again();
     }

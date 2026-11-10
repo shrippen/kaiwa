@@ -119,8 +119,9 @@ impl CutOffs {
 /// Hands-free turns in a row that gave nothing to send (noise the level took for speech, a
 /// voice too far away): the microphone listens again by itself after the first ones, then
 /// stays closed, so a noisy room does not keep it recording and reporting in a circle.
-/// Anything the learner does (a turn that was understood, a typed one, a click on the
-/// button, silence that closed the microphone) starts the count again.
+/// A turn that was understood, a typed one, a click on the talk button (to speak, or to cut
+/// the character short) and the silence that closed the microphone start the count again;
+/// the listening aids do not.
 #[derive(Debug, Clone, Default)]
 pub struct EmptyTurns {
     count: u32,
