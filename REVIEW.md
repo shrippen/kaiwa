@@ -38,8 +38,9 @@ notices or learns from:
 - Persona names and ids from the demo world stay stable.
 - Release: the release log with a screenshot per language; done only
   when the landing page shows the entry.
-- CI: both copies of `ci.yml` (`.gitea/`, `.github/`) change together;
-  `pr-agent.yml` is Gitea only.
+- CI: `.github/workflows/ci.yml` runs on the GitHub mirror and reports `github / test` to
+  Gitea; there is no copy in `.gitea/workflows/` (a CI file there would run on Gitea and
+  switch the report off); `pr-agent.yml` is Gitea only.
 - Content (scenarios, grammar, curriculum): Japanese and explanations are
   right, sources and licences match ADR-007 and `NOTICE`.
 

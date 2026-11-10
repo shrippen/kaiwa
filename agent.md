@@ -32,6 +32,7 @@ is published, so the owner confirms it in words.
 
 ## Repository (this project)
 
-- The merge waits for: CI is green on the PR's latest commit: the Gitea checks of `.gitea/workflows/ci.yml`, `CI / rust (pull_request)` and `CI / qt (pull_request)`, show success there. No status there yet means wait, not merge; if it never comes, check the Gitea runner or ask the owner. PR-Agent's status does not count here. Without CI, the local checks count.
+- CI runs on the GitHub mirror (`github.com/shrippen/kaiwa`, `.github/workflows/ci.yml`, owner 10.11.2026) on every push and reports back to Gitea as the commit status `github / test`. Gitea runs no CI of its own; `.gitea/workflows/` holds `pr-agent.yml` only.
+- The merge waits for: CI is green on the PR's latest commit: the check `github / test` from the GitHub mirror (`.github/workflows/ci.yml`) shows success there. No status there yet means wait, not merge; if it never comes, check the mirror or ask the owner. PR-Agent's status does not count here. Without CI, the local checks count.
 - The owner also confirms: a PR that changes `packaging/`.
 - Everything else: `RULES.md` (Repository) and the skill `pr-review`.

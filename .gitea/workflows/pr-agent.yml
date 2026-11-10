@@ -12,7 +12,7 @@ name: pr-agent
 # gives its context size.
 # Comments come from the Actions bot; the secret PR_AGENT_GITEA_TOKEN sets
 # an own user.
-# Settings: .gitea/pr-agent/config.toml. Gitea only, unlike ci.yml: no
+# Settings: .gitea/pr-agent/config.toml. Gitea only (ci.yml runs on the GitHub mirror): no
 # copy in .github/workflows, PR-Agent talks to the Gitea API.
 on:
   issue_comment:
