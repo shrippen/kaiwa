@@ -114,9 +114,21 @@ pub mod qobject {
         #[cxx_name = "sayWav"]
         fn say_wav(self: Pin<&mut Conversation>, path: &QString);
 
-        /// Stop the character speaking (talk button tapped while it speaks).
+        /// Stop the character speaking (the page closes, the voice is muted).
         #[qinvokable]
         fn interrupt(self: Pin<&mut Conversation>);
+
+        /// The learner cuts the character short (talk button while it speaks, /LF103/): it
+        /// falls silent, and hands-free the learner's turn begins.
+        #[qinvokable]
+        #[cxx_name = "bargeIn"]
+        fn barge_in(self: Pin<&mut Conversation>);
+
+        /// After a microphone error: the talk button works again, the next press tries the
+        /// microphone anew. Without a recogniser there is nothing to try.
+        #[qinvokable]
+        #[cxx_name = "retryTalk"]
+        fn retry_talk(self: Pin<&mut Conversation>);
 
         /// Called every minute: unloads the speech models after the idle time of the profile
         /// (/LL012/); they load again when needed.
@@ -768,6 +780,12 @@ impl qobject::Conversation {
         if !*self.voice_on() {
             return;
         }
+        // Hands-free the microphone is open between turns; it must not hear the character
+        // (speakers instead of a headset) and send that as the learner's turn. It opens again
+        // when the character is done.
+        if *self.hands_free() {
+            self.as_mut().close_mic();
+        }
         let id = self.utterance.fetch_add(1, Ordering::SeqCst) + 1;
         let current = self.utterance.clone();
         if *self.talk_state() == READY {
@@ -933,9 +951,15 @@ impl qobject::Conversation {
         self.as_mut().wake();
         match aid {
             0 | 1 => {
+                // The voice is still loading again after the idle time (`wake` above): the
+                // learner hears nothing, so nothing counts; the next click plays (/LF212/).
+                if self.speaker.is_none() {
+                    return;
+                }
                 if let Ok(mut s) = session.lock() {
                     s.aid(if aid == 0 { Aid::Repeat } else { Aid::Slow });
                 }
+                self.save();
                 self.as_mut().interrupt();
                 let speed = self.speed() * if aid == 0 { 1.0 } else { 0.7 };
                 self.speak_at(&markup, speed, false);
@@ -1097,6 +1121,30 @@ impl qobject::Conversation {
         }
     }
 
+    fn barge_in(mut self: Pin<&mut Self>) {
+        self.as_mut().interrupt();
+        self.listen_again();
+    }
+
+    fn retry_talk(mut self: Pin<&mut Self>) {
+        if *self.talk_state() == ERROR && self.recognizer.is_some() {
+            self.as_mut().set_talk_state(READY);
+        }
+    }
+
+    /// Stops listening without sending anything (hands-free: the character speaks, or the
+    /// learner typed instead).
+    fn close_mic(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().turn_end = None;
+        if let Some(c) = self.as_mut().rust_mut().capture.take() {
+            drop(c.stop());
+            self.as_mut().set_level(0.0);
+            if *self.talk_state() == LISTENING {
+                self.as_mut().set_talk_state(READY);
+            }
+        }
+    }
+
     fn start_talk(mut self: Pin<&mut Self>) {
         if self.unloaded {
             // The models load again; the next press talks.
@@ -1127,6 +1175,8 @@ impl qobject::Conversation {
                 });
                 self.as_mut().rust_mut().turn_end = turn_end;
                 self.as_mut().rust_mut().capture = Some(c);
+                // The microphone is back (after an error and `retry_talk`).
+                self.as_mut().set_speech_error(QString::default());
                 self.as_mut().set_level(0.0);
                 self.as_mut().set_talk_state(LISTENING);
             }
@@ -1253,6 +1303,7 @@ impl qobject::Conversation {
                 "Es kam kein Ton an. Ist ein Mikrofon angeschlossen, eingeschaltet und gewählt? Einstellungen › Mikrofon testet es."
             };
             self.as_mut().set_error(QString::from(msg));
+            self.listen_again();
             return;
         }
         // Kept only with the opt-in, for the chosen days (/LF712/).
@@ -1282,6 +1333,7 @@ impl qobject::Conversation {
                     "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon."
                 };
                 q.as_mut().set_error(QString::from(msg));
+                q.listen_again();
             });
         });
     }
@@ -1348,6 +1400,10 @@ impl qobject::Conversation {
         if typed {
             // Only spoken turns have a response time.
             self.as_mut().rust_mut().speech_end = None;
+            // Typed instead of spoken: hands-free stops listening until the reply is through.
+            if *self.hands_free() {
+                self.as_mut().close_mic();
+            }
         }
         self.as_mut().wake();
         let session = self.session.clone()?;
@@ -1445,6 +1501,8 @@ impl qobject::Conversation {
             return;
         };
         let step = session.lock().expect("session lock").help();
+        // Kept at once: help used after the last turn is there when the talk is continued.
+        self.save();
         if let Some(step) = step {
             self.as_mut().set_help_text(QString::from(&step.text));
             self.as_mut().set_help_level(i32::from(step.level));
@@ -1497,6 +1555,10 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
             if q.log.len() == 1 && !*q.busy() {
                 let opening = q.log[0]["markup"].as_str().unwrap_or_default().to_string();
                 q.speak(&opening);
+            } else {
+                // A talk continued, or the models back after the idle time: hands-free
+                // listens without waiting for a click.
+                q.listen_again();
             }
         }
         Err(e) => {

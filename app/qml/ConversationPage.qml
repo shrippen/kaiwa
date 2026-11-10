@@ -25,6 +25,8 @@ Kirigami.ScrollablePage {
     function t(de, en) { return lang === "en" ? en : de }
     /** Back to the start page (finished, or to continue later). */
     signal done()
+    // Leaving the talk: the character does not go on speaking over the next page.
+    onDone: conv.interrupt()
     /** Screenshot mode: say the lines of `script` (separated by "|"), save `shot`, quit. */
     property string shot: ""
     property string script: ""
@@ -99,7 +101,7 @@ Kirigami.ScrollablePage {
                 currentIndex: conv.voiceOn ? 0 : 1
                 onActivated: function (i) {
                     conv.voiceOn = i === 0
-                    if (i === 1) conv.interrupt()
+                    if (i === 1) conv.bargeIn()
                 }
             }
             // /LL204/: easier listening in one step, kept in the profile.
@@ -495,8 +497,10 @@ Kirigami.ScrollablePage {
                 enabled: !conv.finished
                 onTalkStarted: conv.startTalk()
                 onTalkEnded: conv.stopTalk()
-                onInterruptRequested: conv.interrupt()
-                onErrorActionRequested: page.showSpeechHelp = !page.showSpeechHelp
+                onInterruptRequested: conv.bargeIn()
+                // Why speaking does not work; and the button works again, so a microphone
+                // that is back is tried with the next press.
+                onErrorActionRequested: { page.showSpeechHelp = !page.showSpeechHelp; conv.retryTalk() }
                 Timer {
                     interval: 80
                     repeat: true
