@@ -272,6 +272,15 @@ Kirigami.ScrollablePage {
                         meta: modelData.meta
                     }
                 }
+                // T-11: the tutor's analysis of this turn had gaps; said, never passed over.
+                Text {
+                    Layout.fillWidth: true
+                    visible: msg.modelData.who === "learner" && msg.modelData.incomplete === true
+                    text: page.t("Analyse unvollständig: Der Tutor hat diesen Zug nicht ganz ausgewertet. Er zählt nicht für dein Niveau.", "Analysis incomplete: the tutor did not fully assess this turn. It does not count towards your level.")
+                    wrapMode: Text.WordWrap
+                    color: KanteStyle.mutedTextColor
+                    font: KanteStyle.smallFont
+                }
                 // /LF113/: what Kaiwa heard; a misrecognition is no learning mistake.
                 KanteButton {
                     visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized && !msg.modelData.failed

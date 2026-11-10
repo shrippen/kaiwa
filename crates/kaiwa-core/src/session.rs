@@ -60,6 +60,9 @@ pub struct TurnOutcome {
     /// Three turns in a row without getting closer to a goal: help comes by itself, at least
     /// the sentence start (/LF213/, Jonas).
     pub help: Option<HelpStep>,
+    /// The tutor's analysis of this turn had gaps ([`kaiwa_ai::Analysis::incomplete`]): the
+    /// page says so, and the turn does not count for the level (T-11).
+    pub incomplete: bool,
 }
 
 /// The tutor's reading of the learner's line as clean furigana markup, only when it is the
@@ -97,6 +100,10 @@ pub struct TurnRecord {
     /// The learner's line with the tutor's furigana; empty when it gave none that fits.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub markup: String,
+    /// The analysis of this turn had gaps (T-11): what could be read of it is here and goes
+    /// into the review, but the turn is no evidence of the level, in either direction.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub incomplete: bool,
 }
 
 /// The end of a session (/LF310/).
@@ -209,6 +216,8 @@ impl Asking {
         {
             let second = self.provider.analyse(&self.analysis)?;
             analysis.corrections = cross_check(&analysis.corrections, &second.corrections);
+            // A correction the second reading lost to a gap is not one it disagreed with.
+            analysis.incomplete |= second.incomplete;
         }
         fit_register(&mut analysis.corrections, self.register);
         // The reply with the readings the tutor wrote (/LF110/); the model's own history
@@ -589,6 +598,7 @@ impl Session {
             misrecognized: false,
             disputed: Vec::new(),
             markup: own_markup.clone(),
+            incomplete: analysis.incomplete,
         });
         self.aid_on_line = false;
         TurnOutcome {
@@ -602,6 +612,7 @@ impl Session {
             xp_reason,
             eased,
             help,
+            incomplete: analysis.incomplete,
         }
     }
 
@@ -739,6 +750,14 @@ impl Session {
             ..Default::default()
         };
         for t in &self.turns {
+            // Time spoken is time practised, whatever the tutor made of the turn.
+            if t.input == Input::Spoken {
+                s.speaking_secs += speaking_secs(&t.learner);
+            }
+            // A turn the tutor analysed with gaps is no evidence (T-11).
+            if t.incomplete {
+                continue;
+            }
             s.turns += 1;
             if t.understood {
                 s.understood += 1;
@@ -746,10 +765,7 @@ impl Session {
                     s.understood_unaided += 1;
                 }
             }
-            match t.input {
-                Input::Spoken => s.speaking_secs += speaking_secs(&t.learner),
-                Input::Typed => s.typed_turns += 1,
-            }
+            s.typed_turns += u32::from(t.input == Input::Typed);
             let kinds = mistake_kinds(t);
             for kind in &kinds {
                 if kind == "register" {
@@ -789,9 +805,10 @@ impl Session {
             .turns
             .iter()
             .filter(|t| {
-                !counted(t)
-                    .iter()
-                    .any(|c| !c.also_possible && c.severity >= Severity::Wrong)
+                !t.incomplete
+                    && !counted(t)
+                        .iter()
+                        .any(|c| !c.also_possible && c.severity >= Severity::Wrong)
             })
             .count() as f64;
         e.at_level

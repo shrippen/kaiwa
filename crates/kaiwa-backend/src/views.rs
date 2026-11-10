@@ -330,13 +330,17 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         };
         let w = ((row.started.day().0 - start.0) / 7).clamp(0, 11) as usize;
         let mut made: BTreeMap<String, u32> = BTreeMap::new();
-        for t in &state.turns {
+        for t in state.turns.iter().filter(|t| !t.incomplete) {
             for k in kaiwa_core::session::mistake_kinds(t) {
                 *made.entry(k.clone()).or_default() += 1;
                 weeks.entry(k).or_default()[w] += 1;
             }
         }
-        let turns = state.turns.iter().filter(|t| !t.misrecognized).count();
+        let turns = state
+            .turns
+            .iter()
+            .filter(|t| !t.misrecognized && !t.incomplete)
+            .count();
         if turns > 0 {
             talks.push((turns as u32, made));
         }
@@ -421,7 +425,11 @@ pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
             continue;
         };
         let w = usize::from(row.started.unix >= start(this));
-        for t in state.turns.iter().filter(|t| !t.misrecognized) {
+        for t in state
+            .turns
+            .iter()
+            .filter(|t| !t.misrecognized && !t.incomplete)
+        {
             unaided[w].1 += 1;
             unaided[w].0 += usize::from(t.understood && !t.aided && !t.from_help);
         }

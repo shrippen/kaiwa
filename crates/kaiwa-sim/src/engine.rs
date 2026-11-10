@@ -108,6 +108,7 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
         "selin_casual_ok" => casual_ok(root),
         "theo_free_talk" => free_talk(p),
         "jonas_cost_limit" => cost_limit(),
+        "jonas_analysis_gaps" => analysis_gaps(root),
         _ => return None,
     };
     Some(match r {
@@ -239,6 +240,110 @@ fn cost_limit() -> Result<Option<String>> {
     Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
+/// A local tutor whose server does not enforce the schema: the recorded analysis, as text, with
+/// a correction of a kind Kaiwa does not know (`extra`: beside the recorded ones, else in
+/// place of the first).
+struct Gappy {
+    recorded: MockProvider,
+    extra: bool,
+}
+
+impl kaiwa_ai::ChatProvider for Gappy {
+    fn reply(&self, r: &kaiwa_ai::TurnRequest) -> Result<String, kaiwa_ai::AiError> {
+        self.recorded.reply(r)
+    }
+
+    fn analyse(&self, r: &kaiwa_ai::TurnRequest) -> Result<kaiwa_ai::Analysis, kaiwa_ai::AiError> {
+        let mut v = serde_json::to_value(self.recorded.analyse(r)?)
+            .map_err(|e| kaiwa_ai::AiError::Format(e.to_string()))?;
+        let unknown = serde_json::json!({ "severity": "wrong", "kind": "grammar",
+            "original": "を", "better": "が", "explanation": "…" });
+        if let Some(list) = v["corrections"].as_array_mut() {
+            match list.first_mut() {
+                Some(first) if !self.extra => first["kind"] = "grammar".into(),
+                _ => list.push(unknown),
+            }
+        }
+        kaiwa_ai::Analysis::from_text(&format!("Here is the analysis:\n{v}"))
+    }
+}
+
+/// T-11 (/LF300/): Jonas's local tutor writes an analysis that does not fit the schema. The
+/// turn says that the analysis is incomplete; a correction that could be read is shown and
+/// goes into the review; and the turn is no evidence for the level, neither as a mistake nor
+/// as a flawless turn. With a whole analysis the same sentence counts.
+fn analysis_gaps(root: &Path) -> Result<Option<String>> {
+    let scenario = "n5-02-jikoshoukai";
+    let said = "コーヒーを好きです。";
+    let gappy = |extra: bool| -> Result<Session> {
+        let sc = Scenario::from_json(&std::fs::read_to_string(
+            root.join(format!("data/scenarios/{scenario}.json")),
+        )?)?;
+        let recorded = MockProvider::from_json(&std::fs::read_to_string(
+            root.join(format!("qa/fixtures/{scenario}.json")),
+        )?)?;
+        Ok(Session::new(
+            sc,
+            Arc::new(Gappy { recorded, extra }),
+            Amount::Little,
+            "de",
+        ))
+    };
+    let mut found = Vec::new();
+    // The whole analysis: one mistake, counted.
+    let mut whole = session(root, scenario)?;
+    let out = whole.turn(said, Input::Spoken)?;
+    if out.incomplete || whole.stats().turns != 1 || whole.stats().mistakes.is_empty() {
+        found.push("a whole analysis does not count as one turn with a mistake".to_string());
+    }
+    // The only correction unreadable.
+    let mut s = gappy(false)?;
+    let out = s.turn(said, Input::Spoken)?;
+    if !out.incomplete {
+        found.push("the turn does not say that its analysis is incomplete".into());
+    }
+    if !out.shown.is_empty() {
+        found.push("an unreadable correction is shown".into());
+    }
+    let st = s.stats();
+    if st.turns != 0 || st.clean_turns != 0 || !st.mistakes.is_empty() {
+        found.push(format!(
+            "the turn counts for the level: {} turns, {} clean, mistakes {:?}",
+            st.turns, st.clean_turns, st.mistakes
+        ));
+    }
+    if st.speaking_secs == 0 {
+        found.push("the time spoken does not count for the day".into());
+    }
+    if !s.evidence().at_level.is_empty() {
+        found.push(format!(
+            "evidence from the turn: {:?}",
+            s.evidence().at_level
+        ));
+    }
+    // An unreadable correction beside the recorded one: that one stays.
+    let mut s = gappy(true)?;
+    let out = s.turn(said, Input::Spoken)?;
+    if !out.incomplete || out.shown.len() != 1 {
+        found.push(format!(
+            "the readable correction is not shown ({} shown, incomplete {})",
+            out.shown.len(),
+            out.incomplete
+        ));
+    }
+    if !s.summary().review.iter().any(|r| r.contains("が好き")) {
+        found.push("the readable correction does not go into the review".into());
+    }
+    if s.stats().turns != 0 {
+        found.push("a turn with a readable correction and a gap counts for the level".into());
+    }
+    // The kept session says it too (the page of a continued talk).
+    if !s.turns()[0].incomplete {
+        found.push("the kept turn does not say that its analysis was incomplete".into());
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
+}
+
 /// A tutor that reaches every goal named to it.
 struct Listening {
     goals: Vec<String>,
@@ -256,6 +361,7 @@ impl kaiwa_ai::ChatProvider for Listening {
             corrections: Vec::new(),
             new_words: Vec::new(),
             reading: String::new(),
+            incomplete: false,
         })
     }
 }

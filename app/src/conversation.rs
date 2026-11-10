@@ -1501,6 +1501,7 @@ impl qobject::Conversation {
                                     outcome.shown.iter().map(|x| shown_json(x, &lang)).collect(),
                                 );
                                 turn["pending"] = json!(false);
+                                turn["incomplete"] = json!(outcome.incomplete);
                                 // The tutor's furigana replace the dictionary's (ADR-004).
                                 if !outcome.own_markup.is_empty() {
                                     turn["markup"] = outcome.own_markup.clone().into();
@@ -1771,6 +1772,7 @@ fn log_of(scenario: &Scenario, state: &SessionState, lang: &str) -> Vec<Value> {
             "corrections": corrections,
             "pending": false,
             "misrecognized": t.misrecognized,
+            "incomplete": t.incomplete,
         }));
         if !t.markup.is_empty() {
             log.last_mut().expect("just pushed")["markup"] = t.markup.clone().into();

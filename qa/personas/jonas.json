@@ -329,6 +329,13 @@
             "/LF714/"
           ],
           "assert": "Die Einstellungen nennen die geschätzten Kosten des Monats und je Gespräch mit dem Cloud-Tutor. Ohne selbst gesetztes Limit bremst nichts. Am eigenen Limit antwortet der Cloud-Tutor nicht mehr, der lokale auf dem PC schon. Lokale Gespräche kosten nichts und verdünnen die Kosten je Gespräch nicht. Der neue Monat beginnt bei null."
+        },
+        {
+          "id": "jonas_analysis_gaps",
+          "requirements": [
+            "/LF300/"
+          ],
+          "assert": "Schreibt der lokale Tutor eine Analyse, die nicht zum Schema passt, sagt der Zug „Analyse unvollständig“. Was sich lesen ließ, wird gezeigt und geht in die Wiederholung. Der Zug zählt nicht für das Niveau, weder als Fehler noch als fehlerfrei; die gesprochene Zeit zählt für den Tag."
         }
       ]
     }

@@ -201,7 +201,8 @@ impl Matcher {
         turns: &[crate::session::TurnRecord],
         day: crate::clock::Day,
     ) {
-        for t in turns {
+        // A turn analysed with gaps (T-11) shows neither a mistake nor a point used well.
+        for t in turns.iter().filter(|t| !t.incomplete) {
             let mut wrong: BTreeSet<&str> = BTreeSet::new();
             for c in crate::session::counted(t)
                 .iter()
@@ -310,6 +311,7 @@ mod tests {
                 .collect(),
             new_words: vec![],
             markup: String::new(),
+            incomplete: false,
             understood: true,
             aided: false,
             from_help: false,
