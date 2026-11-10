@@ -815,37 +815,29 @@ impl Store {
             .optional()?;
         let talked = r.map(|(u, o)| moment(u, o));
         // Kept by `review`, so the start page does not read every item for it (/LL020/).
-        let reviewed: Option<Moment> =
-            self.get_json("SELECT value FROM settings WHERE key = ?1", "reviewed")?;
+        let reviewed: Option<Moment> = self.state_value("reviewed")?;
         Ok(talked.max(reviewed))
-    }
-
-    fn set_setting<T: Serialize>(&self, key: &str, value: &T) -> Result<()> {
-        self.db.execute(
-            "INSERT INTO settings (key, value) VALUES (?1, ?2)
-             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-            params![key, serde_json::to_string(value)?],
-        )?;
-        Ok(())
     }
 
     /// The day of the last re-entry after a break, if there was one.
     fn reentered(&self) -> Result<Option<Day>> {
-        self.get_json("SELECT value FROM settings WHERE key = ?1", "reentered")
+        self.state_value("reentered")
     }
 
     /// The re-entry after a break of `srs::BREAK_DAYS` or more (/LF231/, T-07): ten items stay
     /// due, the rest of what is due is spread over the next days, once per break. The day is
     /// kept, so the refresher lasts the whole day whatever the learner opens first, and a
-    /// break in which nothing was practised is not spread again the day after.
+    /// break in which nothing was practised is not spread again the day after. Opening the app
+    /// without practising does not use the break up: `srs::BREAK_DAYS` after that day it is a
+    /// re-entry again.
     fn reenter(&self, now: Moment) -> Result<()> {
         let last = self.last_practice()?;
         if !srs::refresher(now, last) {
             return Ok(());
         }
-        // Practice since the last re-entry: this is a new break.
+        // Practice since the last re-entry, or as long away again since it: a new break.
         let again = match (self.reentered()?, last) {
-            (Some(day), Some(last)) => last.day() >= day,
+            (Some(day), Some(last)) => last.day() >= day || now.day().0 - day.0 >= srs::BREAK_DAYS,
             _ => true,
         };
         if !again {
@@ -861,7 +853,7 @@ impl Store {
                     st.put_item(item)?;
                 }
             }
-            st.set_setting("reentered", &now.day())
+            st.set_state_value("reentered", &now.day())
         };
         if self.db.is_autocommit() {
             self.batch(write)
@@ -895,7 +887,7 @@ impl Store {
         };
         item.review(grade, now);
         self.put_item(&item)?;
-        self.set_setting("reviewed", &now)?;
+        self.set_state_value("reviewed", &now)?;
         if let Some(unit) = &item.unit {
             let mut l = self.learning()?;
             l.course.reviewed(unit, grade != Grade::Again);

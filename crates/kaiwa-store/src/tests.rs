@@ -536,6 +536,20 @@ fn after_a_break_ten_are_ten_and_the_rest_waits_for_the_next_days() {
 }
 
 #[test]
+fn opening_the_app_in_a_break_does_not_use_the_break_up() {
+    let store = Store::in_memory().unwrap();
+    words_before_a_break(&store, at(2, 9));
+    // Opened on day 10, nothing practised; the days after are no re-entry.
+    assert_eq!(store.today(at(10, 9)).unwrap().due, 10);
+    assert!(!store.today(at(16, 9)).unwrap().refresher);
+    // Three weeks later the learner is back: welcome, ten, not the heap.
+    let back = store.today(at(30, 9)).unwrap();
+    assert!(back.refresher);
+    assert_eq!(back.due, 10);
+    assert_eq!(store.today(at(31, 9)).unwrap().due, 20);
+}
+
+#[test]
 fn a_break_is_spread_once_also_when_nothing_is_practised_on_the_day_back() {
     let store = Store::in_memory().unwrap();
     words_before_a_break(&store, at(2, 9));

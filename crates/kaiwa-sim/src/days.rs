@@ -75,6 +75,8 @@ pub struct SimSession {
     pub typed: u32,
     pub reviews: u32,
     pub refresher: bool,
+    /// Items due when the session began (on a re-entry: after the rest was spread).
+    pub due: usize,
     pub changes: usize,
     /// Sum of all knob steps after the session.
     pub level: u32,
@@ -334,6 +336,7 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                 // Ten are ten (T-07): the rest of what is due moves to the next days.
                 srs::spread_after_break(&mut items, at);
             }
+            let due_now = srs::due(&items, at, usize::MAX).len();
             let due: Vec<String> = srs::due(&items, at, limit)
                 .iter()
                 .map(|i| i.text.clone())
@@ -529,6 +532,7 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                 typed,
                 reviews,
                 refresher,
+                due: due_now,
                 changes: usize::from(change.is_some()),
                 level: KNOBS
                     .iter()
@@ -684,6 +688,10 @@ pub fn check(id: &str, run: &DaysRun) -> Option<Outcome> {
             let back = run.sessions.iter().find(|s| s.refresher)?;
             if back.reviews > srs::REFRESHER_SIZE as u32 {
                 return fail(format!("{} reviews after the break", back.reviews));
+            }
+            // Ten are ten (T-07): no more than ten are due at all, the rest waits.
+            if back.due > srs::REFRESHER_SIZE {
+                return fail(format!("{} items due after the break", back.due));
             }
             match run.texts.iter().find(|t| !progress::blameless(t)) {
                 Some(t) => fail(format!("blame in: {t}")),
