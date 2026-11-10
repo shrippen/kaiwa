@@ -185,7 +185,7 @@
           "requirements": [
             "/LL303/"
           ],
-          "assert": "Schmaler als 800 px lässt sich das Fenster nicht ziehen; bei 800 px ist in jeder Ansicht kein Text abgeschnitten, jeder Knopf erreichbar und Zusammengehöriges steht beisammen (Screenshot-Prüfung)."
+          "assert": "Schmaler als 533 px lässt sich das Fenster nicht ziehen; bei 533 px ist in jeder Ansicht kein Text abgeschnitten, jeder Knopf erreichbar und Zusammengehöriges steht beisammen (Screenshot-Prüfung)."
         },
         {
           "id": "hinnerk_targets",

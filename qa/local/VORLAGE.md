@@ -57,7 +57,7 @@ Wenn sonst etwas auffiel:
 | `lena_responsive`: Bildzeiten < 50 ms (`frames.log`), Abbrechen geht | | | |
 | `lena_zero_egress`: nur lokale Verbindungen (`egress.log`) | | | |
 | `hinnerk_font`: 160 %, nichts abgeschnitten oder überlappend | | | |
-| `hinnerk_narrow`: nicht unter 800 px, jeder Knopf erreichbar | | | |
+| `hinnerk_narrow`: nicht unter 533 px, jeder Knopf erreichbar | | | |
 
 ## 5.–7. VOICEVOX, Messwerte, Aufnahmen
 
