@@ -860,14 +860,20 @@ impl qobject::Conversation {
             .after_turn(by_pause, text, now)
         {
             self.as_mut().set_longer_pause(f64::from(next));
+        } else if *self.longer_pause() > 0.0 && f64::from(now) >= *self.longer_pause() {
+            // The pause was set at least that long in the meantime: the offer is stale.
+            self.as_mut().set_longer_pause(0.0);
         }
     }
 
+    /// Takes the offered pause; it only ever makes the pause longer.
     fn take_longer_pause(mut self: Pin<&mut Self>) {
         let secs = *self.longer_pause() as f32;
         if secs > 0.0 {
             let st = state();
-            if let Ok(mut p) = st.store.profile() {
+            if let Ok(mut p) = st.store.profile()
+                && secs > p.end_pause_secs
+            {
                 p.end_pause_secs = secs;
                 if let Err(e) = st.store.set_profile(&p) {
                     eprintln!("kaiwa: {e}");

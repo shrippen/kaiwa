@@ -110,7 +110,7 @@ impl CutOffs {
         }
     }
 
-    /// The learner took the offer (or set the pause themselves): counting starts again.
+    /// The learner took the offer: counting starts again.
     pub fn reset(&mut self) {
         self.count = 0;
     }

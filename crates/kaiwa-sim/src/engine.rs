@@ -119,22 +119,16 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
 /// /LF101/, /LF102/: Hinnerk speaks hands-free the way his persona says (`speech`): he thinks
 /// 3–7 s before he answers, pauses 1.5–3.2 s within a sentence, says a filler now and then and
 /// speaks 2.5–3.8 morae a second. His level runs through the app's own end of turn
-/// (`kaiwa_core::turn_end`), starting at the default pause of 1.2 s. Thinking never ends a turn
-/// and nor does its length; a pause longer than the setting cuts it off, and what was heard so
-/// far is what the recogniser would give (it stops on a particle). The second such turn offers
-/// the next longer pause, which he takes; once the pause fits him, no turn is cut off again.
-/// The recogniser and the voice are not played (audio mode); the text of a cut is the part
-/// before the pause.
+/// (`kaiwa_core::turn_end`), starting at the default pause of 1.2 s, over `CUTOFF_SEEDS` seeds
+/// of `CUTOFF_TURNS` turns each. Thinking never ends a turn and nor does its length; a pause
+/// longer than the setting cuts it off, and what was heard so far is what the recogniser would
+/// give. A cut counts when the app can tell it (`sounds_unfinished`: the part ends on a
+/// particle or a connecting form; after a bare まいあさ it cannot). The second such turn offers
+/// the next longer pause, which he takes; in the end the pause fits him, and from then on no
+/// turn is cut off. The recogniser and the voice are not played (audio mode); the text of a
+/// cut is the part before the pause.
 fn no_cutoff(p: &Value) -> Result<Option<String>> {
-    use kaiwa_core::turn_end::{CutOffs, EndOfTurn};
-    const STEP: f64 = 0.08;
-    const LINES: [&[&str]; 5] = [
-        &["わたしは", "アールダースです。"],
-        &["まえは", "とうだいで", "はたらいていました。"],
-        &["まごが", "にほんに", "すんでいます。"],
-        &["まいあさ", "うみを", "みて", "さんぽします。"],
-        &["にほんごは", "むずかしいけど", "たのしいです。"],
-    ];
+    use kaiwa_core::turn_end::{EndOfTurn, PAUSE_STEPS};
     let range = |key: &str, scale: f64| -> Result<(f64, f64)> {
         let r = &p["speech"][key];
         match (r[0].as_f64(), r[1].as_f64()) {
@@ -142,17 +136,87 @@ fn no_cutoff(p: &Value) -> Result<Option<String>> {
             _ => anyhow::bail!("speech.{key} missing"),
         }
     };
-    let think = range("pause_before_answer_ms", 0.001)?;
-    let within = range("pause_within_turn_ms", 0.001)?;
-    let rate = range("rate_mora_per_s", 1.0)?;
-    let fillers = p["speech"]["fillers"].as_array().map_or(0, Vec::len);
-    let mut rng = crate::days::Rng(0x4869_6E6E);
-    let mut pause = kaiwa_core::turn_end::PAUSE_STEPS[0];
-    let mut cuts = CutOffs::default();
+    let speech = Speech {
+        think: range("pause_before_answer_ms", 0.001)?,
+        within: range("pause_within_turn_ms", 0.001)?,
+        rate: range("rate_mora_per_s", 1.0)?,
+        fillers: p["speech"]["fillers"]
+            .as_array()
+            .is_some_and(|f| !f.is_empty()),
+    };
     let mut found = Vec::new();
-    let (mut cut_turns, mut offers, mut since_change) = (0u32, Vec::new(), 0u32);
-    let mut longest_turn = 0.0f64;
-    for turn in 0..60 {
+    let mut longest = 0.0f64;
+    for seed in 0..CUTOFF_SEEDS {
+        let (why, turn) = hands_free(&speech, 0x4869_6E6E + seed);
+        longest = longest.max(turn);
+        if let Some(why) = why {
+            found.push(format!("seed {seed}: {why}"));
+        }
+    }
+    if longest < 20.0 {
+        found.push(format!(
+            "the longest turn took {longest:.1} s: no long turn shown"
+        ));
+    }
+    // /LF102/: his shortest pause within a sentence ends a turn at the default pause, but not
+    // with a filler in the middle of it: the filler is voice.
+    let ends_at_default = |filler: bool| {
+        let gap = speech.within.0;
+        let mut e = EndOfTurn::new(PAUSE_STEPS[0]);
+        let mut level = vec![(0.2f32, 3.0), (0.65, 1.2)];
+        if filler {
+            level.extend([(0.2, gap / 2.0), (0.5, 0.4), (0.2, gap / 2.0)]);
+        } else {
+            level.push((0.2, gap));
+        }
+        level.push((0.65, 1.2));
+        level
+            .iter()
+            .flat_map(|(l, secs)| std::iter::repeat_n(*l, (secs / CUTOFF_STEP).round() as usize))
+            .any(|l| e.update(l, CUTOFF_STEP))
+    };
+    if !ends_at_default(false) {
+        found.push(format!(
+            "a pause of {} s does not end a turn at 1.2 s",
+            speech.within.0
+        ));
+    } else if ends_at_default(true) {
+        found.push("a filler in the pause did not keep the turn going".into());
+    }
+    found.truncate(4);
+    Ok((!found.is_empty()).then(|| found.join("; ")))
+}
+
+const CUTOFF_SEEDS: u64 = 40;
+const CUTOFF_TURNS: usize = 200;
+const CUTOFF_STEP: f64 = 0.08;
+
+/// How a persona speaks (`speech` in its file), in seconds and morae per second.
+struct Speech {
+    think: (f64, f64),
+    within: (f64, f64),
+    rate: (f64, f64),
+    fillers: bool,
+}
+
+/// One seed of `no_cutoff`: what went wrong, if anything, and the longest turn in seconds.
+fn hands_free(speech: &Speech, seed: u64) -> (Option<String>, f64) {
+    use kaiwa_core::turn_end::{CutOffs, EndOfTurn, PAUSE_STEPS, sounds_unfinished};
+    const LINES: [&[&str]; 5] = [
+        &["わたしは", "アールダースです。"],
+        &["まえは", "とうだいで", "はたらいていました。"],
+        &["まごが", "にほんに", "すんでいます。"],
+        &["まいあさ", "うみを", "みて", "さんぽします。"],
+        &["にほんごは", "むずかしいけど", "たのしいです。"],
+    ];
+    let (think, within, rate) = (speech.think, speech.within, speech.rate);
+    let mut rng = crate::days::Rng(seed);
+    let mut pause = PAUSE_STEPS[0];
+    let mut cuts = CutOffs::default();
+    // Cut-off turns the app can tell, and the offers: (turn, such turns so far, pause offered).
+    let (mut told, mut offers) = (0u32, Vec::new());
+    let mut longest = 0.0f64;
+    for turn in 0..CUTOFF_TURNS {
         let line = LINES[turn % LINES.len()];
         // The level of the turn: thinking, then the parts with the pauses between them.
         let mut level: Vec<(f32, f64)> = vec![(0.2, rng.between(think.0, think.1))];
@@ -160,7 +224,7 @@ fn no_cutoff(p: &Value) -> Result<Option<String>> {
         for (i, part) in line.iter().enumerate() {
             if i > 0 {
                 let gap = rng.between(within.0, within.1);
-                if fillers > 0 && rng.chance(0.3) {
+                if speech.fillers && rng.chance(0.3) {
                     // A filler in the middle of the pause: quieter, still voice (/LF102/).
                     level.push((0.2, gap / 2.0));
                     level.push((0.5, 0.4));
@@ -177,90 +241,72 @@ fn no_cutoff(p: &Value) -> Result<Option<String>> {
         let mut e = EndOfTurn::new(pause);
         let mut ended = None;
         'feed: for (n, (l, secs)) in level.iter().enumerate() {
-            for _ in 0..(secs / STEP).round() as usize {
-                if e.update(*l, STEP) {
+            for _ in 0..(secs / CUTOFF_STEP).round() as usize {
+                if e.update(*l, CUTOFF_STEP) {
                     ended = Some(n);
                     break 'feed;
                 }
             }
         }
         let Some(at) = ended else {
-            found.push(format!("turn {turn} never ended"));
-            break;
+            return (Some(format!("turn {turn} never ended")), longest);
         };
-        longest_turn = longest_turn.max(e.listened_secs());
+        longest = longest.max(e.listened_secs());
         // The parts spoken before the turn ended.
         let said = ends.iter().filter(|i| **i < at).count();
         if said == 0 {
-            found.push(format!("turn {turn} ended while he was thinking"));
-            break;
+            return (
+                Some(format!("turn {turn} ended while he was thinking")),
+                longest,
+            );
         }
         let text: String = line[..said].concat();
-        let cut = said < line.len();
-        cut_turns += u32::from(cut);
-        since_change += 1;
-        if cut && pause >= within.1 as f32 {
-            found.push(format!("cut off at a pause of {pause} s: {text}"));
+        if said < line.len() {
+            if f64::from(pause) >= within.1 {
+                return (
+                    Some(format!("cut off at a pause of {pause} s: {text}")),
+                    longest,
+                );
+            }
+            told += u32::from(sounds_unfinished(&text));
         }
         if let Some(next) = cuts.after_turn(true, &text, pause) {
-            offers.push((turn, cut_turns, next));
+            let step = PAUSE_STEPS.iter().position(|s| *s == pause);
+            if step.and_then(|i| PAUSE_STEPS.get(i + 1)) != Some(&next) {
+                return (
+                    Some(format!("offered {next} s at a pause of {pause} s")),
+                    longest,
+                );
+            }
+            offers.push((turn, told, next));
             pause = next;
             cuts.reset();
-            since_change = 0;
         }
     }
-    match offers.first() {
-        None => found.push("no longer pause offered".into()),
-        Some((_, cuts, _)) if *cuts != 2 => found.push(format!(
-            "the first offer came after {cuts} cut-off turns, not 2"
+    let why = match offers.first() {
+        None => Some("no longer pause offered".to_string()),
+        Some((_, told, _)) if *told != 2 => Some(format!(
+            "the first offer came after {told} cut-off turns, not 2"
         )),
-        _ => {}
-    }
-    if since_change < 20 {
-        found.push(format!(
-            "the pause still changing near the end ({offers:?}), last at {pause} s"
-        ));
-    }
-    // /LF102/: his shortest pause within a sentence ends a turn at the default pause, but not
-    // with a filler in the middle of it: the filler is voice.
-    let ends_at_default = |filler: bool| {
-        let gap = within.0;
-        let mut e = EndOfTurn::new(kaiwa_core::turn_end::PAUSE_STEPS[0]);
-        let mut level = vec![(0.2f32, 3.0), (0.65, 1.2)];
-        if filler {
-            level.extend([(0.2, gap / 2.0), (0.5, 0.4), (0.2, gap / 2.0)]);
-        } else {
-            level.push((0.2, gap));
-        }
-        level.push((0.65, 1.2));
-        level
+        _ if offers
             .iter()
-            .flat_map(|(l, secs)| std::iter::repeat_n(*l, (secs / STEP).round() as usize))
-            .any(|l| e.update(l, STEP))
+            .zip(1..)
+            .any(|((_, told, _), n)| *told != 2 * n) =>
+        {
+            Some(format!(
+                "an offer not at every second cut-off turn: {offers:?}"
+            ))
+        }
+        _ if f64::from(pause) < within.1 => Some(format!(
+            "after {CUTOFF_TURNS} turns the pause is {pause} s, his pauses go up to {} s",
+            within.1
+        )),
+        _ => None,
     };
-    if !ends_at_default(false) {
-        found.push(format!(
-            "a pause of {} s does not end a turn at 1.2 s",
-            within.0
-        ));
-    } else if ends_at_default(true) {
-        found.push("a filler in the pause did not keep the turn going".into());
-    }
-    if longest_turn < 20.0 {
-        found.push(format!(
-            "the longest turn took {longest_turn:.1} s: no long turn shown"
-        ));
-    }
-    if pause > 5.0 {
-        found.push(format!("a pause of {pause} s, beyond the settings"));
-    }
     if std::env::var_os("KAIWA_SIM_VERBOSE").is_some() {
-        eprintln!(
-            "hinnerk_no_cutoff: offers {offers:?}, {cut_turns} cut-off turns, longest \
-             {longest_turn:.1} s"
-        );
+        eprintln!("hinnerk_no_cutoff, seed {seed}: offers {offers:?}, longest {longest:.1} s");
     }
-    Ok((!found.is_empty()).then(|| found.join("; ")))
+    (why, longest)
 }
 
 /// /LF603/: one-word answers, rōmaji, repeats and reading out help earn at most half the XP of
