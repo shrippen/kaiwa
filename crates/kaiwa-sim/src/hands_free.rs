@@ -83,9 +83,10 @@ pub(crate) fn slow_speaker(p: &Value) -> Result<Option<String>> {
 const CUTOFF_SEEDS: u64 = 40;
 const CUTOFF_TURNS: usize = 200;
 const CUTOFF_STEP: f64 = 0.08;
-/// The most turns of his the app cuts off before the pause fits him, on any seed: two when it
-/// can tell both (1.2 → 3 → 5 s), more when a cut falls after a bare adverb, which it cannot.
-const MAX_CUT: u32 = 4;
+/// The most turns of his the app cuts off before the pause fits him, on any seed: two, one
+/// at 1.2 s and one at 3 s (measured on all seeds; a cut after a bare adverb, which the app
+/// cannot tell, would add one and show here).
+const MAX_CUT: u32 = 2;
 
 /// How a persona speaks (`speech` in its file), in seconds and morae per second.
 struct Speech {

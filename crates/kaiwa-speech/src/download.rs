@@ -2,11 +2,19 @@
 //! it, with source, size and licence shown first. Every file is checked against its SHA-256
 //! before it takes its place; a broken or stopped download leaves nothing behind but a
 //! `.part` file, which the next try overwrites.
+//!
+//! The connection is read on a thread of its own (T-09, owner 10.11.2026): a connection that
+//! hangs gave no data and no error, "Abbrechen" was only looked at between two reads, and so a
+//! hanging download could not be stopped and blocked every other until the app started again.
+//! Now `STALL` without data counts as broken, and stopping takes effect within `TICK`. There is
+//! no limit on the whole download: a large model on a slow line may take its time.
 
 use std::fs::{self, File};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc;
+use std::time::{Duration, Instant};
 
 use sha2::{Digest, Sha256};
 
@@ -207,6 +215,8 @@ pub enum DownloadError {
     NotInArchive(String),
     #[error("stopped")]
     Stopped,
+    #[error("no data for {0} s")]
+    Stalled(u64),
     #[error("building it failed: {0}")]
     Build(String),
     #[error("{0}")]
@@ -236,27 +246,149 @@ impl<R: Read> Read for Meter<'_, R> {
     }
 }
 
-fn get(url: &str) -> Result<impl Read, DownloadError> {
-    let response = ureq::get(url)
-        .call()
-        .map_err(|e| DownloadError::Http(e.to_string()))?;
-    Ok(response
-        .into_body()
-        .into_with_config()
-        .limit(u64::MAX)
-        .reader())
+/// Without data for this long the connection counts as broken.
+pub const STALL: Duration = Duration::from_secs(30);
+/// How often a waiting read looks whether the learner stopped the download.
+const TICK: Duration = Duration::from_millis(200);
+const CHUNK: usize = 64 * 1024;
+
+/// A source read on a thread of its own: the reader here waits for its chunks, at most
+/// `stall` for each, and looks at `stop` meanwhile. A source that hangs keeps its thread
+/// until the connection gives up; it holds nothing else and ends with the first chunk nobody
+/// takes.
+struct Patient<'a> {
+    chunks: mpsc::Receiver<Result<Vec<u8>, DownloadError>>,
+    chunk: Vec<u8>,
+    at: usize,
+    stall: Duration,
+    stop: &'a AtomicBool,
+    over: bool,
+    /// Why it gave up. The readers between here and the caller (bzip2, tar) wrap an error in
+    /// their own, so the reason is kept here and the error only says that there is one.
+    why: Why,
+}
+
+/// Why a download's source gave up, shared with whoever started it.
+type Why = std::rc::Rc<std::cell::RefCell<Option<DownloadError>>>;
+
+impl<'a> Patient<'a> {
+    /// `open` runs on the thread: connecting may hang like reading.
+    fn new<R: Read>(
+        open: impl FnOnce() -> Result<R, DownloadError> + Send + 'static,
+        stall: Duration,
+        stop: &'a AtomicBool,
+    ) -> Self {
+        // A few chunks ahead at most: the download is not read into memory.
+        let (tx, chunks) = mpsc::sync_channel(4);
+        std::thread::spawn(move || {
+            let mut source = match open() {
+                Ok(s) => s,
+                Err(e) => {
+                    let _ = tx.send(Err(e));
+                    return;
+                }
+            };
+            loop {
+                let mut buf = vec![0; CHUNK];
+                let sent = match source.read(&mut buf) {
+                    // An empty chunk is the end.
+                    Ok(n) => {
+                        buf.truncate(n);
+                        let end = n == 0;
+                        tx.send(Ok(buf)).is_ok() && !end
+                    }
+                    Err(e) if e.kind() == io::ErrorKind::Interrupted => true,
+                    Err(e) => {
+                        let _ = tx.send(Err(DownloadError::Io(e)));
+                        false
+                    }
+                };
+                if !sent {
+                    return;
+                }
+            }
+        });
+        Self {
+            chunks,
+            chunk: Vec::new(),
+            at: 0,
+            stall,
+            stop,
+            over: false,
+            why: Why::default(),
+        }
+    }
+
+    fn give_up(&self, why: DownloadError) -> io::Error {
+        // Not `Interrupted`: io::copy would retry it forever.
+        let e = io::Error::other(why.to_string());
+        *self.why.borrow_mut() = Some(why);
+        e
+    }
+}
+
+impl Read for Patient<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.at == self.chunk.len() && !self.over {
+            let since = Instant::now();
+            self.chunk = loop {
+                if self.stop.load(Ordering::Relaxed) {
+                    return Err(self.give_up(DownloadError::Stopped));
+                }
+                match self.chunks.recv_timeout(TICK.min(self.stall)) {
+                    Ok(Ok(chunk)) => break chunk,
+                    Ok(Err(why)) => return Err(self.give_up(why)),
+                    Err(mpsc::RecvTimeoutError::Timeout) if since.elapsed() < self.stall => {}
+                    Err(mpsc::RecvTimeoutError::Timeout) => {
+                        return Err(self.give_up(DownloadError::Stalled(self.stall.as_secs())));
+                    }
+                    // The thread is gone without an end or an error: it panicked.
+                    Err(mpsc::RecvTimeoutError::Disconnected) => {
+                        return Err(
+                            self.give_up(DownloadError::Http("the download thread ended".into()))
+                        );
+                    }
+                }
+            };
+            self.at = 0;
+            self.over = self.chunk.is_empty();
+        }
+        let n = buf.len().min(self.chunk.len() - self.at);
+        buf[..n].copy_from_slice(&self.chunk[self.at..self.at + n]);
+        self.at += n;
+        Ok(n)
+    }
+}
+
+fn get<'a>(url: &str, stop: &'a AtomicBool) -> Patient<'a> {
+    let url = url.to_string();
+    Patient::new(
+        move || {
+            let response = ureq::get(&url)
+                .call()
+                .map_err(|e| DownloadError::Http(e.to_string()))?;
+            Ok(response
+                .into_body()
+                .into_with_config()
+                .limit(u64::MAX)
+                .reader())
+        },
+        STALL,
+        stop,
+    )
 }
 
 fn hex(hash: Sha256) -> String {
     hash.finalize().iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn stopped(e: io::Error, stop: &AtomicBool) -> DownloadError {
+/// What a failed read of the download means: stopped by the learner, the source's own reason
+/// (no data, the request failed, the connection broke), or the disk.
+fn stopped(e: io::Error, stop: &AtomicBool, why: &Why) -> DownloadError {
     if stop.load(Ordering::Relaxed) {
-        DownloadError::Stopped
-    } else {
-        DownloadError::Io(e)
+        return DownloadError::Stopped;
     }
+    why.borrow_mut().take().unwrap_or(DownloadError::Io(e))
 }
 
 /// Fetches `file` from `url` into `dir`: first as `.part`, renamed once size and checksum fit.
@@ -270,15 +402,17 @@ fn fetch_file(
 ) -> Result<(), DownloadError> {
     let part = dir.join(format!("{}.part", file.name));
     let report = |n: u64| progress(offset + n);
+    let source = get(url, stop);
+    let why = source.why.clone();
     let mut meter = Meter {
-        inner: get(url)?,
+        inner: source,
         hash: Sha256::new(),
         done: 0,
         progress: &report,
         stop,
     };
     let mut out = File::create(&part)?;
-    io::copy(&mut meter, &mut out).map_err(|e| stopped(e, stop))?;
+    io::copy(&mut meter, &mut out).map_err(|e| stopped(e, stop, &why))?;
     out.flush()?;
     if meter.done != file.bytes || hex(meter.hash) != file.sha256 {
         let _ = fs::remove_file(&part);
@@ -345,8 +479,10 @@ fn unpack(
     progress: &dyn Fn(u64),
     stop: &AtomicBool,
 ) -> Result<(), DownloadError> {
+    let source = get(url, stop);
+    let why = source.why.clone();
     let mut meter = Meter {
-        inner: get(url)?,
+        inner: source,
         hash: Sha256::new(),
         done: 0,
         progress,
@@ -355,9 +491,12 @@ fn unpack(
     let mut kept = Vec::new();
     {
         let mut tar = tar::Archive::new(bzip2::read::BzDecoder::new(&mut meter));
-        for entry in tar.entries().map_err(|e| stopped(e, stop))? {
-            let mut entry = entry.map_err(|e| stopped(e, stop))?;
-            let path = entry.path().map_err(|e| stopped(e, stop))?.into_owned();
+        for entry in tar.entries().map_err(|e| stopped(e, stop, &why))? {
+            let mut entry = entry.map_err(|e| stopped(e, stop, &why))?;
+            let path = entry
+                .path()
+                .map_err(|e| stopped(e, stop, &why))?
+                .into_owned();
             let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
                 continue;
             };
@@ -367,12 +506,12 @@ fn unpack(
             }
             let part = dir.join(format!("{name}.part"));
             let mut out = File::create(&part)?;
-            io::copy(&mut entry, &mut out).map_err(|e| stopped(e, stop))?;
+            io::copy(&mut entry, &mut out).map_err(|e| stopped(e, stop, &why))?;
             kept.push(name.to_string());
         }
     }
     // Read to the end, so the checksum covers the whole archive.
-    io::copy(&mut meter, &mut io::sink()).map_err(|e| stopped(e, stop))?;
+    io::copy(&mut meter, &mut io::sink()).map_err(|e| stopped(e, stop, &why))?;
     let ok = meter.done == archive.bytes && hex(meter.hash) == archive.sha256;
     for name in keep {
         let part = dir.join(format!("{name}.part"));
@@ -470,5 +609,114 @@ mod tests {
             stop: &stop,
         };
         assert!(io::copy(&mut m, &mut io::sink()).is_err());
+    }
+
+    /// A source that gives `first`, then nothing for `hang`, then `rest`.
+    struct Hanging {
+        first: Option<Vec<u8>>,
+        hang: Duration,
+        rest: Option<Vec<u8>>,
+    }
+
+    impl Read for Hanging {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+            let part = match self.first.take() {
+                Some(p) => p,
+                None => match self.rest.take() {
+                    Some(p) => {
+                        std::thread::sleep(self.hang);
+                        p
+                    }
+                    None => return Ok(0),
+                },
+            };
+            buf[..part.len()].copy_from_slice(&part);
+            Ok(part.len())
+        }
+    }
+
+    fn hanging(hang_ms: u64) -> impl FnOnce() -> Result<Hanging, DownloadError> + Send + 'static {
+        move || {
+            Ok(Hanging {
+                first: Some(b"kai".to_vec()),
+                hang: Duration::from_millis(hang_ms),
+                rest: Some(b"wa".to_vec()),
+            })
+        }
+    }
+
+    #[test]
+    fn a_slow_source_is_read_to_the_end() {
+        let stop = AtomicBool::new(false);
+        let mut p = Patient::new(hanging(150), Duration::from_secs(5), &stop);
+        let mut all = Vec::new();
+        p.read_to_end(&mut all).unwrap();
+        assert_eq!(all, b"kaiwa");
+        // More than one chunk, and more than the reader asks for at once.
+        let big = vec![7u8; CHUNK * 3 + 5];
+        let source = big.clone();
+        let mut p = Patient::new(
+            move || Ok(io::Cursor::new(source)),
+            Duration::from_secs(5),
+            &stop,
+        );
+        let mut all = Vec::new();
+        let mut small = [0u8; 1000];
+        loop {
+            let n = p.read(&mut small).unwrap();
+            if n == 0 {
+                break;
+            }
+            all.extend_from_slice(&small[..n]);
+        }
+        assert_eq!(all, big);
+    }
+
+    #[test]
+    fn a_source_without_data_counts_as_broken() {
+        let stop = AtomicBool::new(false);
+        let mut p = Patient::new(hanging(60_000), Duration::from_millis(300), &stop);
+        let mut buf = [0u8; 8];
+        assert_eq!(p.read(&mut buf).unwrap(), 3);
+        let began = Instant::now();
+        let e = p.read(&mut buf).unwrap_err();
+        assert!(began.elapsed() < Duration::from_secs(5), "waited too long");
+        // Through readers that wrap the error, as bzip2 and tar do.
+        let wrapped = io::Error::new(io::ErrorKind::InvalidData, e);
+        assert!(matches!(
+            stopped(wrapped, &stop, &p.why),
+            DownloadError::Stalled(0)
+        ));
+    }
+
+    #[test]
+    fn a_hanging_download_stops_when_asked() {
+        let stop = std::sync::Arc::new(AtomicBool::new(false));
+        let asked = stop.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(300));
+            asked.store(true, Ordering::Relaxed);
+        });
+        // Far below the stall: only the stop can end this.
+        let mut p = Patient::new(hanging(60_000), Duration::from_secs(600), &stop);
+        let began = Instant::now();
+        let e = io::copy(&mut p, &mut io::sink()).unwrap_err();
+        assert!(began.elapsed() < Duration::from_secs(5), "waited too long");
+        assert!(matches!(stopped(e, &stop, &p.why), DownloadError::Stopped));
+    }
+
+    #[test]
+    fn a_request_that_fails_says_why() {
+        let stop = AtomicBool::new(false);
+        let mut p = Patient::new(
+            || -> Result<io::Empty, DownloadError> { Err(DownloadError::Http("404".into())) },
+            Duration::from_secs(5),
+            &stop,
+        );
+        let e = p.read(&mut [0u8; 8]).unwrap_err();
+        assert!(matches!(stopped(e, &stop, &p.why), DownloadError::Http(m) if m == "404"));
+        // A full disk is no reason of the source's.
+        let disk = io::Error::other("no space left");
+        assert!(matches!(stopped(disk, &stop, &p.why), DownloadError::Io(_)));
     }
 }

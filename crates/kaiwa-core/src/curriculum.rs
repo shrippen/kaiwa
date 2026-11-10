@@ -2,9 +2,10 @@
 //! learner sees (/LF600/).
 //!
 //! A unit has can-do statements, grammar points, core words and scenarios, and requires other
-//! units. It unlocks when those are done **and** their reviews mostly go well (at least 60 % of
-//! the answers right once there are three or more), so new material does not pile up on
-//! shaky old material (Hinnerk). Skipped units (/LF215/) count as done. Every state has a word
+//! units. It unlocks when those are done. Reviews never lock the path (T-06, owner 10.11.2026):
+//! a unit whose reviews go badly (under 60 % of the answers right once there are three or
+//! more) is marked shaky, and its review is recommended before the learner goes on (Hinnerk),
+//! no more. Skipped units (/LF215/) count as done. Every state has a word
 //! and a symbol in the GUI, never only a colour.
 //!
 //! Format v2 (ADR-009): one file per level (`data/curriculum/n5.json`, `n4.json`, …) with the
@@ -175,9 +176,11 @@ pub struct UnitNode {
     pub scenarios: Vec<ScenarioNode>,
     /// Why a locked unit is locked, in words.
     pub locked_because: Option<String>,
+    /// Its reviews go badly: reviewing is recommended before going on. It locks nothing.
+    pub shaky: bool,
 }
 
-/// Reviews of a unit go well enough to build on it.
+/// Reviews of a unit go well enough; below this its review is recommended.
 pub const REVIEW_OK: f64 = 0.6;
 pub const REVIEW_MIN: u32 = 3;
 /// A scenario is done after this many good completions: once is luck, twice is learnt.
@@ -383,13 +386,7 @@ impl Curriculum {
                 .filter(|r| self.unit(r).is_some_and(|ru| !self.unit_done(ru, p)))
                 .map(String::as_str)
                 .collect();
-            let shaky: Vec<&str> = u
-                .requires
-                .iter()
-                .filter(|r| !Self::reviews_ok(r, p))
-                .map(String::as_str)
-                .collect();
-            let unlocked = missing.is_empty() && shaky.is_empty();
+            let unlocked = missing.is_empty();
             let state = if done {
                 NodeState::Done
             } else if !unlocked {
@@ -427,20 +424,11 @@ impl Curriculum {
                     .unwrap_or_else(|| id.to_string())
             };
             let locked_because = (state == NodeState::Locked).then(|| {
-                if !missing.is_empty() {
-                    let names: Vec<String> = missing.iter().map(|m| title(m)).collect();
-                    if de {
-                        format!("Erst: {}", names.join(", "))
-                    } else {
-                        format!("First: {}", names.join(", "))
-                    }
+                let names: Vec<String> = missing.iter().map(|m| title(m)).collect();
+                if de {
+                    format!("Erst: {}", names.join(", "))
                 } else {
-                    let names: Vec<String> = shaky.iter().map(|m| title(m)).collect();
-                    if de {
-                        format!("Erst die Wiederholungen aus {} festigen", names.join(", "))
-                    } else {
-                        format!("First firm up the reviews from {}", names.join(", "))
-                    }
+                    format!("First: {}", names.join(", "))
                 }
             });
             out.push(UnitNode {
@@ -451,6 +439,7 @@ impl Curriculum {
                 state,
                 scenarios,
                 locked_because,
+                shaky: !Self::reviews_ok(&u.id, p),
             });
         }
         out
@@ -564,16 +553,23 @@ mod tests {
     }
 
     #[test]
-    fn shaky_reviews_hold_back_the_next_unit() {
+    fn shaky_reviews_are_marked_and_lock_nothing() {
         let c = course();
         let mut p = CourseProgress::default();
         p.scenarios_done.extend(["a".to_string(), "b".to_string()]);
+        // Too few answers say nothing yet.
+        p.reviews.insert("u1".into(), (2, 0));
+        assert!(!c.path(&p, "en")[0].shaky);
         p.reviews.insert("u1".into(), (5, 2));
         let path = c.path(&p, "en");
-        assert_eq!(path[1].state, NodeState::Locked);
-        assert!(path[1].locked_because.as_ref().unwrap().contains("reviews"));
+        assert!(path[0].shaky);
+        assert_eq!(path[1].state, NodeState::Current);
+        assert_eq!(path[1].locked_because, None);
+        assert_eq!(c.next_scenario(&p).as_deref(), Some("c"));
         p.reviews.insert("u1".into(), (8, 6));
-        assert_eq!(c.path(&p, "en")[1].state, NodeState::Current);
+        let path = c.path(&p, "en");
+        assert!(!path[0].shaky);
+        assert_eq!(path[1].state, NodeState::Current);
     }
 
     #[test]
