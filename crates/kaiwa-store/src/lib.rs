@@ -30,6 +30,11 @@ use serde::{Deserialize, Serialize};
 /// is read with [`tutor_ids_3`].
 pub const EXPORT_SCHEMA: &str = "kaiwa-export/2";
 
+/// The largest text size the app offers (/LL202/; owner, 10.11.2026: 160 % for now). Above
+/// it the profile page no longer fits a small laptop's window (`tools/font-160.sh`). A profile
+/// that holds more is shown and started at this size.
+pub const TEXT_SCALE_MAX: f32 = 1.6;
+
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
     #[error("database: {0}")]
@@ -100,7 +105,8 @@ pub struct Profile {
     /// Hands-free: the turn ends after the pause, listening starts again by itself (/LF100/).
     #[serde(default)]
     pub hands_free: bool,
-    /// The whole interface, text and readings included, 1.0 to 2.0 (/LL202/); from the next start.
+    /// The whole interface, text and readings included, 1.0 to `TEXT_SCALE_MAX` (/LL202/); from
+    /// the next start.
     #[serde(default = "one")]
     pub text_scale: f32,
     /// The tutor set up in the settings (Q-15); the key is in the system keyring.

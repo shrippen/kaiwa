@@ -559,7 +559,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
             let (_, month, day) = d.ymd();
             json!({ "day": day, "month": month, "iso": d.iso() })
         }),
-        "textScale": p.text_scale,
+        "textScale": p.text_scale.min(kaiwa_store::TEXT_SCALE_MAX),
         "microphone": p.microphone,
         "cost": st.cost_view(crate::now())?,
         "latency": st.latency_view(&p.ui_lang)?,

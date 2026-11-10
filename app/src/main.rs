@@ -19,7 +19,7 @@ fn main() {
     let scale = state::state()
         .store
         .profile()
-        .map(|p| p.text_scale)
+        .map(|p| p.text_scale.min(kaiwa_store::TEXT_SCALE_MAX))
         .unwrap_or(1.0);
     if scale > 1.0 {
         let base: f32 = std::env::var("QT_SCALE_FACTOR")
