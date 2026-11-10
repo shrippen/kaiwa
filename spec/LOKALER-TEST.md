@@ -68,6 +68,7 @@ Was du beurteilst, steht in der Vorlage. Kurz:
 5. **Deutsches Wort** (`hinnerk_german_word_help`): Sag im Szenario „Sich vorstellen“ わたしは Leuchtturm です。 Bietet die Figur とうだい an und bittet ums Nachsprechen? (Ob sie es langsam spricht, gehört zu Schritt 3.)
 6. **Wiederholung als Mini-Gespräch** (/LF230/, neu): Am Tag nach einem Gespräch mit Korrekturen unter „Wiederholen“ der Figur antworten, getippt und gesprochen. Passt die Frage zur Korrektur? Wird eine richtige Antwort als richtig gewertet?
 7. **Latenz:** Stopp fünfmal die Zeit vom Senden bis zur Antwort (Ziel /LL010/).
+8. **Nachdenken eines lokalen Modells** (#73, #74, neu): Mit einem lokalen Modell, das vor der Antwort nachdenkt (z. B. ein Qwen3 über Ollama oder LM Studio), drei Züge im Szenario „Sich vorstellen“. Steht in der Zeile der Figur nur, was sie sagt (kein `<think>`, keine Überlegung auf Englisch), und liest die Stimme nur das vor? Kommt nach einem Satz mit Fehler eine Korrektur?
 
 ## 3. Sprechen und Stimme
 
