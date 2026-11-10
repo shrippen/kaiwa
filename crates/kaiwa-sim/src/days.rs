@@ -356,9 +356,9 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                 xp += XP_REVIEW;
             }
 
-            // The conversation. When everything open waits for its reviews (/LF220/: a unit
-            // unlocks only when the reviews of the units before it go well), the learner
-            // reviews instead (R-02): items with a unit, due or not, ten at most.
+            // The conversation. Reviews lock nothing (T-06), so the path has no next scenario
+            // only when it is played through; then the learner reviews instead (R-02): items
+            // with a unit, due or not, ten at most.
             let Some(scenario) = curriculum.next_scenario(&course) else {
                 let shaky: Vec<String> = items
                     .iter()

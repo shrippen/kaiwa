@@ -300,6 +300,14 @@ impl qobject::KaiwaApp {
                     (Err(kaiwa_speech::download::DownloadError::Stopped), false) => {
                         "Download stopped.".to_string()
                     }
+                    (Err(kaiwa_speech::download::DownloadError::Stalled(s)), true) => format!(
+                        "{} ließ sich nicht laden: Die Verbindung hat {s} s lang keine Daten geliefert. Versuch es noch einmal.",
+                        model.name
+                    ),
+                    (Err(kaiwa_speech::download::DownloadError::Stalled(s)), false) => format!(
+                        "{} could not be downloaded: the connection gave no data for {s} s. Please try again.",
+                        model.name
+                    ),
                     (Err(e), true) => format!("{} ließ sich nicht laden: {e}", model.name),
                     (Err(e), false) => format!("{} could not be downloaded: {e}", model.name),
                 };
