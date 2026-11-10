@@ -286,6 +286,18 @@ impl Backend {
         Self::open_at(path, demo_data)
     }
 
+    /// Removes the demo profile [`Backend::open`] made in the temp directory, when the app
+    /// ends; a profile named by `KAIWA_PROFILE` stays.
+    #[cfg(any(test, feature = "demo"))]
+    pub fn discard_demo(&self) {
+        let made_here = self.demo_data
+            && std::env::var_os("KAIWA_PROFILE").is_none()
+            && self.dir().parent() == Some(std::env::temp_dir().as_path());
+        if made_here {
+            let _ = std::fs::remove_dir_all(self.dir());
+        }
+    }
+
     /// Opens the profile at `path`; `demo` fills a new one with two weeks of history.
     pub fn open_at(path: PathBuf, demo: bool) -> anyhow::Result<Self> {
         #[cfg_attr(not(any(test, feature = "demo")), allow(unused_variables))]
