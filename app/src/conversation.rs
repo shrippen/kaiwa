@@ -713,7 +713,7 @@ impl qobject::Conversation {
         let continued = crate::state::state().continued_talk(scenario, state);
         match continued {
             Ok((session, demo)) => self.begin(session, Some(id), demo, log, lang),
-            Err(e) => eprintln!("kaiwa: {e:#}"),
+            Err(e) => self.cannot_open(&e, &lang),
         }
     }
 
@@ -742,13 +742,24 @@ impl qobject::Conversation {
         let (session, demo) = match talk {
             Ok(t) => t,
             Err(e) => {
-                eprintln!("kaiwa: {e:#}");
+                self.cannot_open(&e, &profile.ui_lang);
                 return;
             }
         };
         let id = state().store.begin_session(&session.snapshot(), now()).ok();
         let log = vec![json!({ "who": "character", "markup": opening })];
         self.begin(session, id, demo, log, profile.ui_lang);
+    }
+
+    /// The profile could not be read for a talk: the page says so instead of staying empty.
+    fn cannot_open(mut self: Pin<&mut Self>, e: &anyhow::Error, lang: &str) {
+        eprintln!("kaiwa: {e:#}");
+        let msg = if lang == "en" {
+            format!("The talk cannot be opened: {e}")
+        } else {
+            format!("Das Gespräch lässt sich nicht öffnen: {e}")
+        };
+        self.as_mut().set_error(QString::from(&msg));
     }
 
     /// Says a line of the character (furigana markup) sentence by sentence; the first plays

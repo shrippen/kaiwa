@@ -35,10 +35,10 @@ impl ShortTalk {
         if let Some(row) = b.store.open_session()? {
             let state = b.store.session_state(row.id)?;
             if let Some(sc) = b.scenarios.get(&state.scenario).cloned() {
-                let (p, demo) = b.provider(&sc.id);
+                // Continued as the app continues it (the learner's level for a free talk).
+                let (session, demo) = b.continued_talk(sc, state)?;
                 return Ok(Self {
-                    session: Session::restore(sc.clone(), p, state)
-                        .with_grammar(b.unit_grammar(&sc.id)),
+                    session,
                     id: Some(row.id),
                     started: now,
                     demo,
