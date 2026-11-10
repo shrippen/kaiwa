@@ -68,6 +68,16 @@ pub mod qobject {
         #[qinvokable]
         fn pause(self: Pin<&mut KaiwaApp>, days: i32);
 
+        /// Ends the pause that runs today (T-08).
+        #[qinvokable]
+        #[cxx_name = "stopPause"]
+        fn stop_pause(self: Pin<&mut KaiwaApp>);
+
+        /// Reads an export (JSON) into this profile, which must be empty (/LF710/, T-08).
+        #[qinvokable]
+        #[cxx_name = "importProfile"]
+        fn import_profile(self: Pin<&mut KaiwaApp>, file: &QString);
+
         /// Skips a unit after the offer (/LF215/).
         #[qinvokable]
         #[cxx_name = "skipUnit"]
@@ -536,6 +546,51 @@ impl qobject::KaiwaApp {
         self.as_mut().refresh();
     }
 
+    fn stop_pause(mut self: Pin<&mut Self>) {
+        let result = state().store.end_pause(now().day());
+        let de = self.lang().to_string() == "de";
+        self.as_mut().set_notice(QString::from(&match (result, de) {
+            (Ok(()), true) => "Die Pause ist beendet: Heute zählt wieder.".to_string(),
+            (Ok(()), false) => "The pause is over: today counts again.".to_string(),
+            (Err(e), true) => format!("Die Pause ließ sich nicht beenden: {e}"),
+            (Err(e), false) => format!("The pause could not be ended: {e}"),
+        }));
+        self.as_mut().refresh();
+    }
+
+    fn import_profile(mut self: Pin<&mut Self>, file: &QString) {
+        let file = file.to_string();
+        let file = file.strip_prefix("file://").unwrap_or(&file).to_string();
+        let result = std::fs::read_to_string(&file)
+            .map_err(|e| ImportError::Unreadable(e.to_string()))
+            .and_then(|text| {
+                serde_json::from_str::<serde_json::Value>(&text)
+                    .map_err(|_| ImportError::NotAnExport)
+            })
+            .and_then(|v| {
+                state().store.import(&v).map_err(|e| match e {
+                    kaiwa_store::StoreError::NotEmpty => ImportError::NotEmpty,
+                    kaiwa_store::StoreError::WrongFormat(_) => ImportError::NotAnExport,
+                    e => ImportError::Broken(e.to_string()),
+                })
+            });
+        // The import brings its own UI language: say it in the one the profile has now.
+        self.as_mut().refresh();
+        let de = self.lang().to_string() == "de";
+        self.as_mut().set_notice(QString::from(&match (result, de) {
+            (Ok(()), true) => format!("Importiert aus {file}."),
+            (Ok(()), false) => format!("Imported from {file}."),
+            (Err(ImportError::NotEmpty), true) => "Der Import geht nur in ein leeres Profil. Lege oben ein neues Profil an und importiere dort.".to_string(),
+            (Err(ImportError::NotEmpty), false) => "An import needs an empty profile. Add a new profile above and import there.".to_string(),
+            (Err(ImportError::NotAnExport), true) => format!("{file} ist kein Export von Kaiwa."),
+            (Err(ImportError::NotAnExport), false) => format!("{file} is not an export of Kaiwa."),
+            (Err(ImportError::Unreadable(e)), true) => format!("{file} ließ sich nicht lesen: {e}"),
+            (Err(ImportError::Unreadable(e)), false) => format!("{file} could not be read: {e}"),
+            (Err(ImportError::Broken(e)), true) => format!("Der Import ist fehlgeschlagen, das Profil ist unverändert: {e}"),
+            (Err(ImportError::Broken(e)), false) => format!("The import failed, the profile is unchanged: {e}"),
+        }));
+    }
+
     fn skip_unit(mut self: Pin<&mut Self>, unit: &QString) {
         {
             let st = state();
@@ -615,4 +670,12 @@ impl qobject::KaiwaApp {
         }
         self.as_mut().refresh();
     }
+}
+
+/// Why an import did not happen, for the words the page says.
+enum ImportError {
+    Unreadable(String),
+    NotAnExport,
+    NotEmpty,
+    Broken(String),
 }

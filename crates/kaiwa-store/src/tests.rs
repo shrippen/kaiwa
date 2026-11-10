@@ -567,3 +567,45 @@ fn a_break_is_spread_once_also_when_nothing_is_practised_on_the_day_back() {
     assert!(again.refresher);
     assert_eq!(again.due, 10);
 }
+
+#[test]
+fn a_running_pause_can_be_ended() {
+    let store = Store::in_memory().unwrap();
+    let today = at(10, 9).day();
+    assert_eq!(store.paused_until(today).unwrap(), None);
+    // One that began three days ago and one set today on top of it; one long over.
+    for (from, to) in [(-3, 3), (0, 6), (-20, -15)] {
+        store
+            .add_pause(Pause {
+                from: today.plus(from),
+                to: today.plus(to),
+            })
+            .unwrap();
+    }
+    assert_eq!(store.paused_until(today).unwrap(), Some(today.plus(6)));
+    store.end_pause(today).unwrap();
+    assert_eq!(store.paused_until(today).unwrap(), None);
+    // The days that were paused stay paused; today counts again.
+    let mut left = store.pauses().unwrap();
+    left.sort_by_key(|p| p.from);
+    assert_eq!(
+        left,
+        vec![
+            Pause {
+                from: today.plus(-20),
+                to: today.plus(-15)
+            },
+            Pause {
+                from: today.plus(-3),
+                to: today.plus(-1)
+            },
+        ]
+    );
+    assert_eq!(
+        store.paused_until(today.plus(-2)).unwrap(),
+        Some(today.plus(-1))
+    );
+    // Nothing running: ending changes nothing.
+    store.end_pause(today).unwrap();
+    assert_eq!(store.pauses().unwrap().len(), 2);
+}

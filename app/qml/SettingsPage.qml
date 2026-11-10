@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import QtQuick.Controls as QQC2
 import Kante
 import org.shrippen.kaiwa
@@ -279,11 +280,20 @@ QQC2.ScrollView {
         }
         Row {
             title: page.t("Pause", "Pause")
-            hint: page.t("Urlaub oder krank: die Serie wartet", "Holiday or ill: the streak waits")
+            // A running pause shows here with its last day and can be ended (T-08).
+            hint: page.p.pausedUntil
+                ? page.t("Pause bis einschließlich " + page.p.pausedUntil.day + "." + page.p.pausedUntil.month + ".",
+                         "Paused up to and including " + page.p.pausedUntil.iso)
+                : page.t("Urlaub oder krank: die Serie wartet", "Holiday or ill: the streak waits")
             RowLayout {
                 spacing: KanteStyle.unit(8)
                 KanteButton { text: page.t("3 Tage", "3 days"); onClicked: page.kaiwa.pause(3) }
                 KanteButton { text: page.t("7 Tage", "7 days"); onClicked: page.kaiwa.pause(7) }
+                KanteButton {
+                    visible: !!page.p.pausedUntil
+                    text: page.t("Pause beenden", "End the pause")
+                    onClicked: page.kaiwa.stopPause()
+                }
             }
         }
         // Reminders come with the plasmoid (M4, before 1.0), which runs all day.
@@ -595,6 +605,11 @@ QQC2.ScrollView {
                 text: page.t("Alles exportieren (JSON)", "Export everything (JSON)")
                 onClicked: page.kaiwa.exportProfile(page.exportPath())
             }
+            // Into an empty profile only (T-08); the app says so when this one has data.
+            KanteButton {
+                text: page.t("Export importieren …", "Import an export …")
+                onClicked: importDialog.open()
+            }
             KanteButton {
                 text: page.t("Profil löschen …", "Delete profile …")
                 emphasis: KanteButton.Emphasis.Destructive
@@ -632,6 +647,16 @@ QQC2.ScrollView {
         var stamp = now.getFullYear() + two(now.getMonth() + 1) + two(now.getDate())
             + "-" + two(now.getHours()) + two(now.getMinutes()) + two(now.getSeconds())
         return dir + "kaiwa-export-" + (profile.length > 0 ? profile + "-" : "") + stamp + ".json"
+    }
+
+    // The system's file dialog: choosing a file is the platform's, not a Kante element.
+    FileDialog {
+        id: importDialog
+        title: page.t("Export von Kaiwa wählen", "Choose an export of Kaiwa")
+        nameFilters: [page.t("Kaiwa-Export (*.json)", "Kaiwa export (*.json)")]
+        fileMode: FileDialog.OpenFile
+        // A local path, not a URL: names with spaces or umlauts come percent-encoded.
+        onAccepted: page.kaiwa.importProfile(decodeURIComponent(selectedFile.toString().replace(/^file:\/\//, "")))
     }
 
     KanteDialog {

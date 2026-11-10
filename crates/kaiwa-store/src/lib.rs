@@ -960,6 +960,32 @@ impl Store {
         Ok(v)
     }
 
+    /// Until when a pause runs on `today`: the latest end of the pauses that hold it.
+    pub fn paused_until(&self, today: Day) -> Result<Option<Day>> {
+        Ok(self
+            .pauses()?
+            .iter()
+            .filter(|p| p.from <= today && today <= p.to)
+            .map(|p| p.to)
+            .max())
+    }
+
+    /// Ends the pauses running on `today` (T-08): they held up to yesterday, today counts
+    /// again; one that began today is gone. Pauses that are over stay as they were.
+    pub fn end_pause(&self, today: Day) -> Result<()> {
+        self.batch(|st| {
+            st.db.execute(
+                "DELETE FROM pauses WHERE from_day = ?1 AND to_day >= ?1",
+                params![today.0],
+            )?;
+            st.db.execute(
+                "UPDATE pauses SET to_day = ?1 - 1 WHERE from_day < ?1 AND to_day >= ?1",
+                params![today.0],
+            )?;
+            Ok(())
+        })
+    }
+
     /// Pause mode (holiday, illness): the streak neither counts nor breaks (/LF602/).
     pub fn add_pause(&self, p: Pause) -> Result<()> {
         self.db.execute(

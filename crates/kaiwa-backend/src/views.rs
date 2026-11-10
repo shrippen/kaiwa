@@ -256,6 +256,13 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
         "knobs": knobs,
         "speed": d.speed(),
         "offerSkip": l.regulator.offer_skip(),
+        // The unit the offer is about (T-08): the one the learner is in now.
+        "skipUnit": st
+            .curriculum
+            .path(&l.course, lang)
+            .into_iter()
+            .find(|u| u.state == NodeState::Current)
+            .map(|u| json!({ "id": u.id, "title": u.title })),
     }))
 }
 
@@ -509,6 +516,11 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "moraHints": p.mora_hints,
         "unloadAfter": p.unload_after_min,
         "handsFree": p.hands_free,
+        // A pause that runs today, with the day it ends on (T-08).
+        "pausedUntil": st.store.paused_until(crate::now().day())?.map(|d| {
+            let (_, month, day) = d.ymd();
+            json!({ "day": day, "month": month, "iso": d.iso() })
+        }),
         "textScale": p.text_scale,
         "microphone": p.microphone,
         "cost": st.cost_view(crate::now())?,
@@ -790,6 +802,36 @@ mod tests {
                 .to_string()
                 .contains(&second.scenarios[0])
         );
+    }
+
+    #[test]
+    fn the_skip_offer_names_the_unit_and_the_settings_a_running_pause() {
+        let b = crate::TempBackend::new("promises", false).unwrap();
+        let first = b.curriculum.units[0].clone();
+        let v = learner(&b).unwrap();
+        assert_eq!(v["skipUnit"]["id"], first.id.as_str());
+        assert_eq!(v["skipUnit"]["title"], first.title.get("de"));
+        // Skipped (what the button does): the offer is about the next unit.
+        let mut l = b.store.learning().unwrap();
+        l.course.skipped_units.insert(first.id.clone());
+        b.store.set_learning(&l).unwrap();
+        let v = learner(&b).unwrap();
+        assert_eq!(v["skipUnit"]["id"], b.curriculum.units[1].id.as_str());
+
+        assert!(profile(&b).unwrap()["pausedUntil"].is_null());
+        let today = crate::now().day();
+        b.store
+            .add_pause(kaiwa_core::progress::Pause {
+                from: today,
+                to: today.plus(2),
+            })
+            .unwrap();
+        assert_eq!(
+            profile(&b).unwrap()["pausedUntil"]["iso"],
+            today.plus(2).iso()
+        );
+        b.store.end_pause(today).unwrap();
+        assert!(profile(&b).unwrap()["pausedUntil"].is_null());
     }
 
     #[test]
