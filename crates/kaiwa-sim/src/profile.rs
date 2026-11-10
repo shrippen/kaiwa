@@ -100,6 +100,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
     let r = match id {
         "mara_resume" => resume(root),
         "lena_export" => export(root),
+        "lena_import" => import(root),
         "lena_delete" => delete(root),
         "lena_default_no_audio" => no_audio(root),
         "lena_stats_fast" => fast(root),
@@ -470,6 +471,26 @@ fn export(root: &Path) -> Result<Option<String>> {
         };
         if empty {
             return Ok(Some(format!("{part} is empty")));
+        }
+    }
+    Ok(None)
+}
+
+/// /LF710/, T-08: an export read into a new profile gives the same data back; a profile that
+/// has data takes no import.
+fn import(root: &Path) -> Result<Option<String>> {
+    let dir = temp_dir("import");
+    let store = three_sessions(root, &dir.join("lena.kaiwa"))?;
+    let json = store.export(at(3, 9 * 3600))?;
+    if store.import(&json).is_ok() {
+        return Ok(Some("a profile with data took an import".into()));
+    }
+    let new = Store::open(&dir.join("new.kaiwa"))?;
+    new.import(&json)?;
+    let back = new.export(at(3, 9 * 3600))?;
+    for part in ["profile", "learning", "sessions", "items", "days"] {
+        if back[part] != json[part] {
+            return Ok(Some(format!("{part} differs after the import")));
         }
     }
     Ok(None)

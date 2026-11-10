@@ -59,6 +59,14 @@ QQC2.ScrollView {
             title: page.t("Das fällt dir leicht", "This comes easy to you")
             text: page.t("Die letzten drei Gespräche liefen fast fehlerfrei. Du kannst die aktuelle Einheit überspringen.",
                          "Your last three talks went almost without a slip. You can skip the current unit.")
+            // The offer can be taken (T-08): the unit counts as done, the path goes on.
+            KanteButton {
+                visible: !!page.learner.skipUnit
+                text: page.learner.skipUnit
+                    ? page.t("„" + page.learner.skipUnit.title + "“ überspringen", "Skip “" + page.learner.skipUnit.title + "”")
+                    : ""
+                onClicked: page.kaiwa.skipUnit(page.learner.skipUnit.id)
+            }
         }
 
         Repeater {
