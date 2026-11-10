@@ -102,10 +102,10 @@ pub struct DaysRun {
 }
 
 /// SplitMix64: small, fixed, reproducible (/LL603/).
-struct Rng(u64);
+pub(crate) struct Rng(pub(crate) u64);
 
 impl Rng {
-    fn next(&mut self) -> f64 {
+    pub(crate) fn next(&mut self) -> f64 {
         self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
         let mut z = self.0;
         z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
@@ -113,10 +113,10 @@ impl Rng {
         z ^= z >> 31;
         (z >> 11) as f64 / (1u64 << 53) as f64
     }
-    fn chance(&mut self, p: f64) -> bool {
+    pub(crate) fn chance(&mut self, p: f64) -> bool {
         self.next() < p
     }
-    fn between(&mut self, a: f64, b: f64) -> f64 {
+    pub(crate) fn between(&mut self, a: f64, b: f64) -> f64 {
         a + (b - a) * self.next()
     }
 }
