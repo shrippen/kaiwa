@@ -99,3 +99,102 @@ pub struct Analysis {
     #[serde(default)]
     pub reading: String,
 }
+
+impl Analysis {
+    /// Reads an analysis from the model's text. What stands around the JSON object goes: a
+    /// code fence, a `<think>` block, a sentence before or after it (small local models and
+    /// servers that do not enforce the schema write those). The object itself must fit the
+    /// schema; an answer that does not is discarded, not repaired (ADR-004).
+    pub fn from_text(text: &str) -> Result<Self, crate::AiError> {
+        let format = |why: String| crate::AiError::Format(format!("{why}: {text}"));
+        // Without what the model thought aloud: it may quote braces ({漢字|かな}).
+        let mut rest = text;
+        let mut body = String::new();
+        while let Some(a) = rest.find("<think>") {
+            let Some(b) = rest[a..].find("</think>") else {
+                // A block that never closes: thinking cut off, and a draft in it is no
+                // analysis. Behind a brace the word stands in the JSON (an explanation).
+                if !body.contains('{') && !rest[..a].contains('{') {
+                    rest = &rest[..a];
+                }
+                break;
+            };
+            body.push_str(&rest[..a]);
+            rest = &rest[a + b + "</think>".len()..];
+        }
+        body.push_str(rest);
+        // The first whole JSON object that says `understood` is the analysis, fitting or not;
+        // a sentence before it may hold braces or an object of its own ("The format is {} as
+        // asked.").
+        let mut why = None;
+        let mut from = 0;
+        while let Some(at) = body[from..].find('{').map(|i| from + i) {
+            let mut values =
+                serde_json::Deserializer::from_str(&body[at..]).into_iter::<serde_json::Value>();
+            from = at + 1;
+            if let Some(Ok(v)) = values.next()
+                && v.is_object()
+            {
+                let meant = v.get("understood").is_some();
+                match serde_json::from_value(v) {
+                    Ok(a) => return Ok(a),
+                    Err(e) if meant => return Err(format(e.to_string())),
+                    Err(e) => why = why.or(Some(e.to_string())),
+                }
+                // What stands inside an object that is no analysis is not one either.
+                from = at + values.byte_offset();
+            }
+        }
+        Err(format(
+            why.unwrap_or_else(|| "no complete JSON object".into()),
+        ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const PLAIN: &str =
+        r#"{"understood":true,"goals_met":["name"],"corrections":[],"new_words":[],"reading":""}"#;
+
+    #[test]
+    fn an_analysis_reads_through_what_models_put_around_it() {
+        let a = Analysis::from_text(PLAIN).unwrap();
+        assert!(a.understood && a.goals_met == ["name"]);
+        for wrapped in [
+            format!("```json\n{PLAIN}\n```"),
+            format!("<think>The learner said their name.</think>\n{PLAIN}"),
+            format!("<think>The reading is written as {{漢字|かな}}.</think>\n{PLAIN}"),
+            format!("Here is the analysis:\n```\n{PLAIN}\n```\nLet me know if you need more."),
+            format!("The format is {{}} as asked.\n{PLAIN}"),
+            format!("Example: {{\"a\":1}}\n{PLAIN}"),
+        ] {
+            assert_eq!(Analysis::from_text(&wrapped).unwrap(), a, "{wrapped}");
+        }
+    }
+
+    #[test]
+    fn an_analysis_that_does_not_fit_the_schema_is_discarded() {
+        // ADR-004: discarded, not repaired. A correction of an unknown kind is not dropped
+        // quietly (the turn would read as flawless); the whole answer is an error.
+        // The word <think> in an explanation is no block.
+        let explained = r#"{"understood":true,"corrections":[{"severity":"wrong","kind":"particle","original":"a","better":"b","explanation":"Schreibe <think> nie"}]}"#;
+        assert_eq!(Analysis::from_text(explained).unwrap().corrections.len(), 1);
+        for bad in [
+            r#"{"understood":true,"corrections":[{"severity":"wrong","kind":"grammar","original":"a","better":"b","explanation":"c"}]}"#,
+            r#"{"understood":true,"corrections":{"severity":"wrong"}}"#,
+            r#"{"understood":"ja"}"#,
+            r#"{"understood":true,"goals_met":"name"}"#,
+            "{}",
+            "I cannot analyse this.",
+            // The answer does not fit; a second object behind it does not stand in for it.
+            r#"{"understood":true,"corrections":[{"severity":"wrong","kind":"grammar","original":"a","better":"b","explanation":"c"}]} Note {"understood":true}"#,
+            // A draft in thinking that was cut off.
+            r#"<think>Draft: {"understood":true,"corrections":[]} wait, there is a particle error, let me"#,
+            r#"{"understood":true,"corrections":["#,
+        ] {
+            assert!(Analysis::from_text(bad).is_err(), "{bad}");
+        }
+    }
+}

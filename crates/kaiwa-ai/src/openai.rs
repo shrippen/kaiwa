@@ -8,6 +8,10 @@ use serde_json::{Value, json};
 use crate::transport::{Transport, UreqTransport};
 use crate::{AiError, Analysis, ChatProvider, TurnRequest, analysis_schema};
 
+/// Models that reason before they answer (qwen3, Gemini) do it inside `max_tokens`: a limit
+/// sized for the visible answer alone cuts the answer off. Only generated tokens cost.
+const MAX_TOKENS: u32 = 4_096;
+
 pub struct OpenAiCompatible<T: Transport = UreqTransport> {
     /// e.g. `http://localhost:11434/v1` (Ollama) or `http://localhost:8080/v1` (llama.cpp).
     pub base_url: String,
@@ -55,13 +59,13 @@ impl<T: Transport> OpenAiCompatible<T> {
     }
 
     pub fn reply_body(&self, r: &TurnRequest) -> Value {
-        json!({ "model": self.reply_model, "max_tokens": r.max_tokens, "messages": Self::messages(r) })
+        json!({ "model": self.reply_model, "max_tokens": r.max_tokens.max(MAX_TOKENS), "messages": Self::messages(r) })
     }
 
     pub fn analysis_body(&self, r: &TurnRequest) -> Value {
         json!({
             "model": self.analysis_model,
-            "max_tokens": r.max_tokens,
+            "max_tokens": r.max_tokens.max(MAX_TOKENS),
             "messages": Self::messages(r),
             "response_format": {
                 "type": "json_schema",
@@ -72,6 +76,12 @@ impl<T: Transport> OpenAiCompatible<T> {
 }
 
 fn content(answer: &Value) -> Result<&str, AiError> {
+    // Cut off at the token limit: half a line, or half a JSON, is no answer.
+    if answer["choices"][0]["finish_reason"] == "length" {
+        return Err(AiError::Format(
+            "the answer was cut off at the token limit".into(),
+        ));
+    }
     answer["choices"][0]["message"]["content"]
         .as_str()
         .ok_or_else(|| AiError::Format("no choices[0].message.content".into()))
@@ -85,15 +95,11 @@ pub fn parse_reply(answer: &Value) -> Result<String, AiError> {
     Ok(text.to_string())
 }
 
-/// The JSON in the message content; a ```json fence around it is tolerated (small local models).
+/// The JSON in the message content (`Analysis::from_text`): servers that ignore
+/// `response_format` and small local models wrap it in a code fence, their thinking or a
+/// sentence. An object that strays from the schema is an error (ADR-004).
 pub fn parse_analysis(answer: &Value) -> Result<Analysis, AiError> {
-    let raw = content(answer)?.trim();
-    let raw = raw
-        .strip_prefix("```json")
-        .or_else(|| raw.strip_prefix("```"))
-        .unwrap_or(raw);
-    let raw = raw.strip_suffix("```").unwrap_or(raw).trim();
-    serde_json::from_str(raw).map_err(|e| AiError::Format(format!("{e}: {raw}")))
+    Analysis::from_text(content(answer)?)
 }
 
 impl<T: Transport> ChatProvider for OpenAiCompatible<T> {

@@ -142,7 +142,15 @@ impl Placement {
         m.set(Skill::Listening, self.level_of(|r| r.listening));
         m.set(Skill::Speaking, self.level_of(|r| r.speaking));
         m.set(Skill::Fluency, self.level_of(|r| r.fluency));
-        let polite: Vec<&StageResult> = self.results.iter().filter(|r| r.turns > 0).collect();
+        // Register shows only where the learner understood something: a stage in which
+        // nothing was understood has nothing to correct, which is no sign of a sure register.
+        // (Not "kept up": a register slip makes its turn unclean, so the stages with the most
+        // slips would be the ones left out.)
+        let polite: Vec<&StageResult> = self
+            .results
+            .iter()
+            .filter(|r| r.turns > 0 && r.listening > 0.0)
+            .collect();
         let slips: u32 = polite.iter().map(|r| r.register_mistakes).sum();
         let turns: u32 = polite.iter().map(|r| r.turns).sum();
         let register = match (turns, f64::from(slips) / f64::from(turns.max(1))) {
@@ -176,6 +184,30 @@ mod tests {
             fluency: speaking,
             register_mistakes: 0,
         }
+    }
+
+    #[test]
+    fn nothing_understood_is_no_sure_register() {
+        // The first stage failed: no slips, because there was nothing to correct.
+        let mut p = Placement::default();
+        p.results.push(stage(1.5, 0.0, 0.0));
+        assert_eq!(p.result().level(Skill::Register), 0.0);
+        // A stage passed without slips shows the polite form.
+        let mut p = Placement::default();
+        p.results.push(stage(1.5, 1.0, 1.0));
+        assert_eq!(p.result().level(Skill::Register), 3.0);
+        // Everything understood, every turn in the plain form: the slips make the turns
+        // unclean (speaking 0), and they are what shows the register.
+        let mut p = Placement::default();
+        p.results.push(StageResult {
+            register_mistakes: 4,
+            ..stage(1.5, 1.0, 0.0)
+        });
+        assert_eq!(p.result().level(Skill::Register), 1.0);
+        // Polite throughout with a particle mistake in every turn: still polite.
+        let mut p = Placement::default();
+        p.results.push(stage(1.5, 1.0, 0.0));
+        assert_eq!(p.result().level(Skill::Register), 3.0);
     }
 
     #[test]

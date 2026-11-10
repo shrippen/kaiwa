@@ -113,7 +113,7 @@ pub fn analysis_system(s: &Scenario, lang: &str, grammar: &[String]) -> String {
         "You analyse the learner's last turn in a Japanese speaking exercise. The scene: {character} \
          The expected register is {register}.\n\
          {grammar}\
-         Report:\n\
+         Report one JSON object with exactly these fields:\n\
          - understood: whether the character could understand what the learner meant;\n\
          - goals_met: ids of the goals the turn reached, from this list:\n{goals}\n\
          - corrections: only real mistakes. A sentence that is correct for the scene gets no correction. \
@@ -121,7 +121,11 @@ pub fn analysis_system(s: &Scenario, lang: &str, grammar: &[String]) -> String {
            Severity: blocks_understanding (the meaning is lost), wrong (a grammar or word mistake), \
            unnatural (correct but odd or the wrong register), style (a nuance). \
            Ignore fillers like えーと and あの. \
-           The explanation is one or two short sentences in {lang_name}, with the Japanese example;\n\
+           The explanation is one or two short sentences in {lang_name}, with the Japanese example. \
+           Each correction is an object with severity, kind (particle, conjugation, word_choice, \
+           register, word_order, counter, omission, loanword, tense or pronunciation), original \
+           (the learner's words), better (the better form), explanation and also_possible \
+           (true or false);\n\
          - new_words: words the learner used or met for the first time, dictionary form;\n\
          - reading: the learner's last turn exactly as given, every character kept (mistakes too), \
            each kanji word followed by its reading in this sentence as {{漢字|かな}} in hiragana \
@@ -168,6 +172,16 @@ mod tests {
         assert!(!reply_system(&s, "de", &Difficulty::default(), &[], None).contains("practises"));
         let a = analysis_system(&s, "de", &["〜てしまいました".into()]);
         assert!(a.contains("The unit practises: 〜てしまいました"));
+        // A server without schema support learns the fields and the kinds from the prompt.
+        for field in [
+            "original",
+            "better",
+            "word_choice",
+            "also_possible",
+            "JSON object",
+        ] {
+            assert!(a.contains(field), "{field}");
+        }
         assert!(p.contains("JLPT N4"), "{p}");
         assert!(p.contains("without any regional dialect"));
         assert!(p.contains("casual Japanese"));

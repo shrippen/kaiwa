@@ -296,6 +296,35 @@ fn a_goal_changed_during_the_day_is_the_days_goal() {
         store.day(at(0, 9).day()).unwrap().goal,
         Some(DailyGoal::Minutes(10))
     );
+    // Also when a talk begun before midnight ends after it and the goal was changed in
+    // between: the talk counts for the day it began, the goal for today.
+    goal(10);
+    talk(2, 11);
+    let mut p = store.profile().unwrap();
+    p.daily_goal = DailyGoal::Minutes(30);
+    store.set_profile(&p).unwrap();
+    store
+        .set_day_goal(at(3, 0).day(), DailyGoal::Minutes(30))
+        .unwrap();
+    let late = Session::new(scenario(), provider(), Amount::Little, "de");
+    let id = store.begin_session(&late.snapshot(), at(2, 23)).unwrap();
+    let end = at(3, 0).plus_secs(180);
+    store
+        .record_on(id, &late, at(2, 23), end, at(2, 23).day(), Some(&c))
+        .unwrap();
+    assert_eq!(
+        store.day(at(2, 23).day()).unwrap().goal,
+        Some(DailyGoal::Minutes(10)),
+        "the day it began keeps its goal"
+    );
+    // After a flight west the day begun lies ahead of "today": it takes the new goal too.
+    store
+        .set_day_goal(at(0, 9).day(), DailyGoal::Minutes(7))
+        .unwrap();
+    assert_eq!(
+        store.day(at(1, 9).day()).unwrap().goal,
+        Some(DailyGoal::Minutes(7))
+    );
 }
 
 #[test]

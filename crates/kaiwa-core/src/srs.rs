@@ -139,7 +139,16 @@ impl Item {
             .as_deref()
             .map(crate::norm)
             .filter(|o| !o.is_empty() && *o != text);
-        said.contains(&text) && !mistake.is_some_and(|o| rest.contains(&o))
+        // The old words again. Where they contain the better form (駅にに for 駅に), taking
+        // the better form out would hide them: look in the whole answer.
+        let repeated = mistake.is_some_and(|o| {
+            if o.contains(&text) {
+                said.contains(&o)
+            } else {
+                rest.contains(&o)
+            }
+        });
+        said.contains(&text) && !repeated
     }
 
     /// Probability of recall now (1.0 for an item never reviewed but just met).
@@ -438,6 +447,10 @@ mod tests {
         // The better form contains the old words: only what is left over counts.
         let j = talk("が好きです", "好きです");
         assert!(j.answered("コーヒーが好きです。"));
+        // The old words contain the better form: said again, they are still the mistake.
+        let k = talk("駅に", "駅にに");
+        assert!(!k.answered("駅ににいます。"));
+        assert!(k.answered("駅にいます。"));
     }
 
     #[test]
