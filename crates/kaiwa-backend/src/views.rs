@@ -786,9 +786,7 @@ mod tests {
     #[test]
     fn the_week_names_the_progress_per_skill() {
         use kaiwa_core::learner::{LearnerModel, Skill};
-        let dir = std::env::temp_dir().join(format!("kaiwa-week-skills-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let b = Backend::open_at(dir.join("t.kaiwa"), false).unwrap();
+        let b = crate::TempBackend::new("week-skills", false).unwrap();
         let now = crate::now();
         // No talk this week: nothing to compare with.
         assert_eq!(week(&b, now).unwrap()["skills"], json!([]));
@@ -881,6 +879,49 @@ mod tests {
         assert_eq!(trend("Partikeln", &once, true), "Partikeln: bisher 1×");
         once[0].1 = 2;
         assert!(trend("Partikeln", &once, true).contains("seltener"));
+    }
+
+    #[test]
+    fn misrecognised_turns_do_not_thin_out_the_trend() {
+        // Four talks of four valid turns with 2, 1, 2, 1 particle mistakes; the third has
+        // twelve more turns, all marked as misrecognised (review #68). Per valid turn the
+        // later half is as the earlier: 3 of 8 each.
+        let b = crate::TempBackend::new("trend-misrecognised", false).unwrap();
+        let scenario = b.scenarios.get("n5-02-jikoshoukai").cloned().unwrap();
+        let now = crate::now();
+        for (n, (mistakes, misrecognised)) in [(2, 0), (1, 0), (2, 12), (1, 0)].iter().enumerate() {
+            let (provider, _) = b.provider(&scenario.id);
+            let mut s = kaiwa_core::Session::new(
+                scenario.clone(),
+                provider,
+                kaiwa_core::Amount::Little,
+                "de",
+            );
+            for turn in 0..4 + misrecognised {
+                let line = if turn < *mistakes {
+                    "コーヒーを好きです。"
+                } else {
+                    "マラです。よろしくおねがいします。"
+                };
+                s.turn(line, kaiwa_core::Input::Spoken).unwrap();
+                if turn >= 4 {
+                    assert!(s.mark_misrecognized(turn));
+                }
+            }
+            let started = now.plus_secs((n as i64 - 4) * 86_400);
+            b.store
+                .put_finished_session(&s.snapshot(), started, started.plus_secs(300), 0.8)
+                .unwrap();
+        }
+        let v = stats(&b, now).unwrap();
+        let particle = v["mistakes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|x| x["kind"] == "particle")
+            .expect("particles")
+            .clone();
+        assert_eq!(particle["text"], "Partikeln: etwa gleich oft", "{particle}");
     }
 
     #[test]
