@@ -380,6 +380,9 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                     xp += XP_REVIEW;
                 }
                 let rec = records.entry(at.day()).or_default();
+                if rec.levels_at_start.is_empty() {
+                    rec.levels_at_start = levels_of(&learner);
+                }
                 rec.reviews_done += reviews + extra;
                 rec.xp += xp;
                 last_practice = Some(at.plus_secs((minutes * 60.0) as i64));
@@ -486,6 +489,7 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                     (con, f64::from(st.goals_unaided) / f64::from(st.goals_met)),
                 );
             }
+            let levels_before = levels_of(&learner);
             learner.update(&ev);
             let change = regulator.after_session(success, &learner);
 
@@ -497,6 +501,9 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
 
             let spoken_share = 1.0 - f64::from(typed) / f64::from(turns);
             let rec = records.entry(at.day()).or_default();
+            if rec.levels_at_start.is_empty() {
+                rec.levels_at_start = levels_before;
+            }
             rec.speaking_secs += (minutes * 60.0 * spoken_share).round() as u32;
             rec.typed_turns += typed;
             rec.reviews_done += reviews;
@@ -550,6 +557,14 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
         last_day,
         texts,
     })
+}
+
+/// The model's level per skill, as a day record keeps it (/LF604/).
+fn levels_of(m: &LearnerModel) -> BTreeMap<Skill, f64> {
+    kaiwa_core::learner::SKILLS
+        .iter()
+        .map(|s| (*s, m.level(*s)))
+        .collect()
 }
 
 /// The rate of a planted error after its corrections: halves with every `fades_after` of them.
@@ -880,6 +895,9 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
     for i in &run.items {
         b.store.put_item(i)?;
     }
+    let mut learning = b.store.learning()?;
+    learning.model = run.learner.clone();
+    b.store.set_learning(&learning)?;
     let provider: std::sync::Arc<dyn kaiwa_ai::ChatProvider> =
         std::sync::Arc::new(kaiwa_ai::mock::MockProvider::default());
     for s in &run.sessions {
@@ -960,6 +978,34 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
     ] {
         if week[field].as_u64() != Some(want) {
             found.push(format!("week {field}: {} instead of {want}", week[field]));
+        }
+    }
+    // Progress per skill: every skill named, each as it moved since the week's first talk.
+    let skills = week["skills"].as_array().cloned().unwrap_or_default();
+    match span(today.plus(-6)).find(|(_, r)| !r.levels_at_start.is_empty()) {
+        None if skills.is_empty() => {}
+        None => found.push("progress per skill without a talk this week".into()),
+        Some((_, start)) => {
+            for s in kaiwa_core::learner::SKILLS {
+                let id = serde_json::to_value(s)?;
+                let Some(shown) = skills.iter().find(|v| v["skill"] == id) else {
+                    found.push(format!("week: no progress for {s:?}"));
+                    continue;
+                };
+                let moved = run.learner.level(s) - start.levels_at_start[&s];
+                let want = match moved {
+                    d if d >= 0.1 => "up",
+                    d if d <= -0.1 => "down",
+                    _ => "same",
+                };
+                let text = shown["text"].as_str().unwrap_or_default();
+                if shown["change"] != want {
+                    found.push(format!("week: {s:?} moved {moved:+.2}, shown as {text}"));
+                }
+                if !progress::blameless(text) || !text.starts_with(s.word("de")) {
+                    found.push(format!("week: {s:?} reads: {text}"));
+                }
+            }
         }
     }
     match week["unaided"].as_u64() {

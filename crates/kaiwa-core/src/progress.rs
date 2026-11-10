@@ -15,6 +15,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::clock::Day;
+use crate::learner::Skill;
 use crate::session::Input;
 
 /// The daily goal (/LF601/), chosen by the learner. Default: five minutes of speaking.
@@ -40,6 +41,11 @@ pub struct DayRecord {
     pub scenarios_done: u32,
     pub reviews_done: u32,
     pub xp: u32,
+    /// The learner model's level per skill before the day's first talk: where the week
+    /// started from, for the progress per skill in the weekly review (/LF604/). Empty on days
+    /// without a talk and on days from before this was kept.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub levels_at_start: BTreeMap<Skill, f64>,
 }
 
 impl DayRecord {

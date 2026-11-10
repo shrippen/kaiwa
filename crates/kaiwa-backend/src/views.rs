@@ -357,8 +357,22 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     }))
 }
 
+/// A skill moved over the week when its level changed by at least this much (a tenth of the
+/// step between two levels); less is the model settling.
+const SKILL_MOVED: f64 = 0.1;
+
+/// "up", "down" or "same": a skill's level now against where the week started.
+fn skill_change(from: f64, now: f64) -> &'static str {
+    match now - from {
+        d if d >= SKILL_MOVED => "up",
+        d if d <= -SKILL_MOVED => "down",
+        _ => "same",
+    }
+}
+
 /// The weekly review (/LF604/): the last seven days against the seven before: speaking time,
-/// practice days, new words and phrases, and how many turns were understood without help.
+/// practice days, new words and phrases, how many turns were understood without help, and the
+/// progress per skill.
 pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let today = now.day();
     let this = today.plus(-6);
@@ -392,7 +406,40 @@ pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         }
     }
     let share = |(ok, all): (usize, usize)| (all > 0).then(|| (100 * ok / all) as u32);
+    // Progress per skill: the learner model now against where the week's first talk started.
+    let de = st.store.profile()?.ui_lang != "en";
+    let lang = if de { "de" } else { "en" };
+    let model = st.store.learning()?.model;
+    let skills: Vec<Value> = days
+        .range(this..=today)
+        .find(|(_, r)| !r.levels_at_start.is_empty())
+        .map(|(_, r)| {
+            SKILLS
+                .iter()
+                .filter_map(|s| {
+                    let from = *r.levels_at_start.get(s)?;
+                    let change = skill_change(from, model.level(*s));
+                    let name = s.word(lang);
+                    let text = match (change, de) {
+                        ("up", true) => format!("{name}: sicherer als vor einer Woche"),
+                        ("up", false) => format!("{name}: more secure than a week ago"),
+                        ("down", true) => format!("{name}: braucht wieder etwas Übung"),
+                        ("down", false) => format!("{name}: could do with some practice again"),
+                        (_, true) => format!("{name}: etwa wie vor einer Woche"),
+                        (_, false) => format!("{name}: about as a week ago"),
+                    };
+                    Some(json!({
+                        "skill": serde_json::to_value(s).unwrap_or_default(),
+                        "name": name,
+                        "change": change,
+                        "text": text,
+                    }))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
     Ok(json!({
+        "skills": skills,
         "minutes": secs / 60,
         "minutesBefore": secs_before / 60,
         "days": practised,
@@ -726,6 +773,59 @@ mod tests {
         if let Some(u) = w["unaided"].as_u64() {
             assert!(u <= 100);
         }
+    }
+
+    #[test]
+    fn the_week_names_the_progress_per_skill() {
+        use kaiwa_core::learner::{LearnerModel, Skill};
+        let dir = std::env::temp_dir().join(format!("kaiwa-week-skills-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let b = Backend::open_at(dir.join("t.kaiwa"), false).unwrap();
+        let now = crate::now();
+        // No talk this week: nothing to compare with.
+        assert_eq!(week(&b, now).unwrap()["skills"], json!([]));
+        let mut l = b.store.learning().unwrap();
+        l.model = LearnerModel::placed(&[(Skill::Listening, "n5"), (Skill::Speaking, "n5_low")]);
+        b.store.set_learning(&l).unwrap();
+        // The week's first talk, three days ago, started lower in listening, higher in
+        // speaking; a day before the week does not count.
+        let day = |ago: i64, listening: f64, speaking: f64| {
+            let mut levels_at_start: BTreeMap<Skill, f64> = kaiwa_core::learner::SKILLS
+                .iter()
+                .map(|s| (*s, l.model.level(*s)))
+                .collect();
+            levels_at_start.insert(Skill::Listening, listening);
+            levels_at_start.insert(Skill::Speaking, speaking);
+            let r = kaiwa_core::progress::DayRecord {
+                levels_at_start,
+                ..Default::default()
+            };
+            b.store.put_day(now.day().plus(-ago), &r).unwrap();
+        };
+        day(9, 0.0, 0.0);
+        day(3, 2.6, 2.3);
+        day(1, 2.9, 2.0);
+        let w = week(&b, now).unwrap();
+        let change = |skill: &str| {
+            w["skills"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|s| s["skill"] == skill)
+                .map(|s| {
+                    (
+                        s["change"].as_str().unwrap().to_string(),
+                        s["text"].to_string(),
+                    )
+                })
+                .unwrap()
+        };
+        assert_eq!(change("listening").0, "up");
+        assert!(change("listening").1.contains("Hören: sicherer"), "{w}");
+        assert_eq!(change("speaking").0, "down");
+        assert_eq!(change("fluency").0, "same");
+        assert_eq!(w["skills"].as_array().unwrap().len(), 7);
+        assert_eq!(skill_change(3.0, 3.09), "same");
     }
 
     #[test]

@@ -643,6 +643,11 @@ impl Store {
         let success = stats.success();
         let summary = s.summary();
         let mut l = self.learning()?;
+        // Where the day started from, for the week's progress per skill (/LF604/).
+        let levels_before: std::collections::BTreeMap<_, _> = kaiwa_core::learner::SKILLS
+            .iter()
+            .map(|k| (*k, l.model.level(*k)))
+            .collect();
         l.model.update(&s.evidence());
         let change = if stats.turns > 0 {
             l.regulator.after_session(success, &l.model)
@@ -698,6 +703,9 @@ impl Store {
         let xp = summary.xp.xp;
         let day = started.day();
         let mut rec = self.day(day)?;
+        if rec.levels_at_start.is_empty() {
+            rec.levels_at_start = levels_before;
+        }
         rec.speaking_secs += speaking;
         rec.typed_turns += stats.typed_turns;
         rec.xp += xp;
