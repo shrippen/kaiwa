@@ -802,6 +802,8 @@ impl Store {
         Ok(n > 0)
     }
 
+    /// When the learner last practised: the newest conversation or review answer (T-07:
+    /// reviewing counts as practice).
     pub fn last_practice(&self) -> Result<Option<Moment>> {
         let r: Option<(i64, i64)> = self
             .db
@@ -811,17 +813,60 @@ impl Store {
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .optional()?;
-        Ok(r.map(|(u, o)| moment(u, o)))
+        let talked = r.map(|(u, o)| moment(u, o));
+        // Kept by `review`, so the start page does not read every item for it (/LL020/).
+        let reviewed: Option<Moment> = self.state_value("reviewed")?;
+        Ok(talked.max(reviewed))
+    }
+
+    /// The day of the last re-entry after a break, if there was one.
+    fn reentered(&self) -> Result<Option<Day>> {
+        self.state_value("reentered")
+    }
+
+    /// The re-entry after a break of `srs::BREAK_DAYS` or more (/LF231/, T-07): ten items stay
+    /// due, the rest of what is due is spread over the next days, once per break. The day is
+    /// kept, so the refresher lasts the whole day whatever the learner opens first, and a
+    /// break in which nothing was practised is not spread again the day after. Opening the app
+    /// without practising does not use the break up: `srs::BREAK_DAYS` after that day it is a
+    /// re-entry again.
+    fn reenter(&self, now: Moment) -> Result<()> {
+        let last = self.last_practice()?;
+        if !srs::refresher(now, last) {
+            return Ok(());
+        }
+        // Practice since the last re-entry, or as long away again since it: a new break.
+        let again = match (self.reentered()?, last) {
+            (Some(day), Some(last)) => last.day() >= day || now.day().0 - day.0 >= srs::BREAK_DAYS,
+            _ => true,
+        };
+        if !again {
+            return Ok(());
+        }
+        let mut items = self.items()?;
+        let before: Vec<Day> = items.iter().map(|i| i.due).collect();
+        srs::spread_after_break(&mut items, now);
+        // One transaction: a long break moves thousands of items, and all or none.
+        let write = |st: &Store| -> Result<()> {
+            for (item, was) in items.iter().zip(&before) {
+                if item.due != *was {
+                    st.put_item(item)?;
+                }
+            }
+            st.set_state_value("reentered", &now.day())
+        };
+        if self.db.is_autocommit() {
+            self.batch(write)
+        } else {
+            write(self)
+        }
     }
 
     /// The items to review now (/LF230/, /LF231/).
     pub fn due(&self, now: Moment, limit: usize) -> Result<Vec<Item>> {
+        self.reenter(now)?;
         let items = self.items()?;
-        let last = self.last_practice()?;
-        Ok(srs::due(&items, now, last, limit)
-            .into_iter()
-            .cloned()
-            .collect())
+        Ok(srs::due(&items, now, limit).into_iter().cloned().collect())
     }
 
     /// The review item of `text`, if there is one.
@@ -842,6 +887,7 @@ impl Store {
         };
         item.review(grade, now);
         self.put_item(&item)?;
+        self.set_state_value("reviewed", &now)?;
         if let Some(unit) = &item.unit {
             let mut l = self.learning()?;
             l.course.reviewed(unit, grade != Grade::Again);
@@ -930,15 +976,16 @@ impl Store {
         let pauses = self.pauses()?;
         let day = now.day();
         let record = days.get(&day).cloned().unwrap_or_default();
+        self.reenter(now)?;
         let items = self.items()?;
-        let last = self.last_practice()?;
         Ok(Today {
             day,
             goal_fraction: record.fraction(profile.daily_goal),
             record,
             streak: streak(&days, profile.daily_goal, &pauses, day),
-            due: srs::due(&items, now, last, usize::MAX).len(),
-            refresher: srs::refresher(now, last),
+            due: srs::due(&items, now, usize::MAX).len(),
+            // The day of the re-entry is the refresher's, whatever was opened since.
+            refresher: self.reentered()? == Some(day),
             open_session: self.open_session()?,
         })
     }
