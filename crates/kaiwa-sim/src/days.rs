@@ -330,7 +330,11 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                     "de",
                 ));
             }
-            let due: Vec<String> = srs::due(&items, at, last_practice, limit)
+            if refresher {
+                // Ten are ten (T-07): the rest of what is due moves to the next days.
+                srs::spread_after_break(&mut items, at);
+            }
+            let due: Vec<String> = srs::due(&items, at, limit)
                 .iter()
                 .map(|i| i.text.clone())
                 .collect();

@@ -802,6 +802,8 @@ impl Store {
         Ok(n > 0)
     }
 
+    /// When the learner last practised: the newest conversation or review answer (T-07:
+    /// reviewing counts as practice).
     pub fn last_practice(&self) -> Result<Option<Moment>> {
         let r: Option<(i64, i64)> = self
             .db
@@ -811,17 +813,68 @@ impl Store {
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .optional()?;
-        Ok(r.map(|(u, o)| moment(u, o)))
+        let talked = r.map(|(u, o)| moment(u, o));
+        // Kept by `review`, so the start page does not read every item for it (/LL020/).
+        let reviewed: Option<Moment> =
+            self.get_json("SELECT value FROM settings WHERE key = ?1", "reviewed")?;
+        Ok(talked.max(reviewed))
+    }
+
+    fn set_setting<T: Serialize>(&self, key: &str, value: &T) -> Result<()> {
+        self.db.execute(
+            "INSERT INTO settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![key, serde_json::to_string(value)?],
+        )?;
+        Ok(())
+    }
+
+    /// The day of the last re-entry after a break, if there was one.
+    fn reentered(&self) -> Result<Option<Day>> {
+        self.get_json("SELECT value FROM settings WHERE key = ?1", "reentered")
+    }
+
+    /// The re-entry after a break of `srs::BREAK_DAYS` or more (/LF231/, T-07): ten items stay
+    /// due, the rest of what is due is spread over the next days, once per break. The day is
+    /// kept, so the refresher lasts the whole day whatever the learner opens first, and a
+    /// break in which nothing was practised is not spread again the day after.
+    fn reenter(&self, now: Moment) -> Result<()> {
+        let last = self.last_practice()?;
+        if !srs::refresher(now, last) {
+            return Ok(());
+        }
+        // Practice since the last re-entry: this is a new break.
+        let again = match (self.reentered()?, last) {
+            (Some(day), Some(last)) => last.day() >= day,
+            _ => true,
+        };
+        if !again {
+            return Ok(());
+        }
+        let mut items = self.items()?;
+        let before: Vec<Day> = items.iter().map(|i| i.due).collect();
+        srs::spread_after_break(&mut items, now);
+        // One transaction: a long break moves thousands of items, and all or none.
+        let write = |st: &Store| -> Result<()> {
+            for (item, was) in items.iter().zip(&before) {
+                if item.due != *was {
+                    st.put_item(item)?;
+                }
+            }
+            st.set_setting("reentered", &now.day())
+        };
+        if self.db.is_autocommit() {
+            self.batch(write)
+        } else {
+            write(self)
+        }
     }
 
     /// The items to review now (/LF230/, /LF231/).
     pub fn due(&self, now: Moment, limit: usize) -> Result<Vec<Item>> {
+        self.reenter(now)?;
         let items = self.items()?;
-        let last = self.last_practice()?;
-        Ok(srs::due(&items, now, last, limit)
-            .into_iter()
-            .cloned()
-            .collect())
+        Ok(srs::due(&items, now, limit).into_iter().cloned().collect())
     }
 
     /// The review item of `text`, if there is one.
@@ -842,6 +895,7 @@ impl Store {
         };
         item.review(grade, now);
         self.put_item(&item)?;
+        self.set_setting("reviewed", &now)?;
         if let Some(unit) = &item.unit {
             let mut l = self.learning()?;
             l.course.reviewed(unit, grade != Grade::Again);
@@ -930,15 +984,16 @@ impl Store {
         let pauses = self.pauses()?;
         let day = now.day();
         let record = days.get(&day).cloned().unwrap_or_default();
+        self.reenter(now)?;
         let items = self.items()?;
-        let last = self.last_practice()?;
         Ok(Today {
             day,
             goal_fraction: record.fraction(profile.daily_goal),
             record,
             streak: streak(&days, profile.daily_goal, &pauses, day),
-            due: srs::due(&items, now, last, usize::MAX).len(),
-            refresher: srs::refresher(now, last),
+            due: srs::due(&items, now, usize::MAX).len(),
+            // The day of the re-entry is the refresher's, whatever was opened since.
+            refresher: self.reentered()? == Some(day),
             open_session: self.open_session()?,
         })
     }

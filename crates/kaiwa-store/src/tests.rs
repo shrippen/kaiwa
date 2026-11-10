@@ -493,3 +493,63 @@ fn an_export_of_format_1_keeps_a_local_tutor_local() {
     old["schema"] = "kaiwa-export/0".into();
     assert!(Store::in_memory().unwrap().import(&old).is_err());
 }
+
+/// Thirty-four words met on day 0, the first answered on `last`.
+fn words_before_a_break(store: &Store, last: Moment) {
+    for n in 0..34 {
+        let item = Item::new(
+            format!("ことば{n}"),
+            srs::ItemKind::Word,
+            srs::Source::NewWord,
+            at(0, 9),
+        );
+        store.put_item(&item).unwrap();
+    }
+    store.review("ことば0", Grade::Again, last).unwrap();
+}
+
+#[test]
+fn after_a_break_ten_are_ten_and_the_rest_waits_for_the_next_days() {
+    let store = Store::in_memory().unwrap();
+    // Reviewing counts as practice (T-07): no conversation was ever held.
+    words_before_a_break(&store, at(2, 9));
+    assert_eq!(store.last_practice().unwrap(), Some(at(2, 9)));
+    assert!(!store.today(at(5, 9)).unwrap().refresher);
+    assert_eq!(store.today(at(5, 9)).unwrap().due, 34);
+
+    let back = at(20, 9);
+    let today = store.today(back).unwrap();
+    assert!(today.refresher);
+    assert_eq!(today.due, 10);
+    // Each answer takes one off; none moves up.
+    let first = store.due(back, 10).unwrap();
+    store.review(&first[0].text, Grade::Good, back).unwrap();
+    store.review(&first[1].text, Grade::Good, back).unwrap();
+    let today = store.today(back.plus_secs(3600)).unwrap();
+    assert_eq!(today.due, 8);
+    assert!(today.refresher, "the whole day of the re-entry");
+    // The next days bring ten each, not the pile.
+    let next = store.today(at(21, 9)).unwrap();
+    assert!(!next.refresher);
+    assert_eq!(next.due, 8 + 10);
+    assert_eq!(store.today(at(22, 9)).unwrap().due, 8 + 20);
+}
+
+#[test]
+fn a_break_is_spread_once_also_when_nothing_is_practised_on_the_day_back() {
+    let store = Store::in_memory().unwrap();
+    words_before_a_break(&store, at(2, 9));
+    assert_eq!(store.today(at(20, 9)).unwrap().due, 10);
+    // Nothing answered: the day after is no second re-entry, the ten and the next ten wait.
+    let next = store.today(at(21, 9)).unwrap();
+    assert!(!next.refresher);
+    assert_eq!(next.due, 20);
+    // Practice, then another break: spread again.
+    let first = store.due(at(21, 9), 1).unwrap();
+    store
+        .review(&first[0].text, Grade::Good, at(21, 9))
+        .unwrap();
+    let again = store.today(at(40, 9)).unwrap();
+    assert!(again.refresher);
+    assert_eq!(again.due, 10);
+}

@@ -191,7 +191,7 @@ QQC2.ScrollView {
             kind: KanteCallout.Kind.Info
             title: page.today.refresher ? page.t("Willkommen zurück", "Welcome back") : page.t("Wiederholen", "Review")
             text: page.today.refresher
-                ? page.t("Eine kurze Auffrischung mit höchstens zehn Wörtern, dann geht es weiter.", "A short refresher of at most ten words, then on we go.")
+                ? page.t("Eine kurze Auffrischung mit höchstens zehn Wörtern, dann geht es weiter. Was sonst fällig war, kommt in den nächsten Tagen.", "A short refresher of at most ten words, then on we go. What else was due comes over the next days.")
                 : page.t(page.today.due + " Wörter und Wendungen sind fällig.", page.today.due + " words and phrases are due.")
         }
         KanteButton {
