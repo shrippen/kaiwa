@@ -1,4 +1,4 @@
-# Stand und Übergabe (2026-11-09)
+# Stand und Übergabe (2026-11-10)
 
 Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die nächste Session zuerst lesen, dann `ROADMAP.md`. Welche Anforderung wo umgesetzt und geprüft ist, zeigt [`RUECKVERFOLGUNG.md`](RUECKVERFOLGUNG.md) (erzeugt mit `cargo run -p kaiwa-sim -- trace --write`). Starten und prüfen: `./start.sh` (`demo`, `sim`, `check`).
 
@@ -48,6 +48,10 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 ## Tag 2026-10-14
 
 [Tagesbericht](https://claude.ai/artifact/WygHfHhWkdQg18T8X9mZDi). Gemergt: #38 (R-02, R-03), #39 (Inhaltsprüfungen /LF221/, Grammatik im Gespräch, Review-Vorlagen, `hinnerk_plain_words`, PKGBUILD mit `!lto` und `NOTICE`), #40 (ein Zustand je Grammatikpunkt im Lernermodell, /LF201/; Profil), #41 (der Tutor kennt die Grammatik der Einheit), #42 (LOKALER-TEST), #43 (Muster für die einfache Form), #44 (`kaiwa-sim days --seeds`). Kontra #67 (Cargo-Cache im app-Job, R-04).
+
+## Nacht zum 2026-11-10
+
+[Nachtbericht mit Fragenpaket 11](https://claude.ai/artifact/77zr8JceriXZ9TA3Aowmtk) (T-01 bis T-05, noch ohne Antwort). Gemergt: #64 (was die Stimme schon gesagt hat, spielt „Nochmal“ sofort, /LF111/), #65 (Zug-Ende im Kern, `kaiwa_core::turn_end`, mit Hinnerks Pausen getestet; ein Angebot verkürzt die Pause nie), #66 (jede Figur spricht mit ihrer Stimme, /LF117/; `mara_word_lookup` mit und ohne UniDic), #67 (Wochenrückblick mit Fortschritt pro Fähigkeit, /LF604/; Fehlerverlauf je Gespräch statt je Kalenderwoche, /LF610/; `mara_progress`), #68 (Tests und `kaiwa-sim` räumen ihre Temp-Ordner auf; `lena_stats_fast` nimmt die schnellste von drei Messungen), #69 (freies Gespräch auf dem eigenen Niveau, /LF116/; das Kostenlimit bremst nur den Cloud-Tutor, /LF714/; `theo_free_talk`, `jonas_cost_limit`, `hinnerk_own_profile`).
 
 ## Entscheidungen aus Fragenpaket 10 (2026-11-09)
 
@@ -112,11 +116,13 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
 1. **Moren-Prüfung** (ADR-005, Fragenpakete 5 und 6 entschieden): eigenes Kana-CTC-Modell trainiert (`spikes/s06-moren/finetune.py`, v1 base, v2 large), Test mit echten Stimmen (`real.py`, Common Voice mit hineingeschnittenen Fehlern): nur Kürzungen geprüft erkennt v2 61 % bei 4,8 % Fehlalarmen (v1 62 % bei 6,0 %; v3 mit ReazonSpeech dazu nicht besser, 59 % bei 5,1 %), alle Fehlerarten zusammen unter 25 %. Daten und Modelle liegen unter `target/` (Common Voice 8 GB, `kana-ctc-v1`, `kana-ctc-v2`), nicht im Repository. Rust: `kaiwa-speech::mora` (Varianten, CTC, `Checker` über ONNX Runtime, `G2p::pronounced`). v2 ist auf Hugging Face veröffentlicht ([`shrippen/kaiwa-kana-ctc`](https://huggingface.co/shrippen/kaiwa-kana-ctc), Apache-2.0, in `NOTICE`; Download-Adresse `kaiwa_speech::models::KANA_CTC_URL`, feste Revision). Die Hinweise sind in der App (nach einem gesprochenen Satz, höchstens einer, ohne Schweregrad), **standardmäßig an** (L-01): Auf dem App-Weg erkennen sie 59,7 % bei 4,8 % Fehlalarmen, das gilt als K-02 (ADR-005, „Umsetzung in der App“). Die Modelle (ReazonSpeech, Kokoro, kaiwa-kana-ctc) lassen sich in den Einstellungen unter „Modelle“ laden, nur nach Klick, mit Prüfsumme (N-04).
 2. **Pitch-Akzent** (/LF321/): Die Vorstudie an echten Stimmen (`spikes/s07-pitch/`) findet bei 5 % Fehlalarmen nur 25–35 % der falschen Akzente (Ziel 80 %). Damit gilt F-09: 1.0 ohne Pitch-Bewertung (L-02). Mit einer akzenttreuen Stimme die eigene Kurve neben der der Figur, ohne Urteil (L-03); Bewertung nach 1.0 mit eigenem Akzentmodell (L-04).
 3. **Lokaler Test** (`spec/LOKALER-TEST.md`, bereit seit 2026-11-09): `kaiwa-sim run --live` mit echtem Tutor, der Tutor in der App, Sprechen und Stimme, Rechner und Oberfläche, VOICEVOX (H-01), Messwerte, eigene Aufnahmen. Ergebnisse mit `qa/local/VORLAGE.md` als PR nach `qa/local/<datum>/` (H-05).
-4. **29 Prüfregeln** laufen ohne Tutor nicht automatisch: 5 prüft `kaiwa-sim run --live` (der Tutor selbst), 11 der lokale Test von Hand (Tutor-Urteil, Audio, Rechner, Oberfläche), 13 gehören zu Plasmoid, Android, Windows oder Pitch und warten auf ihre Meilensteine.
+4. **30 Prüfregeln** (von 88) laufen ohne Tutor nicht automatisch: 6 prüft `kaiwa-sim run --live` (der Tutor selbst), 11 der lokale Test von Hand (Tutor-Urteil, Audio, Rechner, Oberfläche), 13 gehören zu Plasmoid, Android, Windows oder Pitch und warten auf ihre Meilensteine.
 5. **Stimme:** H-01 (VOICEVOX) entscheidet die endgültige Stimme; bis dahin Kokoro als Übergang.
 6. **Secret `ANTHROPIC_API_KEY`** fehlt noch in der Cloud-Umgebung (G-04).
 7. **Demo im Release** (Q-15, umgesetzt: Tutor in den Einstellungen, Build-Feature `demo`, `packaging/check-release.sh` in PKGBUILD, Flatpak und CI). Vorher: Der Demo-Modus hängt nur an `KAIWA_DEMO`, und ohne `KAIWA_PROVIDER` antwortet die App mit den Aufzeichnungen. Vor dem ersten Paket braucht es eine Tutor-Einrichtung in den Einstellungen, dann ein Build-Feature `demo` (aus) und eine Prüfung im Paketbau.
 8. **Kanji in Stücken:** `KanteRubyText` setzt ein `Text` je Zeichen; unter deutscher Locale nahm Qt für ein einzelnes Kanji oder 。 eine chinesische Schrift (andere Zeichenformen, tiefere Grundlinie). Kante 1.34 (Kante #59) setzt eine japanische Schrift, die Kopie hier ist abgeglichen.
+9. **Freisprechen schneidet langsame Sprecher ab, bis die Pause passt** (T-01, offen): Hinnerk wird im Mittel 6,8-mal abgeschnitten (bis zu 10-mal), bevor die Pause über 2 und 3 auf 5 s steht; Schnitte nach einem bloßen Adverb (まいあさ) erkennt `sounds_unfinished` nicht. `hinnerk_no_cutoff` bleibt deshalb nicht automatisch; der Test `crates/kaiwa-sim/src/hands_free.rs` hält das Verhalten fest. Das Angebot lässt sich nicht ablehnen (T-02).
+10. **Schriftgröße 160 %** (`hinnerk_font`, /LL202/): von Hand geprüft, alle Seiten in Ordnung; eine automatische Prüfung braucht einen CI-Schritt (T-03).
 
 ## Lessons learned
 
@@ -132,6 +138,10 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
 - **Qt schreibt ohne Terminal ins Journal.** Läuft die App mit umgeleiteter Ausgabe, landen QML-Fehler nicht in der Datei; `QT_FORCE_STDERR_LOGGING=1` holt sie zurück.
 - **`grabToImage` sieht keine Popups.** Sie liegen im Overlay des Fensters, das keine QML-Engine hat; der Shot-Modus nimmt bei offenem Wort-Popup dessen Inhalt auf (`--say 'lookup:L:W'`).
 - **Wörterbuch-Treffer an echten Sätzen prüfen.** Erst `examples/lookup.rs` über echte Zeilen zeigte, dass Partikeln gleichlautende Nomen trafen (は → 葉) und feste Ausdrücke als Verb nachgeschlagen wurden; die Wortart aus IPADIC als Hinweis und „erst wie geschrieben“ lösten beides.
+- **Die Rückverfolgungstabelle auf einem ruhigen Rechner und mit leerem `KAIWA_MODELS` erzeugen.** Mit lokalem UniDic und unter Last (ein Build nebenher) kamen rote Zeilen hinein, die es in der CI nicht gibt; ein Skript, das vor dem Push alle Prüfungen fährt und beim ersten Fehler abbricht, fängt das.
+- **Eine Prüfregel darf nicht grüner sein als ihr Satz.** `hinnerk_no_cutoff` lief grün, weil die Prüfung abgeschnittene Züge nur zählte; die Regel verspricht, dass es keine gibt. Vor dem Automatisieren den Satz der Persona gegen das halten, was der Lauf zeigt; passt es nicht, ist das eine Frage an den Eigentümer, kein Umschreiben.
+- **Urteile über Zeiträume an Rändern prüfen.** Der Fehlerverlauf urteilte zweimal falsch: erst über Wochen ohne Übung, dann über angebrochene Kalenderwochen. Je Gespräch und je Zug zu vergleichen hat beide Fälle erledigt.
+- **Tests mit eigenem `TMPDIR` laufen lassen** (`~/.cache/claude/…`); `/tmp` liegt im RAM. Ein eigenes Verzeichnis zeigt auch, was ein Lauf liegen lässt.
 - **Eine Befehlskette mit `;` läuft weiter.** `cargo fmt --check && … ; git commit` committete trotz Formatfehler; lokal hilft der pre-commit-Hook mit `cargo fmt --all --check`.
 
 - **Vor jedem Commit `cargo fmt --all --check`.** Ein unformatierter Push kostet einen ganzen CI-Lauf. Lokal hilft ein pre-commit-Hook.
