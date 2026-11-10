@@ -109,6 +109,7 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
         "theo_free_talk" => free_talk(p),
         "jonas_cost_limit" => cost_limit(),
         "jonas_analysis_gaps" => analysis_gaps(root),
+        "hinnerk_no_cutoff" => crate::hands_free::slow_speaker(p),
         _ => return None,
     };
     Some(match r {

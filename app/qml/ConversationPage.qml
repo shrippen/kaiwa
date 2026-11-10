@@ -145,8 +145,8 @@ Kirigami.ScrollablePage {
             visible: conv.placing && !conv.placementAsk
             kind: KanteCallout.Kind.Info
             title: page.t("Einstufung, Stufe ", "Placement, stage ") + conv.stage
-            text: page.t("Kein Test: Rede einfach, so gut es geht. Nach höchstens vier Antworten wird es eine Stufe schwerer, solange es gut läuft. Hilfe gibt es nur, wenn du sie holst. Alles zusammen dauert höchstens acht Minuten.",
-                         "No test: just talk as well as you can. After at most four answers it gets one stage harder, as long as it goes well. Help comes only when you ask for it. All of it takes at most eight minutes.")
+            text: page.t("Kein Test: Rede einfach, so gut es geht. Nach etwa vier Antworten wird es eine Stufe schwerer, solange es gut läuft. Hilfe gibt es nur, wenn du sie holst. Alles zusammen dauert höchstens acht Minuten.",
+                         "No test: just talk as well as you can. After about four answers it gets one stage harder, as long as it goes well. Help comes only when you ask for it. All of it takes at most eight minutes.")
         }
 
         KanteSteps {
@@ -299,17 +299,22 @@ Kirigami.ScrollablePage {
             }
         }
 
-        // /LF101/: two turns sounded cut off by the pause; offer the next longer one.
+        // /LF101/ (T-01, T-02): a turn sounded cut off by the pause; offer a longer one, to take or leave.
         KanteCallout {
             Layout.fillWidth: true
             visible: conv.longerPause > 0
             kind: KanteCallout.Kind.Info
             title: page.t("Zu früh unterbrochen?", "Cut off too early?")
-            text: page.t("Zweimal klang dein Satz, als wäre er noch nicht fertig. Mit einer längeren Pause hast du mehr Zeit zum Nachdenken.",
-                         "Twice your sentence sounded unfinished. A longer pause gives you more time to think.")
+            text: page.t("Dein Satz klang, als wäre er noch nicht fertig. Mit einer längeren Pause hast du mehr Zeit zum Nachdenken.",
+                         "Your sentence sounded unfinished. A longer pause gives you more time to think.")
             KanteButton {
                 text: page.t("Pause auf ", "Pause to ") + String(conv.longerPause).replace(".", page.t(",", ".")) + " s"
+                emphasis: KanteButton.Emphasis.Primary
                 onClicked: conv.takeLongerPause()
+            }
+            KanteButton {
+                text: page.t("So lassen", "Leave it")
+                onClicked: conv.declineLongerPause()
             }
         }
         KanteCallout {
@@ -408,7 +413,7 @@ Kirigami.ScrollablePage {
                 }
             }
             KanteButton {
-                text: page.t("Los geht's", "Let's go")
+                text: page.recorded && page.recorded.unjudged ? page.t("Weiter", "Continue") : page.t("Los geht's", "Let's go")
                 emphasis: KanteButton.Emphasis.Primary
                 onClicked: page.done()
             }

@@ -8,7 +8,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 49 | 22 | 5 | 3 | 0 |
+| Muss | 51 | 20 | 5 | 3 | 0 |
 | Soll | 12 | 7 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
@@ -21,8 +21,8 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LD050/ | M | Sprachdaten | app, backend, lang | Code | – |
 | /LD060/ | S | Widersprüche | core, store | Code | – |
 | /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | app, core, speech, store | geprüft | 1 von 1 automatisch grün: `mara_ptt` |
-| /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, core, store | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
-| /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core | Code | 0 von 1 automatisch grün: `hinnerk_no_cutoff` |
+| /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_no_cutoff` |
+| /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
 | /LF104/ | S | Das Mikrofon ist in den Einstellungen wählbar (Standard: das des … | app | Code | – |
 | /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, backend, core, lang, store | geprüft | 2 von 3 automatisch grün: `mara_listen_tools`, `mara_own_furigana`, `mara_word_lookup` |

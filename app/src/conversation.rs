@@ -139,6 +139,10 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "takeLongerPause"]
         fn take_longer_pause(self: Pin<&mut Conversation>);
+        /// "So lassen" (T-02): the offer goes, the pause stays.
+        #[qinvokable]
+        #[cxx_name = "declineLongerPause"]
+        fn decline_longer_pause(self: Pin<&mut Conversation>);
 
         /// Louder and clearer voice (/LL204/), kept in the profile.
         #[qinvokable]
@@ -905,8 +909,8 @@ impl qobject::Conversation {
         });
     }
 
-    /// A recognised turn: after the second that the pause seems to have cut off, offer the
-    /// next longer pause (/LF101/).
+    /// A recognised turn: the first that the pause seems to have cut off offers a longer
+    /// pause (/LF101/, T-01).
     fn after_turn(mut self: Pin<&mut Self>, by_pause: bool, text: &str) {
         let now = state()
             .store
@@ -941,6 +945,12 @@ impl qobject::Conversation {
             }
         }
         self.as_mut().rust_mut().cut_offs.reset();
+        self.as_mut().set_longer_pause(0.0);
+    }
+
+    /// Declines the offered pause: it comes back only after two more turns that sound cut off.
+    fn decline_longer_pause(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().cut_offs.decline();
         self.as_mut().set_longer_pause(0.0);
     }
 
