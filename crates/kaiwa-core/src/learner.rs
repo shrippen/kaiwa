@@ -200,12 +200,18 @@ impl LearnerModel {
         for (skill, (at, r)) in &e.at_level {
             let shown = at + (r - 0.8) * 2.5;
             let now = self.level(*skill);
+            // Doing well on material below one's level shows nothing about that level: a
+            // flawless easy session must not lower it (it shows at most `at + 0.5`).
+            if *r >= 0.8 && shown < now {
+                continue;
+            }
             self.set(*skill, now + RATE * (shown - now));
         }
         for (kind, n) in &e.mistakes {
             let stat = self.errors.entry(kind.clone()).or_default();
             stat.corrected += n;
-            let r = f64::from(*n) / f64::from(e.turns.max(1));
+            // A rate: several corrections of a kind in one turn are still one turn with it.
+            let r = (f64::from(*n) / f64::from(e.turns.max(1))).min(1.0);
             stat.rate = 0.7 * stat.rate + 0.3 * r;
         }
         for (kind, stat) in self.errors.iter_mut() {
@@ -293,6 +299,37 @@ fn describe_level(s: Skill, v: f64, lang: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_flawless_easy_session_lowers_nothing() {
+        // Listening n4 (5.0); the material sits at 3.3 because her speaking is low. Every
+        // line understood: that shows at most 3.8, which says nothing about 5.0.
+        let mut m = LearnerModel::placed(&[(Skill::Listening, "n4")]);
+        let mut e = Evidence::default();
+        e.at_level.insert(Skill::Listening, (3.34, 1.0));
+        m.update(&e);
+        m.update(&e);
+        assert_eq!(m.level(Skill::Listening), 5.0);
+        // Failing easy material still counts.
+        e.at_level.insert(Skill::Listening, (3.34, 0.3));
+        m.update(&e);
+        assert!(m.level(Skill::Listening) < 5.0);
+        // Three corrections of a kind in a session of one turn: a rate of one, not three.
+        let mut m = LearnerModel::default();
+        let mut e = Evidence {
+            turns: 1,
+            ..Default::default()
+        };
+        e.mistakes.insert("particle".into(), 3);
+        for _ in 0..10 {
+            m.update(&e);
+        }
+        assert!(
+            m.errors["particle"].rate <= 1.0,
+            "{}",
+            m.errors["particle"].rate
+        );
+    }
 
     #[test]
     fn levels_follow_success_at_a_level() {

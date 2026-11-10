@@ -99,3 +99,82 @@ pub struct Analysis {
     #[serde(default)]
     pub reading: String,
 }
+
+impl Analysis {
+    /// Reads an analysis from the model's text. A server that enforces the schema gives exactly
+    /// the schema; others (small local models, servers that ignore `response_format`) wrap the
+    /// JSON in a code fence, a `<think>` block or a sentence, write `null` for an empty list,
+    /// or name a kind of mistake the schema does not have. None of that should cost the learner
+    /// the whole turn: the JSON is cut out, `null` counts as empty, and a correction that does
+    /// not read is left out while the others stay.
+    pub fn from_text(text: &str) -> Result<Self, crate::AiError> {
+        let format = |why: String| crate::AiError::Format(format!("{why}: {text}"));
+        // From the first brace to the last: whatever stands around the object goes.
+        let json = match (text.find('{'), text.rfind('}')) {
+            (Some(a), Some(b)) if a < b => &text[a..=b],
+            _ => return Err(format("no JSON object".into())),
+        };
+        let v: serde_json::Value = serde_json::from_str(json).map_err(|e| format(e.to_string()))?;
+        let understood = v["understood"]
+            .as_bool()
+            .ok_or_else(|| format("no `understood`".into()))?;
+        let strings = |key: &str| -> Vec<String> {
+            v[key]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|x| x.as_str().map(str::to_string))
+                .collect()
+        };
+        let corrections = v["corrections"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|c| serde_json::from_value::<Correction>(c.clone()).ok())
+            .collect();
+        Ok(Self {
+            understood,
+            goals_met: strings("goals_met"),
+            corrections,
+            new_words: strings("new_words"),
+            reading: v["reading"].as_str().unwrap_or_default().to_string(),
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_analysis_reads_through_what_models_put_around_it() {
+        let plain = r#"{"understood":true,"goals_met":["name"],"corrections":[],"new_words":[],"reading":""}"#;
+        let a = Analysis::from_text(plain).unwrap();
+        assert!(a.understood && a.goals_met == ["name"]);
+        for wrapped in [
+            format!("```json\n{plain}\n```"),
+            format!("<think>The learner said their name.</think>\n{plain}"),
+            format!("Here is the analysis:\n```\n{plain}\n```\nLet me know if you need more."),
+        ] {
+            assert_eq!(Analysis::from_text(&wrapped).unwrap(), a, "{wrapped}");
+        }
+        // `null` for an empty list or reading.
+        let nulls = r#"{"understood":false,"goals_met":null,"corrections":null,"new_words":null,"reading":null}"#;
+        let n = Analysis::from_text(nulls).unwrap();
+        assert!(!n.understood && n.corrections.is_empty() && n.reading.is_empty());
+    }
+
+    #[test]
+    fn one_correction_that_does_not_read_does_not_cost_the_others() {
+        let text = r#"{"understood":true,"corrections":[
+            {"severity":"wrong","kind":"particle","original":"コーヒーを好きです","better":"コーヒーが好きです","explanation":"好き verlangt が.","also_possible":false},
+            {"severity":"minor","kind":"spelling","original":"a","better":"b","explanation":"c"},
+            {"severity":"wrong","correction":"ビールを二つください"}]}"#;
+        let a = Analysis::from_text(text).unwrap();
+        assert_eq!(a.corrections.len(), 1);
+        assert_eq!(a.corrections[0].kind, CorrectionKind::Particle);
+        // No object, or one without the one field every analysis has, is an error.
+        assert!(Analysis::from_text("I cannot analyse this.").is_err());
+        assert!(Analysis::from_text("{}").is_err());
+    }
+}

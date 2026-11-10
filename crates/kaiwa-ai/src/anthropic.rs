@@ -1,14 +1,23 @@
-//! Anthropic Messages API (`POST /v1/messages`). The analysis uses a forced tool call whose
-//! input schema is the analysis schema, so the answer is structured.
+//! Anthropic Messages API (`POST /v1/messages`). The analysis is a structured output
+//! (`output_config.format` with the analysis schema), so the answer's text is JSON that fits.
+//!
+//! Not tried against the live API in the session that wrote this (no key): the request shapes
+//! follow the API reference, the tests here check them against a fake transport, and the
+//! owner's local test (`kaiwa-sim run --live`) is the proof.
 
 use serde_json::{Value, json};
 
 use crate::transport::{Transport, UreqTransport};
-use crate::{AiError, Analysis, ChatProvider, TurnRequest, analysis_schema};
+use crate::{AiError, Analysis, ChatProvider, Role, TurnRequest, analysis_schema};
 
 pub const DEFAULT_URL: &str = "https://api.anthropic.com/v1/messages";
 pub const API_VERSION: &str = "2023-06-01";
-const TOOL: &str = "report_analysis";
+/// The models think before they answer, and the thinking counts towards `max_tokens`: a
+/// limit sized for the visible answer alone (a short line, a small JSON) cuts the answer off
+/// or leaves none. Only tokens that are generated cost.
+const MAX_TOKENS: u32 = 16_000;
+/// Stands in for the learner entering the scene, before the character's opening line.
+const SCENE_BEGINS: &str = "（会話が始まります。）";
 
 pub struct AnthropicProvider<T: Transport = UreqTransport> {
     pub url: String,
@@ -41,33 +50,60 @@ impl<T: Transport> AnthropicProvider<T> {
         ]
     }
 
+    /// The conversation as the Messages API takes it: it must begin with the user, and a
+    /// scene begins with the character's opening line, so a line stands in for the learner
+    /// coming in.
+    fn messages(r: &TurnRequest) -> Value {
+        let mut messages = Vec::new();
+        if r.messages
+            .first()
+            .is_some_and(|m| m.role == Role::Assistant)
+        {
+            messages.push(json!({ "role": "user", "content": SCENE_BEGINS }));
+        }
+        messages.extend(r.messages.iter().map(|m| json!(m)));
+        Value::Array(messages)
+    }
+
     pub fn reply_body(&self, r: &TurnRequest) -> Value {
         json!({
             "model": self.reply_model,
-            "max_tokens": r.max_tokens,
+            "max_tokens": r.max_tokens.max(MAX_TOKENS),
             "system": r.system,
-            "messages": r.messages,
+            "messages": Self::messages(r),
         })
     }
 
+    /// The analysis as structured output (`output_config.format`): the answer's text is JSON
+    /// that fits the schema. A forced tool call did the same once; the current models reject
+    /// `tool_choice` of type `tool`.
     pub fn analysis_body(&self, r: &TurnRequest) -> Value {
         json!({
             "model": self.analysis_model,
-            "max_tokens": r.max_tokens,
+            "max_tokens": r.max_tokens.max(MAX_TOKENS),
             "system": r.system,
-            "messages": r.messages,
-            "tools": [{
-                "name": TOOL,
-                "description": "Report the analysis of the learner's last turn.",
-                "input_schema": analysis_schema(),
-            }],
-            "tool_choice": { "type": "tool", "name": TOOL },
+            "messages": Self::messages(r),
+            "output_config": {
+                "format": { "type": "json_schema", "schema": analysis_schema() },
+            },
         })
+    }
+}
+
+/// Why an answer is no answer: it was cut off at the token limit, or declined.
+fn stopped(answer: &Value) -> Result<(), AiError> {
+    match answer["stop_reason"].as_str() {
+        Some("max_tokens") => Err(AiError::Format(
+            "the answer was cut off at the token limit".into(),
+        )),
+        Some("refusal") => Err(AiError::Format("the tutor declined to answer".into())),
+        _ => Ok(()),
     }
 }
 
 /// The text blocks of a Messages API answer, joined.
 pub fn parse_reply(answer: &Value) -> Result<String, AiError> {
+    stopped(answer)?;
     let blocks = answer["content"]
         .as_array()
         .ok_or_else(|| AiError::Format("no content".into()))?;
@@ -82,17 +118,9 @@ pub fn parse_reply(answer: &Value) -> Result<String, AiError> {
     Ok(text.trim().to_string())
 }
 
-/// The input of the forced tool call.
+/// The analysis: the JSON in the answer's text.
 pub fn parse_analysis(answer: &Value) -> Result<Analysis, AiError> {
-    let blocks = answer["content"]
-        .as_array()
-        .ok_or_else(|| AiError::Format("no content".into()))?;
-    let input = blocks
-        .iter()
-        .find(|b| b["type"] == "tool_use" && b["name"] == TOOL)
-        .map(|b| b["input"].clone())
-        .ok_or_else(|| AiError::Format("no analysis tool call".into()))?;
-    serde_json::from_value(input).map_err(|e| AiError::Format(e.to_string()))
+    Analysis::from_text(&parse_reply(answer)?)
 }
 
 impl<T: Transport> ChatProvider for AnthropicProvider<T> {
@@ -155,34 +183,75 @@ mod tests {
         assert_eq!(body["model"], "fast");
         assert_eq!(body["system"], "Du bist Kassiererin in einer Konbini.");
         assert_eq!(
-            body["messages"][1],
+            body["messages"][2],
             json!({ "role": "user", "content": "コーヒーを好きです。" })
         );
     }
 
     #[test]
-    fn analysis_is_a_forced_tool_call() {
+    fn analysis_is_a_structured_output() {
         let p = provider(json!({
             "content": [
-                { "type": "text", "text": "…" },
-                { "type": "tool_use", "id": "toolu_01", "name": TOOL, "input": {
-                    "understood": true, "goals_met": [], "new_words": [],
-                    "corrections": [{ "severity": "wrong", "kind": "particle", "original": "コーヒーを好きです",
-                        "better": "コーヒーが好きです", "explanation": "好き verlangt が.", "also_possible": false }]
-                } }
+                { "type": "thinking", "thinking": "" },
+                { "type": "text", "text": r#"{"understood":true,"goals_met":[],"new_words":[],"reading":"",
+                    "corrections":[{"severity":"wrong","kind":"particle","original":"コーヒーを好きです",
+                    "better":"コーヒーが好きです","explanation":"好き verlangt が.","also_possible":false}]}"# }
             ],
-            "stop_reason": "tool_use"
+            "stop_reason": "end_turn"
         }));
         let a = p.analyse(&request()).unwrap();
         assert_eq!(a.corrections[0].severity, Severity::Wrong);
         let sent = p.transport.requests.lock().unwrap();
         let body = &sent[0].2;
         assert_eq!(body["model"], "strong");
-        assert_eq!(body["tool_choice"], json!({ "type": "tool", "name": TOOL }));
+        assert_eq!(body["output_config"]["format"]["type"], "json_schema");
         assert_eq!(
-            body["tools"][0]["input_schema"]["required"][0],
+            body["output_config"]["format"]["schema"]["required"][0],
             "understood"
         );
+        // No forced tool call: the current models answer it with a 400.
+        assert!(body.get("tool_choice").is_none() && body.get("tools").is_none());
+    }
+
+    #[test]
+    fn the_conversation_begins_with_the_user_and_has_room_to_think() {
+        let p = provider(json!({ "content": [{ "type": "text", "text": "はい。" }] }));
+        p.reply(&request()).unwrap();
+        let sent = p.transport.requests.lock().unwrap();
+        let body = &sent[0].2;
+        // The scene's opening is the character's: a line of the user's goes before it.
+        let roles: Vec<&str> = body["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|m| m["role"].as_str())
+            .collect();
+        assert_eq!(roles, ["user", "assistant", "user"]);
+        assert_eq!(body["messages"][2]["content"], "コーヒーを好きです。");
+        // The request asked for 400 tokens; thinking needs more than the visible answer.
+        assert_eq!(body["max_tokens"], MAX_TOKENS);
+        // A conversation that begins with the user stays as it is.
+        let mut r = request();
+        r.messages.remove(0);
+        assert_eq!(
+            AnthropicProvider::<FakeTransport>::messages(&r)
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn an_answer_cut_off_or_declined_is_an_error() {
+        for reason in ["max_tokens", "refusal"] {
+            let answer = json!({
+                "content": [{ "type": "text", "text": "コーヒーが{好|す" }],
+                "stop_reason": reason
+            });
+            assert!(parse_reply(&answer).is_err(), "{reason}");
+            assert!(parse_analysis(&answer).is_err(), "{reason}");
+        }
     }
 
     #[test]

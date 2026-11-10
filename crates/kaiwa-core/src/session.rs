@@ -657,8 +657,17 @@ impl Session {
     pub fn summary(&self) -> Summary {
         let mut cues = BTreeMap::new();
         let mut mistakes = BTreeMap::new();
+        // Mistakes only: an "also possible" (shown with much feedback) says the learner's
+        // form is right, so it is no item for the review, where that form would then be
+        // marked as the mistake, and it is none of the most important corrections (/LF303/).
+        let mistaken = |t: &TurnRecord| -> Vec<Shown> {
+            visible(&counted(t), self.amount)
+                .into_iter()
+                .filter(|s| !s.correction.also_possible)
+                .collect()
+        };
         for (i, t) in self.turns.iter().enumerate() {
-            for s in visible(&counted(t), self.amount) {
+            for s in mistaken(t) {
                 mistakes
                     .entry(crate::norm(&s.correction.better))
                     .or_insert_with(|| crate::srs::in_context(&t.learner, &s.correction.original));
@@ -668,11 +677,7 @@ impl Session {
                 }
             }
         }
-        let mut all: Vec<Shown> = self
-            .turns
-            .iter()
-            .flat_map(|t| visible(&counted(t), self.amount))
-            .collect();
+        let mut all: Vec<Shown> = self.turns.iter().flat_map(mistaken).collect();
         all.sort_by_key(|s| std::cmp::Reverse(s.correction.severity));
         let mut seen = BTreeSet::new();
         let unique: Vec<Shown> = all
@@ -902,6 +907,34 @@ mod tests {
             MockProvider::from_json(include_str!("../../../qa/fixtures/n5-02-jikoshoukai.json"))
                 .unwrap(),
         )
+    }
+
+    #[test]
+    fn another_way_to_say_it_is_no_item_for_the_review() {
+        // Among friends the plain form is right; the recorded tutor suggests the polite one
+        // anyway, which much feedback shows as "also possible" (/LF303/).
+        let scenario =
+            Scenario::from_json(include_str!("../../../data/scenarios/n5-09-tomodachi.json"))
+                .unwrap();
+        let tutor: Arc<dyn ChatProvider> = Arc::new(
+            MockProvider::from_json(include_str!("../../../qa/fixtures/n5-09-tomodachi.json"))
+                .unwrap()
+                .with_fallback("そうなんだ。"),
+        );
+        let mut s = Session::new(scenario, tutor, Amount::Much, "de");
+        let out = s.turn("うん、行く！", Input::Spoken).unwrap();
+        assert!(
+            out.shown.iter().any(|x| x.correction.also_possible),
+            "the fixture shows an alternative"
+        );
+        let summary = s.summary();
+        assert!(summary.corrected.is_empty() && summary.top.is_empty());
+        assert!(summary.mistakes.is_empty() && summary.cues.is_empty());
+        assert!(
+            !summary.review.iter().any(|r| r.contains("行きます")),
+            "{:?}",
+            summary.review
+        );
     }
 
     #[test]

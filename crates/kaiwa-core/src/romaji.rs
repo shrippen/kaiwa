@@ -73,6 +73,9 @@ const TABLE: &[(&str, &str)] = &[
     ("zu", "ず"),
     ("ze", "ぜ"),
     ("zo", "ぞ"),
+    ("jya", "じゃ"),
+    ("jyu", "じゅ"),
+    ("jyo", "じょ"),
     ("ja", "じゃ"),
     ("ju", "じゅ"),
     ("jo", "じょ"),
@@ -153,10 +156,61 @@ pub fn has_romaji(text: &str) -> bool {
         .any(|c| c.is_ascii_alphabetic() || unmacron(c.to_ascii_lowercase()).is_some())
 }
 
-/// Converts the rōmaji in `text` to hiragana; anything else stays.
+/// Converts the rōmaji in `text` to hiragana, word by word; anything else stays. A word that
+/// does not turn into kana completely is no rōmaji (a German or English word, a name) and
+/// stays as typed, so the tutor can read it (/LF122/: わたしは Leuchtturm です). A line with
+/// several such words is a question in the learner's own language and stays whole.
 pub fn to_kana(text: &str) -> String {
-    let mut src = String::with_capacity(text.len());
-    for c in text.chars() {
+    // A Latin word: ASCII letters, the apostrophe of n'ya, letters with marks (ō, ä, ß).
+    let latin = |c: char| c == '\'' || (c.is_alphabetic() && (c as u32) < 0x250);
+    // The line in pieces: a Latin word with its kana (if it is rōmaji), or anything else.
+    let mut pieces: Vec<(String, Option<String>)> = Vec::new();
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        let word = latin(chars[i]);
+        let end = (i..chars.len())
+            .find(|j| latin(chars[*j]) != word)
+            .unwrap_or(chars.len());
+        let piece: String = chars[i..end].iter().collect();
+        let kana = if word { word_to_kana(&piece) } else { None };
+        pieces.push((piece, kana));
+        i = end;
+    }
+    let words = pieces.iter().filter(|(p, _)| p.chars().any(latin)).count();
+    let romaji = pieces.iter().filter(|(_, k)| k.is_some()).count();
+    // One foreign word in a rōmaji sentence, or up to a quarter of the words; more is a
+    // sentence in another language, in which words like "do", "you" or "in" only look like
+    // rōmaji.
+    let foreign = words - romaji;
+    if romaji == 0 || (foreign > 1 && foreign * 4 > words) {
+        return text.to_string();
+    }
+    pieces
+        .into_iter()
+        .map(|(piece, kana)| {
+            kana.unwrap_or_else(|| {
+                // Japanese punctuation for a line that is rōmaji.
+                piece
+                    .chars()
+                    .map(|c| match c {
+                        '.' => '。',
+                        ',' => '、',
+                        '?' => '？',
+                        '!' => '！',
+                        '-' => 'ー',
+                        c => c,
+                    })
+                    .collect()
+            })
+        })
+        .collect()
+}
+
+/// One Latin word as hiragana; `None` when some of it is no rōmaji.
+fn word_to_kana(word: &str) -> Option<String> {
+    let mut src = String::with_capacity(word.len());
+    for c in word.chars() {
         let lc = c.to_lowercase().next().unwrap_or(c);
         match unmacron(lc) {
             Some(s) => src.push_str(s),
@@ -164,21 +218,20 @@ pub fn to_kana(text: &str) -> String {
         }
     }
     let chars: Vec<char> = src.chars().collect();
-    let mut out = String::with_capacity(text.len() * 2);
+    if chars.iter().all(|c| *c == '\'') {
+        return None;
+    }
+    let mut out = String::with_capacity(word.len() * 2);
     let mut i = 0;
     while i < chars.len() {
         let c = chars[i];
-        if !c.is_ascii_alphabetic() && c != '\'' {
-            out.push(match c {
-                '.' => '。',
-                ',' => '、',
-                '?' => '？',
-                '!' => '！',
-                '-' => 'ー',
-                _ => c,
-            });
+        if c == '\'' {
+            // Only separates n from a vowel (kon'ya); it has no sound of its own.
             i += 1;
             continue;
+        }
+        if !c.is_ascii_alphabetic() {
+            return None;
         }
         let next = chars.get(i + 1).copied();
         // Doubled consonant (not n): small tsu. "tch" too (matcha).
@@ -189,38 +242,23 @@ pub fn to_kana(text: &str) -> String {
             continue;
         }
         // n before a consonant (not y) or at the end: ん.
-        if c == 'n' {
-            let n_alone = match next {
-                None => true,
-                Some(n) => {
-                    !n.is_ascii_alphabetic() && n != '\'' || (!"aeiouy".contains(n) && n != '\'')
-                }
-            };
-            if n_alone {
-                out.push('ん');
-                i += 1;
-                continue;
-            }
-        }
-        let mut matched = false;
-        for len in [3, 2, 1] {
-            if i + len > chars.len() {
-                continue;
-            }
-            let piece: String = chars[i..i + len].iter().collect();
-            if let Some((_, kana)) = TABLE.iter().find(|(r, _)| *r == piece) {
-                out.push_str(kana);
-                i += len;
-                matched = true;
-                break;
-            }
-        }
-        if !matched {
-            out.push(c);
+        if c == 'n' && next.is_none_or(|n| !"aeiouy".contains(n)) {
+            out.push('ん');
             i += 1;
+            continue;
         }
+        let piece = [3, 2, 1].into_iter().find_map(|len| {
+            let piece: String = chars.get(i..i + len)?.iter().collect();
+            TABLE
+                .iter()
+                .find(|(r, _)| *r == piece)
+                .map(|(_, kana)| (len, *kana))
+        });
+        let (len, kana) = piece?;
+        out.push_str(kana);
+        i += len;
     }
-    out
+    Some(out)
 }
 
 #[cfg(test)]
@@ -244,6 +282,27 @@ mod tests {
         ] {
             assert_eq!(to_kana(r), k, "{r}");
         }
+    }
+
+    #[test]
+    fn a_question_in_the_learners_language_stays_as_typed() {
+        // /LF122/: the tutor answers these with the Japanese word, so it must read them.
+        for q in [
+            "Was heißt Bahnhof?",
+            "Wie sagt man Bahnhof?",
+            "what is station?",
+            "How do you say lighthouse in Japanese?",
+        ] {
+            assert_eq!(to_kana(q), q);
+        }
+        // One foreign word in a rōmaji sentence stays, the rest is kana.
+        assert_eq!(
+            to_kana("watashi wa Leuchtturm desu."),
+            "わたし わ Leuchtturm です。"
+        );
+        // Wāpuro spellings.
+        assert_eq!(to_kana("jyanai"), "じゃない");
+        assert_eq!(to_kana("jyuu"), "じゅう");
     }
 
     #[test]
