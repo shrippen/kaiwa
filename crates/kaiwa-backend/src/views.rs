@@ -155,7 +155,13 @@ pub fn path(st: &Backend) -> anyhow::Result<Value> {
                 "kind": "review",
                 "id": unit.id,
                 "title": if lang == "de" { format!("Wiederholung: {}", unit.title) } else { format!("Review: {}", unit.title) },
-                "meta": if lang == "de" { format!("{due} fällig") } else { format!("{due} due") },
+                // Reviews that go badly are recommended, they lock nothing (T-06).
+                "meta": match (lang == "de", unit.shaky) {
+                    (true, false) => format!("{due} fällig"),
+                    (true, true) => format!("{due} fällig · empfohlen, bevor es weitergeht"),
+                    (false, false) => format!("{due} due"),
+                    (false, true) => format!("{due} due · recommended before you go on"),
+                },
                 "state": "review",
                 "level": unit.level,
             }));
@@ -743,6 +749,46 @@ mod tests {
                 .as_str()
                 .unwrap()
                 .contains("好き")
+        );
+    }
+
+    #[test]
+    fn reviews_that_go_badly_are_recommended_and_lock_nothing() {
+        let b = crate::TempBackend::new("shaky", false).unwrap();
+        let first = b.curriculum.units[0].clone();
+        let second = b.curriculum.units[1].clone();
+        assert!(second.requires.contains(&first.id));
+        let mut l = b.store.learning().unwrap();
+        l.course.scenarios_done.extend(first.scenarios.clone());
+        for _ in 0..3 {
+            l.course.reviewed(&first.id, false);
+        }
+        b.store.set_learning(&l).unwrap();
+        let mut item = kaiwa_core::srs::Item::new(
+            "はじめまして",
+            kaiwa_core::srs::ItemKind::Phrase,
+            kaiwa_core::srs::Source::NewWord,
+            crate::now(),
+        );
+        item.unit = Some(first.id.clone());
+        item.due = crate::now().day();
+        b.store.put_item(&item).unwrap();
+        let nodes = path(&b).unwrap();
+        let nodes = nodes.as_array().unwrap();
+        let review = nodes.iter().find(|n| n["kind"] == "review").unwrap();
+        assert_eq!(review["id"], first.id.as_str());
+        assert_eq!(review["meta"], "1 fällig · empfohlen, bevor es weitergeht");
+        // T-06: the next unit is open all the same.
+        let next = nodes
+            .iter()
+            .find(|n| n["id"] == second.scenarios[0].as_str())
+            .unwrap();
+        assert_eq!(next["state"], "current");
+        assert!(
+            today(&b, crate::now())
+                .unwrap()
+                .to_string()
+                .contains(&second.scenarios[0])
         );
     }
 
