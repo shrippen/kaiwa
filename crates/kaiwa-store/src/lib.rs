@@ -875,6 +875,17 @@ impl Store {
         Ok(())
     }
 
+    /// The learner chose another daily goal on `today`: a day already begun takes it over, so
+    /// it is judged by the goal it ended with, tomorrow as today (/LF602/). Days before keep
+    /// theirs.
+    pub fn set_day_goal(&self, today: Day, goal: DailyGoal) -> Result<()> {
+        if let Some(mut rec) = self.days()?.remove(&today) {
+            rec.goal = Some(goal);
+            self.put_day(today, &rec)?;
+        }
+        Ok(())
+    }
+
     pub fn days(&self) -> Result<BTreeMap<Day, DayRecord>> {
         let mut stmt = self.db.prepare("SELECT day, value FROM days")?;
         let rows: Vec<(i64, String)> = stmt

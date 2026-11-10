@@ -251,6 +251,54 @@ fn export_and_import_carry_everything() {
 }
 
 #[test]
+fn a_goal_changed_during_the_day_is_the_days_goal() {
+    let store = Store::in_memory().unwrap();
+    let c = curriculum();
+    let goal = |m: u32| {
+        let mut p = store.profile().unwrap();
+        p.daily_goal = DailyGoal::Minutes(m);
+        store.set_profile(&p).unwrap();
+        // As the settings do it: the day begun takes the new goal over.
+        store
+            .set_day_goal(at(1, 12).day(), DailyGoal::Minutes(m))
+            .unwrap();
+    };
+    let talk = |day: i64, minutes: i64| {
+        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        s.turn("マラです。よろしくおねがいします。", Input::Spoken)
+            .unwrap();
+        let start = at(day, 9);
+        let id = store.begin_session(&s.snapshot(), start).unwrap();
+        store
+            .record(id, &s, start, start.plus_secs(minutes * 60), Some(&c))
+            .unwrap();
+    };
+    // Goal ten minutes, met yesterday. Today six minutes, then the goal is lowered to five.
+    let mut p = store.profile().unwrap();
+    p.daily_goal = DailyGoal::Minutes(10);
+    store.set_profile(&p).unwrap();
+    talk(0, 11);
+    talk(1, 6);
+    goal(5);
+    let today = store.today(at(1, 20)).unwrap();
+    assert!(today.streak.today_met);
+    assert_eq!(today.streak.days, 2);
+    // The next morning the day still counts, and no freeze was needed for it.
+    let next = store.today(at(2, 8)).unwrap();
+    assert_eq!((next.streak.days, next.streak.freezes_used.len()), (2, 0));
+    // The other way round: raised to twenty during the day, the day is missed tomorrow too.
+    goal(20);
+    assert!(!store.today(at(1, 20)).unwrap().streak.today_met);
+    let next = store.today(at(2, 8)).unwrap();
+    assert_eq!(next.streak.freezes_used, vec![at(1, 9).day()]);
+    // Yesterday keeps the goal it had.
+    assert_eq!(
+        store.day(at(0, 9).day()).unwrap().goal,
+        Some(DailyGoal::Minutes(10))
+    );
+}
+
+#[test]
 fn deleting_a_profile_leaves_no_file() {
     let path = temp("delete");
     {

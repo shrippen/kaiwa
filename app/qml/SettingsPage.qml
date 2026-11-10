@@ -626,7 +626,11 @@ QQC2.ScrollView {
         var path = page.p.path || ""
         var dir = path.replace(/[^\/]*$/, "")
         var profile = path.replace(/^.*\//, "").replace(/\.kaiwa$/, "")
-        var stamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, "").replace("T", "-")
+        // Local time, as the learner's clock shows it.
+        var now = new Date()
+        var two = function (n) { return (n < 10 ? "0" : "") + n }
+        var stamp = now.getFullYear() + two(now.getMonth() + 1) + two(now.getDate())
+            + "-" + two(now.getHours()) + two(now.getMinutes()) + two(now.getSeconds())
         return dir + "kaiwa-export-" + (profile.length > 0 ? profile + "-" : "") + stamp + ".json"
     }
 

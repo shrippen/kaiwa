@@ -386,6 +386,12 @@ impl qobject::KaiwaApp {
             if let Err(e) = st.store.set_profile(&p) {
                 eprintln!("kaiwa: {e}");
             }
+            // A day already begun is judged by the goal it ends with (/LF602/).
+            if key == "goal"
+                && let Err(e) = st.store.set_day_goal(now().day(), p.daily_goal)
+            {
+                eprintln!("kaiwa: {e}");
+            }
             // Turning recordings off (or shortening the days) deletes them now.
             if key == "keepRecordings"
                 && let Err(e) = st.purge_recordings(now())
@@ -441,6 +447,7 @@ impl qobject::KaiwaApp {
     }
 
     fn delete_profile(mut self: Pin<&mut Self>) {
+        self.as_mut().set_answer(QString::default());
         let result = {
             let mut st = state();
             let path = st.path.clone();
@@ -481,18 +488,39 @@ impl qobject::KaiwaApp {
     fn pause(mut self: Pin<&mut Self>, days: i32) {
         if days > 0 {
             let today = now().day();
-            let to = today.plus(i64::from(days) - 1);
-            let added = state().store.add_pause(Pause { from: today, to });
+            let (added, until, streak) = {
+                let st = state();
+                let added = st.store.add_pause(Pause {
+                    from: today,
+                    to: today.plus(i64::from(days) - 1),
+                });
+                // Until when it rests now: the latest end of the pauses running today (an
+                // earlier, longer one still holds).
+                let until = st
+                    .store
+                    .pauses()
+                    .unwrap_or_default()
+                    .iter()
+                    .filter(|p| p.from <= today && today <= p.to)
+                    .map(|p| p.to)
+                    .max()
+                    .unwrap_or(today);
+                let streak = st.store.profile().map(|p| p.gamification).unwrap_or(true);
+                (added, until, streak)
+            };
             // Say that it took, and until when: nothing else on the page shows a pause.
             let de = self.lang().to_string() == "de";
-            let (_, m, d) = to.ymd();
+            let (_, m, d) = until.ymd();
             self.as_mut().set_notice(QString::from(&match (added, de) {
-                (Ok(()), true) => {
+                (Ok(()), true) if streak => {
                     format!("Pause bis einschließlich {d}.{m}.: Die Serie bleibt so lange stehen.")
                 }
-                (Ok(()), false) => {
-                    format!("Paused up to and including {d}/{m}: the streak holds until then.")
-                }
+                (Ok(()), true) => format!("Pause bis einschließlich {d}.{m}."),
+                (Ok(()), false) if streak => format!(
+                    "Paused up to and including {}: the streak holds until then.",
+                    until.iso()
+                ),
+                (Ok(()), false) => format!("Paused up to and including {}.", until.iso()),
                 (Err(e), true) => format!("Die Pause ließ sich nicht eintragen: {e}"),
                 (Err(e), false) => format!("The pause could not be set: {e}"),
             }));
