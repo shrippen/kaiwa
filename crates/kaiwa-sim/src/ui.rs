@@ -683,13 +683,17 @@ fn word_lookup(root: &Path) -> Result<Option<String>> {
     if !own_words.iter().any(|w| w.text == "プロデューサー") {
         found.push("プロデューサー is no word of her own line".into());
     }
+    // A number with its counter: IPADIC would guess (ににん), so without UniDic it goes
+    // without; UniDic reads it in context, and then only as ふたり.
     let two = lookup::own_line("二人です。");
-    if two["markup"]
-        .as_str()
-        .unwrap_or_default()
-        .contains("{二人|")
-    {
-        found.push(format!("a guessed reading over 二人: {}", two["markup"]));
+    let markup = two["markup"].as_str().unwrap_or_default();
+    let expected = if kaiwa_lang::unidic::available() {
+        "{二人|ふたり}です。"
+    } else {
+        "二人です。"
+    };
+    if markup != expected {
+        found.push(format!("二人 should read {expected}, not {markup}"));
     }
     let b = demo("lookup", "de")?;
     let dict = root.join("data/dict/kaiwa-dict-excerpt.sqlite");

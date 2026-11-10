@@ -32,7 +32,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF114/ | M | Wer feststeckt, bekommt eine Hilfe in drei Stufen: Stichwort → … | core | geprüft | 1 von 1 automatisch grün: `mara_hint_offered` |
 | /LF115/ | M | Es gibt Szenarien mit Rolle, Ort, Ziel und Erfolgsbedingung (z. B. … | core | Code | 0 von 1 automatisch grün: `jonas_follow_up` |
 | /LF116/ | S | Freies Gespräch zu einem gewählten Thema auf dem eigenen Niveau. | app, backend | Code | – |
-| /LF117/ | S | KI-Figuren mit festem Charakter, Sprechstil und Stimme (z. B. … | core | geprüft | 1 von 1 automatisch grün: `selin_register_flag` |
+| /LF117/ | S | KI-Figuren mit festem Charakter, Sprechstil und Stimme (z. B. … | app, core, speech | geprüft | 1 von 1 automatisch grün: `selin_register_flag` |
 | /LF120/ | M | Tippen statt Sprechen (Kana-IME oder Rōmaji mit Umwandlung). | app, core | geprüft | 1 von 1 automatisch grün: `jonas_typed_marked` |
 | /LF121/ | M | Ein Gespräch lässt sich unterbrechen und später an derselben Stelle … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_resume` |
 | /LF122/ | S | Lernende dürfen in die UI-Sprache wechseln („Wie sagt man …?“). | core | Code | 0 von 2 automatisch grün: `hinnerk_german_word_help`, `mara_codeswitch` |

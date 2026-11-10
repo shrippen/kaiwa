@@ -249,6 +249,8 @@ pub struct ConversationRust {
     utterance: Arc<AtomicU64>,
     /// What this conversation already said, so "again" plays at once (/LF111/).
     said: Arc<Mutex<SpeechCache>>,
+    /// The voice of this conversation's character (/LF117/); a loaded voice switches to it.
+    voice_name: String,
 }
 
 /// The mora check's model and the reading of what the learner meant.
@@ -535,6 +537,7 @@ impl qobject::Conversation {
         {
             let mut rust = self.as_mut().rust_mut();
             rust.session = Some(Arc::new(Mutex::new(session)));
+            rust.voice_name = voice.clone();
             rust.log = log;
             rust.lang = lang;
             rust.session_id = id;
@@ -770,30 +773,17 @@ impl qobject::Conversation {
             None
         };
         let said = self.said.clone();
+        let name = self.voice_name.clone();
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let still = || current.load(Ordering::SeqCst) == id;
-            let cached = |sentence: &str| said.lock().ok().and_then(|c| c.get(sentence, speed));
             for sentence in tts::sentences(&text) {
                 if !still() {
                     return;
                 }
-                // Said before in this conversation: play it at once (/LF111/). Looked up
-                // again once the voice is ours, since a line cut off may have just made it.
-                let audio = cached(&sentence).map(Ok).or_else(|| {
-                    let made = speaker.voice.lock().map(|mut v| {
-                        cached(&sentence).map(Ok).unwrap_or_else(|| {
-                            v.speak(&sentence, speed)
-                                .map(|s| (Arc::new(s), v.sample_rate()))
-                        })
-                    });
-                    if let Ok(Ok((samples, rate))) = &made
-                        && let Ok(mut c) = said.lock()
-                    {
-                        c.put(&sentence, speed, samples.clone(), *rate);
-                    }
-                    made.ok()
-                });
+                // In the character's own voice (/LF117/); what this conversation said before
+                // plays at once (/LF111/).
+                let audio = tts::sentence(&*speaker.voice, &said, &name, &sentence, speed);
                 match audio {
                     Some(Ok((samples, rate))) if still() => {
                         let mut samples = samples.to_vec();
@@ -854,11 +844,7 @@ impl qobject::Conversation {
         if !std::mem::take(&mut self.as_mut().rust_mut().unloaded) {
             return;
         }
-        let voice = self
-            .session
-            .as_ref()
-            .and_then(|s| s.lock().ok().and_then(|s| s.scenario.voice.clone()))
-            .unwrap_or_else(|| "jf_tebukuro".into());
+        let voice = self.voice_name.clone();
         let thread = self.qt_thread();
         let lang = self.lang.clone();
         self.as_mut().set_talk_state(THINKING);
