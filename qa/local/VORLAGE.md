@@ -29,6 +29,7 @@ Wenn sonst etwas auffiel:
 | `hinnerk_german_word_help`: bietet とうだい an, bittet ums Nachsprechen | | | |
 | Wiederholung als Mini-Gespräch: Frage passt, Wertung stimmt | | | |
 | Latenz Senden → Antwort, fünf Züge (Sekunden) | | | |
+| Nachdenken eines lokalen Modells (2.8): Zeile der Figur ohne Überlegung, Korrektur kommt; Notiz: Modell, stand `<think>` im `content`? | | | |
 
 ## 3. Sprechen und Stimme
 

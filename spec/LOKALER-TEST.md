@@ -68,7 +68,12 @@ Was du beurteilst, steht in der Vorlage. Kurz:
 5. **Deutsches Wort** (`hinnerk_german_word_help`): Sag im Szenario „Sich vorstellen“ わたしは Leuchtturm です。 Bietet die Figur とうだい an und bittet ums Nachsprechen? (Ob sie es langsam spricht, gehört zu Schritt 3.)
 6. **Wiederholung als Mini-Gespräch** (/LF230/, neu): Am Tag nach einem Gespräch mit Korrekturen unter „Wiederholen“ der Figur antworten, getippt und gesprochen. Passt die Frage zur Korrektur? Wird eine richtige Antwort als richtig gewertet?
 7. **Latenz:** Stopp fünfmal die Zeit vom Senden bis zur Antwort (Ziel /LL010/).
-8. **Nachdenken eines lokalen Modells** (#73, #74, neu): Mit einem lokalen Modell, das vor der Antwort nachdenkt (z. B. ein Qwen3 über Ollama oder LM Studio), drei Züge im Szenario „Sich vorstellen“. Steht in der Zeile der Figur nur, was sie sagt (kein `<think>`, keine Überlegung auf Englisch), und liest die Stimme nur das vor? Kommt nach einem Satz mit Fehler eine Korrektur?
+8. **Nachdenken eines lokalen Modells** (#73, #74, neu): Mit einem lokalen Modell, das vor der Antwort nachdenkt (z. B. ein Qwen3 über Ollama oder LM Studio), drei Züge im Szenario „Sich vorstellen“. Steht in der Zeile der Figur nur, was sie sagt (kein `<think>`, keine Überlegung auf Englisch)? Kommt nach einem Satz mit Fehler eine Korrektur? (Ob die Stimme nur die Zeile vorliest, gehört zu Schritt 3: dort einen Zug mit diesem Modell wiederholen.) Der Schritt prüft nur etwas, wenn der Server das Nachdenken im Text der Antwort lässt; die Gegenprobe (Ollama: Port 11434, LM Studio: 1234) zeigt es, notiere in der Vorlage, ob `<think>` im `content` stand:
+
+   ```sh
+   curl -s http://localhost:11434/v1/chat/completions -H 'Content-Type: application/json' \
+     -d '{"model":"<modell>","messages":[{"role":"user","content":"お名前は？"}]}'
+   ```
 
 ## 3. Sprechen und Stimme
 
