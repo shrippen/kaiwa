@@ -8,8 +8,8 @@
 #   SCALE=2 SCREEN=1920 tools/font-160.sh     # another text size, another screen width
 #
 # The window is as wide as the app opens it (900), or as the screen leaves room for at this
-# text size: a small laptop (1366 px) at 160 % has 853; never below the app's 800 (/LL303/). The scale is the profile's text size,
-# which the app applies the same way (QT_SCALE_FACTOR).
+# text size: a small laptop (1366 px) at 160 % has 853; never below the app's 800 (/LL303/).
+# The scale is the profile's text size, which the app applies the same way (QT_SCALE_FACTOR).
 #
 # Needs the app's build dependencies (Qt 6, Kirigami). No microphone, no speech models, no
 # tutor: the demo profile and its recorded answers.
