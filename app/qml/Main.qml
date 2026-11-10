@@ -85,7 +85,8 @@ Kirigami.ApplicationWindow {
                 anchors.margins: KanteStyle.unit(8)
                 model: [root.t("Heute", "Today"), root.t("Lernpfad", "Path"), root.t("Wiederholen", "Review"), root.t("Profil", "Profile"), root.t("Einstellungen", "Settings")]
                 counts: ["", "", reviewCount > 0 ? String(reviewCount) : "", "", ""]
-                readonly property int reviewCount: kaiwa.review.length > 0 ? JSON.parse(kaiwa.review).length : 0
+                // Everything due, as the start page counts it (the review page holds ten at a time).
+                readonly property int reviewCount: kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0
                 currentIndex: Math.max(0, root.views.indexOf(root.arg("--view", "start")))
                 onActivated: function (i) { currentIndex = i; kaiwa.refresh() }
             }

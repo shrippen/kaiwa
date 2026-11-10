@@ -93,6 +93,9 @@ fn an_interrupted_session_continues_where_it_stopped() {
 #[test]
 fn recording_a_session_feeds_model_path_review_and_day() {
     let store = Store::in_memory().unwrap();
+    let mut p = store.profile().unwrap();
+    p.daily_goal = DailyGoal::Minutes(4);
+    store.set_profile(&p).unwrap();
     let c = curriculum();
     let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
     let start = at(0, 9);
@@ -190,11 +193,13 @@ fn recording_a_session_feeds_model_path_review_and_day() {
     assert!(reviewed.due > at(1, 9).day());
     assert_eq!(store.day(at(1, 9).day()).unwrap().reviews_done, 1);
     assert_eq!(store.learning().unwrap().course.reviews["n5-02"], (1, 1));
-    let mut p = store.profile().unwrap();
-    p.daily_goal = DailyGoal::Minutes(4);
-    store.set_profile(&p).unwrap();
     let today = store.today(at(1, 10)).unwrap();
     assert_eq!(today.streak.days, 1, "yesterday met, today not over yet");
+    // A higher goal chosen now does not undo yesterday (/LF602/): the day keeps its goal.
+    let mut p = store.profile().unwrap();
+    p.daily_goal = DailyGoal::Minutes(10);
+    store.set_profile(&p).unwrap();
+    assert_eq!(store.today(at(1, 10)).unwrap().streak.days, 1);
 }
 
 #[test]

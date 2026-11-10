@@ -46,6 +46,11 @@ pub struct DayRecord {
     /// without a talk and on days from before this was kept.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub levels_at_start: BTreeMap<Skill, f64>,
+    /// The daily goal as it was on this day: the streak judges a day by the goal it had, so
+    /// choosing another goal later neither ends nor invents a streak (/LF601/, /LF602/).
+    /// `None` on days from before this was kept; they are judged by the goal of today.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub goal: Option<DailyGoal>,
 }
 
 impl DayRecord {
@@ -102,7 +107,14 @@ pub fn streak(
     let mut d = first;
     while d <= today {
         let paused = pauses.iter().any(|p| p.from <= d && d <= p.to);
-        let met = records.get(&d).is_some_and(|r| r.met(goal));
+        // A past day by the goal it had; today by the goal as it is now.
+        let met = records.get(&d).is_some_and(|r| {
+            r.met(if d == today {
+                goal
+            } else {
+                r.goal.unwrap_or(goal)
+            })
+        });
         if met {
             s.days += 1;
             s.longest = s.longest.max(s.days);
@@ -318,6 +330,36 @@ mod tests {
             .filter(|(_, m)| **m > 0)
             .map(|(i, m)| (start.plus(i as i64), rec(*m)))
             .collect()
+    }
+
+    #[test]
+    fn another_goal_leaves_the_days_before_as_they_were() {
+        // Twenty days of five to six minutes with a goal of five.
+        let mut days = BTreeMap::new();
+        for n in 0..20 {
+            let mut r = rec(5 + n % 2);
+            r.goal = Some(DailyGoal::Minutes(5));
+            days.insert(Day(100 + i64::from(n)), r);
+        }
+        let today = Day(120);
+        // The learner picks ten minutes: the streak stands, today is still open.
+        let s = streak(&days, DailyGoal::Minutes(10), &[], today);
+        assert_eq!((s.days, s.freezes_used.len()), (20, 0));
+        // A lower goal invents nothing either: a day that missed its goal stays missed.
+        let mut missed = rec(2);
+        missed.goal = Some(DailyGoal::Minutes(5));
+        days.insert(Day(110), missed);
+        let s = streak(&days, DailyGoal::Minutes(1), &[], today);
+        assert_eq!(s.freezes_used, vec![Day(110)]);
+        // Days from before the goal was kept are judged by today's goal, as before.
+        let old: BTreeMap<Day, DayRecord> = (0..3).map(|n| (Day(200 + n), rec(6))).collect();
+        assert_eq!(streak(&old, DailyGoal::Minutes(10), &[], Day(203)).days, 0);
+        assert_eq!(streak(&old, DailyGoal::Minutes(5), &[], Day(203)).days, 3);
+        // Today counts by the goal as it is now.
+        let mut now = rec(6);
+        now.goal = Some(DailyGoal::Minutes(5));
+        days.insert(today, now);
+        assert!(!streak(&days, DailyGoal::Minutes(10), &[], today).today_met);
     }
 
     #[test]

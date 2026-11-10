@@ -312,8 +312,11 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         });
         d = d.plus(1);
     }
-    let minutes: u32 = days.values().map(|r| r.speaking_secs / 60).sum();
-    let practice_days = days.values().filter(|r| r.speaking_secs > 0).count();
+    // The totals of the same twelve weeks (not of all time), minutes from the seconds summed:
+    // days of 90 s each are not a minute each.
+    let shown = || days.range(start..=today).map(|(_, r)| r);
+    let minutes: u32 = shown().map(|r| r.speaking_secs).sum::<u32>() / 60;
+    let practice_days = shown().filter(|r| r.speaking_secs > 0).count();
     let items = st.store.items()?;
     // Kinds of mistakes per week over the same twelve weeks (/LF610/).
     let de = st.store.profile()?.ui_lang != "en";
@@ -922,6 +925,32 @@ mod tests {
             .expect("particles")
             .clone();
         assert_eq!(particle["text"], "Partikeln: etwa gleich oft", "{particle}");
+    }
+
+    #[test]
+    fn the_twelve_weeks_total_what_they_show() {
+        let b = crate::TempBackend::new("twelve-weeks", false).unwrap();
+        let now = crate::now();
+        let day = |ago: i64, secs: u32| {
+            let r = kaiwa_core::progress::DayRecord {
+                speaking_secs: secs,
+                ..Default::default()
+            };
+            b.store.put_day(now.day().plus(-ago), &r).unwrap();
+        };
+        // Four days of 90 s in the weeks shown: six minutes, not four. A day half a year
+        // ago is not in the twelve weeks.
+        for ago in 0..4 {
+            day(ago, 90);
+        }
+        day(180, 3600);
+        let v = stats(&b, now).unwrap();
+        assert_eq!(
+            (v["minutes"].as_u64(), v["days"].as_u64()),
+            (Some(6), Some(4))
+        );
+        // Never less than the week it contains.
+        assert!(v["minutes"].as_u64() >= v["week"]["minutes"].as_u64());
     }
 
     #[test]

@@ -621,8 +621,13 @@ QQC2.ScrollView {
     }
 
     function exportPath() {
-        var dir = (page.p.path || "").replace(/[^\/]*$/, "")
-        return dir + "kaiwa-export-" + new Date().toISOString().slice(0, 10) + ".json"
+        // Named after the profile and the second: neither another profile's export nor an
+        // earlier one of the same day is written over.
+        var path = page.p.path || ""
+        var dir = path.replace(/[^\/]*$/, "")
+        var profile = path.replace(/^.*\//, "").replace(/\.kaiwa$/, "")
+        var stamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, "").replace("T", "-")
+        return dir + "kaiwa-export-" + (profile.length > 0 ? profile + "-" : "") + stamp + ".json"
     }
 
     KanteDialog {

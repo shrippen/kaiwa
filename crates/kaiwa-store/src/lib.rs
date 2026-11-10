@@ -728,6 +728,8 @@ impl Store {
         if rec.levels_at_start.is_empty() {
             rec.levels_at_start = levels_before;
         }
+        // The goal of the day, for the streak later (/LF602/).
+        rec.goal = Some(self.profile()?.daily_goal);
         rec.speaking_secs += speaking;
         rec.typed_turns += stats.typed_turns;
         rec.xp += xp;
@@ -842,6 +844,7 @@ impl Store {
             self.set_learning(&l)?;
         }
         let mut rec = self.day(now.day())?;
+        rec.goal = Some(self.profile()?.daily_goal);
         rec.reviews_done += 1;
         rec.xp += XP_REVIEW;
         self.put_day(now.day(), &rec)?;
