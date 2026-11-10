@@ -111,16 +111,21 @@ impl Analysis {
         let mut rest = text;
         let mut body = String::new();
         while let Some(a) = rest.find("<think>") {
-            body.push_str(&rest[..a]);
-            // A block that never closes is no block (the word may stand in an explanation).
             let Some(b) = rest[a..].find("</think>") else {
+                // A block that never closes: thinking cut off, and a draft in it is no
+                // analysis. Behind a brace the word stands in the JSON (an explanation).
+                if !body.contains('{') && !rest[..a].contains('{') {
+                    rest = &rest[..a];
+                }
                 break;
             };
+            body.push_str(&rest[..a]);
             rest = &rest[a + b + "</think>".len()..];
         }
         body.push_str(rest);
-        // The first whole JSON object that is an analysis; a sentence before it may hold
-        // braces or an object of its own ("The format is {} as asked.").
+        // The first whole JSON object that says `understood` is the analysis, fitting or not;
+        // a sentence before it may hold braces or an object of its own ("The format is {} as
+        // asked.").
         let mut why = None;
         let mut from = 0;
         while let Some(at) = body[from..].find('{').map(|i| from + i) {
@@ -130,8 +135,10 @@ impl Analysis {
             if let Some(Ok(v)) = values.next()
                 && v.is_object()
             {
+                let meant = v.get("understood").is_some();
                 match serde_json::from_value(v) {
                     Ok(a) => return Ok(a),
+                    Err(e) if meant => return Err(format(e.to_string())),
                     Err(e) => why = why.or(Some(e.to_string())),
                 }
                 // What stands inside an object that is no analysis is not one either.
@@ -181,6 +188,10 @@ mod tests {
             r#"{"understood":true,"goals_met":"name"}"#,
             "{}",
             "I cannot analyse this.",
+            // The answer does not fit; a second object behind it does not stand in for it.
+            r#"{"understood":true,"corrections":[{"severity":"wrong","kind":"grammar","original":"a","better":"b","explanation":"c"}]} Note {"understood":true}"#,
+            // A draft in thinking that was cut off.
+            r#"<think>Draft: {"understood":true,"corrections":[]} wait, there is a particle error, let me"#,
             r#"{"understood":true,"corrections":["#,
         ] {
             assert!(Analysis::from_text(bad).is_err(), "{bad}");
