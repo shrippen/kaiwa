@@ -22,8 +22,13 @@ Kirigami.ApplicationWindow {
     visible: true
     title: "Kaiwa"
 
-    // Narrower, the views lose their layout; every view is checked at this width (/LL303/).
-    readonly property int narrowest: 800
+    // Narrower, the views lose their layout; every view is checked at this width (/LL303/:
+    // 800 px on a screen scaled by 150 %).
+    readonly property int narrowest: 533
+    // Below this, settings put the control under its title and the conversation puts the
+    // talk button on a line of its own.
+    readonly property int compactBelow: 700
+    readonly property bool compact: width < compactBelow
 
     readonly property var args: Qt.application.arguments
     function arg(name, fallback) {

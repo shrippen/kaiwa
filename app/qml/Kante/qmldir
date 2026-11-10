@@ -7,6 +7,7 @@ KanteAudioMeter 1.0 KanteAudioMeter.qml
 KanteBandEditor 1.0 KanteBandEditor.qml
 KanteBanner 1.0 KanteBanner.qml
 KanteBarChart 1.0 KanteBarChart.qml
+KanteBarScope 1.0 KanteBarScope.qml
 KanteBassStaff 1.0 KanteBassStaff.qml
 KanteBrackets 1.0 KanteBrackets.qml
 KanteBulkBar 1.0 KanteBulkBar.qml
@@ -120,3 +121,4 @@ KanteTunerGauge 1.0 KanteTunerGauge.qml
 KanteUpdateCheck 1.0 KanteUpdateCheck.qml
 KanteWeekTimeline 1.0 KanteWeekTimeline.qml
 KanteWeekView 1.0 KanteWeekView.qml
+KanteWindowScope 1.0 KanteWindowScope.qml

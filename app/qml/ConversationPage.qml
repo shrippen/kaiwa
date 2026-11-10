@@ -506,10 +506,16 @@ Kirigami.ScrollablePage {
         id: bar
         padding: KanteStyle.unit(12)
         background: Rectangle { color: KanteStyle.backgroundColor; Rectangle { width: parent.width; height: 1; color: KanteStyle.ruleColor } }
-        contentItem: RowLayout {
-            spacing: KanteStyle.unit(8)
+        // Narrow (/LL303/): the talk button on a line of its own, the field keeps its room.
+        contentItem: GridLayout {
+            readonly property bool compact: applicationWindow().compact
+            columns: compact ? 3 : 4
+            columnSpacing: KanteStyle.unit(8)
+            rowSpacing: KanteStyle.unit(8)
             KanteTalkButton {
                 id: talk
+                Layout.columnSpan: parent.compact ? 3 : 1
+                Layout.fillWidth: parent.compact
                 talkState: conv.busy && conv.talkState === KanteTalkButton.State.Ready ? KanteTalkButton.State.Thinking : conv.talkState
                 level: conv.level
                 titles: [page.t("Sprechen", "Speak"), page.t("Hört zu", "Listening"), page.t("Denkt nach", "Thinking"), page.t("Spricht", "Speaking"), page.t("Kein Sprechen", "No speech")]

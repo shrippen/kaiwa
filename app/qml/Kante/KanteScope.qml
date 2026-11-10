@@ -28,6 +28,13 @@ Item {
 
     required property Item target
     property QtObject popup: null
+    /** KanteStyle role of the target's `backgroundColor` (the window role by default). */
+    property string backgroundRole: "dialogColor"
+    /**
+     * Off: Kante off gives the platform's own colours back (undress), not the parent's. For a
+     * target with a colour set of its own that does not inherit (Kirigami's toolbar, Header).
+     */
+    property bool restorePlatform: false
     readonly property var theme: target ? target.Kirigami.Theme : null
     readonly property Item ground: popup && popup.background ? popup.background : null
     readonly property var groundTheme: ground ? ground.Kirigami.Theme : null
@@ -38,7 +45,7 @@ Item {
     readonly property var roles: ({
         textColor: "textColor",
         disabledTextColor: "disabledTextColor",
-        backgroundColor: "dialogColor",
+        backgroundColor: scope.backgroundRole,
         alternateBackgroundColor: "cardColor",
         highlightColor: "accentColor",
         highlightedTextColor: "accentForegroundColor",
@@ -74,10 +81,25 @@ Item {
 
     // One detached theme: Kante's roles, or the live colours of its item's parent.
     function bind(t, item) {
+        if (restorePlatform && !KanteStyle.themed) {
+            unbind(t)
+            return
+        }
         for (const prop in roles) {
             t[prop] = Qt.binding(KanteStyle.themed ? roleBinding(roles[prop]) : parentBinding(item, prop))
         }
         t.inherit = false
+    }
+
+    // Kante off: the platform's colours again. Undefined drops the colour and leaves the
+    // theme transparent until it syncs; a change of its colour group makes it sync now.
+    function unbind(t) {
+        for (const prop in roles) {
+            t[prop] = undefined
+        }
+        const group = t.colorGroup
+        t.colorGroup = group === Kirigami.Theme.Inactive ? Kirigami.Theme.Active : Kirigami.Theme.Inactive
+        t.colorGroup = group
     }
 
     /** The colors are set by this scope (System never touches the target). */
@@ -336,13 +358,7 @@ Item {
             if (!alive(item)) {
                 continue
             }
-            const t = item.Kirigami.Theme
-            for (const prop in roles) {
-                t[prop] = undefined
-            }
-            const group = t.colorGroup
-            t.colorGroup = group === Kirigami.Theme.Inactive ? Kirigami.Theme.Active : Kirigami.Theme.Inactive
-            t.colorGroup = group
+            unbind(item.Kirigami.Theme)
         }
     }
 }

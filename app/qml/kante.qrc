@@ -6,6 +6,7 @@
   <file>Kante/KanteBandEditor.qml</file>
   <file>Kante/KanteBanner.qml</file>
   <file>Kante/KanteBarChart.qml</file>
+  <file>Kante/KanteBarScope.qml</file>
   <file>Kante/KanteBassStaff.qml</file>
   <file>Kante/KanteBrackets.qml</file>
   <file>Kante/KanteBulkBar.qml</file>
@@ -121,6 +122,7 @@
   <file>Kante/KanteUpdateCheck.qml</file>
   <file>Kante/KanteWeekTimeline.qml</file>
   <file>Kante/KanteWeekView.qml</file>
+  <file>Kante/KanteWindowScope.qml</file>
   <file>Kante/fonts/Bravura.otf</file>
   <file>Kante/fonts/JetBrainsMono-400.ttf</file>
   <file>Kante/fonts/JetBrainsMono-500.ttf</file>

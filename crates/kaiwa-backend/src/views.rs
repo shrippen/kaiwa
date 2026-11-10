@@ -133,15 +133,18 @@ pub fn path(st: &Backend) -> anyhow::Result<Value> {
                 NodeState::Open => "open",
                 NodeState::Locked => "locked",
             };
-            let meta = match (&unit.locked_because, sc.state) {
-                (Some(why), NodeState::Locked) => format!("{number} · {why}"),
-                _ => format!("{number} · {}", unit.can_do),
+            // A locked node says what unlocks it; an open one says what it teaches, as a
+            // sentence of its own that wraps (/LL303/: narrow windows).
+            let (meta, text) = match (&unit.locked_because, sc.state) {
+                (Some(why), NodeState::Locked) => (format!("{number} · {why}"), String::new()),
+                _ => (number.clone(), unit.can_do.clone()),
             };
             nodes.push(json!({
                 "kind": "scenario",
                 "id": sc.id,
                 "title": scenario_title(st, &sc.id, lang),
                 "meta": meta,
+                "text": text,
                 "state": state,
                 "level": unit.level,
             }));
@@ -344,23 +347,42 @@ fn trend(word: &str, talks: &[(u32, u32)], de: bool) -> String {
     }
 }
 
+/// Minutes spoken a day from which each heat level starts: 1–2 min is level 1, … over 10
+/// is level 4.
+const HEAT_STEPS: [u32; 4] = [1, 3, 6, 11];
+
+/// The legend of the heat map: what each level means, level 0 first.
+fn heat_scale(de: bool) -> Vec<String> {
+    let mut out = vec!["0 min".to_string()];
+    for (i, from) in HEAT_STEPS.iter().enumerate() {
+        out.push(match HEAT_STEPS.get(i + 1) {
+            Some(next) => format!("{from}–{} min", next - 1),
+            None if de => format!("ab {from} min"),
+            None => format!("{from} min +"),
+        });
+    }
+    out
+}
+
 /// Statistics (/LF610/): 12 weeks of practice as a heat map, totals.
 pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let days = st.store.days()?;
     let today = now.day();
     // Monday of the week 11 weeks back, to today: whole weeks in columns.
     let start = today.plus(-(today.weekday() as i64) - 7 * 11);
+    let de = st.store.profile()?.ui_lang != "en";
     let mut levels = Vec::new();
+    // Each day by its ISO date with its level and minutes, for the calendar's squares and
+    // tooltips (charts carry their labels).
+    let mut by_day = serde_json::Map::new();
+    let mut tips = serde_json::Map::new();
     let mut d = start;
     while d <= today {
         let m = days.get(&d).map(|r| r.speaking_secs / 60).unwrap_or(0);
-        levels.push(match m {
-            0 => 0,
-            1..=2 => 1,
-            3..=5 => 2,
-            6..=10 => 3,
-            _ => 4,
-        });
+        let level = HEAT_STEPS.iter().filter(|&&from| m >= from).count();
+        levels.push(level);
+        by_day.insert(d.iso(), json!(level));
+        tips.insert(d.iso(), json!(format!("{m} min")));
         d = d.plus(1);
     }
     // The totals of the same twelve weeks (not of all time), minutes from the seconds summed:
@@ -370,7 +392,6 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let practice_days = shown().filter(|r| r.speaking_secs > 0).count();
     let items = st.store.items()?;
     // Kinds of mistakes per week over the same twelve weeks (/LF610/).
-    let de = st.store.profile()?.ui_lang != "en";
     let from = start.start(now.offset_min).unix;
     let mut weeks: BTreeMap<String, [u32; 12]> = BTreeMap::new();
     // The talks in order, for the trend: the turns of each and its mistakes per kind.
@@ -426,6 +447,10 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         "mistakes": mistakes,
         "vocab": vocab.iter().map(|(l, n)| json!({ "level": l, "count": n })).collect::<Vec<_>>(),
         "heat": levels,
+        "heatEnd": today.iso(),
+        "heatDays": by_day,
+        "heatTips": tips,
+        "heatScale": heat_scale(de),
         "minutes": minutes,
         "days": practice_days,
         "items": items.len(),
@@ -1149,6 +1174,72 @@ mod tests {
         );
         // Never less than the week it contains.
         assert!(v["minutes"].as_u64() >= v["week"]["minutes"].as_u64());
+    }
+
+    #[test]
+    fn the_heat_map_carries_its_labels() {
+        let b = crate::TempBackend::new("heat-labels", false).unwrap();
+        let now = crate::now();
+        let r = kaiwa_core::progress::DayRecord {
+            speaking_secs: 420,
+            ..Default::default()
+        };
+        b.store.put_day(now.day(), &r).unwrap();
+        let v = stats(&b, now).unwrap();
+        let today = now.day().iso();
+
+        // Today by its date, with its level and minutes; a legend word per level.
+        assert_eq!(v["heatDays"][&today], 3, "{}", v["heatDays"]);
+        assert_eq!(v["heatTips"][&today], "7 min");
+        assert_eq!(
+            v["heatDays"].as_object().unwrap().len(),
+            v["heat"].as_array().unwrap().len()
+        );
+        assert_eq!(
+            v["heatScale"],
+            json!(["0 min", "1–2 min", "3–5 min", "6–10 min", "ab 11 min"])
+        );
+    }
+
+    #[test]
+    fn the_heat_map_ends_on_the_backends_day() {
+        // A held clock (KAIWA_NOW, 20.10.2026) is not the computer's day: the calendar must
+        // end where the backend's twelve weeks end, not on today.
+        let b = crate::TempBackend::new("heat-end", false).unwrap();
+        let held = kaiwa_core::clock::Moment::new(1_792_478_400, 120);
+        let v = stats(&b, held).unwrap();
+        let last = v["heatDays"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .max()
+            .unwrap()
+            .clone();
+
+        assert_eq!(v["heatEnd"], held.day().iso());
+        assert_eq!(v["heatEnd"], last);
+    }
+
+    #[test]
+    fn a_path_node_says_what_it_teaches_in_its_own_line() {
+        let b = crate::TempBackend::new("path-text", false).unwrap();
+        let nodes = path(&b).unwrap();
+        let nodes = nodes.as_array().unwrap();
+        let open = nodes.iter().find(|n| n["state"] == "current").unwrap();
+        let locked = nodes.iter().find(|n| n["state"] == "locked").unwrap();
+
+        // The unit's number alone as meta, the can-do sentence apart, so it can wrap.
+        assert_eq!(
+            open["meta"].as_str().unwrap().len(),
+            "N5-01".len(),
+            "{open}"
+        );
+        assert!(
+            open["text"].as_str().unwrap().starts_with("Ich kann"),
+            "{open}"
+        );
+        assert!(locked["meta"].as_str().unwrap().contains(" · "), "{locked}");
+        assert_eq!(locked["text"], "");
     }
 
     #[test]

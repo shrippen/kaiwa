@@ -104,7 +104,7 @@ ReazonSpeech, Kokoro und kaiwa-kana-ctc in den Einstellungen unter „Modelle“
 3. **Nichts geht nach draußen** (`lena_zero_egress`): Tutor lokal (Ollama in den Einstellungen, keine `KAIWA_*`-Variablen gesetzt), Modelle geladen, dann
    `strace -f -e trace=connect,sendto,sendmsg -o qa/local/<datum>/egress.log ./target/debug/kaiwa` und ein Gespräch führen. Erlaubt sind nur Verbindungen zu `127.0.0.1`/`::1` (Ollama) und lokale Sockets (D-Bus, PipeWire). Jede andere Adresse und jede DNS-Anfrage (Port 53) ist ein Befund.
 4. **Große Schrift** (`hinnerk_font`): Systemschrift auf 160 % oder in Kaiwa Textgröße 160 %, dann jede Ansicht durchgehen. Nichts abgeschnitten, Furigana und Kana mitskaliert, keine Bedienelemente überlappen. Screenshots bei Auffälligkeiten in den Ordner. Vorarbeit ohne Bildschirm: `tools/font-160.sh` nimmt jede Ansicht der Demo bei 160 % auf (deutsch und englisch, Fenster wie auf einem Laptop mit 1366 px) und listet Texte, die abgeschnitten sind oder über den Rand ragen; Überlappungen und Furigana zeigt nur der Blick auf die Bilder in `out/font-160/`.
-5. **Schmales Fenster** (`hinnerk_narrow`, /LL303/): Das Fenster so schmal ziehen wie möglich; es bleibt bei 800 px stehen. Dann jede Ansicht durchgehen: nichts abgeschnitten, jeder Knopf erreichbar, Zusammengehöriges beisammen. Vorarbeit ohne Bildschirm: `SCALE=1 SCREEN=800 tools/font-160.sh`.
+5. **Schmales Fenster** (`hinnerk_narrow`, /LL303/): Das Fenster so schmal ziehen wie möglich; es bleibt bei 533 px stehen (bei 150 % Skalierung 800 Bildschirmpixel). Dann jede Ansicht durchgehen: nichts abgeschnitten, jeder Knopf erreichbar, Zusammengehöriges beisammen. Vorarbeit ohne Bildschirm: `SCALE=1 SCREEN=533 tools/font-160.sh`.
 
 ## 5. VOICEVOX (ADR-003, Spike 0.4 Teil 2)
 

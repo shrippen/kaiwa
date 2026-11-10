@@ -40,6 +40,7 @@ QQC2.ScrollView {
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
             titleWidth: page.titleWidth
+            narrow: applicationWindow().compact
         }
 
         // Several profiles on one device (/LF720/), each fully separate.
