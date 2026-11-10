@@ -133,15 +133,18 @@ pub fn path(st: &Backend) -> anyhow::Result<Value> {
                 NodeState::Open => "open",
                 NodeState::Locked => "locked",
             };
-            let meta = match (&unit.locked_because, sc.state) {
-                (Some(why), NodeState::Locked) => format!("{number} · {why}"),
-                _ => format!("{number} · {}", unit.can_do),
+            // A locked node says what unlocks it; an open one says what it teaches, as a
+            // sentence of its own that wraps (/LL303/: narrow windows).
+            let (meta, text) = match (&unit.locked_because, sc.state) {
+                (Some(why), NodeState::Locked) => (format!("{number} · {why}"), String::new()),
+                _ => (number.clone(), unit.can_do.clone()),
             };
             nodes.push(json!({
                 "kind": "scenario",
                 "id": sc.id,
                 "title": scenario_title(st, &sc.id, lang),
                 "meta": meta,
+                "text": text,
                 "state": state,
                 "level": unit.level,
             }));
@@ -350,10 +353,24 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let today = now.day();
     // Monday of the week 11 weeks back, to today: whole weeks in columns.
     let start = today.plus(-(today.weekday() as i64) - 7 * 11);
+    let de = st.store.profile()?.ui_lang != "en";
     let mut levels = Vec::new();
+    // The minutes behind each square and the Monday of each row, for the tooltips and the
+    // axis (charts carry their labels).
+    let mut day_minutes = Vec::new();
+    let mut mondays = Vec::new();
     let mut d = start;
     while d <= today {
         let m = days.get(&d).map(|r| r.speaking_secs / 60).unwrap_or(0);
+        day_minutes.push(m);
+        if d.weekday() == 0 {
+            let (_, month, day) = d.ymd();
+            mondays.push(if de {
+                format!("{day}.{month}.")
+            } else {
+                format!("{month}/{day}")
+            });
+        }
         levels.push(match m {
             0 => 0,
             1..=2 => 1,
@@ -370,7 +387,6 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let practice_days = shown().filter(|r| r.speaking_secs > 0).count();
     let items = st.store.items()?;
     // Kinds of mistakes per week over the same twelve weeks (/LF610/).
-    let de = st.store.profile()?.ui_lang != "en";
     let from = start.start(now.offset_min).unix;
     let mut weeks: BTreeMap<String, [u32; 12]> = BTreeMap::new();
     // The talks in order, for the trend: the turns of each and its mistakes per kind.
@@ -426,6 +442,8 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         "mistakes": mistakes,
         "vocab": vocab.iter().map(|(l, n)| json!({ "level": l, "count": n })).collect::<Vec<_>>(),
         "heat": levels,
+        "heatMinutes": day_minutes,
+        "heatWeeks": mondays,
         "minutes": minutes,
         "days": practice_days,
         "items": items.len(),
@@ -1149,6 +1167,55 @@ mod tests {
         );
         // Never less than the week it contains.
         assert!(v["minutes"].as_u64() >= v["week"]["minutes"].as_u64());
+    }
+
+    #[test]
+    fn the_heat_map_carries_its_labels() {
+        let b = crate::TempBackend::new("heat-labels", false).unwrap();
+        let now = crate::now();
+        let r = kaiwa_core::progress::DayRecord {
+            speaking_secs: 420,
+            ..Default::default()
+        };
+        b.store.put_day(now.day(), &r).unwrap();
+        let v = stats(&b, now).unwrap();
+        let heat = v["heat"].as_array().unwrap();
+        let minutes = v["heatMinutes"].as_array().unwrap();
+
+        // One minute figure per square, today's last; one Monday per row of seven.
+        assert_eq!(minutes.len(), heat.len());
+        assert_eq!(minutes.last().unwrap(), 7);
+        assert_eq!(
+            v["heatWeeks"].as_array().unwrap().len(),
+            heat.len().div_ceil(7)
+        );
+        assert!(
+            v["heatWeeks"][0].as_str().unwrap().ends_with('.'),
+            "{}",
+            v["heatWeeks"]
+        );
+    }
+
+    #[test]
+    fn a_path_node_says_what_it_teaches_in_its_own_line() {
+        let b = crate::TempBackend::new("path-text", false).unwrap();
+        let nodes = path(&b).unwrap();
+        let nodes = nodes.as_array().unwrap();
+        let open = nodes.iter().find(|n| n["state"] == "current").unwrap();
+        let locked = nodes.iter().find(|n| n["state"] == "locked").unwrap();
+
+        // The unit's number alone as meta, the can-do sentence apart, so it can wrap.
+        assert_eq!(
+            open["meta"].as_str().unwrap().len(),
+            "N5-01".len(),
+            "{open}"
+        );
+        assert!(
+            open["text"].as_str().unwrap().starts_with("Ich kann"),
+            "{open}"
+        );
+        assert!(locked["meta"].as_str().unwrap().contains(" · "), "{locked}");
+        assert_eq!(locked["text"], "");
     }
 
     #[test]
