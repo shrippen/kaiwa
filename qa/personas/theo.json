@@ -238,7 +238,7 @@
           "requirements": [
             "/LF116/"
           ],
-          "assert": "Die Startseite bietet freie Gespräche zu Themen an, außerhalb des Lernpfads. Die Figur bekommt sein eigenes Niveau genannt (N4), nicht das einer Anfängerin. Beendete freie Gespräche lassen den Lernpfad, wo er war, und zählen für den Tag als Übung."
+          "assert": "Die Startseite bietet freie Gespräche zu Themen an, außerhalb des Lernpfads. Ein freies Gespräch, gestartet oder fortgesetzt wie in der App, nennt der Figur sein eigenes Niveau (N4). Beendete freie Gespräche lassen den Lernpfad, wo er war, und zählen für den Tag als Übung."
         }
       ]
     },

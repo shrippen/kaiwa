@@ -239,17 +239,13 @@ fn cost_limit() -> Result<Option<String>> {
     Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
-/// A tutor that keeps the instructions it was given and reaches every goal named to it.
+/// A tutor that reaches every goal named to it.
 struct Listening {
     goals: Vec<String>,
-    systems: std::sync::Mutex<Vec<String>>,
 }
 
 impl kaiwa_ai::ChatProvider for Listening {
-    fn reply(&self, request: &kaiwa_ai::TurnRequest) -> Result<String, kaiwa_ai::AiError> {
-        if let Ok(mut s) = self.systems.lock() {
-            s.push(request.system.clone());
-        }
+    fn reply(&self, _: &kaiwa_ai::TurnRequest) -> Result<String, kaiwa_ai::AiError> {
         Ok("そうですか。".into())
     }
 
@@ -264,9 +260,9 @@ impl kaiwa_ai::ChatProvider for Listening {
     }
 }
 
-/// /LF116/: the start page offers free talks on topics, outside the learning path; the
-/// character is told the persona's own level (not a beginner's, not the path's unit); and
-/// finished free talks leave the path where it was, while the day counts them as practice.
+/// /LF116/: the start page offers free talks on topics, outside the learning path; a free
+/// talk started or continued as the app does it tells the character the persona's own level;
+/// and finished free talks leave the path where it was, while the day counts them as practice.
 fn free_talk(p: &Value) -> Result<Option<String>> {
     let b = kaiwa_backend::TempBackend::new("sim-free", false)?;
     let now = kaiwa_core::Day::from_ymd(2026, 10, 5)
@@ -315,10 +311,12 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
     };
     let scenario = b.scenarios.get(&id).cloned().with_context(|| id.clone())?;
 
-    // His level, not a beginner's: the level named to the character is the one of his
-    // `start_level.speaking`, and the sentences are longer than for someone at zero.
+    // His level: the profile holds his placement, and a talk started the way the app starts
+    // it (`Backend::new_talk`) names the level of his `start_level.speaking` to the
+    // character. So does the same talk continued later.
     let model = simulate_placement(p).result();
     let own = model.level(Skill::Speaking);
+    b.store.set_placement(model.clone())?;
     let want = match p["start_level"]["speaking"].as_str().unwrap_or_default() {
         "none" | "a0" | "n5_low" | "n5" => "N5",
         "n4_low" | "n4" => "N4",
@@ -326,50 +324,36 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
         "n2" => "N2",
         _ => "N1",
     };
+    let (started, _) = b.new_talk(scenario.clone())?;
+    let (continued, _) = b.continued_talk(scenario.clone(), started.snapshot())?;
+    for (how, told) in [
+        ("started", started.reply_instructions()),
+        ("continued", continued.reply_instructions()),
+    ] {
+        if !told.contains(&format!("JLPT {want})")) && !told.contains(&format!("JLPT {want} ")) {
+            found.push(format!(
+                "speaking {own:.1}, a talk {how} does not tell the character JLPT {want}: {}",
+                told.lines().nth(1).unwrap_or_default()
+            ));
+        }
+    }
     let goals: Vec<String> = scenario.goals.iter().map(|g| g.id.clone()).collect();
-    let talk = |model: Option<&LearnerModel>| -> Result<(Session, String)> {
+    let talk = || -> Result<Session> {
         let tutor = Arc::new(Listening {
             goals: goals.clone(),
-            systems: Default::default(),
         });
-        let mut s = Session::new(scenario.clone(), tutor.clone(), Amount::Normal, "en");
-        if let Some(m) = model {
-            s = s
-                .with_difficulty(Difficulty::for_learner(m))
-                .with_learner_level(m.level(Skill::Speaking));
-        } else {
-            let zero = LearnerModel::default();
-            s = s
-                .with_difficulty(Difficulty::for_learner(&zero))
-                .with_learner_level(zero.level(Skill::Speaking));
-        }
+        let mut s = Session::new(scenario.clone(), tutor, Amount::Normal, "en")
+            .with_difficulty(Difficulty::for_learner(&model));
         s.turn("映画音楽をよく聞きます。", Input::Spoken)?;
-        let system = tutor
-            .systems
-            .lock()
-            .ok()
-            .and_then(|s| s.last().cloned())
-            .unwrap_or_default();
-        Ok((s, system))
+        Ok(s)
     };
-    let (_, his) = talk(Some(&model))?;
-    let (_, beginner) = talk(None)?;
-    if !his.contains(&format!("JLPT {want})")) && !his.contains(&format!("JLPT {want} ")) {
-        found.push(format!(
-            "speaking {own:.1}, the character is not told JLPT {want}: {}",
-            his.lines().nth(1).unwrap_or_default()
-        ));
-    }
-    if his == beginner {
-        found.push("the character is told the same as for a beginner".into());
-    }
 
     // Outside the path: free talks with every goal reached, more often than a scenario of the
     // path needs to count as done, leave the path as it was; the day counts them.
     let before = b.store.learning()?.course;
     let next = b.curriculum.next_scenario(&before);
     for k in 0..=i64::from(kaiwa_core::curriculum::COMPLETIONS) {
-        let (s, _) = talk(Some(&model))?;
+        let s = talk()?;
         if !s.done() {
             found.push("the free talk does not end with its goals".into());
             break;

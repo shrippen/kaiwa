@@ -183,15 +183,16 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     let his_file = hinnerk.path.clone();
     drop(hinnerk);
 
-    // The grandson's own profile: from zero, German like the interface, now the one in use.
-    let file = profiles::create(&dir, "Ole", "de")?;
+    // The grandson's own profile: from zero, in the interface's language (English here, to
+    // tell it from a new profile's default), now the one in use.
+    let file = profiles::create(&dir, "Ole", "en")?;
     if profiles::current_in(&dir) != file {
         found.push("the new profile is not the one in use".into());
     }
     let ole = Backend::open_at(file.clone(), false)?;
     let op = ole.store.profile()?;
     let fresh = kaiwa_store::Profile::default();
-    if op.name != "Ole" || op.ui_lang != "de" {
+    if op.name != "Ole" || op.ui_lang != "en" {
         found.push(format!("the new profile: {} / {}", op.name, op.ui_lang));
     }
     if op.text_scale != fresh.text_scale
@@ -225,7 +226,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     talk(&ole, 2)?;
     talk(&ole, 3)?;
     let mut op = ole.store.profile()?;
-    op.ui_lang = "en".into();
+    op.ui_lang = "de".into();
     op.text_scale = 1.0;
     op.gamification = true;
     op.cost_limit_cents = Some(2000);
@@ -262,8 +263,22 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
             odd.display()
         ));
     }
-    if profiles::set_current(&dir, "../x.kaiwa").is_ok() {
+    // Nor can a profile that exists outside the directory be chosen from in it.
+    let outside = temp_dir("own-profile-outside");
+    drop(Backend::open_at(outside.join("x.kaiwa"), false)?);
+    let name = outside
+        .file_name()
+        .map(|n| format!("../{}/x.kaiwa", n.to_string_lossy()))
+        .unwrap_or_default();
+    if !dir.join(&name).exists() {
+        found.push("the profile outside was not made".into());
+    }
+    if profiles::set_current(&dir, &name).is_ok() || profiles::current_in(&dir) == dir.join(&name) {
         found.push("a profile outside the directory can be chosen".into());
+    }
+    std::fs::write(dir.join("current"), &name)?;
+    if profiles::current_in(&dir) == dir.join(&name) {
+        found.push("a profile outside the directory is opened".into());
     }
     Ok((!found.is_empty()).then(|| found.join("; ")))
 }

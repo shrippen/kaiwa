@@ -241,6 +241,18 @@ impl Session {
         }
     }
 
+    /// What the character is told for its next reply: role, register, the difficulty in
+    /// words, the level, the unit's grammar and the goals ([`crate::prompts::reply_system`]).
+    pub fn reply_instructions(&self) -> String {
+        reply_system(
+            &self.scenario,
+            &self.lang,
+            &self.difficulty,
+            &self.grammar,
+            self.learner_level,
+        )
+    }
+
     /// The unit's grammar labels given with [`Session::with_grammar`].
     pub fn grammar(&self) -> &[String] {
         &self.grammar
@@ -429,13 +441,10 @@ impl Session {
             analysis.corrections = cross_check(&analysis.corrections, &second.corrections);
         }
         fit_register(&mut analysis.corrections, self.scenario.register);
-        let reply = match self.provider.reply(&self.request(reply_system(
-            &self.scenario,
-            &self.lang,
-            &self.difficulty,
-            &self.grammar,
-            self.learner_level,
-        ))) {
+        let reply = match self
+            .provider
+            .reply(&self.request(self.reply_instructions()))
+        {
             // The reply with the readings the tutor wrote (/LF110/); the model's own history
             // gets it without, as the opening.
             Ok(r) => crate::clean_markup(&r),
