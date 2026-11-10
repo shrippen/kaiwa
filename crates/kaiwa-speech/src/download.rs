@@ -362,20 +362,28 @@ impl Read for Patient<'_> {
 
 fn get<'a>(url: &str, stop: &'a AtomicBool) -> Patient<'a> {
     let url = url.to_string();
-    Patient::new(
-        move || {
-            let response = ureq::get(&url)
-                .call()
-                .map_err(|e| DownloadError::Http(e.to_string()))?;
-            Ok(response
-                .into_body()
-                .into_with_config()
-                .limit(u64::MAX)
-                .reader())
-        },
-        STALL,
-        stop,
-    )
+    Patient::new(move || open(&url, STALL), STALL, stop)
+}
+
+/// The body of `url`. Finding the host, connecting and the response's head get `limit` each:
+/// without, a server that never answers held its thread for good after `Patient` gave up.
+/// The body has no limit as a whole (a large model on a slow line takes its time).
+fn open(url: &str, limit: Duration) -> Result<impl Read + use<>, DownloadError> {
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .timeout_resolve(Some(limit))
+        .timeout_connect(Some(limit))
+        .timeout_recv_response(Some(limit))
+        .build()
+        .into();
+    let response = agent
+        .get(url)
+        .call()
+        .map_err(|e| DownloadError::Http(e.to_string()))?;
+    Ok(response
+        .into_body()
+        .into_with_config()
+        .limit(u64::MAX)
+        .reader())
 }
 
 fn hex(hash: Sha256) -> String {
@@ -534,6 +542,21 @@ fn unpack(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_server_that_never_answers_lets_its_thread_go() {
+        let server = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}/model.onnx", server.local_addr().unwrap());
+        let (tx, rx) = mpsc::channel();
+        std::thread::spawn(move || {
+            let failed = open(&url, Duration::from_millis(300)).is_err();
+            let _ = tx.send(failed);
+        });
+
+        // Accepted, never answered: the request must give up by itself.
+        let _held = server.accept().unwrap();
+        assert_eq!(rx.recv_timeout(Duration::from_secs(5)), Ok(true));
+    }
 
     #[test]
     fn every_file_has_a_checksum_and_a_size() {
