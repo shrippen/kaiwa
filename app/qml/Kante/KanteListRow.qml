@@ -51,10 +51,10 @@ FocusScope {
     property bool focusOnClick: true
     property string disabledReason: ""
     property int density: KanteListRow.Density.Normal
-    /** Least width of the texts; below it the meta figure and `trailing` go under them (1.78). */
-    property real minTextWidth: KanteStyle.unit(160)
+    /** Opt-in (1.78): the meta figure and `trailing` go under the texts when these would get less than this width. 0 = never. */
+    property real minTextWidth: 0
     /** The meta figure and `trailing` sit under the texts, because the row is too narrow. */
-    readonly property bool stacked: tail.visible && width < inlineNeed()
+    readonly property bool stacked: minTextWidth > 0 && tail.visible && width < inlineNeed()
     readonly property bool pressed: tap.active
     default property alias marker: markerSlot.data
     /** Items at the right end, after the meta figure (e.g. a chevron or an icon). */
