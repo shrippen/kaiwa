@@ -9,6 +9,7 @@
   <file>Kante/KanteBassStaff.qml</file>
   <file>Kante/KanteBrackets.qml</file>
   <file>Kante/KanteBulkBar.qml</file>
+  <file>Kante/KanteBusyIndicator.qml</file>
   <file>Kante/KanteButton.qml</file>
   <file>Kante/KanteCalendarGrid.qml</file>
   <file>Kante/KanteCalendarHeatmap.qml</file>
