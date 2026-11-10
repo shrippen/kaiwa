@@ -7,7 +7,7 @@
 mod cache;
 mod vocab;
 
-pub use cache::SpeechCache;
+pub use cache::{SpeechCache, sentence};
 
 use std::collections::HashMap;
 use std::io::Read;
@@ -20,6 +20,14 @@ use crate::SpeechError;
 use crate::g2p::G2p;
 
 pub const SAMPLE_RATE: u32 = 24_000;
+/// Kokoro's Japanese voices (`voices-v1.0.bin`); a scenario's `voice` is one of them.
+pub const VOICES: [&str; 5] = [
+    "jf_alpha",
+    "jf_gongitsune",
+    "jf_nezumi",
+    "jf_tebukuro",
+    "jm_kumo",
+];
 /// Kokoro takes at most 510 phonemes at once.
 const MAX_PHONEMES: usize = 510;
 const STYLE: usize = 256;
@@ -275,6 +283,26 @@ mod tests {
         assert!(heard.contains("コーヒー"), "heard {heard}");
     }
 
+    /// A typo in a scenario's `voice` would leave the character with the last one's voice.
+    #[test]
+    fn every_scenario_names_a_voice_kokoro_has() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/scenarios");
+        let mut seen = 0;
+        for entry in std::fs::read_dir(&dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.extension().is_none_or(|e| e != "json") {
+                continue;
+            }
+            let v: serde_json::Value =
+                serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+            if let Some(voice) = v["voice"].as_str() {
+                assert!(VOICES.contains(&voice), "{}: {voice}", path.display());
+                seen += 1;
+            }
+        }
+        assert!(seen > 0, "no scenario with a voice in {}", dir.display());
+    }
+
     /// Another scenario's character speaks with its own voice; an unknown one keeps the old.
     /// Needs Kokoro (`KAIWA_MODELS`).
     #[test]
@@ -287,6 +315,10 @@ mod tests {
         let before = voice.speak("はい。", 1.0).unwrap();
         voice.select("jm_kumo").unwrap();
         assert_eq!(voice.name(), "jm_kumo");
+        for v in VOICES {
+            voice.select(v).unwrap_or_else(|e| panic!("{v}: {e}"));
+        }
+        voice.select("jm_kumo").unwrap();
         assert_ne!(voice.speak("はい。", 1.0).unwrap(), before);
         assert!(voice.select("xx_none").is_err());
         assert_eq!(voice.name(), "jm_kumo");

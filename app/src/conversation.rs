@@ -777,36 +777,13 @@ impl qobject::Conversation {
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let still = || current.load(Ordering::SeqCst) == id;
-            let cached =
-                |sentence: &str| said.lock().ok().and_then(|c| c.get(&name, sentence, speed));
             for sentence in tts::sentences(&text) {
                 if !still() {
                     return;
                 }
-                // Said before in this conversation: play it at once (/LF111/). Looked up
-                // again once the voice is ours, since a line cut off may have just made it.
-                let audio = cached(&sentence).map(Ok).or_else(|| {
-                    let mut v = speaker.voice.lock().ok()?;
-                    if let Some(hit) = cached(&sentence) {
-                        return Some(Ok(hit));
-                    }
-                    // The character's own voice (/LF117/): a voice still loaded from the
-                    // last scenario switches over; if it cannot, the old one speaks.
-                    if v.voice() != name
-                        && let Err(e) = v.select(&name)
-                    {
-                        eprintln!("kaiwa: {e}");
-                    }
-                    let made = v
-                        .speak(&sentence, speed)
-                        .map(|s| (Arc::new(s), v.sample_rate()));
-                    if let Ok((samples, rate)) = &made
-                        && let Ok(mut c) = said.lock()
-                    {
-                        c.put(v.voice(), &sentence, speed, samples.clone(), *rate);
-                    }
-                    Some(made)
-                });
+                // In the character's own voice (/LF117/); what this conversation said before
+                // plays at once (/LF111/).
+                let audio = tts::sentence(&*speaker.voice, &said, &name, &sentence, speed);
                 match audio {
                     Some(Ok((samples, rate))) if still() => {
                         let mut samples = samples.to_vec();
