@@ -37,6 +37,7 @@ Wenn sonst etwas auffiel:
 |---|---|---|---|
 | Mikrofon-Test in den Einstellungen: Liste, Urteil, Anhören, „Verstanden“ | | | |
 | Erkennung und Übergangsstimme (allgemeiner Eindruck) | | | |
+| `mara_ptt` (3.1a): Leertaste nimmt auf, ohne Klick vorher und nach einem Klick auf „Nochmal“ | | | |
 | `hinnerk_no_cutoff`: kein Zug abgeschnitten, Angebot längerer Pause | | | |
 | Freisprechen über Lautsprecher (3.2a): kein fremder Satz, hört von selbst wieder zu | | | |
 | Mikrofon weg und wieder da (3.2b): „Kein Sprechen“, nach einem Klick geht die Taste wieder | | | |

@@ -498,8 +498,11 @@ fn suggest_smaller(root: &Path) -> Result<Option<String>> {
 }
 
 /// /LF100/ from the source: the talk button starts and ends a recording by click and by the
-/// space bar (pressed and released), the page wires both to the conversation, and every state
-/// has a name. Recording itself needs the audio mode.
+/// space bar (pressed and released), the page wires both to the conversation, the space bar
+/// reaches the button from anywhere on the page (the button's own keys work only with the
+/// focus on it, and nothing gives it the focus: the check was green while space did nothing),
+/// and every state has a name. Recording itself needs the audio mode; the keys in the running
+/// app are step 3.1 of the local test.
 fn push_to_talk(root: &Path) -> Result<Option<String>> {
     let talk = std::fs::read_to_string(root.join("app/qml/Kante/KanteTalkButton.qml"))?;
     let page = std::fs::read_to_string(root.join("app/qml/ConversationPage.qml"))?;
@@ -518,6 +521,8 @@ fn push_to_talk(root: &Path) -> Result<Option<String>> {
     for needle in [
         "onTalkStarted: conv.startTalk()",
         "onTalkEnded: conv.stopTalk()",
+        "sequence: \"Space\"",
+        "onActivated: { talk.forceActiveFocus(Qt.ShortcutFocusReason); talk.press() }",
     ] {
         if !page.contains(needle) {
             found.push(format!("the page lacks {needle}"));
