@@ -364,6 +364,19 @@ fn heat_scale(de: bool) -> Vec<String> {
     out
 }
 
+/// A view as the pages read it. A view that failed is empty text, not "null": each page parses
+/// only non-empty text and otherwise keeps its own defaults, so it shows empty instead of
+/// throwing on `null.heat`.
+pub fn text(r: anyhow::Result<serde_json::Value>) -> String {
+    match r {
+        Ok(v) => v.to_string(),
+        Err(e) => {
+            eprintln!("kaiwa: {e:#}");
+            String::new()
+        }
+    }
+}
+
 /// Statistics (/LF610/): 12 weeks of practice as a heat map, totals.
 pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let days = st.store.days()?;
@@ -1199,6 +1212,13 @@ mod tests {
             v["heatScale"],
             json!(["0 min", "1–2 min", "3–5 min", "6–10 min", "ab 11 min"])
         );
+    }
+
+    #[test]
+    fn a_failed_view_leaves_the_page_its_defaults() {
+        // ProfilePage: `kaiwa.stats.length > 0 ? JSON.parse(kaiwa.stats) : ({ heat: [] })`.
+        assert_eq!(text(Err(anyhow::anyhow!("database is locked"))), "");
+        assert_eq!(text(Ok(json!({ "heat": [] }))), r#"{"heat":[]}"#);
     }
 
     #[test]

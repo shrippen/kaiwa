@@ -239,13 +239,7 @@ impl qobject::KaiwaApp {
                 privacy,
             )
         };
-        let ok = |r: anyhow::Result<serde_json::Value>| match r {
-            Ok(v) => q(&v),
-            Err(e) => {
-                eprintln!("kaiwa: {e:#}");
-                QString::from("null")
-            }
-        };
+        let ok = |r: anyhow::Result<serde_json::Value>| QString::from(&views::text(r));
         self.as_mut().set_today(ok(today));
         self.as_mut().set_path(ok(path));
         self.as_mut().set_review(ok(review));
