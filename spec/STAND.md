@@ -60,12 +60,12 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | Nr. | Entscheidung | Stand |
 |---|---|---|
 | S-01 | Mindestbreite 533 px (800 bei 150 %), alle Ansichten anpassen | umgesetzt: `narrowest` in `Main.qml`, /LL303/; unter 700 px (`compactBelow`) stapeln Einstellungen und Gesprächsleiste |
-| S-02 | Profil, „Neu einstufen“: Knöpfe unter den Text, wenn die Zeile nicht reicht | umgesetzt: `KanteListRow.stacked` (Kante 1.63) |
+| S-02 | Profil, „Neu einstufen“: Knöpfe unter den Text, wenn die Zeile nicht reicht | umgesetzt: `KanteListRow.minTextWidth` und `stacked` (Kante 1.78) |
 | S-03 | Profil: Zahlen umbrechen (2×2), Stellschrauben einspaltig | umgesetzt |
 | S-04 | Einstellungen: unter 700 px Bezeichnung oben, Bedienelement darunter | umgesetzt: `KanteSettingRow.narrow` |
 | S-05 | Gespräch: unter 700 px zwei Zeilen, Sprechknopf oben über die ganze Breite, darunter Eingabe, Hilfe, Senden | umgesetzt |
-| S-06 | Lernpfad: Kann-Satz in normaler Schrift, umbrechend; Kennung bleibt Mono | umgesetzt: `text` je Knoten (`views::path`, `KantePath`, Kante 1.63) |
-| S-07 | Profil: Heatmap mit Wochentagen, Wochen und Legende, im selben PR | umgesetzt: `heatMinutes`, `heatWeeks` (`views::stats`), `KanteHeatmap` (Kante 1.63) |
+| S-06 | Lernpfad: Kann-Satz in normaler Schrift, umbrechend; Kennung bleibt Mono | umgesetzt: `text` je Knoten (`views::path`, `KantePath`, Kante 1.78) |
+| S-07 | Profil: Heatmap mit Wochentagen, Wochen und Legende, im selben PR | umgesetzt: `KanteCalendarHeatmap` mit `KanteLegend`; `heatDays`, `heatTips`, `heatScale` (`views::stats`) |
 
 ## Entscheidungen aus Fragenpaket 11 (2026-11-10)
 
