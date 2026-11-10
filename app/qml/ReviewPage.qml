@@ -16,13 +16,17 @@ QQC2.ScrollView {
 
     readonly property var items: kaiwa.review.length > 0 ? JSON.parse(kaiwa.review) : []
     readonly property var current: items.length > 0 ? items[0] : null
+    // Everything due, as the start page and the tab count it; the list holds ten at a time.
+    readonly property int remaining: Math.max(items.length, kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0)
+    // The item on screen by its text: every refresh parses a new object for the same item.
+    readonly property string currentText: current ? current.text : ""
     readonly property var answer: kaiwa.answer.length > 0 ? JSON.parse(kaiwa.answer) : null
     // A mini conversation: the item has the character's line to answer.
     readonly property bool talk: current !== null && !!current.cue
     // The form is on screen: asked for as a hint (help) or shown after a spoken answer.
     property bool hinted: false
     property bool spoken: false
-    onCurrentChanged: { hinted = false; spoken = false }
+    onCurrentTextChanged: { hinted = false; spoken = false }
     contentWidth: availableWidth
 
     ColumnLayout {
@@ -63,7 +67,7 @@ QQC2.ScrollView {
                         ? (page.current.fromMistake ? page.t("Aus deinen Korrekturen", "From your corrections")
                            : page.current.fromLookup ? page.t("Nachgeschlagen", "Looked up")
                            : page.t("Neues Wort", "New word"))
-                          + " · " + page.t("noch ", "") + page.items.length + page.t("", " left")
+                          + " · " + page.t("noch ", "") + page.remaining + page.t("", " left")
                         : ""
                 }
                 KanteRubyText {
@@ -128,7 +132,7 @@ QQC2.ScrollView {
             KanteSectionLabel {
                 text: page.t("Mini-Gespräch", "Mini conversation")
                       + (page.current && page.current.practises ? " · " + page.current.practises : "")
-                      + " · " + page.t("noch ", "") + page.items.length + page.t("", " left")
+                      + " · " + page.t("noch ", "") + page.remaining + page.t("", " left")
             }
             KanteMessage {
                 Layout.fillWidth: true

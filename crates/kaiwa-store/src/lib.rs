@@ -728,6 +728,8 @@ impl Store {
         if rec.levels_at_start.is_empty() {
             rec.levels_at_start = levels_before;
         }
+        // The goal of the day, for the streak later (/LF602/).
+        rec.goal = Some(self.profile()?.daily_goal);
         rec.speaking_secs += speaking;
         rec.typed_turns += stats.typed_turns;
         rec.xp += xp;
@@ -842,6 +844,7 @@ impl Store {
             self.set_learning(&l)?;
         }
         let mut rec = self.day(now.day())?;
+        rec.goal = Some(self.profile()?.daily_goal);
         rec.reviews_done += 1;
         rec.xp += XP_REVIEW;
         self.put_day(now.day(), &rec)?;
@@ -869,6 +872,17 @@ impl Store {
              ON CONFLICT(day) DO UPDATE SET value = excluded.value",
             params![d.0, serde_json::to_string(r)?],
         )?;
+        Ok(())
+    }
+
+    /// The learner chose another daily goal on `today`: a day already begun takes it over, so
+    /// it is judged by the goal it ended with, tomorrow as today (/LF602/). Days before keep
+    /// theirs.
+    pub fn set_day_goal(&self, today: Day, goal: DailyGoal) -> Result<()> {
+        if let Some(mut rec) = self.days()?.remove(&today) {
+            rec.goal = Some(goal);
+            self.put_day(today, &rec)?;
+        }
         Ok(())
     }
 
