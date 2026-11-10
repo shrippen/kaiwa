@@ -64,7 +64,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | T-03 | Schriftgröße 160 % (`hinnerk_font`): nur als lokales Skript, die CI bleibt, wie sie ist | offen |
 | T-04 | Freies Gespräch nennt der Figur das Sprechniveau aus dem Lernermodell (#69): so lassen, im lokalen Test mit ansehen | #69; `LOKALER-TEST.md` |
 | T-05 | Nächster Schwerpunkt: A, weiter Prüfregeln für Anforderungen ohne Prüfung und zweite Leser für Code ohne Tests (als Nächstes Wiederholen, Einstellungen, Einstufung, Modell-Downloads) | laufend |
-| T-06 | Wiederholungen sperren den Lernpfad gar nicht mehr; sie werden nur empfohlen | offen |
+| T-06 | Wiederholungen sperren den Lernpfad gar nicht mehr; sie werden nur empfohlen | umgesetzt: `Curriculum::path` sperrt nur noch über fehlende Einheiten; eine Einheit mit schwachen Wiederholungen (`UnitNode::shaky`) bekommt am Wiederholungsknoten „empfohlen, bevor es weitergeht“ |
 | T-07 | Auffrischung nach einer Pause: zehn sind zehn, der Rest wird beim Wiedereinstieg einmal auf die nächsten Tage verteilt; Wiederholen zählt als Übung | offen |
 | T-08 | Alle drei bauen: Import eines Exports in ein leeres Profil, ein Knopf „Überspringen“ am Hinweis des Lernpfads, „Pause beenden“ in den Einstellungen | offen |
 | T-09 | Modell-Download mit Zeitlimit je Lesevorgang (30 s ohne Daten gelten als abgerissen), „Abbrechen“ greift dann immer | offen |
@@ -88,7 +88,7 @@ Allgemein (gilt für alle Projekte, `../CLAUDE.md`): Vor dem ersten Release sind
 | ID | Entscheidung | Stand |
 |---|---|---|
 | R-01 | `mara_success_band` über 12 Seeds prüfen (≥ 10 im Band), Regler zwei Schritte über 0,95 | **Ersetzt durch S-01.** gemessen hält das Band mit Fenster 5 nur 7 von 12 Seeds; zwei Schritte über 0,95 verschlechtern auf 4 von 12 (überschießt), ein Mittel über zwei Sitzungen bringt 8 von 12. Mit Fenster 8 halten alle Varianten das Band: Bei 3–4 Zielen je Sitzung schwankt der Erfolg in Schritten von 0,25, fünf Sitzungen sind dafür zu wenig. |
-| R-02 | Simulation wiederholt, wenn alles gesperrt ist | `kaiwa-sim` (days): bis zu zehn Elemente statt einer gesperrten Einheit |
+| R-02 | Simulation wiederholt, wenn alles gesperrt ist | `kaiwa-sim` (days): bis zu zehn Elemente statt einer gesperrten Einheit; seit T-06 sperren Wiederholungen nichts mehr, der Fall tritt nur noch ein, wenn der Pfad durchgespielt ist |
 | R-03 | Ids müssen nicht stabil sein | Einheiten und Szenarien tragen Ids in Pfad-Reihenfolge; Store-Migration 2 schreibt alte Profile um |
 | R-04 | Kontras CI anpassen | Kontra #67: Rust-Build im app-Job cachen (der Qt-Cache greift meist schon; die Stapel-Regeln hält Kontra ein) |
 
@@ -142,7 +142,7 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
 9. **Freisprechen schneidet langsame Sprecher ab, bis die Pause passt** (T-01, T-02 umgesetzt): Das Angebot kommt nach dem ersten erkennbar abgeschnittenen Zug und geht zwei Schritte weiter; Hinnerk wird in der Simulation zweimal abgeschnitten (alle 40 Seeds), dann steht die Pause auf 5 s. Schnitte nach einem bloßen Adverb (まいあさ) erkennt `sounds_unfinished` weiter nicht; ein solcher Zug bringt kein Angebot. `hinnerk_no_cutoff` läuft mit der neuen Regel automatisch (ohne Erkenner und Stimme); mit echter Stimme bleibt Schritt 3.2 des lokalen Tests.
 10. **Schriftgröße 160 %** (`hinnerk_font`, /LL202/): von Hand geprüft, alle Seiten in Ordnung; eine automatische Prüfung braucht einen CI-Schritt (T-03).
 11. **Aus dem zweiten Leser, noch offen** (T-06 bis T-09 im Fragenpaket 11):
-    - **Lernpfad sperrt nach drei falschen Wiederholungen** (T-06): `reviews_ok` rechnet alle Antworten einer Einheit zusammen (`REVIEW_OK` 0,6 ab `REVIEW_MIN` 3). Drei „Noch nicht“ am Tag nach n5-02 sperren alles dahinter; drei richtige am nächsten Tag ergeben 3 von 6 und sperren weiter. „Als Nächstes“ verschwindet dann ohne Hinweis von der Startseite.
+    - **Lernpfad sperrte nach drei falschen Wiederholungen** (T-06, umgesetzt): Wiederholungen sperren nichts mehr. Unter 60 % richtigen Antworten (ab drei) steht am Wiederholungsknoten der Einheit „empfohlen, bevor es weitergeht“; der Knoten erscheint wie bisher nur, wenn etwas fällig ist.
     - **Auffrischung nach einer Pause** (T-07, /LF231/): Sie kürzt die Liste nur auf zehn; jede Antwort lässt das nächste Element nachrücken, bis alles durch ist. Ein geöffnetes Gespräch beendet sie sofort (`last_practice` liest die neueste Sitzungszeile, auch eine ohne Zug); Wiederholen zählt nicht als Übung.
     - **Was die Oberfläche verspricht, aber nicht kann** (T-08): Import eines Exports (`Store::import` hat keinen Knopf), das Überspringen einer Einheit (der Hinweis auf dem Lernpfad hat keinen Knopf, `skipUnit` ruft niemand), eine Pause beenden oder auch nur sehen (seit #71 sagt eine Meldung, bis wann sie läuft).
     - **Ein hängender Modell-Download** (T-09) lässt sich nicht abbrechen und sperrt alle weiteren, bis die App neu startet: `ureq` läuft ohne Zeitlimit, und „Abbrechen“ wird nur zwischen zwei Lesevorgängen geprüft. Ein Zeitlimit für den ganzen Body würde große Modelle abbrechen; es braucht eines je Lesevorgang.
