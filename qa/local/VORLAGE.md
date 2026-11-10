@@ -37,6 +37,10 @@ Wenn sonst etwas auffiel:
 | Mikrofon-Test in den Einstellungen: Liste, Urteil, Anhören, „Verstanden“ | | | |
 | Erkennung und Übergangsstimme (allgemeiner Eindruck) | | | |
 | `hinnerk_no_cutoff`: kein Zug abgeschnitten, Angebot längerer Pause | | | |
+| Freisprechen über Lautsprecher (3.2a): kein fremder Satz, hört von selbst wieder zu | | | |
+| Mikrofon weg und wieder da (3.2b): die Taste geht wieder | | | |
+| Unterbrechen und fortsetzen (3.2c): beide Teile zählen | | | |
+| Nach der Leerlaufzeit (3.2d): „Nochmal“ zählt erst, wenn es spielt | | | |
 | `mara_mora_hint`: höchstens ein Moren-Hinweis, keiner bei richtigem Satz | | | |
 | `hinnerk_german_word_help` (Audio): とうだい langsam gesprochen | | | |
 | `mara_codeswitch` (Audio): プロデューサー hörbar gesprochen | | | |

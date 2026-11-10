@@ -114,7 +114,7 @@ pub mod qobject {
         #[cxx_name = "sayWav"]
         fn say_wav(self: Pin<&mut Conversation>, path: &QString);
 
-        /// Stop the character speaking (the page closes, the voice is muted).
+        /// Stop the character speaking (the page closes).
         #[qinvokable]
         fn interrupt(self: Pin<&mut Conversation>);
 
@@ -228,6 +228,9 @@ pub struct ConversationRust {
     longer_pause: f64,
     /// The pause ended the last recording, and the turns that sounded cut off by it.
     ended_by_pause: bool,
+    /// Hands-free: turns in a row the pause ended that gave nothing to send (noise, a voice
+    /// too far away). After `EMPTY_TRIES` the microphone stays closed until a click.
+    empty_tries: u32,
     cut_offs: kaiwa_core::turn_end::CutOffs,
     /// When the learner stopped speaking, for the response time (/LL010/); handed on to the
     /// reply, which books it at its first sound.
@@ -293,6 +296,9 @@ const ERROR: i32 = 4;
 
 /// Hands-free: listening stops after this long without any speech.
 const HANDS_FREE_WAIT_SECS: f64 = 30.0;
+/// Hands-free listens again by itself after this many turns in a row with nothing to send;
+/// then it stops, so a noisy room does not keep it recording and reporting in a circle.
+const EMPTY_TRIES: u32 = 3;
 /// Shorter recordings (a tap) are not checked for a voice.
 const MIN_CHECKED_SECS: f32 = 0.5;
 
@@ -362,13 +368,11 @@ impl qobject::Conversation {
         let mut guard = session.lock().expect("session lock");
         // The time since the talk began here, or since it was last kept, counts as spent in
         // it; a talk continued later keeps what it had (/LF121/).
-        if let Some(since) = self
-            .as_mut()
-            .rust_mut()
-            .sitting
-            .replace(std::time::Instant::now())
-        {
-            guard.spend(since.elapsed().as_secs().min(3600) as u32);
+        if let Some(since) = self.sitting {
+            // Whole seconds; the rest stays for the next time.
+            let secs = since.elapsed().as_secs();
+            self.as_mut().rust_mut().sitting = Some(since + Duration::from_secs(secs));
+            guard.spend(secs.min(3600) as u32);
         }
         let met = guard.summary().goals_met;
         let goals: Vec<Value> = guard
@@ -1166,6 +1170,17 @@ impl qobject::Conversation {
         }
     }
 
+    /// Hands-free after a turn that gave nothing to send: listens again, but not for ever.
+    fn listen_after_nothing(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().empty_tries += 1;
+        if self.empty_tries < EMPTY_TRIES {
+            self.listen_again();
+        } else {
+            // The message stays; the next click on the button starts afresh.
+            self.as_mut().rust_mut().empty_tries = 0;
+        }
+    }
+
     /// Stops listening without sending anything (hands-free: the character speaks, or the
     /// learner typed instead).
     fn close_mic(mut self: Pin<&mut Self>) {
@@ -1342,7 +1357,7 @@ impl qobject::Conversation {
             // Hands-free goes on listening when the pause ended the turn; a click on the
             // button closed the microphone, and it stays closed.
             if by_pause {
-                self.listen_again();
+                self.listen_after_nothing();
             }
             return;
         }
@@ -1362,6 +1377,7 @@ impl qobject::Conversation {
                 q.as_mut().set_talk_state(READY);
                 q.as_mut().after_turn(by_pause, &text);
                 if !text.is_empty() {
+                    q.as_mut().rust_mut().empty_tries = 0;
                     if let Some(index) = q.as_mut().submit(&text, false) {
                         q.check_moras(index, text, rec);
                     }
@@ -1374,7 +1390,7 @@ impl qobject::Conversation {
                 };
                 q.as_mut().set_error(QString::from(msg));
                 if by_pause {
-                    q.listen_again();
+                    q.listen_after_nothing();
                 }
             });
         });
