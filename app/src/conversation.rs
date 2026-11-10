@@ -187,7 +187,7 @@ use kaiwa_speech::models::{KANA_CTC_URL, kokoro_dir, models_dir, reazonspeech_di
 use kaiwa_speech::mora::{self, Checker, Hint, Kind};
 use kaiwa_speech::playback::{self, Player};
 use kaiwa_speech::stt::Recognizer;
-use kaiwa_speech::tts::{self, Voice};
+use kaiwa_speech::tts::{self, SpeechCache, Voice};
 use kaiwa_speech::{Synthesizer, Transcriber};
 use serde_json::{Value, json};
 
@@ -247,6 +247,8 @@ pub struct ConversationRust {
     unloaded: bool,
     /// Counts what the character said; speaking stops when it moves on.
     utterance: Arc<AtomicU64>,
+    /// What this conversation already said, so "again" plays at once (/LF111/).
+    said: Arc<Mutex<SpeechCache>>,
 }
 
 /// The mora check's model and the reading of what the learner meant.
@@ -538,6 +540,10 @@ impl qobject::Conversation {
             rust.session_id = id;
             rust.started = Some(now());
             rust.last_use = Some(std::time::Instant::now());
+            // Another conversation: nothing said before counts.
+            if let Ok(mut c) = rust.said.lock() {
+                c.clear();
+            }
             // A new conversation loads what is missing itself (below).
             rust.unloaded = false;
         }
@@ -763,19 +769,34 @@ impl qobject::Conversation {
         } else {
             None
         };
+        let said = self.said.clone();
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let still = || current.load(Ordering::SeqCst) == id;
+            let cached = |sentence: &str| said.lock().ok().and_then(|c| c.get(sentence, speed));
             for sentence in tts::sentences(&text) {
                 if !still() {
                     return;
                 }
-                let audio = speaker
-                    .voice
-                    .lock()
-                    .map(|mut v| v.speak(&sentence, speed).map(|s| (s, v.sample_rate())));
+                // Said before in this conversation: play it at once (/LF111/). Looked up
+                // again once the voice is ours, since a line cut off may have just made it.
+                let audio = cached(&sentence).map(Ok).or_else(|| {
+                    let made = speaker.voice.lock().map(|mut v| {
+                        cached(&sentence).map(Ok).unwrap_or_else(|| {
+                            v.speak(&sentence, speed)
+                                .map(|s| (Arc::new(s), v.sample_rate()))
+                        })
+                    });
+                    if let Ok(Ok((samples, rate))) = &made
+                        && let Ok(mut c) = said.lock()
+                    {
+                        c.put(&sentence, speed, samples.clone(), *rate);
+                    }
+                    made.ok()
+                });
                 match audio {
-                    Ok(Ok((mut samples, rate))) if still() => {
+                    Some(Ok((samples, rate))) if still() => {
+                        let mut samples = samples.to_vec();
                         playback::enhance(&mut samples, rate, louder, clear);
                         speaker.player.play(&samples, rate);
                         // The first sound of the reply: the response time (/LL010/).
@@ -783,7 +804,7 @@ impl qobject::Conversation {
                             book_latency(t);
                         }
                     }
-                    Ok(Err(e)) => eprintln!("kaiwa: {e}"),
+                    Some(Err(e)) => eprintln!("kaiwa: {e}"),
                     _ => {}
                 }
             }
@@ -819,6 +840,9 @@ impl qobject::Conversation {
             rust.speaker = None;
             rust.mora = None;
             rust.unloaded = true;
+            if let Ok(mut c) = rust.said.lock() {
+                c.clear();
+            }
             // The readings (UniDic) load again with the next line that needs them.
             kaiwa_lang::unidic::unload();
         }

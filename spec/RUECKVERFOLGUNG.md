@@ -26,7 +26,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
 | /LF104/ | S | Das Mikrofon ist in den Einstellungen wählbar (Standard: das des … | app | Code | – |
 | /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, backend, core, lang, store | geprüft | 2 von 3 automatisch grün: `mara_listen_tools`, `mara_own_furigana`, `mara_word_lookup` |
-| /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
+| /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core, speech | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF112/ | M | Ein Klick auf ein Wort zeigt Lesung, Bedeutung und Wortart und spielt … | app, backend, core, lang, store | geprüft | 1 von 1 automatisch grün: `mara_word_lookup` |
 | /LF113/ | M | Das Transkript der eigenen Äußerung wird angezeigt (was die KI … | app, core | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LF114/ | M | Wer feststeckt, bekommt eine Hilfe in drei Stufen: Stichwort → … | core | geprüft | 1 von 1 automatisch grün: `mara_hint_offered` |

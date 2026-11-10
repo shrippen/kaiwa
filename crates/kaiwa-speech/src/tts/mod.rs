@@ -4,7 +4,10 @@
 //!
 //! ONNX Runtime is the one sherpa-onnx links in (1.28): `ort` uses it without linking its own.
 
+mod cache;
 mod vocab;
+
+pub use cache::SpeechCache;
 
 use std::collections::HashMap;
 use std::io::Read;
