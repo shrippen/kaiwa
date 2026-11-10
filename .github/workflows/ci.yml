@@ -87,7 +87,10 @@ jobs:
           test -s /tmp/spike.png
           ! grep -E 'qrc:.*(Error|Unable|is not)' /tmp/spike.log
       - name: Kante copy matches Kante main (GUI rule)
+        # In the container the checkout belongs to another user; without this git takes the
+        # directory for no repository and the diff ends with its usage text (exit 129).
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           tools/sync-kante.sh ../Kante
           git diff --exit-code -- app/qml
       - name: QML tests (the space bar as talk key, /LF100/)
