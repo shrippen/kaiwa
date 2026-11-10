@@ -95,8 +95,9 @@ pub fn parse_reply(answer: &Value) -> Result<String, AiError> {
     Ok(text.to_string())
 }
 
-/// The JSON in the message content, read tolerantly (`Analysis::from_text`): servers that
-/// ignore `response_format` and small local models wrap it or stray from the schema.
+/// The JSON in the message content (`Analysis::from_text`): servers that ignore
+/// `response_format` and small local models wrap it in a code fence, their thinking or a
+/// sentence. An object that strays from the schema is an error (ADR-004).
 pub fn parse_analysis(answer: &Value) -> Result<Analysis, AiError> {
     Analysis::from_text(content(answer)?)
 }

@@ -177,9 +177,15 @@ pub fn to_kana(text: &str) -> String {
         pieces.push((piece, kana));
         i = end;
     }
-    // By letters: a rōmaji sentence with names in it (watashi no namae wa Thomas Müller
-    // desu) is mostly rōmaji; a sentence in another language is mostly not, though words like
-    // "do", "you" or "in" look like rōmaji.
+    // One word that is no rōmaji is a name or a word the learner lacks (Thomas desu,
+    // Cappuccino o kudasai): the sentence is rōmaji. With two or more, the letters decide: a
+    // rōmaji sentence with names in it (watashi no namae wa Thomas Müller desu) is mostly
+    // rōmaji; a sentence in another language is mostly not, though words like "do", "you" or
+    // "in" look like rōmaji.
+    let foreign = pieces
+        .iter()
+        .filter(|(p, k)| p.chars().any(latin) && k.is_none())
+        .count();
     let letters = |rōmaji: bool| -> usize {
         pieces
             .iter()
@@ -187,7 +193,7 @@ pub fn to_kana(text: &str) -> String {
             .map(|(p, _)| p.chars().count())
             .sum()
     };
-    if letters(true) <= letters(false) {
+    if letters(true) == 0 || (foreign > 1 && letters(true) <= letters(false)) {
         return text.to_string();
     }
     pieces
@@ -238,16 +244,16 @@ fn word_to_kana(word: &str) -> Option<String> {
             return None;
         }
         let next = chars.get(i + 1).copied();
+        // Hepburn's m before b, p and m: ん (shimbun, sampo, amma).
+        if c == 'm' && next.is_some_and(|n| "bpm".contains(n)) {
+            out.push('ん');
+            i += 1;
+            continue;
+        }
         // Doubled consonant (not n): small tsu. "tch" too (matcha).
         if c != 'n' && !"aeiou".contains(c) && (next == Some(c) || (c == 't' && next == Some('c')))
         {
             out.push('っ');
-            i += 1;
-            continue;
-        }
-        // Hepburn's m before b, p and m: ん (shimbun, sampo).
-        if c == 'm' && next.is_some_and(|n| "bpm".contains(n)) {
-            out.push('ん');
             i += 1;
             continue;
         }
@@ -336,6 +342,22 @@ mod tests {
         assert_eq!(to_kana("jyuu"), "じゅう");
         assert_eq!(to_kana("shimbun o yomimasu"), "しんぶん お よみます");
         assert_eq!(to_kana("sampo"), "さんぽ");
+        assert_eq!(to_kana("ammari"), "あんまり");
+        assert_eq!(to_kana("kitte"), "きって");
+        // A short answer with one name or one word the learner lacks, however long it is.
+        for (typed, kana) in [
+            ("Thomas desu", "Thomas です"),
+            ("Deutschland desu", "Deutschland です"),
+            ("Cappuccino o kudasai", "Cappuccino お ください"),
+            (
+                "shigoto wa Programmierer desu",
+                "しごと わ Programmierer です",
+            ),
+        ] {
+            assert_eq!(to_kana(typed), kana);
+        }
+        // Known limit: two names against one short rōmaji word read as another language.
+        assert_eq!(to_kana("Thomas Müller desu"), "Thomas Müller desu");
     }
 
     #[test]

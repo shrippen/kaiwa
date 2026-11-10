@@ -112,30 +112,34 @@ impl Analysis {
         let mut body = String::new();
         while let Some(a) = rest.find("<think>") {
             body.push_str(&rest[..a]);
-            rest = match rest[a..].find("</think>") {
-                Some(b) => &rest[a + b + "</think>".len()..],
-                None => "",
+            // A block that never closes is no block (the word may stand in an explanation).
+            let Some(b) = rest[a..].find("</think>") else {
+                break;
             };
+            rest = &rest[a + b + "</think>".len()..];
         }
         body.push_str(rest);
-        // The first brace from which a whole JSON object reads.
-        let mut last = None;
-        for (at, _) in body.match_indices('{') {
+        // The first whole JSON object that is an analysis; a sentence before it may hold
+        // braces or an object of its own ("The format is {} as asked.").
+        let mut why = None;
+        let mut from = 0;
+        while let Some(at) = body[from..].find('{').map(|i| from + i) {
             let mut values =
                 serde_json::Deserializer::from_str(&body[at..]).into_iter::<serde_json::Value>();
+            from = at + 1;
             if let Some(Ok(v)) = values.next()
                 && v.is_object()
             {
-                return serde_json::from_value(v).map_err(|e| format(e.to_string()));
+                match serde_json::from_value(v) {
+                    Ok(a) => return Ok(a),
+                    Err(e) => why = why.or(Some(e.to_string())),
+                }
+                // What stands inside an object that is no analysis is not one either.
+                from = at + values.byte_offset();
             }
-            last = Some(at);
         }
         Err(format(
-            match last {
-                Some(_) => "no complete JSON object",
-                None => "no JSON object",
-            }
-            .into(),
+            why.unwrap_or_else(|| "no complete JSON object".into()),
         ))
     }
 }
@@ -156,6 +160,8 @@ mod tests {
             format!("<think>The learner said their name.</think>\n{PLAIN}"),
             format!("<think>The reading is written as {{漢字|かな}}.</think>\n{PLAIN}"),
             format!("Here is the analysis:\n```\n{PLAIN}\n```\nLet me know if you need more."),
+            format!("The format is {{}} as asked.\n{PLAIN}"),
+            format!("Example: {{\"a\":1}}\n{PLAIN}"),
         ] {
             assert_eq!(Analysis::from_text(&wrapped).unwrap(), a, "{wrapped}");
         }
@@ -165,6 +171,9 @@ mod tests {
     fn an_analysis_that_does_not_fit_the_schema_is_discarded() {
         // ADR-004: discarded, not repaired. A correction of an unknown kind is not dropped
         // quietly (the turn would read as flawless); the whole answer is an error.
+        // The word <think> in an explanation is no block.
+        let explained = r#"{"understood":true,"corrections":[{"severity":"wrong","kind":"particle","original":"a","better":"b","explanation":"Schreibe <think> nie"}]}"#;
+        assert_eq!(Analysis::from_text(explained).unwrap().corrections.len(), 1);
         for bad in [
             r#"{"understood":true,"corrections":[{"severity":"wrong","kind":"grammar","original":"a","better":"b","explanation":"c"}]}"#,
             r#"{"understood":true,"corrections":{"severity":"wrong"}}"#,
