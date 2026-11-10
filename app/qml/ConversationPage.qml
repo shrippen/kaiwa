@@ -552,12 +552,16 @@ Kirigami.ScrollablePage {
     // /LF100/: the space bar talks wherever the focus is, not only on the talk button. On a
     // new page nothing has the focus, and a button clicked before keeps it: space did nothing
     // or pressed that button again. A text field keeps its space (it takes the key before a
-    // shortcut does). The focus goes to the talk button, so releasing the key ends a held
-    // turn there.
+    // shortcut does), also while it is locked during the tutor's answer: whoever types goes
+    // on typing (`input.focus` stays with the field until something else is clicked). While
+    // the tutor thinks the button does nothing, so the key does nothing. The focus goes to
+    // the talk button, so releasing the key ends a held turn there. With the focus on a
+    // button or chip the key talks too; Enter presses those.
     Shortcut {
         sequence: "Space"
         autoRepeat: false
-        enabled: talk.enabled && !leaveDialog.visible && !grammarDialog.visible && !wordPopup.visible
+        enabled: talk.enabled && !input.focus && talk.talkState !== KanteTalkButton.State.Thinking
+            && !leaveDialog.visible && !grammarDialog.visible && !wordPopup.visible
         onActivated: { talk.forceActiveFocus(Qt.ShortcutFocusReason); talk.press() }
     }
 
