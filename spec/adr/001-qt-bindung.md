@@ -34,7 +34,7 @@ Siehe [`spikes/s02-qt/`](../../spikes/s02-qt/):
 
 ## Entschieden (Fragenpaket 2)
 
-- **G-01:** Die Qt-Jobs der CI laufen in einem Arch-Linux-Container (`archlinux:latest`). Qt 6 und KF6 kommen dort aus den Paketen. Der Job `qt` in `.gitea/workflows/ci.yml` baut und startet den Spike 0.2 offscreen.
+- **G-01:** Die Qt-Jobs der CI laufen in einem Arch-Linux-Container (`archlinux:latest`). Qt 6 und KF6 kommen dort aus den Paketen. Der Job `qt` in `.github/workflows/ci.yml` (seit 10.11.2026 läuft die CI auf dem GitHub-Spiegel, vorher `.gitea/workflows/ci.yml`) baut und startet den Spike 0.2 offscreen.
 - **G-02:** Ob der Runner Container kann, zeigt derselbe Job: Sein erster Schritt scheitert, wenn er nicht in Arch läuft.
 
 ## Hinweise aus M1 (App)
