@@ -728,8 +728,12 @@ impl Store {
         if rec.levels_at_start.is_empty() {
             rec.levels_at_start = levels_before;
         }
-        // The goal of the day, for the streak later (/LF602/).
-        rec.goal = Some(self.profile()?.daily_goal);
+        // The goal of the day, for the streak later (/LF602/). A talk that ends after
+        // midnight counts for the day it began, which keeps the goal it had: a goal chosen
+        // after midnight is today's.
+        if rec.goal.is_none() || day == ended.day() {
+            rec.goal = Some(self.profile()?.daily_goal);
+        }
         rec.speaking_secs += speaking;
         rec.typed_turns += stats.typed_turns;
         rec.xp += xp;
@@ -879,9 +883,10 @@ impl Store {
     /// it is judged by the goal it ended with, tomorrow as today (/LF602/). Days before keep
     /// theirs.
     pub fn set_day_goal(&self, today: Day, goal: DailyGoal) -> Result<()> {
-        if let Some(mut rec) = self.days()?.remove(&today) {
+        // From today on: after a flight west "today" can lie before a day already begun.
+        for (day, mut rec) in self.days()?.split_off(&today) {
             rec.goal = Some(goal);
-            self.put_day(today, &rec)?;
+            self.put_day(day, &rec)?;
         }
         Ok(())
     }
