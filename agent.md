@@ -23,7 +23,6 @@ Kaiwa (会話), a Japanese conversation trainer: Rust core, Qt 6 / Kirigami app,
 - Personas change only together with their checks; never adjust `start_level` or planted errors to make a run pass.
 - Persona names and ids from the demo world (`shrippen.github.io/demo/world`) stay stable.
 - Merging (decisions P-01, G-07): Claude may merge its own PRs on Gitea once CI is green and the review leaves no **Wichtig** open (see the skill `pr-review`), in every shrippen repository; where a repository has no CI, after its local checks (build, tests). The review rule (owner, 18.10. and 22.10.2026) applies in every shrippen repository too. Open questions go to the owner in bundles, as an artifact with proposals; answers are recorded where they apply (ADRs, spec).
-- Cloud sessions: `tools/ccr-setup.sh` is the environment's setup script (G-05): tea always, Qt 6.8 and Kirigami with `KAIWA_QT=1`. The tea login stays OAuth (`tea login add --oauth`, then deliver the redirect to the local callback).
 - Voice recordings live in Git LFS under `qa/corpus/audio/` (G-03).
 
 ## Release
