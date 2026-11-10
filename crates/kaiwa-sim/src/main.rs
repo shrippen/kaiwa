@@ -7,6 +7,8 @@
 
 mod days;
 mod engine;
+#[cfg(test)]
+mod hands_free;
 mod profile;
 mod review;
 mod run;

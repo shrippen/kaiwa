@@ -260,9 +260,17 @@ mod tests {
     fn the_table_in_the_repository_is_current() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let current = fs::read_to_string(root.join(FILE)).unwrap_or_default();
+        let table = table(&root).unwrap();
+        // The rows that differ: a check that turned red shows here, not only "out of date".
+        let differing: Vec<&str> = table
+            .lines()
+            .filter(|l| !current.lines().any(|c| c == *l))
+            .take(5)
+            .collect();
         assert!(
-            current == table(&root).unwrap(),
-            "{FILE} is out of date: cargo run -p kaiwa-sim -- trace --write"
+            current == table,
+            "{FILE} is out of date: cargo run -p kaiwa-sim -- trace --write\n{}",
+            differing.join("\n")
         );
     }
 }

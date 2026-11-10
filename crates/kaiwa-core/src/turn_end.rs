@@ -1,7 +1,11 @@
 //! The end of a spoken turn when speaking hands-free (/LF100/, /LF101/): the turn ends after
 //! the learner has spoken and then been quiet for the pause they set (1.2 to 5 s). There is no
 //! limit for the whole turn, and voiced hesitation (えーと, あの) counts as speaking, so it never
-//! ends a turn (/LF102/). Works on the capture's level (0 at −60 dB, 1 at 0 dB).
+//! ends a turn (/LF102/). Works on the capture's level (0 at −60 dB, 1 at 0 dB). Pure logic,
+//! so `kaiwa-sim` plays a persona's way of speaking through it (`hinnerk_no_cutoff`).
+
+/// The pauses the settings offer (/LF101/), shortest first.
+pub const PAUSE_STEPS: [f32; 4] = [1.2, 2.0, 3.0, 5.0];
 
 /// Speech must last this long before a pause can end the turn (a cough or a click does not).
 const MIN_SPEECH_SECS: f64 = 0.25;
@@ -80,6 +84,36 @@ pub fn sounds_unfinished(text: &str) -> bool {
     ]
     .iter()
     .any(|e| t.ends_with(e))
+}
+
+/// Turns the pause seems to have cut off (/LF101/): after the second, the next longer pause of
+/// the settings is offered, once per two such turns, never beyond the longest.
+#[derive(Debug, Clone, Default)]
+pub struct CutOffs {
+    count: u32,
+}
+
+impl CutOffs {
+    /// A turn was recognised: whether the pause ended it, its text and the pause set now. The
+    /// longer pause to offer, if it is time for one.
+    pub fn after_turn(&mut self, by_pause: bool, text: &str, pause: f32) -> Option<f32> {
+        if !(by_pause && sounds_unfinished(text)) {
+            return None;
+        }
+        self.count += 1;
+        let next = PAUSE_STEPS.into_iter().find(|s| *s > pause + 0.01)?;
+        if self.count >= 2 {
+            self.count = 0;
+            Some(next)
+        } else {
+            None
+        }
+    }
+
+    /// The learner took the offer: counting starts again.
+    pub fn reset(&mut self) {
+        self.count = 0;
+    }
 }
 
 #[cfg(test)]
@@ -178,6 +212,25 @@ mod tests {
         ] {
             assert!(!sounds_unfinished(t), "{t}");
         }
+    }
+
+    #[test]
+    fn two_cut_off_turns_offer_the_next_pause() {
+        let mut c = CutOffs::default();
+        assert_eq!(c.after_turn(true, "週末は", 1.2), None);
+        // A finished turn, or one the button ended, does not count.
+        assert_eq!(c.after_turn(true, "マラです。", 1.2), None);
+        assert_eq!(c.after_turn(false, "週末は", 1.2), None);
+        assert_eq!(c.after_turn(true, "日本語が", 1.2), Some(2.0));
+        // Not taken: two more before it is offered again.
+        assert_eq!(c.after_turn(true, "週末は", 1.2), None);
+        assert_eq!(c.after_turn(true, "週末は", 1.2), Some(2.0));
+        c.reset();
+        assert_eq!(c.after_turn(true, "週末は", 3.0), None);
+        assert_eq!(c.after_turn(true, "週末は", 3.0), Some(5.0));
+        // At the longest pause there is nothing more to offer.
+        assert_eq!(c.after_turn(true, "週末は", 5.0), None);
+        assert_eq!(c.after_turn(true, "週末は", 5.0), None);
     }
 
     #[test]

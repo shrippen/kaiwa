@@ -214,14 +214,14 @@ pub struct ConversationRust {
     clear: bool,
     hands_free: bool,
     longer_pause: f64,
-    /// The pause ended the last recording, and how many turns sounded cut off by it.
+    /// The pause ended the last recording, and the turns that sounded cut off by it.
     ended_by_pause: bool,
-    cut_short: u32,
+    cut_offs: kaiwa_core::turn_end::CutOffs,
     /// When the learner stopped speaking, for the response time (/LL010/); handed on to the
     /// reply, which books it at its first sound.
     speech_end: Option<std::time::Instant>,
     /// While listening hands-free: when the turn ends, and when the level was last read.
-    turn_end: Option<(kaiwa_speech::vad::EndOfTurn, std::time::Instant)>,
+    turn_end: Option<(kaiwa_core::turn_end::EndOfTurn, std::time::Instant)>,
     voice_note: QString,
     speech_ready: bool,
     scenario: QString,
@@ -855,34 +855,42 @@ impl qobject::Conversation {
         });
     }
 
-    /// A turn the pause seems to have cut off; after the second, offer the next longer pause.
-    fn cut_off(mut self: Pin<&mut Self>) {
-        self.as_mut().rust_mut().cut_short += 1;
+    /// A recognised turn: after the second that the pause seems to have cut off, offer the
+    /// next longer pause (/LF101/).
+    fn after_turn(mut self: Pin<&mut Self>, by_pause: bool, text: &str) {
         let now = state()
             .store
             .profile()
             .map(|p| p.end_pause_secs)
             .unwrap_or(1.2);
-        let next = [2.0f32, 3.0, 5.0].into_iter().find(|s| *s > now + 0.01);
-        if self.cut_short >= 2
-            && let Some(next) = next
+        if let Some(next) = self
+            .as_mut()
+            .rust_mut()
+            .cut_offs
+            .after_turn(by_pause, text, now)
         {
             self.as_mut().set_longer_pause(f64::from(next));
+        } else if *self.longer_pause() > 0.0 && f64::from(now) >= *self.longer_pause() {
+            // The pause was set at least that long in the meantime: the offer is stale.
+            self.as_mut().set_longer_pause(0.0);
         }
     }
 
+    /// Takes the offered pause; it only ever makes the pause longer.
     fn take_longer_pause(mut self: Pin<&mut Self>) {
         let secs = *self.longer_pause() as f32;
         if secs > 0.0 {
             let st = state();
-            if let Ok(mut p) = st.store.profile() {
+            if let Ok(mut p) = st.store.profile()
+                && secs > p.end_pause_secs
+            {
                 p.end_pause_secs = secs;
                 if let Err(e) = st.store.set_profile(&p) {
                     eprintln!("kaiwa: {e}");
                 }
             }
         }
-        self.as_mut().rust_mut().cut_short = 0;
+        self.as_mut().rust_mut().cut_offs.reset();
         self.as_mut().set_longer_pause(0.0);
     }
 
@@ -1083,7 +1091,7 @@ impl qobject::Conversation {
                         .map(|p| p.end_pause_secs)
                         .unwrap_or(1.2);
                     (
-                        kaiwa_speech::vad::EndOfTurn::new(pause),
+                        kaiwa_core::turn_end::EndOfTurn::new(pause),
                         std::time::Instant::now(),
                     )
                 });
@@ -1231,9 +1239,7 @@ impl qobject::Conversation {
             let text = recognizer.transcribe(&rec.samples, rec.sample_rate);
             let _ = thread.queue(move |mut q| {
                 q.as_mut().set_talk_state(READY);
-                if by_pause && kaiwa_speech::vad::sounds_unfinished(&text) {
-                    q.as_mut().cut_off();
-                }
+                q.as_mut().after_turn(by_pause, &text);
                 if !text.is_empty() {
                     if let Some(index) = q.as_mut().submit(&text, false) {
                         q.check_moras(index, text, rec);
