@@ -15,6 +15,7 @@ pub mod cost;
 mod demo;
 pub mod latency;
 pub mod lookup;
+pub mod pause;
 pub mod profiles;
 pub mod recordings;
 pub mod reminder;

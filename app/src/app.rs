@@ -126,7 +126,7 @@ use cxx_qt::Threading;
 
 use cxx_qt_lib::QString;
 use kaiwa_core::learner::Skill;
-use kaiwa_core::progress::{DailyGoal, Pause};
+use kaiwa_core::progress::DailyGoal;
 use kaiwa_store::{Script, Store};
 use serde_json::json;
 
@@ -500,39 +500,28 @@ impl qobject::KaiwaApp {
     fn pause(mut self: Pin<&mut Self>, days: i32) {
         if days > 0 {
             let today = now().day();
-            let (added, until, streak) = {
+            let (added, streak) = {
                 let st = state();
-                let added = st.store.add_pause(Pause {
-                    from: today,
-                    to: today.plus(i64::from(days) - 1),
-                });
-                // Until when it rests now: the latest end of the pauses running today (an
-                // earlier, longer one still holds).
-                let until = st
-                    .store
-                    .pauses()
-                    .unwrap_or_default()
-                    .iter()
-                    .filter(|p| p.from <= today && today <= p.to)
-                    .map(|p| p.to)
-                    .max()
-                    .unwrap_or(today);
+                let added = st.pause(today, days.unsigned_abs());
                 let streak = st.store.profile().map(|p| p.gamification).unwrap_or(true);
-                (added, until, streak)
+                (added, streak)
             };
             // Say that it took, and until when: nothing else on the page shows a pause.
             let de = self.lang().to_string() == "de";
-            let (_, m, d) = until.ymd();
             self.as_mut().set_notice(QString::from(&match (added, de) {
-                (Ok(()), true) if streak => {
+                (Ok(until), true) if streak => {
+                    let (_, m, d) = until.ymd();
                     format!("Pause bis einschließlich {d}.{m}.: Die Serie bleibt so lange stehen.")
                 }
-                (Ok(()), true) => format!("Pause bis einschließlich {d}.{m}."),
-                (Ok(()), false) if streak => format!(
+                (Ok(until), true) => {
+                    let (_, m, d) = until.ymd();
+                    format!("Pause bis einschließlich {d}.{m}.")
+                }
+                (Ok(until), false) if streak => format!(
                     "Paused up to and including {}: the streak holds until then.",
                     until.iso()
                 ),
-                (Ok(()), false) => format!("Paused up to and including {}.", until.iso()),
+                (Ok(until), false) => format!("Paused up to and including {}.", until.iso()),
                 (Err(e), true) => format!("Die Pause ließ sich nicht eintragen: {e}"),
                 (Err(e), false) => format!("The pause could not be set: {e}"),
             }));
@@ -541,7 +530,7 @@ impl qobject::KaiwaApp {
     }
 
     fn stop_pause(mut self: Pin<&mut Self>) {
-        let result = state().store.end_pause(now().day());
+        let result = state().end_pause(now().day());
         let de = self.lang().to_string() == "de";
         self.as_mut().set_notice(QString::from(&match (result, de) {
             (Ok(()), true) => "Die Pause ist beendet: Heute zählt wieder.".to_string(),
