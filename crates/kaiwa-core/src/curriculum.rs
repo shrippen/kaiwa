@@ -3,9 +3,10 @@
 //!
 //! A unit has can-do statements, grammar points, core words and scenarios, and requires other
 //! units. It unlocks when those are done. Reviews never lock the path (T-06, owner 10.11.2026):
-//! a unit whose reviews go badly (under 60 % of the answers right once there are three or
-//! more) is marked shaky, and its review is recommended before the learner goes on (Hinnerk),
-//! no more. Skipped units (/LF215/) count as done. Every state has a word
+//! a unit whose reviews go badly (under 60 % of its last five answers right, once there are
+//! three) is marked shaky, and its review is recommended before the learner goes on
+//! (Hinnerk), no more. Only the latest answers count (owner, 10.11.2026): three right ones
+//! after a bad day take the mark away. Skipped units (/LF215/) count as done. Every state has a word
 //! and a symbol in the GUI, never only a colour.
 //!
 //! Format v2 (ADR-009): one file per level (`data/curriculum/n5.json`, `n4.json`, …) with the
@@ -107,9 +108,34 @@ pub struct CourseProgress {
     #[serde(default)]
     pub completions: BTreeMap<String, u32>,
     pub skipped_units: BTreeSet<String>,
-    /// Reviews of each unit's items: (answers, right answers).
-    #[serde(default)]
-    pub reviews: BTreeMap<String, (u32, u32)>,
+    /// Reviews of each unit's items: its last [`REVIEW_WINDOW`] answers, the newest last, each
+    /// right or not. Until 10.11.2026 this held (answers, right answers) since the beginning;
+    /// such a count reads as no answers yet, it says nothing about the latest.
+    #[serde(default, deserialize_with = "latest_answers")]
+    pub reviews: BTreeMap<String, Vec<bool>>,
+}
+
+fn latest_answers<'de, D: serde::Deserializer<'de>>(
+    d: D,
+) -> Result<BTreeMap<String, Vec<bool>>, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Kept {
+        Latest(Vec<bool>),
+        /// Only its shape is read: it tells the old count from the answers.
+        Counted(#[allow(dead_code)] (u32, u32)),
+    }
+    let kept: BTreeMap<String, Kept> = Deserialize::deserialize(d)?;
+    Ok(kept
+        .into_iter()
+        .map(|(unit, k)| match k {
+            Kept::Latest(mut v) => {
+                let from = v.len().saturating_sub(REVIEW_WINDOW);
+                (unit, v.split_off(from))
+            }
+            Kept::Counted(_) => (unit, Vec::new()),
+        })
+        .collect())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -182,7 +208,10 @@ pub struct UnitNode {
 
 /// Reviews of a unit go well enough; below this its review is recommended.
 pub const REVIEW_OK: f64 = 0.6;
-pub const REVIEW_MIN: u32 = 3;
+/// Fewer answers say nothing yet.
+pub const REVIEW_MIN: usize = 3;
+/// The answers that count: the latest ones of the unit.
+pub const REVIEW_WINDOW: usize = 5;
 /// A scenario is done after this many good completions: once is luck, twice is learnt.
 pub const COMPLETIONS: u32 = 2;
 pub const DONE_SUCCESS: f64 = 0.75;
@@ -205,8 +234,10 @@ impl CourseProgress {
     /// Records a review answer for a unit's item.
     pub fn reviewed(&mut self, unit: &str, right: bool) {
         let r = self.reviews.entry(unit.to_string()).or_default();
-        r.0 += 1;
-        r.1 += u32::from(right);
+        r.push(right);
+        if r.len() > REVIEW_WINDOW {
+            r.remove(0);
+        }
     }
 }
 
@@ -368,7 +399,10 @@ impl Curriculum {
 
     fn reviews_ok(u: &str, p: &CourseProgress) -> bool {
         match p.reviews.get(u) {
-            Some((n, right)) if *n >= REVIEW_MIN => f64::from(*right) / f64::from(*n) >= REVIEW_OK,
+            Some(latest) if latest.len() >= REVIEW_MIN => {
+                let right = latest.iter().filter(|r| **r).count();
+                right as f64 / latest.len() as f64 >= REVIEW_OK
+            }
             _ => true,
         }
     }
@@ -558,18 +592,50 @@ mod tests {
         let mut p = CourseProgress::default();
         p.scenarios_done.extend(["a".to_string(), "b".to_string()]);
         // Too few answers say nothing yet.
-        p.reviews.insert("u1".into(), (2, 0));
+        p.reviewed("u1", false);
+        p.reviewed("u1", false);
         assert!(!c.path(&p, "en")[0].shaky);
-        p.reviews.insert("u1".into(), (5, 2));
+        p.reviewed("u1", false);
         let path = c.path(&p, "en");
         assert!(path[0].shaky);
         assert_eq!(path[1].state, NodeState::Current);
         assert_eq!(path[1].locked_because, None);
         assert_eq!(c.next_scenario(&p).as_deref(), Some("c"));
-        p.reviews.insert("u1".into(), (8, 6));
+        // Only the latest five count: three right ones after the bad day are 3 of 5.
+        p.reviewed("u1", true);
+        p.reviewed("u1", true);
+        assert!(c.path(&p, "en")[0].shaky, "2 of 5");
+        p.reviewed("u1", true);
+        assert_eq!(p.reviews["u1"], [false, false, true, true, true]);
         let path = c.path(&p, "en");
         assert!(!path[0].shaky);
         assert_eq!(path[1].state, NodeState::Current);
+        // And a new bad run brings the mark back, however good the unit once went.
+        for _ in 0..3 {
+            p.reviewed("u1", false);
+        }
+        assert_eq!(p.reviews["u1"], [true, true, false, false, false]);
+        assert!(c.path(&p, "en")[0].shaky);
+    }
+
+    #[test]
+    fn a_count_from_before_reads_as_no_answers_yet() {
+        let old =
+            r#"{"scenarios_done":["a"],"skipped_units":[],"reviews":{"u1":[6,3],"u2":[0,0]}}"#;
+        let p: CourseProgress = serde_json::from_str(old).unwrap();
+        assert!(p.reviews.values().all(Vec::is_empty));
+        assert!(p.scenarios_done.contains("a"));
+        // What is written now reads back as it is, cut to the window if it is longer.
+        let mut p = CourseProgress::default();
+        for right in [false, true, true] {
+            p.reviewed("u1", right);
+        }
+        let again: CourseProgress =
+            serde_json::from_str(&serde_json::to_string(&p).unwrap()).unwrap();
+        assert_eq!(again, p);
+        let long = r#"{"scenarios_done":[],"skipped_units":[],"reviews":{"u1":[true,true,false,false,false,false,true]}}"#;
+        let p: CourseProgress = serde_json::from_str(long).unwrap();
+        assert_eq!(p.reviews["u1"], [false, false, false, false, true]);
     }
 
     #[test]
