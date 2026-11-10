@@ -192,7 +192,8 @@ Kirigami.ScrollablePage {
                         size: KanteButton.Size.Small
                         emphasis: KanteButton.Emphasis.Quiet
                         text: page.t("Nochmal", "Again")
-                        enabled: conv.voice.length > 0 && conv.voiceOn
+                        // Not while the tutor thinks: an aid then would count for the turn already sent.
+                        enabled: conv.voice.length > 0 && conv.voiceOn && !conv.busy
                         Accessible.description: page.t("Die Figur sagt den Satz noch einmal.", "The character says the line again.")
                         onClicked: conv.listen(msg.index, 0)
                     }
@@ -200,7 +201,7 @@ Kirigami.ScrollablePage {
                         size: KanteButton.Size.Small
                         emphasis: KanteButton.Emphasis.Quiet
                         text: page.t("Langsamer", "Slower")
-                        enabled: conv.voice.length > 0 && conv.voiceOn
+                        enabled: conv.voice.length > 0 && conv.voiceOn && !conv.busy
                         Accessible.description: page.t("Die Figur sagt den Satz langsamer, mit 0,7-facher Geschwindigkeit.", "The character says the line slower, at 0.7 times the speed.")
                         onClicked: conv.listen(msg.index, 1)
                     }
@@ -208,7 +209,7 @@ Kirigami.ScrollablePage {
                         size: KanteButton.Size.Small
                         emphasis: KanteButton.Emphasis.Quiet
                         text: page.t("Übersetzen", "Translate")
-                        enabled: msg.modelData.translation === undefined && msg.modelData.translating !== true
+                        enabled: msg.modelData.translation === undefined && msg.modelData.translating !== true && !conv.busy
                         Accessible.description: page.t("Zeigt den Satz auf Deutsch.", "Shows the line in English.")
                         onClicked: conv.listen(msg.index, 2)
                     }
@@ -518,7 +519,7 @@ Kirigami.ScrollablePage {
             }
             KanteButton {
                 text: page.t("Hilfe", "Help")
-                enabled: !conv.finished
+                enabled: !conv.finished && !conv.busy
                 onClicked: conv.help()
             }
             KanteButton {

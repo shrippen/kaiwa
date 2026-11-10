@@ -647,6 +647,21 @@ impl Store {
         ended: Moment,
         curriculum: Option<&Curriculum>,
     ) -> Result<Recorded> {
+        self.record_on(id, s, started, ended, started.day(), curriculum)
+    }
+
+    /// As [`Store::record`], for a talk of several sittings (/LF121/): `started` is the end
+    /// minus all the time spent in it, and `day` the day its last sitting began, which gets
+    /// the practice (a talk begun yesterday and finished after midnight counts for today).
+    pub fn record_on(
+        &self,
+        id: i64,
+        s: &Session,
+        started: Moment,
+        ended: Moment,
+        day: Day,
+        curriculum: Option<&Curriculum>,
+    ) -> Result<Recorded> {
         let stats = s.stats();
         let success = stats.success();
         let summary = s.summary();
@@ -709,7 +724,6 @@ impl Store {
         };
         let speaking = (wall * spoken_share).round() as u32;
         let xp = summary.xp.xp;
-        let day = started.day();
         let mut rec = self.day(day)?;
         if rec.levels_at_start.is_empty() {
             rec.levels_at_start = levels_before;

@@ -924,19 +924,14 @@ mod tests {
         let a = whole.turn(line, Input::Spoken).unwrap();
         let mut halves = Session::new(scenario(), provider(), Amount::Normal, "de");
         let asking = halves.ask(line);
-        // What the window does while the tutor thinks reaches the turn: help was used.
-        halves.aid(Aid::Repeat);
+        // Asking changes nothing; the session is free meanwhile.
+        assert_eq!(halves.turns().len(), 0);
         let b = halves.take(line, Input::Spoken, asking.run().unwrap());
         assert_eq!(
             (a.reply, a.xp, a.shown.len()),
             (b.reply, b.xp, b.shown.len())
         );
-        assert!(halves.turns()[0].aided && !whole.turns()[0].aided);
-        let (mut w, mut h) = (whole.snapshot(), halves.snapshot());
-        w.aids.clear();
-        h.aids.clear();
-        w.turns[0].aided = true;
-        assert_eq!(w, h);
+        assert_eq!(whole.snapshot(), halves.snapshot());
     }
 
     #[test]
