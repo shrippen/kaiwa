@@ -96,10 +96,8 @@ fn purge(dir: &Path, keep_days: Option<u32>, now: Moment) -> anyhow::Result<usiz
 mod tests {
     use super::*;
 
-    fn backend(name: &str, keep: Option<u32>) -> Backend {
-        let dir = std::env::temp_dir().join(format!("kaiwa-rec-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let b = Backend::open_at(dir.join("lena.kaiwa"), false).unwrap();
+    fn backend(name: &str, keep: Option<u32>) -> crate::TempBackend {
+        let b = crate::TempBackend::new(&format!("rec-{name}"), false).unwrap();
         let mut p = b.store.profile().unwrap();
         p.keep_recordings_days = keep;
         b.store.set_profile(&p).unwrap();

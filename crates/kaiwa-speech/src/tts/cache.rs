@@ -14,7 +14,7 @@ pub const MAX_SAMPLES: usize = 24_000 * 60 * 5;
 /// A sentence as samples, and their rate.
 pub type Clip = (Arc<Vec<f32>>, u32);
 
-/// One sentence in one voice at one speed.
+/// Voice, sentence, speed (its bits): one sentence in one voice at one speed.
 type Key = (String, String, u32);
 
 #[derive(Default)]

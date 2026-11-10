@@ -37,5 +37,8 @@ fn main() {
     if let Some(app) = app.as_mut() {
         app.exec();
     }
+    // The demo's profile lived in the temp directory for this run only.
+    #[cfg(feature = "demo")]
+    state::state().discard_demo();
     kaiwa_speech::shutdown();
 }

@@ -2,7 +2,7 @@
 //! the learner has spoken and then been quiet for the pause they set (1.2 to 5 s). There is no
 //! limit for the whole turn, and voiced hesitation (えーと, あの) counts as speaking, so it never
 //! ends a turn (/LF102/). Works on the capture's level (0 at −60 dB, 1 at 0 dB). Pure logic,
-//! so `kaiwa-sim` plays a persona's way of speaking through it (`hinnerk_no_cutoff`).
+//! so `kaiwa-sim` plays a persona's way of speaking through it (its test `hands_free`).
 
 /// The pauses the settings offer (/LF101/), shortest first.
 pub const PAUSE_STEPS: [f32; 4] = [1.2, 2.0, 3.0, 5.0];

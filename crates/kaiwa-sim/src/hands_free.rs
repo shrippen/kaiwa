@@ -19,7 +19,7 @@ use serde_json::Value;
 /// the next longer pause, which he takes; in the end the pause fits him, and from then on no
 /// turn is cut off. The recogniser and the voice are not played (audio mode); the text of a
 /// cut is the part before the pause.
-fn no_cutoff(p: &Value) -> Result<Option<String>> {
+fn slow_speaker(p: &Value) -> Result<Option<String>> {
     use kaiwa_core::turn_end::{EndOfTurn, PAUSE_STEPS};
     let range = |key: &str, scale: f64| -> Result<(f64, f64)> {
         let r = &p["speech"][key];
@@ -93,7 +93,7 @@ struct Speech {
     fillers: bool,
 }
 
-/// One seed of `no_cutoff`: what went wrong, if anything, and the longest turn in seconds.
+/// One seed of `slow_speaker`: what went wrong, if anything, and the longest turn in seconds.
 fn hands_free(speech: &Speech, seed: u64) -> (Option<String>, f64) {
     use kaiwa_core::turn_end::{CutOffs, EndOfTurn, PAUSE_STEPS, sounds_unfinished};
     const LINES: [&[&str]; 5] = [
@@ -204,7 +204,7 @@ fn hands_free(speech: &Speech, seed: u64) -> (Option<String>, f64) {
         _ => None,
     };
     if std::env::var_os("KAIWA_SIM_VERBOSE").is_some() {
-        eprintln!("hinnerk_no_cutoff, seed {seed}: offers {offers:?}, longest {longest:.1} s");
+        eprintln!("hands_free, seed {seed}: offers {offers:?}, longest {longest:.1} s");
     }
     (why, longest)
 }
@@ -216,5 +216,5 @@ fn hinnerk_is_cut_off_only_until_the_pause_fits() {
         &std::fs::read_to_string(root.join("qa/personas/hinnerk.json")).unwrap(),
     )
     .unwrap();
-    assert_eq!(no_cutoff(&p).unwrap(), None);
+    assert_eq!(slow_speaker(&p).unwrap(), None);
 }

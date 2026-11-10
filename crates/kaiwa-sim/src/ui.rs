@@ -39,10 +39,8 @@ const NOW: Moment = Moment {
     offset_min: 120,
 };
 
-fn demo(name: &str, lang: &str) -> Result<Backend> {
-    let dir = std::env::temp_dir().join(format!("kaiwa-sim-ui-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let b = Backend::open_at(dir.join("demo.kaiwa"), true)?;
+fn demo(name: &str, lang: &str) -> Result<kaiwa_backend::TempBackend> {
+    let b = kaiwa_backend::TempBackend::new(&format!("sim-ui-{name}"), true)?;
     let mut p = b.store.profile()?;
     p.ui_lang = lang.into();
     b.store.set_profile(&p)?;
@@ -666,8 +664,8 @@ fn word_lookup(root: &Path) -> Result<Option<String>> {
     if !reading_aid.contains("{好|す}") {
         found.push(format!("no furigana over 好 in the reply: {reading_aid}"));
     }
-    // Mara's own line has furigana too, and its words are looked up the same way; a number
-    // with its counter gets none rather than a wrong one (ににん).
+    // Mara's own line has furigana too, and its words are looked up the same way (a number
+    // with its counter: below).
     let own = lookup::own_line("仕事はプロデューサーです。");
     if !own["markup"]
         .as_str()

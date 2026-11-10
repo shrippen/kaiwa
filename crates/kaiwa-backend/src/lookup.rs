@@ -184,11 +184,8 @@ mod tests {
         assert!(dictionary(missing).is_some_and(|g| g.is_none()));
     }
 
-    fn backend(name: &str) -> Backend {
-        let dir = std::env::temp_dir().join(format!("kaiwa-lookup-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        Backend::open_at(dir.join("t.kaiwa"), false).unwrap()
+    fn backend(name: &str) -> crate::TempBackend {
+        crate::TempBackend::new(&format!("lookup-{name}"), false).unwrap()
     }
 
     fn word(markup: &str, i: usize) -> LineWord {
