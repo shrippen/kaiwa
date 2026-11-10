@@ -18,8 +18,12 @@ Kirigami.ApplicationWindow {
     id: root
     width: Number(arg("--width", "900"))
     height: Number(arg("--height", "760"))
+    minimumWidth: narrowest
     visible: true
     title: "Kaiwa"
+
+    // Narrower, the views lose their layout; every view is checked at this width (/LL303/).
+    readonly property int narrowest: 800
 
     readonly property var args: Qt.application.arguments
     function arg(name, fallback) {

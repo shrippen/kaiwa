@@ -266,6 +266,7 @@ Mengengerüst: bis 10 000 Sitzungen und 20 000 Lernobjekte pro Profil ohne spür
 | /LL300/ | M | Keine Dark Patterns: keine künstliche Verknappung, keine Schuld- oder Angst-Formulierungen, keine Belohnung für Ausnutzen. |
 | /LL301/ | M | Die GUI wird aus **Kante** erzeugt (siehe Kap. 8). |
 | /LL302/ | M | Die KI-Figuren bleiben im Lernkontext. Bei unangemessenen Eingaben lenkt die Figur freundlich zurück, ohne zu moralisieren. Inhalte sind ab 14 geeignet. |
+| /LL303/ | M | Das Fenster ist mindestens 800 px breit (Eigentümer, 10.11.2026); jede Ansicht ist bei dieser Breite vollständig bedienbar. |
 
 ### 6.5 Datenschutz und Sicherheit
 
