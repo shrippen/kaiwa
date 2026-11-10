@@ -943,6 +943,7 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
                 misrecognized: false,
                 disputed: Vec::new(),
                 markup: String::new(),
+                incomplete: false,
             });
         }
         let ended = s.start.plus_secs((s.minutes * 60.0) as i64);

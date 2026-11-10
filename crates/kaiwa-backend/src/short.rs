@@ -129,6 +129,8 @@ impl ShortTalk {
         v["said"] = json!(text);
         v["reply"] = json!(o.reply);
         v["corrections"] = json!(line(&o));
+        // T-11: the tutor's analysis of this turn had gaps; the turn does not count for the level.
+        v["incomplete"] = json!(o.incomplete);
         v["recorded"] = recorded;
         Ok(v)
     }

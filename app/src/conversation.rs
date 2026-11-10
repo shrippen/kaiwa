@@ -189,7 +189,7 @@ use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::learner::Skill;
-use kaiwa_core::placement::{self, Placement, Reading, STAGES, StageResult, TURNS_PER_STAGE};
+use kaiwa_core::placement::{self, Placement, Reading, STAGES, Step, TURNS_PER_STAGE};
 use kaiwa_core::session::{Aid, SessionState};
 use kaiwa_core::{Input, Scenario, Session, Summary, TurnOutcome};
 use kaiwa_speech::SpeechError;
@@ -470,26 +470,27 @@ impl qobject::Conversation {
         let Some(session) = self.session.clone() else {
             return;
         };
-        let (turns, done, stats) = {
-            let s = session.lock().expect("session lock");
-            (s.turns().len() as u32, s.done(), s.stats())
-        };
-        if turns < TURNS_PER_STAGE && !done {
-            return;
-        }
-        let next = {
+        let step = {
             let mut rust = self.as_mut().rust_mut();
             let Some(p) = rust.placement.as_mut() else {
                 return;
             };
-            let level = STAGES[p.results.len()].1;
-            p.add(StageResult::from_stats(level, &stats));
-            p.next_stage()
+            p.after_turn(&session.lock().expect("session lock"))
         };
-        match next {
-            Some(i) => self.begin_stage(i),
-            None => {
+        match step {
+            Step::Go => {}
+            Step::Next(i) => self.begin_stage(i),
+            Step::Over => {
                 self.as_mut().set_placement_ask(true);
+                self.as_mut().set_finished(true);
+            }
+            // T-11: too many turns the tutor analysed with gaps. Nothing is asked and nothing
+            // stored: the level stays what it was, and the page says why.
+            Step::Unjudged => {
+                self.as_mut().rust_mut().placement = None;
+                let r = json!({ "placement": [], "unjudged": true });
+                self.as_mut().set_recorded(QString::from(&r.to_string()));
+                self.as_mut().set_placing(false);
                 self.as_mut().set_finished(true);
             }
         }
@@ -1501,6 +1502,7 @@ impl qobject::Conversation {
                                     outcome.shown.iter().map(|x| shown_json(x, &lang)).collect(),
                                 );
                                 turn["pending"] = json!(false);
+                                turn["incomplete"] = json!(outcome.incomplete);
                                 // The tutor's furigana replace the dictionary's (ADR-004).
                                 if !outcome.own_markup.is_empty() {
                                     turn["markup"] = outcome.own_markup.clone().into();
@@ -1771,6 +1773,7 @@ fn log_of(scenario: &Scenario, state: &SessionState, lang: &str) -> Vec<Value> {
             "corrections": corrections,
             "pending": false,
             "misrecognized": t.misrecognized,
+            "incomplete": t.incomplete,
         }));
         if !t.markup.is_empty() {
             log.last_mut().expect("just pushed")["markup"] = t.markup.clone().into();
