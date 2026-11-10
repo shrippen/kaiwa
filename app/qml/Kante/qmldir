@@ -10,6 +10,7 @@ KanteBarChart 1.0 KanteBarChart.qml
 KanteBassStaff 1.0 KanteBassStaff.qml
 KanteBrackets 1.0 KanteBrackets.qml
 KanteBulkBar 1.0 KanteBulkBar.qml
+KanteBusyIndicator 1.0 KanteBusyIndicator.qml
 KanteButton 1.0 KanteButton.qml
 KanteCalendarGrid 1.0 KanteCalendarGrid.qml
 KanteCalendarHeatmap 1.0 KanteCalendarHeatmap.qml
