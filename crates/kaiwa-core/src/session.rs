@@ -441,6 +441,12 @@ impl Session {
         &self.scenario.goals[..n]
     }
 
+    /// Goals reached in turns whose analysis had gaps (T-11): reached for the talk, no
+    /// evidence of the level.
+    pub fn goals_unjudged(&self) -> &BTreeSet<String> {
+        &self.goals_unjudged
+    }
+
     /// The first goal not reached yet.
     pub fn current_goal(&self) -> Option<&Goal> {
         self.goals()

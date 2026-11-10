@@ -1,7 +1,10 @@
 //! The placement by conversation (Lastenheft /LF200/): short stages at rising levels instead of a
 //! test, about 5–8 minutes in all, skippable and repeatable. Each stage plays a scenario at a
-//! fixed difficulty for at most [`TURNS_PER_STAGE`] turns; the next stage follows while the
-//! learner keeps up (success ≥ [`GO_ON`]). The result is a level per skill, no grade:
+//! fixed difficulty for [`TURNS_PER_STAGE`] turns (or until its goals are reached); the next
+//! stage follows while the learner keeps up (success ≥ [`GO_ON`]). Turns the tutor analysed
+//! with gaps (T-11) are not judged: a stage waits for turns that can be, for at most twice
+//! its turns, and a placement with a stage that could not be judged changes nothing
+//! ([`Placement::after_turn`]). The result is a level per skill, no grade:
 //!
 //! - listening from the share of lines understood without help, speaking from the share of
 //!   turns without a mistake, fluency from goals reached without help, each at the levels of
@@ -13,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::difficulty::{Difficulty, Knob};
 use crate::learner::{LearnerModel, Skill, level_index};
-use crate::session::Stats;
+use crate::session::{Session, Stats};
 
 /// The stages: scenario and level of the material (learner model scale, 0–8).
 pub const STAGES: [(&str, f64); 4] = [
@@ -62,11 +65,18 @@ pub struct StageResult {
     pub register_mistakes: u32,
 }
 
-/// Whether a stage is over: after [`TURNS_PER_STAGE`] turns that can be judged (`judged`:
-/// [`Stats::turns`], without those the tutor analysed with gaps, T-11), when its goals are
-/// reached, or after twice as many turns in all (a tutor whose analyses all have gaps).
-pub fn stage_over(turns: u32, judged: u32, done: bool) -> bool {
-    done || judged >= TURNS_PER_STAGE || turns >= 2 * TURNS_PER_STAGE
+/// What follows a turn of a placement stage ([`Placement::after_turn`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Step {
+    /// The stage goes on.
+    Go,
+    /// The stage is judged and the learner kept up: play this stage next.
+    Next(usize),
+    /// The stage is judged and the placement is over: ask about reading, then the result.
+    Over,
+    /// The stage could not be judged (too many turns the tutor analysed with gaps): the
+    /// placement ends without a result and must change nothing.
+    Unjudged,
 }
 
 impl StageResult {
@@ -131,7 +141,26 @@ impl Placement {
         self.results.push(r);
     }
 
-    /// Minutes the placement takes at most (about 30 s per turn).
+    /// After a turn of the stage `s` plays. The stage is judged after [`TURNS_PER_STAGE`]
+    /// turns that count ([`Stats::turns`]: without those analysed with gaps, T-11), or when
+    /// its goals are reached, all of them in turns that count. Its result is added then. A
+    /// stage that is not judged after twice its turns never will be with this tutor.
+    pub fn after_turn(&mut self, s: &Session) -> Step {
+        let st = s.stats();
+        let judged = st.turns >= TURNS_PER_STAGE || (s.done() && s.goals_unjudged().is_empty());
+        let level = STAGES[self.results.len().min(STAGES.len() - 1)].1;
+        match StageResult::from_stats(level, &st) {
+            Some(r) if judged => {
+                self.add(r);
+                self.next_stage().map_or(Step::Over, Step::Next)
+            }
+            _ if s.turns().len() as u32 >= 2 * TURNS_PER_STAGE => Step::Unjudged,
+            _ => Step::Go,
+        }
+    }
+
+    /// Minutes the placement takes at most (about 30 s per turn), with a tutor whose
+    /// analyses are whole.
     pub fn max_minutes() -> u32 {
         (STAGES.len() as u32 * TURNS_PER_STAGE).div_ceil(2)
     }
@@ -198,23 +227,76 @@ mod tests {
         }
     }
 
+    /// Stage 1 against a tutor that answers every turn with `analysis` (JSON), in order.
+    fn played(analyses: &[&str]) -> (Placement, Vec<Step>) {
+        use crate::{Amount, Input, Scenario};
+        use kaiwa_ai::mock::MockProvider;
+        use std::sync::Arc;
+        let fixtures: Vec<String> = analyses
+            .iter()
+            .enumerate()
+            .map(|(i, a)| format!(r#"{{"learner":"turn {i}","reply":"はい。","analysis":{a}}}"#))
+            .collect();
+        let tutor = MockProvider::from_json(&format!("[{}]", fixtures.join(","))).unwrap();
+        let scenario = Scenario::from_json(include_str!(
+            "../../../data/scenarios/n5-02-jikoshoukai.json"
+        ))
+        .unwrap();
+        let mut s = Session::new(scenario, Arc::new(tutor), Amount::Little, "de")
+            .with_difficulty(difficulty_at(STAGES[0].1));
+        let mut p = Placement::default();
+        let mut steps = Vec::new();
+        for i in 0..analyses.len() {
+            s.turn(&format!("turn {i}"), Input::Typed).unwrap();
+            steps.push(p.after_turn(&s));
+            if steps.last() != Some(&Step::Go) {
+                break;
+            }
+        }
+        (p, steps)
+    }
+
+    const FINE: &str = r#"{"understood":true,"corrections":[]}"#;
+    const LOST: &str = r#"{"understood":false,"corrections":[]}"#;
+    /// Understood, no mistake named, but the analysis had a gap (T-11).
+    const GAP: &str = r#"{"understood":true,"corrections":[],"incomplete":true}"#;
+    const GAP_GOALS: &str =
+        r#"{"understood":true,"goals_met":["name","origin"],"corrections":[],"incomplete":true}"#;
+
     #[test]
-    fn a_stage_waits_for_turns_that_can_be_judged() {
-        // T-11: turns the tutor analysed with gaps do not end a stage as failures.
-        assert!(!stage_over(4, 0, false) && !stage_over(7, 3, false));
-        assert!(stage_over(4, 4, false) && stage_over(6, 4, false));
-        // Its goals reached, or a tutor that never gives a whole analysis: over.
-        assert!(stage_over(2, 2, true) && stage_over(8, 0, false));
-        // No judged turn is no result, not a stage failed.
+    fn a_stage_is_judged_from_turns_that_count() {
+        // Four whole turns: judged, on to stage 2.
+        let (p, steps) = played(&[FINE; 4]);
+        assert_eq!(steps, [Step::Go, Step::Go, Step::Go, Step::Next(1)]);
+        assert_eq!((p.results[0].turns, p.results[0].listening), (4, 1.0));
+        // Gaps in between do not end the stage early and are not failures.
+        let (p, steps) = played(&[GAP, FINE, GAP, FINE, FINE, FINE]);
+        assert_eq!(steps.last(), Some(&Step::Next(1)));
+        assert_eq!(steps.len(), 6);
+        assert_eq!((p.results[0].turns, p.results[0].listening), (4, 1.0));
+        // Not understood four times: judged, the placement is over.
+        let (p, steps) = played(&[LOST; 4]);
+        assert_eq!(steps.last(), Some(&Step::Over));
+        assert_eq!(p.results.len(), 1);
+    }
+
+    #[test]
+    fn a_stage_that_cannot_be_judged_gives_no_result() {
+        // A tutor whose every analysis has a gap: eight turns, then no result at all.
+        let (p, steps) = played(&[GAP; 8]);
+        assert_eq!(steps.len(), 8);
+        assert_eq!(steps.last(), Some(&Step::Unjudged));
+        assert!(p.results.is_empty());
+        // Goals reached in turns with gaps do not end the stage.
+        let (p, steps) = played(&[GAP_GOALS, GAP, GAP]);
+        assert_eq!(steps, [Step::Go; 3]);
+        assert!(p.results.is_empty());
+        // One whole turn among seven with gaps is not a stage judged from a single turn.
+        let (p, steps) = played(&[LOST, GAP_GOALS, GAP, GAP, GAP, GAP, GAP, GAP]);
+        assert_eq!(steps.last(), Some(&Step::Unjudged));
+        assert!(p.results.is_empty());
+        // No judged turn is no result.
         assert_eq!(StageResult::from_stats(1.5, &Stats::default()), None);
-        let st = Stats {
-            turns: 1,
-            understood_unaided: 1,
-            clean_turns: 1,
-            ..Default::default()
-        };
-        let r = StageResult::from_stats(1.5, &st).unwrap();
-        assert_eq!((r.turns, r.listening, r.speaking), (1, 1.0, 1.0));
     }
 
     #[test]

@@ -377,10 +377,18 @@ Kirigami.ScrollablePage {
             visible: page.recorded !== null && page.recorded.placement !== undefined
             Layout.fillWidth: true
             spacing: KanteStyle.unit(10)
-            KanteHeading { text: page.t("So steigst du ein", "Where you start"); level: 2 }
+            KanteHeading {
+                text: page.recorded && page.recorded.unjudged
+                    ? page.t("Die Einstufung ließ sich nicht auswerten", "The placement could not be assessed")
+                    : page.t("So steigst du ein", "Where you start")
+                level: 2
+            }
             Text {
                 Layout.fillWidth: true
-                text: page.recorded && page.recorded.stages
+                text: page.recorded && page.recorded.unjudged
+                    ? page.t("Der Tutor hat zu viele deiner Züge nicht ganz ausgewertet. Dein Niveau bleibt, wie es war. Mit einem anderen Modell oder Anbieter (Einstellungen › Tutor) kannst du die Einstufung wiederholen.",
+                             "The tutor did not fully assess too many of your turns. Your level stays as it was. With another model or provider (Settings › Tutor) you can repeat the placement.")
+                    : page.recorded && page.recorded.stages
                     ? page.t(page.recorded.stages + " von 4 Stufen gespielt. Kaiwa stellt Tempo, Länge und Hilfen danach ein und passt sie nach jedem Gespräch weiter an.",
                              page.recorded.stages + " of 4 stages played. Kaiwa sets speed, length and help from this and keeps adjusting them after every talk.")
                     : ""
