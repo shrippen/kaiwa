@@ -592,13 +592,8 @@ impl qobject::KaiwaApp {
     }
 
     fn skip_unit(mut self: Pin<&mut Self>, unit: &QString) {
-        {
-            let st = state();
-            if let Ok(mut l) = st.store.learning() {
-                l.course.skipped_units.insert(unit.to_string());
-                let _ = st.store.set_learning(&l);
-            }
-        }
+        // Only the unit the offer is about, once per offer (review #86).
+        let _ = views::take_skip(&state(), &unit.to_string());
         self.as_mut().refresh();
     }
 

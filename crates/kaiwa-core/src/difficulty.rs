@@ -324,6 +324,10 @@ pub struct Regulator {
     /// Success of the past sessions, newest last.
     pub success: Vec<f64>,
     pub changes: Vec<Vec<Change>>,
+    /// How many sessions there were when the skip offer was last taken: the same three
+    /// sessions offer one unit, not one after the other (/LF215/).
+    #[serde(default)]
+    pub skip_taken: usize,
 }
 
 pub const TARGET: f64 = 0.8;
@@ -397,9 +401,16 @@ impl Regulator {
         c
     }
 
-    /// Three sessions in a row at 95 % or more: offer to skip ahead (/LF215/).
+    /// Three sessions in a row at 95 % or more: offer to skip ahead (/LF215/). Sessions from
+    /// before the last skip do not count again.
     pub fn offer_skip(&self) -> bool {
-        self.success.len() >= 3 && self.success.iter().rev().take(3).all(|s| *s >= SKIP_AT)
+        self.success.len().saturating_sub(self.skip_taken) >= 3
+            && self.success.iter().rev().take(3).all(|s| *s >= SKIP_AT)
+    }
+
+    /// The offer was taken: the next one needs three new sessions.
+    pub fn took_skip(&mut self) {
+        self.skip_taken = self.success.len();
     }
 
     /// Moving success over the last `n` sessions.

@@ -249,21 +249,59 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
             })))
             .collect::<Vec<_>>(),
     });
+    let offer = skip_offer(st)?;
     Ok(json!({
         "skills": skills,
         "weak": weak,
         "grammar": grammar,
         "knobs": knobs,
         "speed": d.speed(),
-        "offerSkip": l.regulator.offer_skip(),
+        "offerSkip": offer.is_some(),
         // The unit the offer is about (T-08): the one the learner is in now.
-        "skipUnit": st
-            .curriculum
-            .path(&l.course, lang)
-            .into_iter()
-            .find(|u| u.state == NodeState::Current)
-            .map(|u| json!({ "id": u.id, "title": u.title })),
+        "skipUnit": offer.map(|u| json!({ "id": u.id, "title": u.title })),
     }))
+}
+
+/// The unit the skip offer is about (/LF215/, T-08), if there is an offer: three sessions in a
+/// row went almost without a slip since the last skip, and the unit the learner is in now is
+/// not one with keigo while the learner's register lacks it (as after the placement,
+/// `Curriculum::placement_skip`: nobody skips into or over keigo on easy talks in plain form).
+pub fn skip_offer(st: &Backend) -> anyhow::Result<Option<kaiwa_core::curriculum::UnitNode>> {
+    use kaiwa_core::learner::{Skill, level_index};
+    let l = st.store.learning()?;
+    if !l.regulator.offer_skip() {
+        return Ok(None);
+    }
+    let lang = st.store.profile()?.ui_lang;
+    let Some(unit) = st
+        .curriculum
+        .path(&l.course, &lang)
+        .into_iter()
+        .find(|u| u.state == NodeState::Current)
+    else {
+        return Ok(None);
+    };
+    let keigo = unit.scenarios.iter().any(|s| {
+        st.scenarios
+            .get(&s.id)
+            .is_some_and(|s| s.register == kaiwa_core::scenario::Register::Keigo)
+    });
+    let keigo_ok = l.model.level(Skill::Register) >= level_index("keigo_basic").unwrap_or(f64::MAX);
+    Ok((keigo_ok || !keigo).then_some(unit))
+}
+
+/// Takes the skip offer for `unit` (the button at the path's hint): the unit counts as done and
+/// the offer is used up, the next one needs three new sessions. Nothing happens when the offer
+/// is not about `unit` (a second click, an old page).
+pub fn take_skip(st: &Backend, unit: &str) -> anyhow::Result<bool> {
+    if skip_offer(st)?.is_none_or(|u| u.id != unit) {
+        return Ok(false);
+    }
+    let mut l = st.store.learning()?;
+    l.course.skipped_units.insert(unit.to_string());
+    l.regulator.took_skip();
+    st.store.set_learning(&l)?;
+    Ok(true)
 }
 
 /// Talks before a kind of mistake gets a trend, and how often it must have come up in them;
@@ -808,15 +846,64 @@ mod tests {
     fn the_skip_offer_names_the_unit_and_the_settings_a_running_pause() {
         let b = crate::TempBackend::new("promises", false).unwrap();
         let first = b.curriculum.units[0].clone();
+        // No offer without three easy talks.
         let v = learner(&b).unwrap();
+        assert_eq!(v["offerSkip"], false);
+        assert!(v["skipUnit"].is_null());
+        assert!(!take_skip(&b, &first.id).unwrap());
+        let easy = |n: usize| {
+            let mut l = b.store.learning().unwrap();
+            l.regulator.success.extend(vec![0.97; n]);
+            b.store.set_learning(&l).unwrap();
+        };
+        easy(3);
+        let v = learner(&b).unwrap();
+        assert_eq!(v["offerSkip"], true);
         assert_eq!(v["skipUnit"]["id"], first.id.as_str());
         assert_eq!(v["skipUnit"]["title"], first.title.get("de"));
-        // Skipped (what the button does): the offer is about the next unit.
-        let mut l = b.store.learning().unwrap();
-        l.course.skipped_units.insert(first.id.clone());
-        b.store.set_learning(&l).unwrap();
+        // Not the unit of the offer: nothing happens.
+        assert!(!take_skip(&b, &b.curriculum.units[1].id).unwrap());
+        // Taken (what the button does): one unit, and the offer is used up; a second click
+        // skips nothing.
+        assert!(take_skip(&b, &first.id).unwrap());
+        assert!(!take_skip(&b, &first.id).unwrap());
+        assert!(!take_skip(&b, &b.curriculum.units[1].id).unwrap());
+        let v = learner(&b).unwrap();
+        assert_eq!(v["offerSkip"], false);
+        assert!(v["skipUnit"].is_null());
+        let done = b.store.learning().unwrap().course.skipped_units;
+        assert_eq!(done.len(), 1);
+        assert!(done.contains(&first.id));
+        // Three new easy talks, not two, bring the next offer.
+        easy(2);
+        assert_eq!(learner(&b).unwrap()["offerSkip"], false);
+        easy(1);
         let v = learner(&b).unwrap();
         assert_eq!(v["skipUnit"]["id"], b.curriculum.units[1].id.as_str());
+        // A unit with keigo is not offered to a learner without the register.
+        let keigo = b
+            .curriculum
+            .units
+            .iter()
+            .position(|u| {
+                u.scenarios
+                    .iter()
+                    .any(|s| b.scenarios[s].register == kaiwa_core::scenario::Register::Keigo)
+            })
+            .unwrap();
+        let mut l = b.store.learning().unwrap();
+        for u in &b.curriculum.units[..keigo] {
+            l.course.skipped_units.insert(u.id.clone());
+        }
+        b.store.set_learning(&l).unwrap();
+        assert!(b.store.learning().unwrap().regulator.offer_skip());
+        let v = learner(&b).unwrap();
+        assert_eq!(v["offerSkip"], false);
+        assert!(!take_skip(&b, &b.curriculum.units[keigo].id).unwrap());
+        let mut l = b.store.learning().unwrap();
+        l.course.skipped_units.clear();
+        l.regulator = Default::default();
+        b.store.set_learning(&l).unwrap();
 
         assert!(profile(&b).unwrap()["pausedUntil"].is_null());
         let today = crate::now().day();

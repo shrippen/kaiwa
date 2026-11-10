@@ -101,6 +101,7 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
         "theo_dispute" => dispute(root),
         "emi_misrecognition" => misrecognition(root),
         "emi_skip" => skip(root, p),
+        "emi_skip_once" => skip_once(p),
         "lena_transparency" => transparency(),
         "selin_win_mixed" => mixed(),
         "selin_profile_split" => profile_split(p),
@@ -706,6 +707,66 @@ fn misrecognition(root: &Path) -> Result<Option<String>> {
         .iter()
         .any(|r| r.contains("が好き"))
         .then(|| "the correction still goes into the review".into()))
+}
+
+/// /LF215/, T-08: the offer on the path is about the unit Emi is in, taking it skips that one
+/// unit and uses the offer up (three new easy talks bring the next), and it stops before keigo.
+fn skip_once(p: &Value) -> Result<Option<String>> {
+    use kaiwa_backend::views::{skip_offer, take_skip};
+    let b = kaiwa_backend::TempBackend::new("skip-once", false)?;
+    let easy = |n: usize| -> Result<()> {
+        let mut l = b.store.learning()?;
+        l.regulator.success.extend(vec![0.97; n]);
+        Ok(b.store.set_learning(&l)?)
+    };
+    let mut l = b.store.learning()?;
+    l.model = placed(p);
+    b.store.set_learning(&l)?;
+    if skip_offer(&b)?.is_some() {
+        return Ok(Some("an offer before any talk".into()));
+    }
+    easy(3)?;
+    let Some(first) = skip_offer(&b)? else {
+        return Ok(Some("no offer after three easy talks".into()));
+    };
+    if first.id != b.curriculum.units[0].id {
+        return Ok(Some(format!("the offer is about {}", first.id)));
+    }
+    // Two clicks, and a click for another unit: one unit is skipped.
+    take_skip(&b, &first.id)?;
+    take_skip(&b, &first.id)?;
+    take_skip(&b, &b.curriculum.units[1].id)?;
+    let skipped = b.store.learning()?.course.skipped_units;
+    if skipped.len() != 1 {
+        return Ok(Some(format!("skipped on one offer: {skipped:?}")));
+    }
+    easy(2)?;
+    if skip_offer(&b)?.is_some() {
+        return Ok(Some("a new offer after two talks".into()));
+    }
+    easy(1)?;
+    if skip_offer(&b)?.is_none_or(|u| u.id != b.curriculum.units[1].id) {
+        return Ok(Some(
+            "no offer for the next unit after three new talks".into(),
+        ));
+    }
+    // Up to the keigo path, not into it.
+    let keigo = |u: &kaiwa_core::curriculum::Unit| {
+        u.scenarios.iter().any(|s| {
+            b.scenarios
+                .get(s)
+                .is_some_and(|s| s.register == kaiwa_core::scenario::Register::Keigo)
+        })
+    };
+    let Some(k) = b.curriculum.units.iter().position(keigo) else {
+        return Ok(Some("no keigo unit on the path".into()));
+    };
+    let mut l = b.store.learning()?;
+    for u in &b.curriculum.units[..k] {
+        l.course.skipped_units.insert(u.id.clone());
+    }
+    b.store.set_learning(&l)?;
+    Ok(skip_offer(&b)?.map(|u| format!("the keigo unit {} is offered", u.id)))
 }
 
 /// /LF215/: after Emi's placement, skipping is offered at once, up to the keigo path (the first

@@ -44,7 +44,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF212/ | M | Hilfen (Wiederholung, Zeitlupe, Übersetzung, Hilfe-Stufen) fließen in … | app, core | geprüft | 1 von 1 automatisch grün: `mara_hints_silent` |
 | /LF213/ | M | Die Anpassung wirkt innerhalb einer Sitzung (sofort leichter nach … | core | geprüft | 1 von 1 automatisch grün: `jonas_scenario_stuck` |
 | /LF214/ | M | Die Schwierigkeit steigt schrittweise: Pro Sitzung ändert sich … | core | geprüft | 2 von 2 automatisch grün: `hinnerk_pace`, `mara_gradual` |
-| /LF215/ | S | Starke Unterforderung (z. B. Erfolg ≥ 95 % über drei Sitzungen) führt … | app, core | geprüft | 1 von 1 automatisch grün: `emi_skip` |
+| /LF215/ | S | Starke Unterforderung (z. B. Erfolg ≥ 95 % über drei Sitzungen) führt … | app, backend, core | geprüft | 2 von 2 automatisch grün: `emi_skip`, `emi_skip_once` |
 | /LF220/ | M | Das Curriculum ist ein Graph aus Einheiten. | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_path` |
 | /LF221/ | M | Inhalte (Szenarien, Beispielsätze, Erklärungen) werden geprüft … | core, lang | Code | – |
 | /LF230/ | M | Wiederholung (SRS) für Wörter, Wendungen und Grammatikmuster aus … | app, backend, core, store | geprüft | 2 von 2 automatisch grün: `emi_srs_keigo`, `mara_srs_errors` |
@@ -83,7 +83,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF610/ | S | Statistik: Heatmap der Übungstage, Wortschatz pro Niveau, Sprechzeit … | app, backend | geprüft | 1 von 1 automatisch grün: `mara_progress` |
 | /LF620/ | M | Benachrichtigungen sind abschaltbar, höchstens eine pro Tag und ohne … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
 | /LF700/ | K | Sync zwischen Geräten über eine Ende-zu-Ende-verschlüsselte Datei auf … | – | offen | 0 von 1 automatisch grün: `jonas_sync` |
-| /LF710/ | M | Export aller eigenen Daten (Profil, Verlauf, Wiederholung) als offene … | app, backend, store | geprüft | 2 von 2 automatisch grün: `lena_delete`, `lena_export` |
+| /LF710/ | M | Export aller eigenen Daten (Profil, Verlauf, Wiederholung) als offene … | app, backend, store | geprüft | 3 von 3 automatisch grün: `lena_delete`, `lena_export`, `lena_import` |
 | /LF711/ | M | Die Ansicht „Was verlässt das Gerät?“ zeigt je Baustein (STT, LLM … | ai, app, backend | geprüft | 2 von 2 automatisch grün: `lena_transparency`, `selin_win_mixed` |
 | /LF712/ | M | Aufnahmen werden standardmäßig nicht gespeichert. | app, backend, store | geprüft | 2 von 2 automatisch grün: `lena_default_no_audio`, `lena_retention` |
 | /LF713/ | M | API-Schlüssel liegen im System-Schlüsselbund (KWallet, Secret … | ai, app, backend | Code | 0 von 1 automatisch grün: `selin_win_keys` |
