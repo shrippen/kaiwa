@@ -103,7 +103,7 @@ ReazonSpeech, Kokoro und kaiwa-kana-ctc in den Einstellungen unter „Modelle“
 2. **Flüssig** (`lena_responsive`): `QSG_RENDER_TIMING=1 cargo run -p kaiwa-app 2> qa/local/<datum>/frames.log` und ein Gespräch mit Sprechen führen. Die Bildzeiten stehen im Log, Ziel < 50 ms. „Denkt nach“ sichtbar, Abbrechen geht jederzeit?
 3. **Nichts geht nach draußen** (`lena_zero_egress`): Tutor lokal (Ollama in den Einstellungen, keine `KAIWA_*`-Variablen gesetzt), Modelle geladen, dann
    `strace -f -e trace=connect,sendto,sendmsg -o qa/local/<datum>/egress.log ./target/debug/kaiwa` und ein Gespräch führen. Erlaubt sind nur Verbindungen zu `127.0.0.1`/`::1` (Ollama) und lokale Sockets (D-Bus, PipeWire). Jede andere Adresse und jede DNS-Anfrage (Port 53) ist ein Befund.
-4. **Große Schrift** (`hinnerk_font`): Systemschrift auf 160 % oder in Kaiwa Textgröße 160 %, dann jede Ansicht durchgehen. Nichts abgeschnitten, Furigana und Kana mitskaliert, keine Bedienelemente überlappen. Screenshots bei Auffälligkeiten in den Ordner.
+4. **Große Schrift** (`hinnerk_font`): Systemschrift auf 160 % oder in Kaiwa Textgröße 160 %, dann jede Ansicht durchgehen. Nichts abgeschnitten, Furigana und Kana mitskaliert, keine Bedienelemente überlappen. Screenshots bei Auffälligkeiten in den Ordner. Vorarbeit ohne Bildschirm: `tools/font-160.sh` nimmt jede Ansicht der Demo bei 160 % auf (deutsch und englisch, Fenster wie auf einem Laptop mit 1366 px) und listet Texte, die abgeschnitten sind oder über den Rand ragen; Überlappungen und Furigana zeigt nur der Blick auf die Bilder in `out/font-160/`.
 
 ## 5. VOICEVOX (ADR-003, Spike 0.4 Teil 2)
 

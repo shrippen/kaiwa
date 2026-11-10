@@ -625,7 +625,11 @@ Kirigami.ScrollablePage {
         id: grabber
         interval: 600
         // An open lookup lives in the window's overlay, which cannot be grabbed: then its content.
-        onTriggered: (wordPopup.opened ? wordPopup.contentItem : grammarDialog.opened ? grammarDialog.contentItem : page).grabToImage(function (r) { r.saveToFile(page.shot); Qt.quit() })
+        onTriggered: {
+            var what = wordPopup.opened ? wordPopup.contentItem : grammarDialog.opened ? grammarDialog.contentItem : page
+            applicationWindow().checkText(what)
+            what.grabToImage(function (r) { r.saveToFile(page.shot); Qt.quit() })
+        }
     }
 
     // Leaving a running talk: a placement starts again next time, a conversation stays open
