@@ -60,7 +60,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | ID | Entscheidung | Stand |
 |---|---|---|
 | T-01 | Freisprechen: Das Angebot „längere Pause“ kommt schon nach dem ersten erkennbar abgeschnittenen Zug und geht zwei Schritte weiter (1,2 → 3 → 5 s). Die Regel von `hinnerk_no_cutoff` wird entsprechend umgeschrieben: Nachdenken und Länge beenden keinen Zug; nach dem ersten erkennbar abgeschnittenen Zug kommt das Angebot; mit passender Pause wird keiner mehr abgeschnitten | umgesetzt: `CutOffs` (`kaiwa_core::turn_end`), Regel in `qa/personas/hinnerk.json`, Prüfung `crates/kaiwa-sim/src/hands_free.rs` |
-| T-02 | Das Angebot bekommt einen zweiten Knopf „So lassen“; danach zählt die App neu | umgesetzt: nach „So lassen“ kommt das Angebot erst nach zwei weiteren erkennbar abgeschnittenen Zügen wieder (`CutOffs::decline`) |
+| T-02 | Das Angebot bekommt einen zweiten Knopf „So lassen“; danach zählt die App neu | umgesetzt: nach „So lassen“ kommt das Angebot im selben Gespräch erst nach zwei weiteren erkennbar abgeschnittenen Zügen wieder (`CutOffs::decline`); ein neues Gespräch zählt von vorn |
 | T-03 | Schriftgröße 160 % (`hinnerk_font`): nur als lokales Skript, die CI bleibt, wie sie ist | offen |
 | T-04 | Freies Gespräch nennt der Figur das Sprechniveau aus dem Lernermodell (#69): so lassen, im lokalen Test mit ansehen | #69; `LOKALER-TEST.md` |
 | T-05 | Nächster Schwerpunkt: A, weiter Prüfregeln für Anforderungen ohne Prüfung und zweite Leser für Code ohne Tests (als Nächstes Wiederholen, Einstellungen, Einstufung, Modell-Downloads) | laufend |
