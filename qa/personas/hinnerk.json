@@ -245,7 +245,7 @@
             "/LF101/",
             "/LF102/"
           ],
-          "assert": "Kein Zug wird vor seinem Ende abgeschlossen; nach zwei knappen Fällen schlägt die App vor, die Sprechpause länger einzustellen."
+          "assert": "Nachdenken und Länge beenden keinen Zug; nach dem ersten erkennbar abgeschnittenen Zug schlägt die App eine längere Sprechpause vor, zwei Schritte weiter; mit passender Pause wird kein Zug mehr abgeschnitten."
         },
         {
           "id": "hinnerk_german_word_help",

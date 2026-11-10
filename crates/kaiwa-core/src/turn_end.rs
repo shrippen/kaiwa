@@ -86,11 +86,14 @@ pub fn sounds_unfinished(text: &str) -> bool {
     .any(|e| t.ends_with(e))
 }
 
-/// Turns the pause seems to have cut off (/LF101/): after the second, the next longer pause of
-/// the settings is offered, once per two such turns, never beyond the longest.
+/// Turns the pause seems to have cut off (/LF101/, T-01): the first one offers a longer
+/// pause, two steps of the settings on (1.2 → 3 → 5 s), never beyond the longest. A slow
+/// speaker is cut off until the pause fits, so the offer comes early and reaches far. Who
+/// declines it (T-02) is asked again only after two more such turns.
 #[derive(Debug, Clone, Default)]
 pub struct CutOffs {
     count: u32,
+    declined: bool,
 }
 
 impl CutOffs {
@@ -101,8 +104,9 @@ impl CutOffs {
             return None;
         }
         self.count += 1;
-        let next = PAUSE_STEPS.into_iter().find(|s| *s > pause + 0.01)?;
-        if self.count >= 2 {
+        let longer = PAUSE_STEPS.iter().position(|s| *s > pause + 0.01)?;
+        let next = PAUSE_STEPS[(longer + 1).min(PAUSE_STEPS.len() - 1)];
+        if self.count >= if self.declined { 2 } else { 1 } {
             self.count = 0;
             Some(next)
         } else {
@@ -110,9 +114,16 @@ impl CutOffs {
         }
     }
 
-    /// The learner took the offer: counting starts again.
+    /// The learner took the offer: counting starts afresh.
     pub fn reset(&mut self) {
+        *self = Self::default();
+    }
+
+    /// The learner declined the offer ("So lassen"): counting starts again, and it takes two
+    /// such turns before the next offer.
+    pub fn decline(&mut self) {
         self.count = 0;
+        self.declined = true;
     }
 }
 
@@ -246,22 +257,37 @@ mod tests {
     }
 
     #[test]
-    fn two_cut_off_turns_offer_the_next_pause() {
+    fn the_first_cut_off_turn_offers_a_pause_two_steps_longer() {
         let mut c = CutOffs::default();
-        assert_eq!(c.after_turn(true, "週末は", 1.2), None);
         // A finished turn, or one the button ended, does not count.
         assert_eq!(c.after_turn(true, "マラです。", 1.2), None);
         assert_eq!(c.after_turn(false, "週末は", 1.2), None);
-        assert_eq!(c.after_turn(true, "日本語が", 1.2), Some(2.0));
-        // Not taken: two more before it is offered again.
-        assert_eq!(c.after_turn(true, "週末は", 1.2), None);
-        assert_eq!(c.after_turn(true, "週末は", 1.2), Some(2.0));
+        assert_eq!(c.after_turn(true, "日本語が", 1.2), Some(3.0));
+        // Left standing: the next such turn offers it again.
+        assert_eq!(c.after_turn(true, "週末は", 1.2), Some(3.0));
         c.reset();
-        assert_eq!(c.after_turn(true, "週末は", 3.0), None);
         assert_eq!(c.after_turn(true, "週末は", 3.0), Some(5.0));
+        // Never beyond the longest; from 2 s two steps on is the longest.
+        assert_eq!(c.after_turn(true, "週末は", 2.0), Some(5.0));
         // At the longest pause there is nothing more to offer.
         assert_eq!(c.after_turn(true, "週末は", 5.0), None);
-        assert_eq!(c.after_turn(true, "週末は", 5.0), None);
+    }
+
+    #[test]
+    fn a_declined_offer_comes_back_after_two_more_cut_off_turns() {
+        let mut c = CutOffs::default();
+        assert_eq!(c.after_turn(true, "週末は", 1.2), Some(3.0));
+        c.decline();
+        assert_eq!(c.after_turn(true, "週末は", 1.2), None);
+        assert_eq!(c.after_turn(true, "マラです。", 1.2), None);
+        assert_eq!(c.after_turn(true, "日本語が", 1.2), Some(3.0));
+        // Declined again: two more again.
+        c.decline();
+        assert_eq!(c.after_turn(true, "週末は", 1.2), None);
+        assert_eq!(c.after_turn(true, "週末は", 1.2), Some(3.0));
+        // Taken: afresh, the first one offers.
+        c.reset();
+        assert_eq!(c.after_turn(true, "週末は", 3.0), Some(5.0));
     }
 
     #[test]
