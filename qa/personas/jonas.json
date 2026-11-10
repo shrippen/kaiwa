@@ -258,7 +258,8 @@
       "steps": [
         "Tagesziel 5 min; an zwei Tagen beginnt die Sitzung um 23:58 und endet um 00:03",
         "Nach Tag 12 drei Tage Pause",
-        "Zeitzonenwechsel an Tag 20 (Dreh in Lissabon, UTC+0 statt UTC+1)"
+        "Zeitzonenwechsel an Tag 20 (Dreh in Lissabon, UTC+0 statt UTC+1)",
+        "In einem eigenen Profil: krank ab Tag 10, Pause für eine Woche über die Einstellungen, an Tag 13 beendet"
       ],
       "checks": [
         {
@@ -281,6 +282,13 @@
             "/LF602/"
           ],
           "assert": "Der Zeitzonenwechsel kostet und schenkt keinen Tag."
+        },
+        {
+          "id": "jonas_sick_pause",
+          "requirements": [
+            "/LF602/"
+          ],
+          "assert": "Krank ab Tag 10, Pause für eine Woche: Solange sie läuft, steht die Serie (kein Freeze, kein Ende). Beendet er sie an Tag 13, zählt der Tag wieder: geübt trägt die Serie weiter, nicht geübt kostet er einen Freeze, nicht die Serie."
         }
       ]
     },

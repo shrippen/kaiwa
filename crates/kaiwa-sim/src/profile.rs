@@ -107,6 +107,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "jonas_local_switch" => local_switch(root),
         "emi_srs_keigo" => srs_keigo(root),
         "hinnerk_own_profile" => own_profile(root),
+        "jonas_sick_pause" => sick_pause(),
         _ => return None,
     };
     Some(match r {
@@ -114,6 +115,67 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         Ok(Some(why)) => Outcome::Fail(why),
         Err(e) => Outcome::Fail(format!("{e:#}")),
     })
+}
+
+/// /LF602/: Jonas practises ten days, falls ill on day 10 and pauses a week through the
+/// backend, as the settings' button does. While it runs the streak stands: no freeze, no end.
+/// He is well on day 13 and ends the pause; from then on the day counts again. Practising
+/// on day 13 and 14 carries the streak on to 12. Missing day 13 after ending it costs a
+/// freeze on that day, not the streak, and not one for the paused days before.
+fn sick_pause() -> Result<Option<String>> {
+    use kaiwa_backend::Backend;
+    use kaiwa_core::progress::DayRecord;
+
+    let practise = |b: &Backend, day: i64| {
+        let r = DayRecord {
+            speaking_secs: 6 * 60,
+            ..Default::default()
+        };
+        b.store.put_day(at(day, 0).day(), &r)
+    };
+    let evening = |day: i64| at(day, 20 * 3600);
+
+    for practise_on_13 in [true, false] {
+        let dir = temp_dir("pause");
+        let b = Backend::open_at(dir.join("jonas.kaiwa"), false)?;
+        for day in 0..10 {
+            practise(&b, day)?;
+        }
+        let until = b.pause(evening(10).day(), 7)?;
+        if until != evening(16).day() {
+            return Ok(Some(format!(
+                "a week from day 10 rests until {}",
+                until.iso()
+            )));
+        }
+
+        let ill = b.store.today(evening(12))?.streak;
+        if ill.days != 10 || !ill.freezes_used.is_empty() || !ill.ended_on.is_empty() {
+            return Ok(Some(format!("ill on day 12: {ill:?}")));
+        }
+
+        b.end_pause(evening(13).day())?;
+        if b.store.paused_until(evening(13).day())?.is_some() {
+            return Ok(Some("the pause still runs after ending it".into()));
+        }
+        if practise_on_13 {
+            practise(&b, 13)?;
+        }
+        practise(&b, 14)?;
+
+        let back = b.store.today(evening(14))?.streak;
+        let (days, freezes) = if practise_on_13 {
+            (12, vec![])
+        } else {
+            (11, vec![evening(13).day()])
+        };
+        if back.days != days || back.freezes_used != freezes || !back.ended_on.is_empty() {
+            return Ok(Some(format!(
+                "day 14 (practised on day 13: {practise_on_13}): {back:?}"
+            )));
+        }
+    }
+    Ok(None)
 }
 
 /// /LF720/: Hinnerk's grandson tries the app in a profile of his own on the same computer.
