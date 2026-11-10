@@ -347,6 +347,23 @@ fn trend(word: &str, talks: &[(u32, u32)], de: bool) -> String {
     }
 }
 
+/// Minutes spoken a day from which each heat level starts: 1–2 min is level 1, … over 10
+/// is level 4.
+const HEAT_STEPS: [u32; 4] = [1, 3, 6, 11];
+
+/// The legend of the heat map: what each level means, level 0 first.
+fn heat_scale(de: bool) -> Vec<String> {
+    let mut out = vec!["0 min".to_string()];
+    for (i, from) in HEAT_STEPS.iter().enumerate() {
+        out.push(match HEAT_STEPS.get(i + 1) {
+            Some(next) => format!("{from}–{} min", next - 1),
+            None if de => format!("ab {from} min"),
+            None => format!("{from} min +"),
+        });
+    }
+    out
+}
+
 /// Statistics (/LF610/): 12 weeks of practice as a heat map, totals.
 pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let days = st.store.days()?;
@@ -355,29 +372,17 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let start = today.plus(-(today.weekday() as i64) - 7 * 11);
     let de = st.store.profile()?.ui_lang != "en";
     let mut levels = Vec::new();
-    // The minutes behind each square and the Monday of each row, for the tooltips and the
-    // axis (charts carry their labels).
-    let mut day_minutes = Vec::new();
-    let mut mondays = Vec::new();
+    // Each day by its ISO date with its level and minutes, for the calendar's squares and
+    // tooltips (charts carry their labels).
+    let mut by_day = serde_json::Map::new();
+    let mut tips = serde_json::Map::new();
     let mut d = start;
     while d <= today {
         let m = days.get(&d).map(|r| r.speaking_secs / 60).unwrap_or(0);
-        day_minutes.push(m);
-        if d.weekday() == 0 {
-            let (_, month, day) = d.ymd();
-            mondays.push(if de {
-                format!("{day}.{month}.")
-            } else {
-                format!("{month}/{day}")
-            });
-        }
-        levels.push(match m {
-            0 => 0,
-            1..=2 => 1,
-            3..=5 => 2,
-            6..=10 => 3,
-            _ => 4,
-        });
+        let level = HEAT_STEPS.iter().filter(|&&from| m >= from).count();
+        levels.push(level);
+        by_day.insert(d.iso(), json!(level));
+        tips.insert(d.iso(), json!(format!("{m} min")));
         d = d.plus(1);
     }
     // The totals of the same twelve weeks (not of all time), minutes from the seconds summed:
@@ -442,8 +447,9 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         "mistakes": mistakes,
         "vocab": vocab.iter().map(|(l, n)| json!({ "level": l, "count": n })).collect::<Vec<_>>(),
         "heat": levels,
-        "heatMinutes": day_minutes,
-        "heatWeeks": mondays,
+        "heatDays": by_day,
+        "heatTips": tips,
+        "heatScale": heat_scale(de),
         "minutes": minutes,
         "days": practice_days,
         "items": items.len(),
@@ -1179,20 +1185,18 @@ mod tests {
         };
         b.store.put_day(now.day(), &r).unwrap();
         let v = stats(&b, now).unwrap();
-        let heat = v["heat"].as_array().unwrap();
-        let minutes = v["heatMinutes"].as_array().unwrap();
+        let today = now.day().iso();
 
-        // One minute figure per square, today's last; one Monday per row of seven.
-        assert_eq!(minutes.len(), heat.len());
-        assert_eq!(minutes.last().unwrap(), 7);
+        // Today by its date, with its level and minutes; a legend word per level.
+        assert_eq!(v["heatDays"][&today], 3, "{}", v["heatDays"]);
+        assert_eq!(v["heatTips"][&today], "7 min");
         assert_eq!(
-            v["heatWeeks"].as_array().unwrap().len(),
-            heat.len().div_ceil(7)
+            v["heatDays"].as_object().unwrap().len(),
+            v["heat"].as_array().unwrap().len()
         );
-        assert!(
-            v["heatWeeks"][0].as_str().unwrap().ends_with('.'),
-            "{}",
-            v["heatWeeks"]
+        assert_eq!(
+            v["heatScale"],
+            json!(["0 min", "1–2 min", "3–5 min", "6–10 min", "ab 11 min"])
         );
     }
 

@@ -18,6 +18,8 @@ QQC2.ScrollView {
     // Narrow (/LL303/): figures in two columns, the settings Kaiwa chose in one.
     readonly property bool compact: applicationWindow().compact
     readonly property int figureColumns: compact ? 2 : 4
+    // The weeks the statistics cover (views::stats: eleven back and this one).
+    readonly property int heatWeeks: 12
     contentWidth: availableWidth
 
     ColumnLayout {
@@ -267,31 +269,29 @@ QQC2.ScrollView {
                 }
             }
         }
-        // Minutes spoken per day, one row per week from Monday; the rows named by their
-        // Monday, every square with its minutes on hover (charts carry their labels).
+        // Minutes spoken per day over the twelve weeks: weekdays and months on the axes, the
+        // minutes of a day on hover, the levels in the legend (charts carry their labels).
         Text {
             Layout.leftMargin: KanteStyle.unit(18)
             text: page.t("Minuten gesprochen je Tag", "Minutes spoken per day")
             color: KanteStyle.mutedTextColor
             font: KanteStyle.smallFont
         }
-        KanteHeatmap {
-            id: heat
-            readonly property var days: [page.t("Mo", "Mo"), page.t("Di", "Tu"), page.t("Mi", "We"), page.t("Do", "Th"), page.t("Fr", "Fr"), page.t("Sa", "Sa"), page.t("So", "Su")]
-            readonly property var weeks: page.stats.heatWeeks || []
-            readonly property var minutes: page.stats.heatMinutes || []
+        KanteCalendarHeatmap {
             Layout.leftMargin: KanteStyle.unit(18)
-            levels: page.stats.heat
-            columns: days.length
-            columnLabels: days
-            rowLabels: weeks
-            tips: minutes.map(function (m, i) {
-                return heat.days[i % heat.columns] + ", " + page.t("Woche ab ", "week of ") + heat.weeks[Math.floor(i / heat.columns)] + ": " + m + " min"
-            })
-            legendLess: page.t("weniger", "less")
-            legendMore: page.t("mehr", "more")
+            weeks: page.heatWeeks
+            levels: page.stats.heatDays || ({})
+            tips: page.stats.heatTips || ({})
+            locale: Qt.locale(page.kaiwa.lang === "en" ? "en_GB" : "de_DE")
+            firstDayOfWeek: Locale.Monday
             Accessible.role: Accessible.Graphic
-            Accessible.name: page.t("Minuten gesprochen je Tag in den letzten zwölf Wochen, eine Zeile pro Woche", "Minutes spoken per day over the last twelve weeks, one row per week")
+            Accessible.name: page.t("Minuten gesprochen je Tag in den letzten zwölf Wochen", "Minutes spoken per day over the last twelve weeks")
+        }
+        KanteLegend {
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            model: (page.stats.heatScale || []).map(function (text, level) { return { color: KanteStyle.levelColor(level, 4), text: text } })
         }
         Item { implicitHeight: KanteStyle.unit(12) }
     }
