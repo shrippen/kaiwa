@@ -102,47 +102,61 @@ pub struct Analysis {
 
 impl Analysis {
     /// Reads an analysis from the model's text. What stands around the JSON object goes: a
-    /// code fence, a `<think>` block, a sentence before or after it (small local models and
-    /// servers that do not enforce the schema write those). The object itself must fit the
-    /// schema; an answer that does not is discarded, not repaired (ADR-004).
+    /// code fence, what the model thought aloud, a sentence before or after it (small local
+    /// models and servers that do not enforce the schema write those). The object itself must
+    /// fit the schema; an answer that does not is discarded, not repaired (ADR-004).
     pub fn from_text(text: &str) -> Result<Self, crate::AiError> {
+        const OPEN: &str = "<think>";
+        const CLOSE: &str = "</think>";
         let format = |why: String| crate::AiError::Format(format!("{why}: {text}"));
-        // Without what the model thought aloud: it may quote braces ({漢字|かな}).
-        let mut rest = text;
-        let mut body = String::new();
-        while let Some(a) = rest.find("<think>") {
-            let Some(b) = rest[a..].find("</think>") else {
-                // A block that never closes: thinking cut off, and a draft in it is no
-                // analysis. Behind a brace the word stands in the JSON (an explanation).
-                if !body.contains('{') && !rest[..a].contains('{') {
-                    rest = &rest[..a];
-                }
+        // The whole JSON objects outside of thinking, in order. Thinking may quote braces
+        // ({漢字|かな}) or hold a draft of the analysis; neither is the answer. Inside an object
+        // the tags are text (an explanation may name them).
+        let mut objects = Vec::new();
+        let mut at = 0;
+        loop {
+            let rest = &text[at..];
+            let Some((i, mark)) = ["{", OPEN, CLOSE]
+                .iter()
+                .filter_map(|m| rest.find(m).map(|i| (i, *m)))
+                .min()
+            else {
                 break;
             };
-            body.push_str(&rest[..a]);
-            rest = &rest[a + b + "</think>".len()..];
-        }
-        body.push_str(rest);
-        // The first whole JSON object that says `understood` is the analysis, fitting or not;
-        // a sentence before it may hold braces or an object of its own ("The format is {} as
-        // asked.").
-        let mut why = None;
-        let mut from = 0;
-        while let Some(at) = body[from..].find('{').map(|i| from + i) {
-            let mut values =
-                serde_json::Deserializer::from_str(&body[at..]).into_iter::<serde_json::Value>();
-            from = at + 1;
-            if let Some(Ok(v)) = values.next()
-                && v.is_object()
-            {
-                let meant = v.get("understood").is_some();
-                match serde_json::from_value(v) {
-                    Ok(a) => return Ok(a),
-                    Err(e) if meant => return Err(format(e.to_string())),
-                    Err(e) => why = why.or(Some(e.to_string())),
+            match mark {
+                OPEN => match rest[i..].find(CLOSE) {
+                    Some(end) => at += i + end + CLOSE.len(),
+                    // Never closed: the thinking was cut off, there is no answer behind it.
+                    None => break,
+                },
+                // Closed without an opening (some chat templates put the opening into the
+                // prompt): all before it was thinking.
+                CLOSE => {
+                    objects.clear();
+                    at += i + CLOSE.len();
                 }
-                // What stands inside an object that is no analysis is not one either.
-                from = at + values.byte_offset();
+                _ => {
+                    let mut values = serde_json::Deserializer::from_str(&rest[i..])
+                        .into_iter::<serde_json::Value>();
+                    match values.next() {
+                        Some(Ok(v)) if v.is_object() => {
+                            objects.push(v);
+                            at += i + values.byte_offset();
+                        }
+                        _ => at += i + 1,
+                    }
+                }
+            }
+        }
+        // The first object that says `understood` is the analysis, fitting or not; a sentence
+        // before it may hold an object of its own ("The format is {} as asked.").
+        let mut why = None;
+        for v in objects {
+            let meant = v.get("understood").is_some();
+            match serde_json::from_value(v) {
+                Ok(a) => return Ok(a),
+                Err(e) if meant => return Err(format(e.to_string())),
+                Err(e) => why = why.or(Some(e.to_string())),
             }
         }
         Err(format(
@@ -175,6 +189,29 @@ mod tests {
     }
 
     #[test]
+    fn a_draft_in_thinking_is_not_the_analysis() {
+        let wrong = r#"{"understood":true,"corrections":[{"severity":"wrong","kind":"particle","original":"a","better":"b","explanation":"c"}]}"#;
+        let draft = r#"Draft: {"understood":true,"corrections":[]} wait, particle error."#;
+        for text in [
+            format!("<think>{draft}</think>\n{wrong}"),
+            // Some chat templates put the opening into the prompt: only the closing arrives.
+            format!("{draft}</think>\n{wrong}"),
+            format!("The learner said it.</think>\n{wrong}"),
+            format!("<think>one</think> then <think>{draft}</think>{wrong}"),
+        ] {
+            let a = Analysis::from_text(&text).unwrap();
+            assert_eq!(a.corrections.len(), 1, "{text}");
+        }
+        // The tags inside the analysis are text.
+        let named = r#"{"understood":true,"corrections":[{"severity":"wrong","kind":"particle","original":"a","better":"b","explanation":"</think> und <think> sind keine Wörter"}]}"#;
+        let a = Analysis::from_text(named).unwrap();
+        assert_eq!(
+            a.corrections[0].explanation,
+            "</think> und <think> sind keine Wörter"
+        );
+    }
+
+    #[test]
     fn an_analysis_that_does_not_fit_the_schema_is_discarded() {
         // ADR-004: discarded, not repaired. A correction of an unknown kind is not dropped
         // quietly (the turn would read as flawless); the whole answer is an error.
@@ -190,7 +227,10 @@ mod tests {
             "I cannot analyse this.",
             // The answer does not fit; a second object behind it does not stand in for it.
             r#"{"understood":true,"corrections":[{"severity":"wrong","kind":"grammar","original":"a","better":"b","explanation":"c"}]} Note {"understood":true}"#,
-            // A draft in thinking that was cut off.
+            // A draft in thinking that was cut off, also behind a sentence with braces.
+            r#"The format is {} as asked. <think>Draft: {"understood":true,"corrections":[]} wait, there is a particle error, let me"#,
+            // Thinking that never closes has no answer behind it.
+            r#"<think>The learner said the name. {"understood":true,"corrections":[]}"#,
             r#"<think>Draft: {"understood":true,"corrections":[]} wait, there is a particle error, let me"#,
             r#"{"understood":true,"corrections":["#,
         ] {
