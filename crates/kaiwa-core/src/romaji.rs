@@ -158,8 +158,8 @@ pub fn has_romaji(text: &str) -> bool {
 
 /// Converts the rōmaji in `text` to hiragana, word by word; anything else stays. A word that
 /// does not turn into kana completely is no rōmaji (a German or English word, a name) and
-/// stays as typed, so the tutor can read it (/LF122/: わたしは Leuchtturm です). A line with
-/// several such words is a question in the learner's own language and stays whole.
+/// stays as typed, so the tutor can read it (/LF122/: わたしは Leuchtturm です). A line that is
+/// mostly such words is a question in the learner's own language and stays whole.
 pub fn to_kana(text: &str) -> String {
     // A Latin word: ASCII letters, the apostrophe of n'ya, letters with marks (ō, ä, ß).
     let latin = |c: char| c == '\'' || (c.is_alphabetic() && (c as u32) < 0x250);
@@ -177,13 +177,17 @@ pub fn to_kana(text: &str) -> String {
         pieces.push((piece, kana));
         i = end;
     }
-    let words = pieces.iter().filter(|(p, _)| p.chars().any(latin)).count();
-    let romaji = pieces.iter().filter(|(_, k)| k.is_some()).count();
-    // One foreign word in a rōmaji sentence, or up to a quarter of the words; more is a
-    // sentence in another language, in which words like "do", "you" or "in" only look like
-    // rōmaji.
-    let foreign = words - romaji;
-    if romaji == 0 || (foreign > 1 && foreign * 4 > words) {
+    // By letters: a rōmaji sentence with names in it (watashi no namae wa Thomas Müller
+    // desu) is mostly rōmaji; a sentence in another language is mostly not, though words like
+    // "do", "you" or "in" look like rōmaji.
+    let letters = |rōmaji: bool| -> usize {
+        pieces
+            .iter()
+            .filter(|(p, k)| p.chars().any(latin) && k.is_some() == rōmaji)
+            .map(|(p, _)| p.chars().count())
+            .sum()
+    };
+    if letters(true) <= letters(false) {
         return text.to_string();
     }
     pieces
@@ -238,6 +242,12 @@ fn word_to_kana(word: &str) -> Option<String> {
         if c != 'n' && !"aeiou".contains(c) && (next == Some(c) || (c == 't' && next == Some('c')))
         {
             out.push('っ');
+            i += 1;
+            continue;
+        }
+        // Hepburn's m before b, p and m: ん (shimbun, sampo).
+        if c == 'm' && next.is_some_and(|n| "bpm".contains(n)) {
+            out.push('ん');
             i += 1;
             continue;
         }
@@ -300,9 +310,32 @@ mod tests {
             to_kana("watashi wa Leuchtturm desu."),
             "わたし わ Leuchtturm です。"
         );
-        // Wāpuro spellings.
+        // Names in a rōmaji sentence: the sentence is kana, the names stay (/LF120/).
+        for (typed, kana) in [
+            (
+                "watashi no namae wa Thomas Müller desu",
+                "わたし の なまえ わ Thomas Müller です",
+            ),
+            (
+                "Paris to London ni ikimashita",
+                "Paris と London に いきました",
+            ),
+            (
+                "watashi wa Paul to Lisa to ikimasu",
+                "わたし わ Paul と Lisa と いきます",
+            ),
+            (
+                "Berlin kara kimashita. Lehrer desu.",
+                "Berlin から きました。 Lehrer です。",
+            ),
+        ] {
+            assert_eq!(to_kana(typed), kana);
+        }
+        // Wāpuro spellings, and Hepburn's m before b and p.
         assert_eq!(to_kana("jyanai"), "じゃない");
         assert_eq!(to_kana("jyuu"), "じゅう");
+        assert_eq!(to_kana("shimbun o yomimasu"), "しんぶん お よみます");
+        assert_eq!(to_kana("sampo"), "さんぽ");
     }
 
     #[test]

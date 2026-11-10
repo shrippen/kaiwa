@@ -186,9 +186,9 @@ mod tests {
 
     #[test]
     fn prices_are_per_million_tokens() {
-        // 1 M input tokens of a $1 model: 1 $ = 92 ct.
-        let c = cents("claude-haiku-5-5", 1_000_000, 0).unwrap();
-        assert!((c - 92.0).abs() < 1e-9);
+        // 1 M input tokens of a $2 model: 2 $ = 184 ct.
+        let c = cents("claude-sonnet-5-5", 1_000_000, 0).unwrap();
+        assert!((c - 184.0).abs() < 1e-9);
         assert!(cents("qwen3:8b", 1000, 1000).is_none());
     }
 
