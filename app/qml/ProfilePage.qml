@@ -15,6 +15,9 @@ QQC2.ScrollView {
 
     readonly property var learner: kaiwa.learner.length > 0 ? JSON.parse(kaiwa.learner) : ({ skills: [], weak: [], knobs: [] })
     readonly property var stats: kaiwa.stats.length > 0 ? JSON.parse(kaiwa.stats) : ({ heat: [] })
+    // Narrow (/LL303/): figures in two columns, the settings Kaiwa chose in one.
+    readonly property bool compact: applicationWindow().compact
+    readonly property int figureColumns: compact ? 2 : 4
     contentWidth: availableWidth
 
     ColumnLayout {
@@ -45,6 +48,9 @@ QQC2.ScrollView {
                 Layout.rightMargin: KanteStyle.unit(18)
                 text: modelData.name
                 subtitle: modelData.words
+                // The whole line in words, else the buttons go under it (/LL303/).
+                minTextWidth: Math.max(KanteStyle.unit(160), wordsWidth.advanceWidth)
+                TextMetrics { id: wordsWidth; font: KanteStyle.smallFont; text: modelData.words }
                 trailing: RowLayout {
                     spacing: KanteStyle.unit(6)
                     KanteButton {
@@ -93,6 +99,8 @@ QQC2.ScrollView {
                 Layout.rightMargin: KanteStyle.unit(18)
                 text: modelData.label
                 subtitle: modelData.explain
+                minTextWidth: Math.max(KanteStyle.unit(160), explainWidth.advanceWidth)
+                TextMetrics { id: explainWidth; font: KanteStyle.smallFont; text: modelData.explain }
                 meta: page.t(modelData.wrong + "× verbessert", modelData.wrong + "× corrected")
             }
         }
@@ -121,7 +129,7 @@ QQC2.ScrollView {
         GridLayout {
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
-            columns: 2
+            columns: page.compact ? 1 : 2
             columnSpacing: KanteStyle.unit(16)
             rowSpacing: KanteStyle.unit(4)
             Repeater {
@@ -156,11 +164,13 @@ QQC2.ScrollView {
             text: page.t("Diese Woche", "This week")
             rule: true
         }
-        RowLayout {
+        GridLayout {
             readonly property var w: page.stats.week || ({})
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
-            spacing: KanteStyle.unit(24)
+            columns: page.figureColumns
+            columnSpacing: KanteStyle.unit(24)
+            rowSpacing: KanteStyle.unit(12)
             KanteKpi {
                 value: String(parent.w.minutes || 0)
                 label: page.t("Minuten gesprochen (Vorwoche ", "minutes spoken (week before ") + (parent.w.minutesBefore || 0) + ")"
@@ -206,19 +216,23 @@ QQC2.ScrollView {
             text: page.t("Zwölf Wochen", "Twelve weeks")
             rule: true
         }
-        RowLayout {
+        GridLayout {
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
-            spacing: KanteStyle.unit(24)
+            columns: page.figureColumns
+            columnSpacing: KanteStyle.unit(24)
+            rowSpacing: KanteStyle.unit(12)
             KanteKpi { value: String(page.stats.minutes || 0); label: page.t("Minuten gesprochen", "minutes spoken") }
             KanteKpi { value: String(page.stats.days || 0); label: page.t("Übungstage", "days practised") }
             KanteKpi { value: String(page.stats.items || 0); label: page.t("Wörter und Wendungen", "words and phrases") }
             KanteKpi { value: String(page.stats.learnt || 0); label: page.t("sicher (3 Wochen +)", "solid (3 weeks +)") }
         }
         // Vocabulary per level and the kinds of mistakes over the same weeks (/LF610/).
-        RowLayout {
+        GridLayout {
             Layout.leftMargin: KanteStyle.unit(18)
-            spacing: KanteStyle.unit(24)
+            columns: page.figureColumns
+            columnSpacing: KanteStyle.unit(24)
+            rowSpacing: KanteStyle.unit(12)
             visible: (page.stats.vocab || []).length > 1
             Repeater {
                 model: page.stats.vocab || []
@@ -253,12 +267,31 @@ QQC2.ScrollView {
                 }
             }
         }
+        // Minutes spoken per day, one row per week from Monday; the rows named by their
+        // Monday, every square with its minutes on hover (charts carry their labels).
+        Text {
+            Layout.leftMargin: KanteStyle.unit(18)
+            text: page.t("Minuten gesprochen je Tag", "Minutes spoken per day")
+            color: KanteStyle.mutedTextColor
+            font: KanteStyle.smallFont
+        }
         KanteHeatmap {
+            id: heat
+            readonly property var days: [page.t("Mo", "Mo"), page.t("Di", "Tu"), page.t("Mi", "We"), page.t("Do", "Th"), page.t("Fr", "Fr"), page.t("Sa", "Sa"), page.t("So", "Su")]
+            readonly property var weeks: page.stats.heatWeeks || []
+            readonly property var minutes: page.stats.heatMinutes || []
             Layout.leftMargin: KanteStyle.unit(18)
             levels: page.stats.heat
-            columns: 7
+            columns: days.length
+            columnLabels: days
+            rowLabels: weeks
+            tips: minutes.map(function (m, i) {
+                return heat.days[i % heat.columns] + ", " + page.t("Woche ab ", "week of ") + heat.weeks[Math.floor(i / heat.columns)] + ": " + m + " min"
+            })
+            legendLess: page.t("weniger", "less")
+            legendMore: page.t("mehr", "more")
             Accessible.role: Accessible.Graphic
-            Accessible.name: page.t("Übungstage der letzten zwölf Wochen, eine Zeile pro Woche", "Practice days of the last twelve weeks, one row per week")
+            Accessible.name: page.t("Minuten gesprochen je Tag in den letzten zwölf Wochen, eine Zeile pro Woche", "Minutes spoken per day over the last twelve weeks, one row per week")
         }
         Item { implicitHeight: KanteStyle.unit(12) }
     }
