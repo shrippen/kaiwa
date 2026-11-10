@@ -73,6 +73,16 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
     st.store.set_learning(&learning)?;
     // Days: practised on 13 of the last 14 (one gap, covered by a freeze), two minutes today.
     let minutes = [6, 5, 0, 7, 5, 12, 6, 5, 6, 5, 8, 5, 6, 7];
+    // Where the days started from (/LF604/): listening and fluency have grown since.
+    let mut levels_at_start: std::collections::BTreeMap<Skill, f64> = kaiwa_core::learner::SKILLS
+        .iter()
+        .map(|s| (*s, learning.model.level(*s)))
+        .collect();
+    for (skill, less) in [(Skill::Listening, 0.3), (Skill::Fluency, 0.2)] {
+        if let Some(l) = levels_at_start.get_mut(&skill) {
+            *l -= less;
+        }
+    }
     for (i, m) in minutes.iter().enumerate() {
         if *m == 0 {
             continue;
@@ -85,6 +95,7 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
                 scenarios_done: u32::from(*m >= 6),
                 reviews_done: 4,
                 xp: m * 18,
+                levels_at_start: levels_at_start.clone(),
                 ..Default::default()
             },
         )?;

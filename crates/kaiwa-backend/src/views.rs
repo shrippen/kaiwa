@@ -253,6 +253,43 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
     }))
 }
 
+/// Talks before a kind of mistake gets a trend; with fewer there is only the count.
+const TREND_TALKS: usize = 4;
+
+/// How a kind of mistake developed (/LF610/): how often it came up per turn in the later half
+/// of the talks against the earlier half. `talks` are the talks in order, each with its turns
+/// and its mistakes of this kind. Talks, not weeks: a week that has just begun, or the one the
+/// learner started in, holds few talks and would read as a change. A quarter more or less
+/// counts as a change.
+fn trend(word: &str, talks: &[(u32, u32)], de: bool) -> String {
+    let rate = |t: &[(u32, u32)]| {
+        let (turns, mistakes) = t
+            .iter()
+            .fold((0, 0), |(a, b), (turns, m)| (a + turns, b + m));
+        f64::from(mistakes) / f64::from(turns.max(1))
+    };
+    if talks.len() < TREND_TALKS {
+        let n: u32 = talks.iter().map(|t| t.1).sum();
+        return if de {
+            format!("{word}: bisher {n}×")
+        } else {
+            format!("{word}: {n}× so far")
+        };
+    }
+    let (early, late) = talks.split_at(talks.len() / 2);
+    let (early, late) = (rate(early), rate(late));
+    match (late, de) {
+        (l, true) if l < 0.75 * early => format!("{word}: seltener als in den Gesprächen davor"),
+        (l, false) if l < 0.75 * early => format!("{word}: less often than in the talks before"),
+        (l, true) if l > 1.25 * early => {
+            format!("{word}: zuletzt häufiger, ein Fall für die Wiederholung")
+        }
+        (l, false) if l > 1.25 * early => format!("{word}: more often lately, one for the review"),
+        (_, true) => format!("{word}: etwa gleich oft"),
+        (_, false) => format!("{word}: about as often"),
+    }
+}
+
 /// Statistics (/LF610/): 12 weeks of practice as a heat map, totals.
 pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let days = st.store.days()?;
@@ -279,15 +316,22 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let de = st.store.profile()?.ui_lang != "en";
     let from = start.start(now.offset_min).unix;
     let mut weeks: BTreeMap<String, [u32; 12]> = BTreeMap::new();
+    // The talks in order, for the trend: the turns of each and its mistakes per kind.
+    let mut talks: Vec<(u32, BTreeMap<String, u32>)> = Vec::new();
     for row in st.store.finished_since(from)? {
         let Ok(state) = st.store.session_state(row.id) else {
             continue;
         };
         let w = ((row.started.day().0 - start.0) / 7).clamp(0, 11) as usize;
+        let mut made: BTreeMap<String, u32> = BTreeMap::new();
         for t in &state.turns {
             for k in kaiwa_core::session::mistake_kinds(t) {
+                *made.entry(k.clone()).or_default() += 1;
                 weeks.entry(k).or_default()[w] += 1;
             }
+        }
+        if !state.turns.is_empty() {
+            talks.push((state.turns.len() as u32, made));
         }
     }
     let mut kinds: Vec<(String, [u32; 12])> = weeks.into_iter().collect();
@@ -296,25 +340,12 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         .iter()
         .take(3)
         .map(|(k, w)| {
-            let (early, late): (u32, u32) = (w[..6].iter().sum(), w[6..].iter().sum());
             let word = kind_word(k, de);
-            let trend = match (late.cmp(&early), de) {
-                (std::cmp::Ordering::Less, true) => {
-                    format!("{word}: seltener als vor sechs Wochen")
-                }
-                (std::cmp::Ordering::Less, false) => {
-                    format!("{word}: less often than six weeks ago")
-                }
-                (std::cmp::Ordering::Greater, true) => {
-                    format!("{word}: zuletzt häufiger, ein Fall für die Wiederholung")
-                }
-                (std::cmp::Ordering::Greater, false) => {
-                    format!("{word}: more often lately, one for the review")
-                }
-                (_, true) => format!("{word}: etwa gleich oft"),
-                (_, false) => format!("{word}: about as often"),
-            };
-            json!({ "kind": k, "word": word, "weeks": w, "text": trend })
+            let of_kind: Vec<(u32, u32)> = talks
+                .iter()
+                .map(|(turns, made)| (*turns, made.get(k).copied().unwrap_or(0)))
+                .collect();
+            json!({ "kind": k, "word": word, "weeks": w, "text": trend(word, &of_kind, de) })
         })
         .collect();
     // Words and phrases per level, from the unit they came from ("n5-04" is N5).
@@ -340,8 +371,22 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     }))
 }
 
+/// A skill moved over the week when its level changed by at least this much (a tenth of the
+/// step between two levels); less is the model settling.
+const SKILL_MOVED: f64 = 0.1;
+
+/// "up", "down" or "same": a skill's level now against where the week started.
+fn skill_change(from: f64, now: f64) -> &'static str {
+    match now - from {
+        d if d >= SKILL_MOVED => "up",
+        d if d <= -SKILL_MOVED => "down",
+        _ => "same",
+    }
+}
+
 /// The weekly review (/LF604/): the last seven days against the seven before: speaking time,
-/// practice days, new words and phrases, and how many turns were understood without help.
+/// practice days, new words and phrases, how many turns were understood without help, and the
+/// progress per skill.
 pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let today = now.day();
     let this = today.plus(-6);
@@ -375,7 +420,42 @@ pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         }
     }
     let share = |(ok, all): (usize, usize)| (all > 0).then(|| (100 * ok / all) as u32);
+    // Progress per skill: the learner model now against where the week's first talk started.
+    let de = st.store.profile()?.ui_lang != "en";
+    let lang = if de { "de" } else { "en" };
+    let model = st.store.learning()?.model;
+    let skills: Vec<Value> = days
+        .range(this..=today)
+        .find(|(_, r)| !r.levels_at_start.is_empty())
+        .map(|(_, r)| {
+            SKILLS
+                .iter()
+                .filter_map(|s| {
+                    let from = *r.levels_at_start.get(s)?;
+                    let change = skill_change(from, model.level(*s));
+                    let name = s.word(lang);
+                    let text = match (change, de) {
+                        ("up", true) => format!("{name}: sicherer als zu Beginn der Woche"),
+                        ("up", false) => {
+                            format!("{name}: more secure than at the start of the week")
+                        }
+                        ("down", true) => format!("{name}: braucht wieder etwas Übung"),
+                        ("down", false) => format!("{name}: could do with some practice again"),
+                        (_, true) => format!("{name}: etwa wie zu Beginn der Woche"),
+                        (_, false) => format!("{name}: about as at the start of the week"),
+                    };
+                    Some(json!({
+                        "skill": serde_json::to_value(s).unwrap_or_default(),
+                        "name": name,
+                        "change": change,
+                        "text": text,
+                    }))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
     Ok(json!({
+        "skills": skills,
         "minutes": secs / 60,
         "minutesBefore": secs_before / 60,
         "days": practised,
@@ -709,6 +789,100 @@ mod tests {
         if let Some(u) = w["unaided"].as_u64() {
             assert!(u <= 100);
         }
+    }
+
+    #[test]
+    fn the_week_names_the_progress_per_skill() {
+        use kaiwa_core::learner::{LearnerModel, Skill};
+        let dir = std::env::temp_dir().join(format!("kaiwa-week-skills-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let b = Backend::open_at(dir.join("t.kaiwa"), false).unwrap();
+        let now = crate::now();
+        // No talk this week: nothing to compare with.
+        assert_eq!(week(&b, now).unwrap()["skills"], json!([]));
+        let mut l = b.store.learning().unwrap();
+        l.model = LearnerModel::placed(&[(Skill::Listening, "n5"), (Skill::Speaking, "n5_low")]);
+        b.store.set_learning(&l).unwrap();
+        // The week's first talk, three days ago, started lower in listening, higher in
+        // speaking; a day before the week does not count.
+        let day = |ago: i64, listening: f64, speaking: f64| {
+            let mut levels_at_start: BTreeMap<Skill, f64> = kaiwa_core::learner::SKILLS
+                .iter()
+                .map(|s| (*s, l.model.level(*s)))
+                .collect();
+            levels_at_start.insert(Skill::Listening, listening);
+            levels_at_start.insert(Skill::Speaking, speaking);
+            let r = kaiwa_core::progress::DayRecord {
+                levels_at_start,
+                ..Default::default()
+            };
+            b.store.put_day(now.day().plus(-ago), &r).unwrap();
+        };
+        day(9, 0.0, 0.0);
+        day(3, 2.6, 2.3);
+        day(1, 2.9, 2.0);
+        let w = week(&b, now).unwrap();
+        let change = |skill: &str| {
+            w["skills"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|s| s["skill"] == skill)
+                .map(|s| {
+                    (
+                        s["change"].as_str().unwrap().to_string(),
+                        s["text"].to_string(),
+                    )
+                })
+                .unwrap()
+        };
+        assert_eq!(change("listening").0, "up");
+        assert!(change("listening").1.contains("Hören: sicherer"), "{w}");
+        assert_eq!(change("speaking").0, "down");
+        assert_eq!(change("fluency").0, "same");
+        assert_eq!(w["skills"].as_array().unwrap().len(), 7);
+        assert_eq!(skill_change(3.0, 3.09), "same");
+    }
+
+    #[test]
+    fn the_trend_compares_talks_not_weeks() {
+        // (turns, mistakes) per talk. Fading over eight talks, and the other way round.
+        let fading = [
+            (4, 3),
+            (4, 3),
+            (4, 2),
+            (4, 2),
+            (4, 1),
+            (4, 1),
+            (4, 0),
+            (4, 0),
+        ];
+        assert!(trend("Partikeln", &fading, true).contains("seltener"));
+        let mut rising = fading;
+        rising.reverse();
+        assert!(trend("Particles", &rising, false).contains("more often"));
+        // A week of one mistake a talk, then a Monday talk with four: more often, although
+        // the new week has fewer mistakes than the last (review #67).
+        let monday = [
+            (4, 1),
+            (4, 1),
+            (4, 1),
+            (4, 1),
+            (4, 1),
+            (4, 1),
+            (4, 1),
+            (4, 4),
+        ];
+        assert!(trend("Partikeln", &monday, true).contains("häufiger"));
+        // Two days of practice are no trend, whichever weeks they fall into.
+        assert_eq!(
+            trend("Partikeln", &[(4, 1), (4, 3)], true),
+            "Partikeln: bisher 4×"
+        );
+        // Longer talks with as many mistakes per turn: the same.
+        let longer = [(4, 1), (4, 1), (8, 2), (8, 2)];
+        assert!(trend("Partikeln", &longer, true).contains("gleich"));
+        assert_eq!(trend("Particles", &[], false), "Particles: 0× so far");
     }
 
     #[test]

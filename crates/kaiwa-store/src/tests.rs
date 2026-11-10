@@ -127,6 +127,38 @@ fn recording_a_session_feeds_model_path_review_and_day() {
     let rows = store.sessions(10).unwrap();
     assert!(rows[0].finished && rows[0].xp > 0);
     assert!(store.open_session().unwrap().is_none());
+    // The day keeps where it started from, for the week's progress (/LF604/): the levels
+    // before the first talk, not those after it, and a second talk leaves them.
+    let before = kaiwa_core::LearnerModel::default();
+    let kept = &r.day.levels_at_start;
+    assert_eq!(kept.len(), kaiwa_core::learner::SKILLS.len());
+    assert!(kept.iter().all(|(s, l)| *l == before.level(*s)), "{kept:?}");
+    assert!(
+        kaiwa_core::learner::SKILLS
+            .iter()
+            .any(|s| l.model.level(*s) != before.level(*s)),
+        "the talk moved the model"
+    );
+    let second = Session::new(scenario(), provider(), Amount::Little, "de");
+    let id2 = store.begin_session(&second.snapshot(), at(0, 20)).unwrap();
+    let r2 = store
+        .record(id2, &second, at(0, 20), at(0, 20).plus_secs(60), Some(&c))
+        .unwrap();
+    assert_eq!(&r2.day.levels_at_start, kept);
+    // A new placement is no progress: the days forget where they started from.
+    store
+        .set_placement(kaiwa_core::LearnerModel::placed(&[(
+            kaiwa_core::learner::Skill::Speaking,
+            "n4",
+        )]))
+        .unwrap();
+    assert!(
+        store
+            .day(at(0, 9).day())
+            .unwrap()
+            .levels_at_start
+            .is_empty()
+    );
     // The next day the item is due and can be reviewed.
     let due = store.due(at(1, 9), 10).unwrap();
     assert!(due.iter().any(|i| i.text == "コーヒーが好きです"));

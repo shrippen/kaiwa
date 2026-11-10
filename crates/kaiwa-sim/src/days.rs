@@ -79,6 +79,9 @@ pub struct SimSession {
     /// Sum of all knob steps after the session.
     pub level: u32,
     pub xp: u32,
+    /// Lines understood without help, and each planted mistake made: (kind, severity).
+    pub understood_unaided: u32,
+    pub mistakes: Vec<(String, String)>,
 }
 
 /// The result of a long run.
@@ -150,6 +153,7 @@ fn times_of(when: &str) -> Vec<i64> {
 struct PlannedError {
     id: String,
     kind: String,
+    severity: String,
     right: String,
     rate: f64,
     fades_after: Option<f64>,
@@ -222,6 +226,7 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
         .map(|e| PlannedError {
             id: e["id"].as_str().unwrap_or_default().into(),
             kind: e["type"].as_str().unwrap_or_default().into(),
+            severity: e["expected_severity"].as_str().unwrap_or("wrong").into(),
             right: e["right"]
                 .as_str()
                 .unwrap_or_default()
@@ -375,6 +380,9 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                     xp += XP_REVIEW;
                 }
                 let rec = records.entry(at.day()).or_default();
+                if rec.levels_at_start.is_empty() {
+                    rec.levels_at_start = levels_of(&learner);
+                }
                 rec.reviews_done += reviews + extra;
                 rec.xp += xp;
                 last_practice = Some(at.plus_secs((minutes * 60.0) as i64));
@@ -408,10 +416,12 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                     clean += 1;
                 }
             }
+            let mut made = Vec::new();
             for e in planned.iter_mut() {
                 let rate = fade(e, &corrected);
                 if rng.chance(rate) {
                     *st.mistakes.entry(e.kind.clone()).or_default() += 1;
+                    made.push((e.kind.clone(), e.severity.clone()));
                     if e.shown {
                         *corrected.entry(e.id.clone()).or_default() += 1;
                         errors.entry(e.id.clone()).or_default().0 += 1;
@@ -479,6 +489,7 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                     (con, f64::from(st.goals_unaided) / f64::from(st.goals_met)),
                 );
             }
+            let levels_before = levels_of(&learner);
             learner.update(&ev);
             let change = regulator.after_session(success, &learner);
 
@@ -490,6 +501,9 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
 
             let spoken_share = 1.0 - f64::from(typed) / f64::from(turns);
             let rec = records.entry(at.day()).or_default();
+            if rec.levels_at_start.is_empty() {
+                rec.levels_at_start = levels_before;
+            }
             rec.speaking_secs += (minutes * 60.0 * spoken_share).round() as u32;
             rec.typed_turns += typed;
             rec.reviews_done += reviews;
@@ -514,6 +528,8 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                     .map(|k| u32::from(regulator.difficulty.get(*k)))
                     .sum(),
                 xp,
+                understood_unaided: st.understood_unaided,
+                mistakes: made,
             });
         }
     }
@@ -541,6 +557,14 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
         last_day,
         texts,
     })
+}
+
+/// The model's level per skill, as a day record keeps it (/LF604/).
+fn levels_of(m: &LearnerModel) -> BTreeMap<Skill, f64> {
+    kaiwa_core::learner::SKILLS
+        .iter()
+        .map(|s| (*s, m.level(*s)))
+        .collect()
 }
 
 /// The rate of a planted error after its corrections: halves with every `fades_after` of them.
@@ -840,6 +864,232 @@ pub fn script_for(root: &Path, journey: &str) -> Result<Option<DaysScript>> {
         return Ok(None);
     }
     Ok(Some(serde_json::from_value(v)?))
+}
+
+/// Checks of a long run that need it in a real profile: the run's days, words and talks are
+/// written into a store, and the profile page's views read them back (/LF604/, /LF610/).
+pub fn check_views(id: &str, root: &Path, run: &DaysRun) -> Result<Option<Outcome>> {
+    if id != "mara_progress" {
+        return Ok(None);
+    }
+    // One directory per call: tests run journeys side by side in one process.
+    static RUNS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let n = RUNS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("kaiwa-sim-progress-{}-{n}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let _ = root;
+    let found = progress_views(run, &dir.join("mara.kaiwa"));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(Some(match found? {
+        None => Outcome::Pass,
+        Some(m) => Outcome::Fail(m),
+    }))
+}
+
+fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
+    use kaiwa_ai::{Correction, CorrectionKind, Severity};
+    let b = kaiwa_backend::Backend::open_at(path.to_path_buf(), false)?;
+    for (d, r) in &run.records {
+        b.store.put_day(*d, r)?;
+    }
+    for i in &run.items {
+        b.store.put_item(i)?;
+    }
+    let mut learning = b.store.learning()?;
+    learning.model = run.learner.clone();
+    b.store.set_learning(&learning)?;
+    let provider: std::sync::Arc<dyn kaiwa_ai::ChatProvider> =
+        std::sync::Arc::new(kaiwa_ai::mock::MockProvider::default());
+    for s in &run.sessions {
+        let Some(sc) = b.scenarios.get(&s.scenario) else {
+            return Ok(Some(format!("no scenario {}", s.scenario)));
+        };
+        let session = kaiwa_core::Session::new(
+            sc.clone(),
+            provider.clone(),
+            kaiwa_core::Amount::Little,
+            "de",
+        );
+        let mut state = session.snapshot();
+        for t in 0..s.turns {
+            let corrections = s
+                .mistakes
+                .get(t as usize)
+                .map(|(kind, severity)| -> Result<Vec<Correction>> {
+                    Ok(vec![Correction {
+                        severity: serde_json::from_value::<Severity>(severity.as_str().into())?,
+                        kind: serde_json::from_value::<CorrectionKind>(kind.as_str().into())?,
+                        original: String::new(),
+                        better: String::new(),
+                        explanation: String::new(),
+                        also_possible: false,
+                    }])
+                })
+                .transpose()?
+                .unwrap_or_default();
+            state.turns.push(kaiwa_core::session::TurnRecord {
+                learner: String::new(),
+                input: kaiwa_core::Input::Spoken,
+                corrections,
+                new_words: Vec::new(),
+                understood: t < s.understood_unaided,
+                aided: false,
+                from_help: false,
+                xp: 0,
+                reply: String::new(),
+                misrecognized: false,
+                disputed: Vec::new(),
+                markup: String::new(),
+            });
+        }
+        let ended = s.start.plus_secs((s.minutes * 60.0) as i64);
+        b.store
+            .put_finished_session(&state, s.start, ended, s.success)?;
+    }
+    // The evening of the last day, in the run's last time zone.
+    let offset = run
+        .sessions
+        .last()
+        .map(|s| s.start.offset_min)
+        .unwrap_or(120);
+    let now = run.last_day.start(offset).plus_secs(21 * 3600);
+    let today = now.day();
+    let mut found = Vec::new();
+
+    // /LF604/: the last seven days, as the run had them.
+    let week = kaiwa_backend::views::week(&b, now)?;
+    let span = |from: Day| run.records.range(from..=today);
+    let secs: u32 = span(today.plus(-6)).map(|(_, r)| r.speaking_secs).sum();
+    let secs_before: u32 = run
+        .records
+        .range(today.plus(-13)..=today.plus(-7))
+        .map(|(_, r)| r.speaking_secs)
+        .sum();
+    let days = span(today.plus(-6))
+        .filter(|(_, r)| r.speaking_secs > 0)
+        .count();
+    let from = today.plus(-6).start(offset).unix;
+    let new = run.items.iter().filter(|i| i.added.unix >= from).count();
+    for (field, want) in [
+        ("minutes", u64::from(secs / 60)),
+        ("minutesBefore", u64::from(secs_before / 60)),
+        ("days", days as u64),
+        ("newItems", new as u64),
+    ] {
+        if week[field].as_u64() != Some(want) {
+            found.push(format!("week {field}: {} instead of {want}", week[field]));
+        }
+    }
+    // Progress per skill: every skill named, each as it moved since the week's first talk.
+    let skills = week["skills"].as_array().cloned().unwrap_or_default();
+    match span(today.plus(-6)).find(|(_, r)| !r.levels_at_start.is_empty()) {
+        None if skills.is_empty() => {}
+        None => found.push("progress per skill without a talk this week".into()),
+        Some((_, start)) => {
+            for s in kaiwa_core::learner::SKILLS {
+                let id = serde_json::to_value(s)?;
+                let Some(shown) = skills.iter().find(|v| v["skill"] == id) else {
+                    found.push(format!("week: no progress for {s:?}"));
+                    continue;
+                };
+                let moved = run.learner.level(s) - start.levels_at_start[&s];
+                let want = match moved {
+                    d if d >= 0.1 => "up",
+                    d if d <= -0.1 => "down",
+                    _ => "same",
+                };
+                let text = shown["text"].as_str().unwrap_or_default();
+                if shown["change"] != want {
+                    found.push(format!("week: {s:?} moved {moved:+.2}, shown as {text}"));
+                }
+                if !progress::blameless(text) || !text.starts_with(s.word("de")) {
+                    found.push(format!("week: {s:?} reads: {text}"));
+                }
+            }
+        }
+    }
+    match week["unaided"].as_u64() {
+        Some(u) if u <= 100 => {}
+        _ if secs == 0 => {}
+        other => found.push(format!("week unaided: {other:?}")),
+    }
+
+    // /LF610/: the heat map marks exactly the days with a minute of speaking or more; the
+    // words per level add up; the mistakes that faded do not read as rising.
+    let stats = kaiwa_backend::views::stats(&b, now)?;
+    let heat: Vec<u64> = stats["heat"]
+        .as_array()
+        .map(|a| a.iter().filter_map(Value::as_u64).collect())
+        .unwrap_or_default();
+    let start = today.plus(-(heat.len() as i64) + 1);
+    for (n, level) in heat.iter().enumerate() {
+        let d = start.plus(n as i64);
+        let minutes = run
+            .records
+            .get(&d)
+            .map(|r| r.speaking_secs / 60)
+            .unwrap_or(0);
+        if (*level > 0) != (minutes > 0) {
+            found.push(format!("heat on {d:?}: level {level}, {minutes} min"));
+            break;
+        }
+    }
+    let vocab: u64 = stats["vocab"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|v| v["count"].as_u64())
+        .sum();
+    if vocab != run.items.len() as u64 {
+        found.push(format!(
+            "{vocab} words per level, {} in the review",
+            run.items.len()
+        ));
+    }
+    let mistakes = stats["mistakes"].as_array().cloned().unwrap_or_default();
+    if mistakes.is_empty() {
+        found.push("no kinds of mistakes in four weeks of corrections".into());
+    }
+    for m in &mistakes {
+        let text = m["text"].as_str().unwrap_or_default();
+        if !progress::blameless(text) {
+            found.push(format!("blame in: {text}"));
+        }
+        // As the run had it: per turn, the later half of her talks against the earlier.
+        let kind = m["kind"].as_str().unwrap_or_default();
+        let counted = |s: &SimSession| {
+            s.mistakes
+                .iter()
+                .take(s.turns as usize)
+                .filter(|(k, severity)| k == kind && severity != "style")
+                .count() as f64
+        };
+        let rate = |half: &[SimSession]| {
+            half.iter().map(counted).sum::<f64>()
+                / half
+                    .iter()
+                    .map(|s| f64::from(s.turns))
+                    .sum::<f64>()
+                    .max(1.0)
+        };
+        let (early, late) = run.sessions.split_at(run.sessions.len() / 2);
+        let want = match (rate(early), rate(late)) {
+            (e, l) if l < 0.75 * e => "seltener",
+            (e, l) if l > 1.25 * e => "häufiger",
+            _ => "gleich",
+        };
+        if run.sessions.len() >= 4 && !text.contains(want) {
+            found.push(format!("{kind} should read {want}: {text}"));
+        }
+        // Mara's particle and counter mistakes fade after four corrections each.
+        if ["particle", "counter"].contains(&m["kind"].as_str().unwrap_or_default())
+            && (text.contains("häufiger") || text.contains("more often"))
+        {
+            let weeks = &m["weeks"];
+            found.push(format!("a faded mistake reads as rising: {text} {weeks}"));
+        }
+    }
+    Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
 #[cfg(test)]

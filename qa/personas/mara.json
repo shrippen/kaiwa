@@ -444,6 +444,14 @@
             "/LF220/"
           ],
           "assert": "Der Lernpfad schaltet Einheiten gemäß Curriculum-Graph frei; erledigt, aktuell und gesperrt sind an Symbol und Text erkennbar, nicht nur an der Farbe."
+        },
+        {
+          "id": "mara_progress",
+          "requirements": [
+            "/LF604/",
+            "/LF610/"
+          ],
+          "assert": "Nach den 30 Tagen zeigt das Profil, was sie getan hat: Der Wochenrückblick nennt Sprechzeit, Übungstage und neue Wörter der letzten sieben Tage wie im Lauf und zu jeder Fähigkeit in Worten, ob sie seit dem ersten Gespräch der Woche sicherer geworden ist; die Heatmap markiert genau die Tage mit mindestens einer Minute Sprechzeit, der Wortschatz pro Niveau ergibt die Wörter in der Wiederholung. Der Verlauf jeder Fehlerart vergleicht die spätere Hälfte ihrer Gespräche mit der früheren, je Zug; Fehlerarten, die nachgelassen haben (Partikel, Zählwörter), stehen nicht als „zuletzt häufiger“ da; kein Text macht Vorwürfe."
         }
       ]
     }

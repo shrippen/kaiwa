@@ -185,6 +185,21 @@ QQC2.ScrollView {
             color: KanteStyle.mutedTextColor
             font: KanteStyle.defaultFont
         }
+        // Progress per skill over the week (/LF604/), in words: what moved first.
+        Text {
+            readonly property var skills: (page.stats.week || {}).skills || []
+            readonly property var moved: skills.filter(function (s) { return s.change !== "same" })
+            visible: skills.length > 0
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            text: moved.length > 0
+                ? moved.map(function (s) { return s.text }).join(" · ")
+                : page.t("Deine Fähigkeiten stehen etwa wie zu Beginn der Woche.", "Your skills are about where they were at the start of the week.")
+            wrapMode: Text.Wrap
+            color: KanteStyle.textColor
+            font: KanteStyle.defaultFont
+        }
         KanteSectionLabel {
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.topMargin: KanteStyle.unit(8)
