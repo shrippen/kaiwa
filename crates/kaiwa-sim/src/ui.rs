@@ -498,8 +498,13 @@ fn suggest_smaller(root: &Path) -> Result<Option<String>> {
 }
 
 /// /LF100/ from the source: the talk button starts and ends a recording by click and by the
-/// space bar (pressed and released), the page wires both to the conversation, and every state
-/// has a name. Recording itself needs the audio mode.
+/// space bar (pressed and released), the page wires both to the conversation, the space bar
+/// reaches the button from anywhere on the page (the button's own keys work only with the
+/// focus on it, and nothing gives it the focus: the check was green while space did nothing),
+/// and every state has a name. What the shortcut does is tried by `app/qml/tests/tst_space.qml`
+/// (`tools/qml-tests.sh`, needs Qt, not part of this check); here only that the page has the
+/// block the test tries. Recording itself needs the audio mode; the keys in the running app
+/// are step 3.1a of the local test.
 fn push_to_talk(root: &Path) -> Result<Option<String>> {
     let talk = std::fs::read_to_string(root.join("app/qml/Kante/KanteTalkButton.qml"))?;
     let page = std::fs::read_to_string(root.join("app/qml/ConversationPage.qml"))?;
@@ -522,6 +527,25 @@ fn push_to_talk(root: &Path) -> Result<Option<String>> {
         if !page.contains(needle) {
             found.push(format!("the page lacks {needle}"));
         }
+    }
+    // The page's shortcut for the space bar, when it is on included, is the block that
+    // `app/qml/tests/tst_space.qml` tries (tools/qml-tests.sh): a change to one without the
+    // other shows here.
+    let test = std::fs::read_to_string(root.join("app/qml/tests/tst_space.qml"))?;
+    let shortcut = |source: &str| -> Option<String> {
+        let from = source.find("    Shortcut {\n        sequence: \"Space\"")?;
+        let len = source[from..].find("\n    }\n")?;
+        Some(source[from..from + len].to_string())
+    };
+    match (shortcut(&page), shortcut(&test)) {
+        (None, _) => found.push("the page has no shortcut for the space bar".into()),
+        (_, None) => found.push("tst_space.qml has no shortcut for the space bar".into()),
+        (Some(p), Some(t)) if p != t => found.push(
+            "the page's shortcut for the space bar is not the one tst_space.qml tries".into(),
+        ),
+        (Some(p), _) if !p.contains("talk.press()") => found
+            .push("the page's shortcut for the space bar does not press the talk button".into()),
+        _ => {}
     }
     if let Some(why) = talk_titles(root)? {
         found.push(why);

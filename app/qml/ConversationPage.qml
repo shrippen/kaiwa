@@ -503,6 +503,7 @@ Kirigami.ScrollablePage {
     }
 
     footer: QQC2.ToolBar {
+        id: bar
         padding: KanteStyle.unit(12)
         background: Rectangle { color: KanteStyle.backgroundColor; Rectangle { width: parent.width; height: 1; color: KanteStyle.ruleColor } }
         contentItem: RowLayout {
@@ -552,6 +553,25 @@ Kirigami.ScrollablePage {
                 onClicked: page.send()
             }
         }
+    }
+
+    // /LF100/: the space bar talks wherever the focus is, not only on the talk button. On a
+    // new page nothing has the focus, and a button clicked before keeps it: space did nothing
+    // or pressed that button again. The answer field keeps its space, also while it is locked
+    // during the tutor's answer, so whoever types goes on typing: the key is the field's as
+    // long as the field is the footer's focus and the footer the page's (the footer is a
+    // focus scope of its own, so `input.focus` alone stays true after a click on "Nochmal").
+    // While the tutor thinks the button does nothing, so the key does nothing. The focus goes
+    // to the talk button, so releasing the key ends a held turn there. With the focus on a
+    // button or chip the key talks too; Enter presses those.
+    // app/qml/tests/tst_space.qml holds this block word for word and tries it (mara_ptt
+    // checks that the two are the same).
+    Shortcut {
+        sequence: "Space"
+        autoRepeat: false
+        enabled: talk.enabled && !(input.focus && bar.focus) && talk.talkState !== KanteTalkButton.State.Thinking
+            && !leaveDialog.visible && !grammarDialog.visible && !wordPopup.visible
+        onActivated: { talk.forceActiveFocus(Qt.ShortcutFocusReason); talk.press() }
     }
 
     function send() {
