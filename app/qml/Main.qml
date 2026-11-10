@@ -12,8 +12,8 @@ import org.shrippen.kaiwa
 //
 // Screenshot mode: --shot out.png [--view start|path|review|profile|settings|talk|place]
 // [--scenario id] [--resume] [--say "a|b|wav:file|?|!|~|read:KK|translate:N"] [--kind 0|1|2]
-// [--light 0|1]. Only in a build with the feature `demo` (kaiwa.demoBuild); a package has none
-// of these switches.
+// [--light 0|1] [--check-text]. Only in a build with the feature `demo` (kaiwa.demoBuild); a
+// package has none of these switches.
 Kirigami.ApplicationWindow {
     id: root
     width: Number(arg("--width", "900"))
@@ -29,6 +29,36 @@ Kirigami.ApplicationWindow {
         return i >= 0 && i + 1 < args.length ? args[i + 1] : fallback
     }
     function t(de, en) { return kaiwa.lang === "en" ? en : de }
+
+    // With --check-text the screenshot mode says which texts of the page do not fit: elided,
+    // wider than their place, or beyond the window's right edge (hinnerk_font, /LL202/;
+    // tools/font-160.sh runs it at 160 % and reads the lines). Text fields are left out:
+    // their text scrolls.
+    function unfitTexts(item, found) {
+        if (!item || item.visible === false)
+            return found
+        if (typeof item.text === "string" && item.text.length > 0 && item.cursorPosition === undefined
+                && item.contentWidth !== undefined) {
+            var what = item.truncated === true ? "elided"
+                : item.contentWidth > item.width + 1 ? "wider than its place"
+                : item.mapToItem(null, item.width, 0).x > root.width + 1 ? "beyond the window"
+                : ""
+            if (what.length > 0)
+                found.push(what + ": " + item.text.replace(/\s+/g, " ").substring(0, 60))
+        }
+        var kids = item.children || []
+        for (var i = 0; i < kids.length; i++)
+            unfitTexts(kids[i], found)
+        return found
+    }
+    function checkText(item) {
+        if (!kaiwa.demoBuild || args.indexOf("--check-text") < 0)
+            return
+        var found = unfitTexts(item, [])
+        for (var i = 0; i < found.length; i++)
+            console.log("kaiwa-text: " + found[i])
+        console.log("kaiwa-text-checked: " + found.length)
+    }
 
     KaiwaApp {
         id: kaiwa
@@ -123,6 +153,7 @@ Kirigami.ApplicationWindow {
             } else if (v === "talk") {
                 root.talk(root.arg("--scenario", ""), root.args.indexOf("--resume") >= 0)
             } else {
+                root.checkText(home)
                 home.grabToImage(function (r) { r.saveToFile(root.shot); Qt.quit() })
             }
         }

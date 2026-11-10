@@ -559,7 +559,10 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
             let (_, month, day) = d.ymd();
             json!({ "day": day, "month": month, "iso": d.iso() })
         }),
-        "textScale": p.text_scale,
+        // In hundredths: 1.6 as f32 becomes 1.600000023841858 in JSON, which the settings
+        // would not find among their steps.
+        "textScale": (f64::from(p.text_scale.min(kaiwa_store::TEXT_SCALE_MAX)) * 100.0).round()
+            / 100.0,
         "microphone": p.microphone,
         "cost": st.cost_view(crate::now())?,
         "latency": st.latency_view(&p.ui_lang)?,
@@ -840,6 +843,18 @@ mod tests {
                 .to_string()
                 .contains(&second.scenarios[0])
         );
+    }
+
+    #[test]
+    fn the_text_size_is_one_of_the_steps_of_the_settings() {
+        let b = crate::TempBackend::new("text-scale", false).unwrap();
+        // The steps of SettingsPage.qml; a size from before the limit shows as the largest.
+        for (kept, shown) in [(1.0, 1.0), (1.25, 1.25), (1.5, 1.5), (1.6, 1.6), (2.0, 1.6)] {
+            let mut p = b.store.profile().unwrap();
+            p.text_scale = kept;
+            b.store.set_profile(&p).unwrap();
+            assert_eq!(profile(&b).unwrap()["textScale"], json!(shown), "{kept}");
+        }
     }
 
     #[test]

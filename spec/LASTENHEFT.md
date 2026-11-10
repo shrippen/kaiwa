@@ -255,7 +255,7 @@ Mengengerüst: bis 10 000 Sitzungen und 20 000 Lernobjekte pro Profil ohne spür
 |---|---|---|
 | /LL200/ | M | Vollständig per Tastatur bedienbar, mit sichtbarem Fokus (Kante: cyan, 2 px). |
 | /LL201/ | M | Screenreader: Alle Bedienelemente haben Accessible-Namen und -Rollen (AT-SPI unter Linux). Das ist zugleich die Grundlage der GUI-Automatisierung in der QA. |
-| /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App skalierbar (bis 200 %, Furigana mitskaliert). |
+| /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App skalierbar (bis 160 %, Furigana mitskaliert; Eigentümer, 10.11.2026: 160 % ist vorerst die obere Grenze). |
 | /LL203/ | M | Kontraste erreichen WCAG AA in System, Kante und Kante Light. Zustände sind nie nur an der Farbe erkennbar. |
 | /LL204/ | S | Untertitel für alles Gesprochene. Für Menschen mit Hörminderung gibt es eine Lautstärkeanhebung und eine Klangoption „klar“ (höhere Sprachverständlichkeit). |
 

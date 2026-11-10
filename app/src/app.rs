@@ -375,7 +375,7 @@ impl qobject::KaiwaApp {
                 "handsFree" => p.hands_free = value == "true",
                 "textScale" => {
                     if let Ok(s) = value.parse::<f32>() {
-                        p.text_scale = s.clamp(1.0, 2.0);
+                        p.text_scale = s.clamp(1.0, kaiwa_store::TEXT_SCALE_MAX);
                     }
                 }
                 "keepRecordings" => p.keep_recordings_days = value.parse().ok(),

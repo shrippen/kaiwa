@@ -126,4 +126,4 @@ Nach einem gesprochenen Satz prüft die App im Hintergrund die Moren-Längen mit
 
 ## Freies Gespräch und Textgröße
 
-Unter „Freies Gespräch“ auf der Startseite liegen vier Themen (Hobbys, Essen, Reisen, Alltag) außerhalb des Lernpfads, auf dem eigenen Niveau (/LF116/). Die Textgröße in den Einstellungen (100–200 %) vergrößert die ganze Oberfläche samt Lesehilfen, ab dem nächsten Start (/LL202/).
+Unter „Freies Gespräch“ auf der Startseite liegen vier Themen (Hobbys, Essen, Reisen, Alltag) außerhalb des Lernpfads, auf dem eigenen Niveau (/LF116/). Die Textgröße in den Einstellungen (100–160 %) vergrößert die ganze Oberfläche samt Lesehilfen, ab dem nächsten Start (/LL202/).
