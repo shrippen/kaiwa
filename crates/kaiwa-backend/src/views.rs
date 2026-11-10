@@ -447,6 +447,7 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         "mistakes": mistakes,
         "vocab": vocab.iter().map(|(l, n)| json!({ "level": l, "count": n })).collect::<Vec<_>>(),
         "heat": levels,
+        "heatEnd": today.iso(),
         "heatDays": by_day,
         "heatTips": tips,
         "heatScale": heat_scale(de),
@@ -1198,6 +1199,25 @@ mod tests {
             v["heatScale"],
             json!(["0 min", "1–2 min", "3–5 min", "6–10 min", "ab 11 min"])
         );
+    }
+
+    #[test]
+    fn the_heat_map_ends_on_the_backends_day() {
+        // A held clock (KAIWA_NOW, 20.10.2026) is not the computer's day: the calendar must
+        // end where the backend's twelve weeks end, not on today.
+        let b = crate::TempBackend::new("heat-end", false).unwrap();
+        let held = kaiwa_core::clock::Moment::new(1_792_478_400, 120);
+        let v = stats(&b, held).unwrap();
+        let last = v["heatDays"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .max()
+            .unwrap()
+            .clone();
+
+        assert_eq!(v["heatEnd"], held.day().iso());
+        assert_eq!(v["heatEnd"], last);
     }
 
     #[test]

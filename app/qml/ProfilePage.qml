@@ -20,6 +20,15 @@ QQC2.ScrollView {
     readonly property int figureColumns: compact ? 2 : 4
     // The weeks the statistics cover (views::stats: eleven back and this one).
     readonly property int heatWeeks: 12
+
+    // "2026-10-20" as a local date; Date("2026-10-20") would be UTC midnight, a day early west of it.
+    function dayOf(iso) {
+        if (!iso) {
+            return new Date()
+        }
+        const [y, m, d] = iso.split("-").map(Number)
+        return new Date(y, m - 1, d)
+    }
     contentWidth: availableWidth
 
     ColumnLayout {
@@ -280,6 +289,8 @@ QQC2.ScrollView {
         KanteCalendarHeatmap {
             Layout.leftMargin: KanteStyle.unit(18)
             weeks: page.heatWeeks
+            // The backend's day, not the computer's: a held clock or an app left open overnight.
+            endDate: page.dayOf(page.stats.heatEnd)
             levels: page.stats.heatDays || ({})
             tips: page.stats.heatTips || ({})
             locale: Qt.locale(page.kaiwa.lang === "en" ? "en_GB" : "de_DE")
