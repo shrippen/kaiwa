@@ -29,6 +29,7 @@ Wenn sonst etwas auffiel:
 | `hinnerk_german_word_help`: bietet とうだい an, bittet ums Nachsprechen | | | |
 | Wiederholung als Mini-Gespräch: Frage passt, Wertung stimmt | | | |
 | Latenz Senden → Antwort, fünf Züge (Sekunden) | | | |
+| Nachdenken eines lokalen Modells (2.8): Zeile der Figur ohne Überlegung, Korrektur kommt; Notiz: Modell, stand `<think>` im `content`? | | | |
 
 ## 3. Sprechen und Stimme
 
@@ -44,6 +45,7 @@ Wenn sonst etwas auffiel:
 | `mara_mora_hint`: höchstens ein Moren-Hinweis, keiner bei richtigem Satz | | | |
 | `hinnerk_german_word_help` (Audio): とうだい langsam gesprochen | | | |
 | `mara_codeswitch` (Audio): プロデューサー hörbar gesprochen | | | |
+| Nachdenken eines lokalen Modells (3.4a, Audio): gesprochen wird nur die Zeile der Figur | | | |
 | `theo_latency`: Median … s, 95 % … s, „denkt nach“ sichtbar | | | |
 
 ## 4. Rechner und Oberfläche

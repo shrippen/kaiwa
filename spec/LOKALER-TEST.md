@@ -68,6 +68,13 @@ Was du beurteilst, steht in der Vorlage. Kurz:
 5. **Deutsches Wort** (`hinnerk_german_word_help`): Sag im Szenario „Sich vorstellen“ わたしは Leuchtturm です。 Bietet die Figur とうだい an und bittet ums Nachsprechen? (Ob sie es langsam spricht, gehört zu Schritt 3.)
 6. **Wiederholung als Mini-Gespräch** (/LF230/, neu): Am Tag nach einem Gespräch mit Korrekturen unter „Wiederholen“ der Figur antworten, getippt und gesprochen. Passt die Frage zur Korrektur? Wird eine richtige Antwort als richtig gewertet?
 7. **Latenz:** Stopp fünfmal die Zeit vom Senden bis zur Antwort (Ziel /LL010/).
+8. **Nachdenken eines lokalen Modells** (#73, #74, neu): Mit einem lokalen Modell, das vor der Antwort nachdenkt (z. B. ein Qwen3 über Ollama oder LM Studio), drei Züge im Szenario „Sich vorstellen“. Steht in der Zeile der Figur nur, was sie sagt (kein `<think>`, keine Überlegung auf Englisch)? Kommt nach einem Satz mit Fehler eine Korrektur? (Ob die Stimme nur die Zeile vorliest, ist Schritt 3.4a.) Der Schritt prüft nur etwas, wenn der Server das Nachdenken im Text der Antwort lässt; die Gegenprobe (Ollama: Port 11434, LM Studio: 1234) gibt den `content` aus, wie die App ihn bekommt; notiere in der Vorlage, ob `<think>` darin stand:
+
+   ```sh
+   curl -s http://localhost:11434/v1/chat/completions -H 'Content-Type: application/json' \
+     -d '{"model":"<modell>","messages":[{"role":"user","content":"お名前は？"}]}' \
+     | jq -r '.choices[0].message.content'
+   ```
 
 ## 3. Sprechen und Stimme
 
@@ -86,6 +93,7 @@ ReazonSpeech, Kokoro und kaiwa-kana-ctc in den Einstellungen unter „Modelle“
 2d. **Nach der Leerlaufzeit** (#70; Einstellungen › „Modelle entladen“ auf 5 min): nach mindestens einem eigenen Zug im Gespräch bleiben und gut sechs Minuten nichts tun, gerechnet ab dem Ende der letzten Antwort der Figur (entladen wird im Minutentakt, frühestens fünf Minuten nach der letzten Nutzung). Dann bei einer Zeile der Figur „Nochmal“ klicken. Beim ersten Klick ist nichts zu hören, die Modelle laden wieder (die Taste zeigt kurz „Denkt nach“). Ein paar Sekunden warten und noch einmal klicken: Jetzt spielt die Zeile. Ist auch dann noch nichts zu hören, war die Stimme noch nicht fertig geladen (sie lädt nach der Erkennung); einen Moment später noch einmal klicken. Spielt die Zeile schon beim ersten Klick, waren die Modelle noch geladen: Dieser Klick zählt als Nutzung, also noch einmal gut sechs Minuten warten, wieder ab dem Ende der Zeile, die er gespielt hat. Beim Freisprechen hört die App nach dem Laden von selbst wieder zu („Hört zu“).
 3. **Moren-Hinweis** (`mara_mora_hint`): Sprich ありがとございます (kurzes とう) und ちょと待てください. Höchstens ein Hinweis zur Moren-Länge je Satz, nichts bei ありがとうございます.
 4. **Langsam** (`hinnerk_german_word_help`, Teil Audio): Die Figur spricht とうだい aus Schritt 2.5 langsam? Ebenso hörbar: Auf „Wie sagt man Produzentin auf Japanisch?“ spricht sie プロデューサー (`mara_codeswitch`).
+4a. **Nachdenken eines lokalen Modells, Teil Audio** (#74): Ein Zug mit dem Modell aus Schritt 2.8. Die Stimme liest nur die Zeile der Figur vor, keine Überlegung.
 5. **Latenz** (`theo_latency`): 20 Züge im freien Gespräch, alles lokal (Ollama in den Einstellungen, ReazonSpeech, Kokoro; keine `KAIWA_*`-Variablen gesetzt). Miss je Zug die Zeit vom Ende deines Satzes bis zum ersten Ton der Figur, mit Stoppuhr oder Bildschirmaufnahme. Ziel: Median ≤ 3 s, 95 % ≤ 5 s, „denkt nach“ ist währenddessen sichtbar.
 
 ## 4. Rechner und Oberfläche (Framework 13)
