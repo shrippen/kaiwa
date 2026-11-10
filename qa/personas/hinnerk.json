@@ -181,6 +181,13 @@
           "assert": "Bei 160 % ist kein Text abgeschnitten, Furigana und Kana sind mitskaliert, keine Bedienelemente überlappen (Screenshot-Prüfung)."
         },
         {
+          "id": "hinnerk_narrow",
+          "requirements": [
+            "/LL303/"
+          ],
+          "assert": "Schmaler als 800 px lässt sich das Fenster nicht ziehen; bei 800 px ist in jeder Ansicht kein Text abgeschnitten, jeder Knopf erreichbar und Zusammengehöriges steht beisammen (Screenshot-Prüfung)."
+        },
+        {
           "id": "hinnerk_targets",
           "requirements": [
             "/LL202/",

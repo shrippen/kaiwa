@@ -6,6 +6,7 @@
 #
 #   tools/font-160.sh [folder for the pictures, default out/font-160]
 #   SCALE=2 SCREEN=1920 tools/font-160.sh     # another text size, another screen width
+#   SCALE=1 SCREEN=800 tools/font-160.sh      # the narrowest window the app allows (/LL303/)
 #
 # The window is as wide as the app opens it (900), or as the screen leaves room for at this
 # text size: a small laptop (1366 px) at 160 % has 853. The scale is the profile's text size,
