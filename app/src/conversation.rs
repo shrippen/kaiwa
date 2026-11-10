@@ -114,9 +114,21 @@ pub mod qobject {
         #[cxx_name = "sayWav"]
         fn say_wav(self: Pin<&mut Conversation>, path: &QString);
 
-        /// Stop the character speaking (talk button tapped while it speaks).
+        /// Stop the character speaking (the page closes).
         #[qinvokable]
         fn interrupt(self: Pin<&mut Conversation>);
+
+        /// The learner cuts the character short (talk button while it speaks, /LF103/): it
+        /// falls silent, and hands-free the learner's turn begins.
+        #[qinvokable]
+        #[cxx_name = "bargeIn"]
+        fn barge_in(self: Pin<&mut Conversation>);
+
+        /// After a microphone error: the talk button works again, the next press tries the
+        /// microphone anew. Without a recogniser there is nothing to try.
+        #[qinvokable]
+        #[cxx_name = "retryTalk"]
+        fn retry_talk(self: Pin<&mut Conversation>);
 
         /// Called every minute: unloads the speech models after the idle time of the profile
         /// (/LL012/); they load again when needed.
@@ -216,6 +228,8 @@ pub struct ConversationRust {
     longer_pause: f64,
     /// The pause ended the last recording, and the turns that sounded cut off by it.
     ended_by_pause: bool,
+    /// Hands-free: turns in a row the pause ended that gave nothing to send.
+    empty_turns: kaiwa_core::turn_end::EmptyTurns,
     cut_offs: kaiwa_core::turn_end::CutOffs,
     /// When the learner stopped speaking, for the response time (/LL010/); handed on to the
     /// reply, which books it at its first sound.
@@ -233,7 +247,10 @@ pub struct ConversationRust {
     placement: Option<Placement>,
     lang: String,
     session_id: Option<i64>,
-    started: Option<kaiwa_core::Moment>,
+    /// Since when the time in this talk has not been added to the session.
+    sitting: Option<std::time::Instant>,
+    /// When this sitting began: its day gets the practice.
+    began: Option<kaiwa_core::Moment>,
     session: Option<Arc<Mutex<Session>>>,
     log: Vec<Value>,
     /// Any engine behind the traits (/LL504/); ReazonSpeech and Kokoro today.
@@ -247,6 +264,10 @@ pub struct ConversationRust {
     unloaded: bool,
     /// Counts what the character said; speaking stops when it moves on.
     utterance: Arc<AtomicU64>,
+    /// The utterance up to which the character is done speaking; it speaks while `utterance`
+    /// is ahead of this (the talk state does not say it: it can speak while the learner's
+    /// turn is still being recognised, or after a microphone error).
+    quiet: Arc<AtomicU64>,
     /// What this conversation already said, so "again" plays at once (/LF111/).
     said: Arc<Mutex<SpeechCache>>,
     /// The voice of this conversation's character (/LF117/); a loaded voice switches to it.
@@ -340,8 +361,15 @@ impl qobject::Conversation {
         };
         let lang = self.lang.clone();
         let session_id = self.session_id;
-        let started = self.started;
-        let guard = session.lock().expect("session lock");
+        let mut guard = session.lock().expect("session lock");
+        // The time since the talk began here, or since it was last kept, counts as spent in
+        // it; a talk continued later keeps what it had (/LF121/).
+        if let Some(since) = self.sitting {
+            // Whole seconds; the rest stays for the next time.
+            let secs = since.elapsed().as_secs();
+            self.as_mut().rust_mut().sitting = Some(since + Duration::from_secs(secs));
+            guard.spend(secs.min(3600) as u32);
+        }
         let met = guard.summary().goals_met;
         let goals: Vec<Value> = guard
             .goals()
@@ -356,13 +384,14 @@ impl qobject::Conversation {
             match session_id {
                 Some(id) if done && !*self.finished() => {
                     let end = now();
-                    match st.store.record(
-                        id,
-                        &guard,
-                        started.unwrap_or(end),
-                        end,
-                        Some(&st.curriculum),
-                    ) {
+                    // Practice time is the time spent in the talk, over every sitting; it counts
+                    // for the day this sitting began.
+                    let begun = end.plus_secs(-i64::from(guard.spent_secs()));
+                    let day = self.began.unwrap_or(end).day();
+                    match st
+                        .store
+                        .record_on(id, &guard, begun, end, day, Some(&st.curriculum))
+                    {
                         Ok(r) => {
                             if let Err(e) = st.track_grammar(&guard, end) {
                                 eprintln!("kaiwa: {e:#}");
@@ -511,6 +540,11 @@ impl qobject::Conversation {
         log: Vec<Value>,
         lang: String,
     ) {
+        // The cost limit holds from the first call of every talk: a new one, one continued
+        // and the placement (/LF714/).
+        if let Err(e) = state().arm_brake(now()) {
+            eprintln!("kaiwa: {e}");
+        }
         let title = session.scenario.title.get(&lang).to_string();
         let scenario = session.scenario.id.clone();
         let character = session.scenario.name.clone().unwrap_or_else(|| {
@@ -541,7 +575,8 @@ impl qobject::Conversation {
             rust.log = log;
             rust.lang = lang;
             rust.session_id = id;
-            rust.started = Some(now());
+            rust.sitting = Some(std::time::Instant::now());
+            rust.began = Some(now());
             rust.last_use = Some(std::time::Instant::now());
             // Another conversation: nothing said before counts.
             if let Ok(mut c) = rust.said.lock() {
@@ -602,15 +637,9 @@ impl qobject::Conversation {
         });
     }
 
-    /// The session's turn index of a log entry (learner entries before it).
+    /// The session's turn index of a log entry; a line the tutor never answered has none.
     fn turn_of(&self, log_index: i32) -> Option<usize> {
-        let i = usize::try_from(log_index).ok()?;
-        (self.log.get(i)?["who"] == "learner").then(|| {
-            self.log[..i]
-                .iter()
-                .filter(|e| e["who"] == "learner")
-                .count()
-        })
+        kaiwa_backend::talk::turn_of(&self.log, usize::try_from(log_index).ok()?)
     }
 
     fn save(&self) {
@@ -693,7 +722,7 @@ impl qobject::Conversation {
         let continued = crate::state::state().continued_talk(scenario, state);
         match continued {
             Ok((session, demo)) => self.begin(session, Some(id), demo, log, lang),
-            Err(e) => eprintln!("kaiwa: {e:#}"),
+            Err(e) => self.cannot_open(&e, &lang),
         }
     }
 
@@ -717,19 +746,29 @@ impl qobject::Conversation {
         let Some((scenario, profile)) = prepared else {
             return;
         };
-        let _ = state().arm_brake(now());
         let opening = scenario.opening.clone();
         let talk = state().new_talk(scenario);
         let (session, demo) = match talk {
             Ok(t) => t,
             Err(e) => {
-                eprintln!("kaiwa: {e:#}");
+                self.cannot_open(&e, &profile.ui_lang);
                 return;
             }
         };
         let id = state().store.begin_session(&session.snapshot(), now()).ok();
         let log = vec![json!({ "who": "character", "markup": opening })];
         self.begin(session, id, demo, log, profile.ui_lang);
+    }
+
+    /// The profile could not be read for a talk: the page says so instead of staying empty.
+    fn cannot_open(mut self: Pin<&mut Self>, e: &anyhow::Error, lang: &str) {
+        eprintln!("kaiwa: {e:#}");
+        let msg = if lang == "en" {
+            format!("The talk cannot be opened: {e}")
+        } else {
+            format!("Das Gespräch lässt sich nicht öffnen: {e}")
+        };
+        self.as_mut().set_error(QString::from(&msg));
     }
 
     /// Says a line of the character (furigana markup) sentence by sentence; the first plays
@@ -760,6 +799,12 @@ impl qobject::Conversation {
         };
         if !*self.voice_on() {
             return;
+        }
+        // Hands-free the microphone is open between turns; it must not hear the character
+        // (speakers instead of a headset) and send that as the learner's turn. It opens again
+        // when the character is done.
+        if *self.hands_free() {
+            self.as_mut().close_mic();
         }
         let id = self.utterance.fetch_add(1, Ordering::SeqCst) + 1;
         let current = self.utterance.clone();
@@ -803,8 +848,11 @@ impl qobject::Conversation {
                 std::thread::sleep(Duration::from_millis(50));
             }
             let _ = thread.queue(move |mut q| {
-                if q.utterance.load(Ordering::SeqCst) == id && *q.talk_state() == SPEAKING {
-                    q.as_mut().set_talk_state(READY);
+                if q.utterance.load(Ordering::SeqCst) == id {
+                    q.quiet.store(id, Ordering::SeqCst);
+                    if *q.talk_state() == SPEAKING {
+                        q.as_mut().set_talk_state(READY);
+                    }
                     q.as_mut().listen_again();
                 }
             });
@@ -918,16 +966,28 @@ impl qobject::Conversation {
             return;
         };
         let markup = entry["markup"].as_str().unwrap_or_default().to_string();
-        let translated = entry.get("translation").is_some();
+        // Already there, or on its way (a second click asks the tutor no second time).
+        let translated = entry.get("translation").is_some() || entry["translating"] == true;
         let Some(session) = self.session.clone() else {
             return;
         };
+        // Not while the tutor thinks about a turn already sent: the aid would count for it,
+        // though the answer was given without (/LF212/).
+        if *self.busy() {
+            return;
+        }
         self.as_mut().wake();
         match aid {
             0 | 1 => {
+                // The voice is still loading again after the idle time (`wake` above): the
+                // learner hears nothing, so nothing counts; the next click plays (/LF212/).
+                if self.speaker.is_none() {
+                    return;
+                }
                 if let Ok(mut s) = session.lock() {
                     s.aid(if aid == 0 { Aid::Repeat } else { Aid::Slow });
                 }
+                self.save();
                 self.as_mut().interrupt();
                 let speed = self.speed() * if aid == 0 { 1.0 } else { 0.7 };
                 self.speak_at(&markup, speed, false);
@@ -935,15 +995,35 @@ impl qobject::Conversation {
             2 if !translated => {
                 let lang = self.lang.clone();
                 let thread = self.qt_thread();
+                if let Some(e) = self.as_mut().rust_mut().log.get_mut(i) {
+                    e["translating"] = json!(true);
+                }
+                self.as_mut().publish_turns();
                 std::thread::spawn(move || {
                     let line = kaiwa_core::plain(&markup);
-                    let result = session.lock().ok().map(|mut s| s.translate(&line));
+                    // Asked without holding the session (the window needs it meanwhile).
+                    let asking = session.lock().ok().map(|s| s.translating(&line));
+                    let result = asking.map(|a| a.run());
                     let _ = thread.queue(move |mut q| {
+                        if let Some(e) = q.as_mut().rust_mut().log.get_mut(i)
+                            && let Some(e) = e.as_object_mut()
+                        {
+                            e.remove("translating");
+                        }
+                        // What the translation cost (/LF714/), not only with the next turn.
+                        if let Err(e) = state().book_costs(now(), false) {
+                            eprintln!("kaiwa: {e}");
+                        }
                         match result {
                             Some(Ok(text)) => {
+                                // It counts as help once the learner has it (/LF212/).
+                                if let Ok(mut s) = session.lock() {
+                                    s.aid(Aid::Translate);
+                                }
                                 if let Some(e) = q.as_mut().rust_mut().log.get_mut(i) {
                                     e["translation"] = json!(text);
                                 }
+                                q.save();
                                 q.as_mut().publish_turns();
                             }
                             Some(Err(kaiwa_ai::AiError::NoFixture)) => {
@@ -964,6 +1044,7 @@ impl qobject::Conversation {
                             }
                             None => {}
                         }
+                        q.as_mut().publish_turns();
                     });
                 });
             }
@@ -1059,7 +1140,8 @@ impl qobject::Conversation {
     }
 
     fn interrupt(mut self: Pin<&mut Self>) {
-        self.utterance.fetch_add(1, Ordering::SeqCst);
+        let id = self.utterance.fetch_add(1, Ordering::SeqCst) + 1;
+        self.quiet.store(id, Ordering::SeqCst);
         if let Some(speaker) = &self.speaker {
             speaker.player.silence();
         }
@@ -1068,7 +1150,52 @@ impl qobject::Conversation {
         }
     }
 
+    /// Whether the character is speaking or about to (a sentence being made).
+    fn speaking(&self) -> bool {
+        self.utterance.load(Ordering::SeqCst) != self.quiet.load(Ordering::SeqCst)
+    }
+
+    fn barge_in(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().empty_turns.reset();
+        self.as_mut().interrupt();
+        self.listen_again();
+    }
+
+    fn retry_talk(mut self: Pin<&mut Self>) {
+        if *self.talk_state() == ERROR && self.recognizer.is_some() {
+            self.as_mut().set_talk_state(READY);
+        }
+    }
+
+    /// Hands-free after a turn that gave nothing to send: listens again, but not for ever.
+    fn listen_after_nothing(mut self: Pin<&mut Self>) {
+        // After the third in a row the message stays and the microphone is closed.
+        if self.as_mut().rust_mut().empty_turns.after_empty() {
+            self.listen_again();
+        }
+    }
+
+    /// Stops listening without sending anything (hands-free: the character speaks, or the
+    /// learner typed instead).
+    fn close_mic(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().turn_end = None;
+        if let Some(c) = self.as_mut().rust_mut().capture.take() {
+            drop(c.stop());
+            self.as_mut().set_level(0.0);
+            if *self.talk_state() == LISTENING {
+                self.as_mut().set_talk_state(READY);
+            }
+        }
+    }
+
+    /// The talk button: the learner starts a turn.
     fn start_talk(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().empty_turns.reset();
+        self.open_mic();
+    }
+
+    /// Opens the microphone for a turn (the button, or hands-free by itself).
+    fn open_mic(mut self: Pin<&mut Self>) {
         if self.unloaded {
             // The models load again; the next press talks.
             self.as_mut().wake();
@@ -1076,7 +1203,7 @@ impl qobject::Conversation {
         }
         self.as_mut().wake();
         // Speaking over the character silences it and starts the new turn (/LF103/).
-        if *self.talk_state() == SPEAKING {
+        if *self.talk_state() == SPEAKING || self.speaking() {
             self.as_mut().interrupt();
         }
         if *self.talk_state() != READY || *self.busy() || *self.finished() {
@@ -1098,6 +1225,8 @@ impl qobject::Conversation {
                 });
                 self.as_mut().rust_mut().turn_end = turn_end;
                 self.as_mut().rust_mut().capture = Some(c);
+                // The microphone is back (after an error and `retry_talk`).
+                self.as_mut().set_speech_error(QString::default());
                 self.as_mut().set_level(0.0);
                 self.as_mut().set_talk_state(LISTENING);
             }
@@ -1124,6 +1253,7 @@ impl qobject::Conversation {
             .as_ref()
             .is_some_and(|(e, _)| !e.heard() && e.listened_secs() >= HANDS_FREE_WAIT_SECS);
         if silent {
+            self.as_mut().rust_mut().empty_turns.reset();
             self.as_mut().rust_mut().turn_end = None;
             if let Some(c) = self.as_mut().rust_mut().capture.take() {
                 drop(c.stop());
@@ -1158,10 +1288,12 @@ impl qobject::Conversation {
     /// Hands-free: listen again once the character is done (/LF100/).
     fn listen_again(mut self: Pin<&mut Self>) {
         let ready = *self.talk_state() == READY && !*self.busy() && !*self.finished();
-        // Not in the placement: its stages change the scene between turns.
-        let talk = ready && self.recognizer.is_some() && self.placement.is_none();
+        // Not in the placement: its stages change the scene between turns. And not into the
+        // character's voice: it listens again when the character is done.
+        let talk =
+            ready && self.recognizer.is_some() && self.placement.is_none() && !self.speaking();
         if *self.hands_free() && talk {
-            self.as_mut().start_talk();
+            self.as_mut().open_mic();
         }
     }
 
@@ -1216,7 +1348,7 @@ impl qobject::Conversation {
         // goes on as before.
         let level = kaiwa_speech::capture::check(&rec);
         if level.seconds >= MIN_CHECKED_SECS && !level.voice() {
-            self.as_mut().rust_mut().ended_by_pause = false;
+            let by_pause = std::mem::take(&mut self.as_mut().rust_mut().ended_by_pause);
             self.as_mut().set_talk_state(READY);
             let msg = if self.lang == "en" {
                 "No sound came in. Is a microphone plugged in, switched on and chosen? Settings › Microphone tests it."
@@ -1224,11 +1356,16 @@ impl qobject::Conversation {
                 "Es kam kein Ton an. Ist ein Mikrofon angeschlossen, eingeschaltet und gewählt? Einstellungen › Mikrofon testet es."
             };
             self.as_mut().set_error(QString::from(msg));
+            // Hands-free goes on listening when the pause ended the turn; a click on the
+            // button closed the microphone, and it stays closed.
+            if by_pause {
+                self.listen_after_nothing();
+            }
             return;
         }
         // Kept only with the opt-in, for the chosen days (/LF712/).
         if let Some(id) = self.session_id {
-            let turn = self.log.iter().filter(|e| e["who"] == "learner").count();
+            let turn = kaiwa_backend::talk::turns(&self.log);
             if let Err(e) = state().keep_recording(id, turn, &rec.samples, rec.sample_rate, now()) {
                 eprintln!("kaiwa: {e:#}");
             }
@@ -1242,6 +1379,7 @@ impl qobject::Conversation {
                 q.as_mut().set_talk_state(READY);
                 q.as_mut().after_turn(by_pause, &text);
                 if !text.is_empty() {
+                    q.as_mut().rust_mut().empty_turns.reset();
                     if let Some(index) = q.as_mut().submit(&text, false) {
                         q.check_moras(index, text, rec);
                     }
@@ -1253,6 +1391,9 @@ impl qobject::Conversation {
                     "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon."
                 };
                 q.as_mut().set_error(QString::from(msg));
+                if by_pause {
+                    q.listen_after_nothing();
+                }
             });
         });
     }
@@ -1319,6 +1460,11 @@ impl qobject::Conversation {
         if typed {
             // Only spoken turns have a response time.
             self.as_mut().rust_mut().speech_end = None;
+            self.as_mut().rust_mut().empty_turns.reset();
+            // Typed instead of spoken: hands-free stops listening until the reply is through.
+            if *self.hands_free() {
+                self.as_mut().close_mic();
+            }
         }
         self.as_mut().wake();
         let session = self.session.clone()?;
@@ -1332,10 +1478,18 @@ impl qobject::Conversation {
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let input = if typed { Input::Typed } else { Input::Spoken };
-            let result: Result<TurnOutcome, String> = session
-                .lock()
+            // The session is held only to ask and to take the answer, not while the tutor
+            // thinks: the window locks it for help and the listening aids.
+            let asking = session.lock().map(|s| s.ask(&text));
+            let result: Result<TurnOutcome, String> = asking
                 .map_err(|e| e.to_string())
-                .and_then(|mut s| s.turn(&text, input).map_err(|e| e.to_string()));
+                .and_then(|a| a.run().map_err(|e| e.to_string()))
+                .and_then(|answer| {
+                    session
+                        .lock()
+                        .map(|mut s| s.take(&text, input, answer))
+                        .map_err(|e| e.to_string())
+                });
             let _ = thread.queue(move |mut q| {
                 match result {
                     Ok(outcome) => {
@@ -1368,8 +1522,10 @@ impl qobject::Conversation {
                         }
                     }
                     Err(e) => {
+                        // The line stays to be read, but it is no turn of the session.
                         if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index) {
                             turn["pending"] = json!(false);
+                            turn["failed"] = json!(true);
                         }
                         let budget = e == kaiwa_ai::AiError::Budget.to_string();
                         let no_tutor = e == kaiwa_ai::AiError::NoTutor.to_string();
@@ -1402,10 +1558,16 @@ impl qobject::Conversation {
     }
 
     fn help(mut self: Pin<&mut Self>) {
+        // Not while the tutor thinks about a turn already sent: the help would count for it.
+        if *self.busy() {
+            return;
+        }
         let Some(session) = self.session.clone() else {
             return;
         };
         let step = session.lock().expect("session lock").help();
+        // Kept at once: help used after the last turn is there when the talk is continued.
+        self.save();
         if let Some(step) = step {
             self.as_mut().set_help_text(QString::from(&step.text));
             self.as_mut().set_help_level(i32::from(step.level));
@@ -1458,6 +1620,10 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
             if q.log.len() == 1 && !*q.busy() {
                 let opening = q.log[0]["markup"].as_str().unwrap_or_default().to_string();
                 q.speak(&opening);
+            } else {
+                // A talk continued, or the models back after the idle time: hands-free
+                // listens without waiting for a click.
+                q.listen_again();
             }
         }
         Err(e) => {
@@ -1468,9 +1634,9 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
                 (e, false) => format!("The character answers without a voice: {}", speech_text(&e, "en")),
             };
             q.as_mut().set_voice_note(QString::from(&text));
-            if q.log.len() == 1 {
-                q.as_mut().listen_again();
-            }
+            // Without a voice nothing is spoken: hands-free listens right away, in a new
+            // talk, one continued and when the models are back after the idle time.
+            q.as_mut().listen_again();
         }
         }
     });

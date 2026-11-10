@@ -28,7 +28,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, backend, core, lang, store | geprüft | 2 von 3 automatisch grün: `mara_listen_tools`, `mara_own_furigana`, `mara_word_lookup` |
 | /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core, speech | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF112/ | M | Ein Klick auf ein Wort zeigt Lesung, Bedeutung und Wortart und spielt … | app, backend, core, lang, store | geprüft | 1 von 1 automatisch grün: `mara_word_lookup` |
-| /LF113/ | M | Das Transkript der eigenen Äußerung wird angezeigt (was die KI … | app, core | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
+| /LF113/ | M | Das Transkript der eigenen Äußerung wird angezeigt (was die KI … | app, backend, core | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LF114/ | M | Wer feststeckt, bekommt eine Hilfe in drei Stufen: Stichwort → … | core | geprüft | 1 von 1 automatisch grün: `mara_hint_offered` |
 | /LF115/ | M | Es gibt Szenarien mit Rolle, Ort, Ziel und Erfolgsbedingung (z. B. … | core | Code | 0 von 1 automatisch grün: `jonas_follow_up` |
 | /LF116/ | S | Freies Gespräch zu einem gewählten Thema auf dem eigenen Niveau. | app, backend, core | geprüft | 1 von 1 automatisch grün: `theo_free_talk` |
@@ -56,7 +56,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF304/ | M | Wie viel Feedback angezeigt wird, ist einstellbar: *wenig* (nur … | app, core | geprüft | 1 von 1 automatisch grün: `mara_little_feedback` |
 | /LF305/ | M | Recast: Die KI greift Fehler im Gespräch natürlich auf, indem sie die … | core | geprüft | 1 von 1 automatisch grün: `selin_recast` |
 | /LF306/ | M | Nur Fehler mit dem Schweregrad *verhindert Verständnis* unterbrechen … | core | geprüft | 1 von 1 automatisch grün: `mara_little_feedback` |
-| /LF307/ | S | Lernende können einem Vorschlag widersprechen („Das ist korrekt“). | app, core, store | geprüft | 1 von 1 automatisch grün: `theo_dispute` |
+| /LF307/ | S | Lernende können einem Vorschlag widersprechen („Das ist korrekt“). | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `theo_dispute` |
 | /LF310/ | M | Sitzungsbilanz: erreichte Ziele, die drei wichtigsten Verbesserungen … | app, core | geprüft | 1 von 1 automatisch grün: `mara_summary` |
 | /LF320/ | S | Aussprache-Feedback für die Moren-Struktur: Langvokale (おばさん/おばあさん) … | app, speech, store | Code | 0 von 1 automatisch grün: `mara_mora_hint` |
 | /LF321/ | S | Pitch-Akzent: Soll- und Ist-Kontur eines Wortes oder Satzes als Kurve. | – | offen | 0 von 2 automatisch grün: `theo_pitch_detect`, `theo_pitch_no_nitpick` |

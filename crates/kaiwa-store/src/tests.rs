@@ -160,6 +160,26 @@ fn recording_a_session_feeds_model_path_review_and_day() {
             .levels_at_start
             .is_empty()
     );
+    // A talk of two sittings, the second after midnight: all its time, on the second day.
+    let third = Session::new(scenario(), provider(), Amount::Little, "de");
+    let id3 = store.begin_session(&third.snapshot(), at(1, 23)).unwrap();
+    let end = at(2, 0).plus_secs(8 * 60);
+    let r3 = store
+        .record_on(
+            id3,
+            &third,
+            end.plus_secs(-15 * 60),
+            end,
+            end.day(),
+            Some(&c),
+        )
+        .unwrap();
+    assert_eq!(store.day(at(2, 0).day()).unwrap(), r3.day);
+    assert_eq!(
+        store.day(at(1, 23).day()).unwrap(),
+        Default::default(),
+        "nothing on the day before"
+    );
     // The next day the item is due and can be reviewed.
     let due = store.due(at(1, 9), 10).unwrap();
     assert!(due.iter().any(|i| i.text == "コーヒーが好きです"));

@@ -19,6 +19,7 @@ pub mod profiles;
 pub mod recordings;
 pub mod reminder;
 pub mod short;
+pub mod talk;
 pub mod views;
 
 use std::collections::BTreeMap;

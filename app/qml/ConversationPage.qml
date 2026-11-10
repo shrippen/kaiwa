@@ -25,6 +25,8 @@ Kirigami.ScrollablePage {
     function t(de, en) { return lang === "en" ? en : de }
     /** Back to the start page (finished, or to continue later). */
     signal done()
+    // Leaving the talk: the character does not go on speaking over the next page.
+    onDone: conv.interrupt()
     /** Screenshot mode: say the lines of `script` (separated by "|"), save `shot`, quit. */
     property string shot: ""
     property string script: ""
@@ -99,7 +101,7 @@ Kirigami.ScrollablePage {
                 currentIndex: conv.voiceOn ? 0 : 1
                 onActivated: function (i) {
                     conv.voiceOn = i === 0
-                    if (i === 1) conv.interrupt()
+                    if (i === 1) conv.bargeIn()
                 }
             }
             // /LL204/: easier listening in one step, kept in the profile.
@@ -190,7 +192,8 @@ Kirigami.ScrollablePage {
                         size: KanteButton.Size.Small
                         emphasis: KanteButton.Emphasis.Quiet
                         text: page.t("Nochmal", "Again")
-                        enabled: conv.voice.length > 0 && conv.voiceOn
+                        // Not while the tutor thinks: an aid then would count for the turn already sent.
+                        enabled: conv.voice.length > 0 && conv.voiceOn && !conv.busy
                         Accessible.description: page.t("Die Figur sagt den Satz noch einmal.", "The character says the line again.")
                         onClicked: conv.listen(msg.index, 0)
                     }
@@ -198,7 +201,7 @@ Kirigami.ScrollablePage {
                         size: KanteButton.Size.Small
                         emphasis: KanteButton.Emphasis.Quiet
                         text: page.t("Langsamer", "Slower")
-                        enabled: conv.voice.length > 0 && conv.voiceOn
+                        enabled: conv.voice.length > 0 && conv.voiceOn && !conv.busy
                         Accessible.description: page.t("Die Figur sagt den Satz langsamer, mit 0,7-facher Geschwindigkeit.", "The character says the line slower, at 0.7 times the speed.")
                         onClicked: conv.listen(msg.index, 1)
                     }
@@ -206,7 +209,7 @@ Kirigami.ScrollablePage {
                         size: KanteButton.Size.Small
                         emphasis: KanteButton.Emphasis.Quiet
                         text: page.t("Übersetzen", "Translate")
-                        enabled: msg.modelData.translation === undefined
+                        enabled: msg.modelData.translation === undefined && msg.modelData.translating !== true && !conv.busy
                         Accessible.description: page.t("Zeigt den Satz auf Deutsch.", "Shows the line in English.")
                         onClicked: conv.listen(msg.index, 2)
                     }
@@ -271,7 +274,7 @@ Kirigami.ScrollablePage {
                 }
                 // /LF113/: what Kaiwa heard; a misrecognition is no learning mistake.
                 KanteButton {
-                    visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized
+                    visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized && !msg.modelData.failed
                     size: KanteButton.Size.Small
                     emphasis: KanteButton.Emphasis.Quiet
                     text: page.t("Falsch erkannt", "Misheard")
@@ -495,8 +498,10 @@ Kirigami.ScrollablePage {
                 enabled: !conv.finished
                 onTalkStarted: conv.startTalk()
                 onTalkEnded: conv.stopTalk()
-                onInterruptRequested: conv.interrupt()
-                onErrorActionRequested: page.showSpeechHelp = !page.showSpeechHelp
+                onInterruptRequested: conv.bargeIn()
+                // Why speaking does not work; and the button works again, so a microphone
+                // that is back is tried with the next press.
+                onErrorActionRequested: { page.showSpeechHelp = true; conv.retryTalk() }
                 Timer {
                     interval: 80
                     repeat: true
@@ -514,7 +519,7 @@ Kirigami.ScrollablePage {
             }
             KanteButton {
                 text: page.t("Hilfe", "Help")
-                enabled: !conv.finished
+                enabled: !conv.finished && !conv.busy
                 onClicked: conv.help()
             }
             KanteButton {
