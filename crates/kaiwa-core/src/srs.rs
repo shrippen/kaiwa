@@ -7,7 +7,8 @@
 //! stability, difficulty and the next due date, for a retention of 90 %.
 //!
 //! After a break of seven days or more, the learner starts with a refresher of at most ten items,
-//! the ones closest to being forgotten, instead of a pile of due reviews (/LF231/).
+//! the ones closest to being forgotten, instead of a pile of due reviews (/LF231/). Ten are ten
+//! (T-07, owner 10.11.2026): the rest of what is due is spread once over the next days.
 
 use serde::{Deserialize, Serialize};
 
@@ -235,25 +236,39 @@ fn next_difficulty(d: f64, g: f64) -> f64 {
     (W[7] * initial_difficulty(4.0) + (1.0 - W[7]) * d1).clamp(1.0, 10.0)
 }
 
-/// Which items to review now (/LF230/, /LF231/). After a break of `BREAK_DAYS` or more since
-/// `last_practice`, only a refresher: the `REFRESHER_SIZE` items closest to being forgotten.
-/// Otherwise every due item, the most at risk first, up to `limit`.
-pub fn due(items: &[Item], now: Moment, last_practice: Option<Moment>, limit: usize) -> Vec<&Item> {
+/// Which items to review now (/LF230/): every due item, the most at risk first, up to `limit`.
+/// After a break, [`spread_after_break`] has left only the refresher due (/LF231/).
+pub fn due(items: &[Item], now: Moment, limit: usize) -> Vec<&Item> {
     let today = now.day();
-    let refresher = last_practice.is_some_and(|l| today.0 - l.day().0 >= BREAK_DAYS);
     let mut list: Vec<&Item> = items.iter().filter(|i| i.is_due(today)).collect();
     list.sort_by(|a, b| {
         a.retrievability(now)
             .partial_cmp(&b.retrievability(now))
             .unwrap_or(std::cmp::Ordering::Equal)
     });
-    let cap = if refresher {
-        limit.min(REFRESHER_SIZE)
-    } else {
-        limit
-    };
-    list.truncate(cap);
+    list.truncate(limit);
     list
+}
+
+/// The re-entry after a break (/LF231/, T-07): the `REFRESHER_SIZE` due items closest to being
+/// forgotten stay due, the refresher. The rest of what is due moves to the next days,
+/// `REFRESHER_SIZE` a day, the most at risk first, so no answer pulls up another one today and
+/// no pile waits tomorrow. Only the day an item is due changes, not what the learner knows of
+/// it. Returns how many items moved; the caller does this once per break.
+pub fn spread_after_break(items: &mut [Item], now: Moment) -> usize {
+    let today = now.day();
+    let mut order: Vec<(usize, f64)> = items
+        .iter()
+        .enumerate()
+        .filter(|(_, i)| i.is_due(today))
+        .map(|(n, i)| (n, i.retrievability(now)))
+        .collect();
+    order.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+    let rest = order.iter().skip(REFRESHER_SIZE);
+    for (k, (n, _)) in rest.clone().enumerate() {
+        items[*n].due = today.plus(1 + (k / REFRESHER_SIZE) as i64);
+    }
+    rest.count()
 }
 
 /// Whether a break calls for the refresher.
@@ -394,10 +409,38 @@ mod tests {
         let items: Vec<Item> = (0..30)
             .map(|n| Item::new(format!("ことば{n}"), ItemKind::Word, Source::NewWord, at(0)))
             .collect();
-        assert_eq!(due(&items, at(3), Some(at(2)), 50).len(), 30);
-        let back = due(&items, at(20), Some(at(9)), 50);
-        assert_eq!(back.len(), REFRESHER_SIZE);
+        assert_eq!(due(&items, at(3), 50).len(), 30);
+        assert!(!refresher(at(3), Some(at(2))));
         assert!(refresher(at(20), Some(at(9))));
+    }
+
+    #[test]
+    fn after_a_break_ten_stay_due_and_the_rest_is_spread() {
+        let mut items: Vec<Item> = (0..34)
+            .map(|n| Item::new(format!("ことば{n}"), ItemKind::Word, Source::NewWord, at(0)))
+            .collect();
+        // One learnt well and not due: it stays where it is.
+        items[33].due = at(40).day();
+        // One reviewed before: more at risk than the new ones is not the point, it is due.
+        items[0].review(Grade::Good, at(1));
+        let now = at(20);
+        let first: Vec<String> = due(&items, now, REFRESHER_SIZE)
+            .iter()
+            .map(|i| i.text.clone())
+            .collect();
+        assert_eq!(spread_after_break(&mut items, now), 23);
+        // Ten are ten, the same ten that were most at risk; answering one pulls up no other.
+        let today: Vec<String> = due(&items, now, 50)
+            .iter()
+            .map(|i| i.text.clone())
+            .collect();
+        assert_eq!(today, first);
+        // The rest: ten a day from tomorrow, nothing later than it has to be.
+        let on = |d: i64| items.iter().filter(|i| i.due == now.day().plus(d)).count();
+        assert_eq!((on(1), on(2), on(3), on(4)), (10, 10, 3, 0));
+        assert_eq!(items[33].due, at(40).day());
+        // Nothing left to move: a second call changes nothing.
+        assert_eq!(spread_after_break(&mut items, now), 0);
     }
 
     #[test]
