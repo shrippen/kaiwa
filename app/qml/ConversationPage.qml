@@ -501,7 +501,7 @@ Kirigami.ScrollablePage {
                 onInterruptRequested: conv.bargeIn()
                 // Why speaking does not work; and the button works again, so a microphone
                 // that is back is tried with the next press.
-                onErrorActionRequested: { page.showSpeechHelp = !page.showSpeechHelp; conv.retryTalk() }
+                onErrorActionRequested: { page.showSpeechHelp = true; conv.retryTalk() }
                 Timer {
                     interval: 80
                     repeat: true

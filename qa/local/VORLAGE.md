@@ -38,9 +38,9 @@ Wenn sonst etwas auffiel:
 | Erkennung und Übergangsstimme (allgemeiner Eindruck) | | | |
 | `hinnerk_no_cutoff`: kein Zug abgeschnitten, Angebot längerer Pause | | | |
 | Freisprechen über Lautsprecher (3.2a): kein fremder Satz, hört von selbst wieder zu | | | |
-| Mikrofon weg und wieder da (3.2b): die Taste geht wieder | | | |
+| Mikrofon weg und wieder da (3.2b): „Kein Sprechen“, nach einem Klick geht die Taste wieder | | | |
 | Unterbrechen und fortsetzen (3.2c): beide Teile zählen | | | |
-| Nach der Leerlaufzeit (3.2d): „Nochmal“ zählt erst, wenn es spielt | | | |
+| Nach der Leerlaufzeit (3.2d): „Nochmal“ spielt beim zweiten Klick, Freisprechen hört wieder zu | | | |
 | `mara_mora_hint`: höchstens ein Moren-Hinweis, keiner bei richtigem Satz | | | |
 | `hinnerk_german_word_help` (Audio): とうだい langsam gesprochen | | | |
 | `mara_codeswitch` (Audio): プロデューサー hörbar gesprochen | | | |

@@ -228,9 +228,8 @@ pub struct ConversationRust {
     longer_pause: f64,
     /// The pause ended the last recording, and the turns that sounded cut off by it.
     ended_by_pause: bool,
-    /// Hands-free: turns in a row the pause ended that gave nothing to send (noise, a voice
-    /// too far away). After `EMPTY_TRIES` the microphone stays closed until a click.
-    empty_tries: u32,
+    /// Hands-free: turns in a row the pause ended that gave nothing to send.
+    empty_turns: kaiwa_core::turn_end::EmptyTurns,
     cut_offs: kaiwa_core::turn_end::CutOffs,
     /// When the learner stopped speaking, for the response time (/LL010/); handed on to the
     /// reply, which books it at its first sound.
@@ -296,9 +295,6 @@ const ERROR: i32 = 4;
 
 /// Hands-free: listening stops after this long without any speech.
 const HANDS_FREE_WAIT_SECS: f64 = 30.0;
-/// Hands-free listens again by itself after this many turns in a row with nothing to send;
-/// then it stops, so a noisy room does not keep it recording and reporting in a circle.
-const EMPTY_TRIES: u32 = 3;
 /// Shorter recordings (a tap) are not checked for a voice.
 const MIN_CHECKED_SECS: f32 = 0.5;
 
@@ -1172,12 +1168,9 @@ impl qobject::Conversation {
 
     /// Hands-free after a turn that gave nothing to send: listens again, but not for ever.
     fn listen_after_nothing(mut self: Pin<&mut Self>) {
-        self.as_mut().rust_mut().empty_tries += 1;
-        if self.empty_tries < EMPTY_TRIES {
+        // After the third in a row the message stays and the microphone is closed.
+        if self.as_mut().rust_mut().empty_turns.after_empty() {
             self.listen_again();
-        } else {
-            // The message stays; the next click on the button starts afresh.
-            self.as_mut().rust_mut().empty_tries = 0;
         }
     }
 
@@ -1194,7 +1187,14 @@ impl qobject::Conversation {
         }
     }
 
+    /// The talk button: the learner starts a turn.
     fn start_talk(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().empty_turns.reset();
+        self.open_mic();
+    }
+
+    /// Opens the microphone for a turn (the button, or hands-free by itself).
+    fn open_mic(mut self: Pin<&mut Self>) {
         if self.unloaded {
             // The models load again; the next press talks.
             self.as_mut().wake();
@@ -1252,6 +1252,7 @@ impl qobject::Conversation {
             .as_ref()
             .is_some_and(|(e, _)| !e.heard() && e.listened_secs() >= HANDS_FREE_WAIT_SECS);
         if silent {
+            self.as_mut().rust_mut().empty_turns.reset();
             self.as_mut().rust_mut().turn_end = None;
             if let Some(c) = self.as_mut().rust_mut().capture.take() {
                 drop(c.stop());
@@ -1291,7 +1292,7 @@ impl qobject::Conversation {
         let talk =
             ready && self.recognizer.is_some() && self.placement.is_none() && !self.speaking();
         if *self.hands_free() && talk {
-            self.as_mut().start_talk();
+            self.as_mut().open_mic();
         }
     }
 
@@ -1377,7 +1378,7 @@ impl qobject::Conversation {
                 q.as_mut().set_talk_state(READY);
                 q.as_mut().after_turn(by_pause, &text);
                 if !text.is_empty() {
-                    q.as_mut().rust_mut().empty_tries = 0;
+                    q.as_mut().rust_mut().empty_turns.reset();
                     if let Some(index) = q.as_mut().submit(&text, false) {
                         q.check_moras(index, text, rec);
                     }
@@ -1458,6 +1459,7 @@ impl qobject::Conversation {
         if typed {
             // Only spoken turns have a response time.
             self.as_mut().rust_mut().speech_end = None;
+            self.as_mut().rust_mut().empty_turns.reset();
             // Typed instead of spoken: hands-free stops listening until the reply is through.
             if *self.hands_free() {
                 self.as_mut().close_mic();

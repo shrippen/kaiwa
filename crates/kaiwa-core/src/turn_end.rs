@@ -116,6 +116,36 @@ impl CutOffs {
     }
 }
 
+/// Hands-free turns in a row that gave nothing to send (noise the level took for speech, a
+/// voice too far away): the microphone listens again by itself after the first ones, then
+/// stays closed, so a noisy room does not keep it recording and reporting in a circle.
+/// Anything the learner does (a turn that was understood, a typed one, a click on the
+/// button, silence that closed the microphone) starts the count again.
+#[derive(Debug, Clone, Default)]
+pub struct EmptyTurns {
+    count: u32,
+}
+
+impl EmptyTurns {
+    /// After this many in a row the microphone stays closed.
+    pub const LIMIT: u32 = 3;
+
+    /// A turn the pause ended gave nothing to send: whether to listen again.
+    pub fn after_empty(&mut self) -> bool {
+        self.count += 1;
+        if self.count < Self::LIMIT {
+            true
+        } else {
+            self.count = 0;
+            false
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.count = 0;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -231,6 +261,20 @@ mod tests {
         // At the longest pause there is nothing more to offer.
         assert_eq!(c.after_turn(true, "週末は", 5.0), None);
         assert_eq!(c.after_turn(true, "週末は", 5.0), None);
+    }
+
+    #[test]
+    fn hands_free_gives_up_after_three_empty_turns_in_a_row() {
+        let mut e = EmptyTurns::default();
+        assert!(e.after_empty() && e.after_empty());
+        assert!(!e.after_empty(), "the third closes the microphone");
+        // Afresh after that.
+        assert!(e.after_empty());
+        // In a row only: something the learner did in between starts the count again.
+        assert!(e.after_empty());
+        e.reset();
+        assert!(e.after_empty() && e.after_empty());
+        assert!(!e.after_empty());
     }
 
     #[test]
