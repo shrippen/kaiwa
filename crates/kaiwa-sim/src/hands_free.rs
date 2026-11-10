@@ -1,10 +1,11 @@
 //! Hinnerk speaking hands-free, through the app's own end of turn (`kaiwa_core::turn_end`,
-//! /LF101/, /LF102/): a test of what the end of turn does with a slow speaker, over many seeds.
+//! /LF101/, /LF102/): the persona check `hinnerk_no_cutoff`, over many seeds.
 //!
-//! It is not the persona check `hinnerk_no_cutoff`: that one says no turn of his is closed
-//! before its end, and here he is cut off 6 to 8 times before the pause fits him (the app
-//! offers one step longer per two cut-off turns it can tell: 1.2 → 2 → 3 → 5 s). The check
-//! stays with the owner's local test until that is decided (review #65).
+//! Its rule since T-01 (owner, 10.11.2026): thinking and length end no turn; the first turn
+//! the app can tell was cut off brings the offer of a longer pause, two steps on
+//! (1.2 → 3 → 5 s); once the pause fits him, no turn is cut off any more. Until then he is
+//! cut off: the old rule ("no turn is closed before its end") was not what the app does with
+//! a fixed pause, and the check did not run under it (review #65).
 
 use anyhow::Result;
 use serde_json::Value;
@@ -15,11 +16,11 @@ use serde_json::Value;
 /// 1.2 s, over `CUTOFF_SEEDS` seeds of `CUTOFF_TURNS` turns each. Thinking never ends a turn and nor does its length; a pause
 /// longer than the setting cuts it off, and what was heard so far is what the recogniser would
 /// give. A cut counts when the app can tell it (`sounds_unfinished`: the part ends on a
-/// particle or a connecting form; after a bare まいあさ it cannot). The second such turn offers
-/// the next longer pause, which he takes; in the end the pause fits him, and from then on no
-/// turn is cut off. The recogniser and the voice are not played (audio mode); the text of a
-/// cut is the part before the pause.
-fn slow_speaker(p: &Value) -> Result<Option<String>> {
+/// particle or a connecting form; after a bare まいあさ it cannot). Every such turn offers
+/// a pause two steps longer, which he takes; in the end the pause fits him, and from then on
+/// no turn is cut off. The recogniser and the voice are not played (audio mode); the text of
+/// a cut is the part before the pause.
+pub(crate) fn slow_speaker(p: &Value) -> Result<Option<String>> {
     use kaiwa_core::turn_end::{EndOfTurn, PAUSE_STEPS};
     let range = |key: &str, scale: f64| -> Result<(f64, f64)> {
         let r = &p["speech"][key];
@@ -82,8 +83,9 @@ fn slow_speaker(p: &Value) -> Result<Option<String>> {
 const CUTOFF_SEEDS: u64 = 40;
 const CUTOFF_TURNS: usize = 200;
 const CUTOFF_STEP: f64 = 0.08;
-/// The most turns of his the app cuts off before the pause fits him, on any seed.
-const MAX_CUT: u32 = 8;
+/// The most turns of his the app cuts off before the pause fits him, on any seed: two when it
+/// can tell both (1.2 → 3 → 5 s), more when a cut falls after a bare adverb, which it cannot.
+const MAX_CUT: u32 = 4;
 
 /// How a persona speaks (`speech` in its file), in seconds and morae per second.
 struct Speech {
@@ -168,8 +170,10 @@ fn hands_free(speech: &Speech, seed: u64) -> (Option<String>, f64) {
             cut += 1;
         }
         if let Some(next) = cuts.after_turn(true, &text, pause) {
+            // Two steps on, never beyond the longest.
             let step = PAUSE_STEPS.iter().position(|s| *s == pause);
-            if step.and_then(|i| PAUSE_STEPS.get(i + 1)) != Some(&next) {
+            let want = step.map(|i| PAUSE_STEPS[(i + 2).min(PAUSE_STEPS.len() - 1)]);
+            if want != Some(next) {
                 return (
                     Some(format!("offered {next} s at a pause of {pause} s")),
                     longest,
@@ -182,18 +186,12 @@ fn hands_free(speech: &Speech, seed: u64) -> (Option<String>, f64) {
     }
     let why = match offers.first() {
         None => Some("no longer pause offered".to_string()),
-        Some((_, told, _)) if *told != 2 => Some(format!(
-            "the first offer came after {told} cut-off turns, not 2"
+        Some((_, told, _)) if *told != 1 => Some(format!(
+            "the first offer came after {told} cut-off turns the app can tell, not the first"
         )),
-        _ if offers
-            .iter()
-            .zip(1..)
-            .any(|((_, told, _), n)| *told != 2 * n) =>
-        {
-            Some(format!(
-                "an offer not at every second cut-off turn: {offers:?}"
-            ))
-        }
+        _ if offers.iter().zip(1..).any(|((_, told, _), n)| *told != n) => Some(format!(
+            "an offer not at every cut-off turn the app can tell: {offers:?}"
+        )),
         _ if cut > MAX_CUT => Some(format!(
             "{cut} turns cut off before the pause fit him (at most {MAX_CUT} so far)"
         )),
@@ -204,7 +202,7 @@ fn hands_free(speech: &Speech, seed: u64) -> (Option<String>, f64) {
         _ => None,
     };
     if std::env::var_os("KAIWA_SIM_VERBOSE").is_some() {
-        eprintln!("hands_free, seed {seed}: offers {offers:?}, longest {longest:.1} s");
+        eprintln!("hands_free, seed {seed}: {cut} cut, offers {offers:?}, longest {longest:.1} s");
     }
     (why, longest)
 }
