@@ -17,6 +17,10 @@ use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 use sha2::{Digest, Sha256};
+use ureq::unversioned::resolver::DefaultResolver;
+use ureq::unversioned::transport::{
+    Buffers, ConnectionDetails, Connector, DefaultConnector, NextTimeout, Transport, time,
+};
 
 use crate::models::{KANA_CTC_URL, KOKORO, KOKORO_URL, REAZONSPEECH, REAZONSPEECH_URL, models_dir};
 
@@ -365,16 +369,18 @@ fn get<'a>(url: &str, stop: &'a AtomicBool) -> Patient<'a> {
     Patient::new(move || open(&url, STALL), STALL, stop)
 }
 
-/// The body of `url`. Finding the host, connecting and the response's head get `limit` each:
-/// without, a server that never answers held its thread for good after `Patient` gave up.
-/// The body has no limit as a whole (a large model on a slow line takes its time).
+/// The body of `url`. Finding the host, connecting, the response's head and every read of the
+/// body get `limit` each: without, a server that never answers, or goes silent mid-body, held
+/// its thread for good after `Patient` gave up (U-02, owner 11.11.2026). The body has no limit
+/// as a whole (a large model on a slow line takes its time).
 fn open(url: &str, limit: Duration) -> Result<impl Read + use<>, DownloadError> {
-    let agent: ureq::Agent = ureq::Agent::config_builder()
+    let config = ureq::Agent::config_builder()
         .timeout_resolve(Some(limit))
         .timeout_connect(Some(limit))
         .timeout_recv_response(Some(limit))
-        .build()
-        .into();
+        .build();
+    let connector = DefaultConnector::new().chain(Idle(limit));
+    let agent = ureq::Agent::with_parts(config, connector, DefaultResolver::default());
     let response = agent
         .get(url)
         .call()
@@ -384,6 +390,69 @@ fn open(url: &str, limit: Duration) -> Result<impl Read + use<>, DownloadError> 
         .into_with_config()
         .limit(u64::MAX)
         .reader())
+}
+
+/// Puts a limit on every wait of ureq's connections: ureq limits only the whole body. The
+/// TCP connection under TLS takes the limit as its socket's read timeout.
+#[derive(Debug)]
+struct Idle(Duration);
+
+impl Connector<Box<dyn Transport>> for Idle {
+    type Out = IdleTransport;
+
+    fn connect(
+        &self,
+        _: &ConnectionDetails,
+        chained: Option<Box<dyn Transport>>,
+    ) -> Result<Option<Self::Out>, ureq::Error> {
+        Ok(chained.map(|inner| IdleTransport {
+            inner,
+            limit: self.0,
+        }))
+    }
+}
+
+#[derive(Debug)]
+struct IdleTransport {
+    inner: Box<dyn Transport>,
+    limit: Duration,
+}
+
+impl IdleTransport {
+    /// The shorter of ureq's next timeout and the limit.
+    fn clamp(&self, next: NextTimeout) -> NextTimeout {
+        if *next.after <= self.limit {
+            return next;
+        }
+        NextTimeout {
+            after: time::Duration::Exact(self.limit),
+            reason: next.reason,
+        }
+    }
+}
+
+impl Transport for IdleTransport {
+    fn buffers(&mut self) -> &mut dyn Buffers {
+        self.inner.buffers()
+    }
+
+    fn transmit_output(&mut self, amount: usize, timeout: NextTimeout) -> Result<(), ureq::Error> {
+        let timeout = self.clamp(timeout);
+        self.inner.transmit_output(amount, timeout)
+    }
+
+    fn await_input(&mut self, timeout: NextTimeout) -> Result<bool, ureq::Error> {
+        let timeout = self.clamp(timeout);
+        self.inner.await_input(timeout)
+    }
+
+    fn is_open(&mut self) -> bool {
+        self.inner.is_open()
+    }
+
+    fn is_tls(&self) -> bool {
+        self.inner.is_tls()
+    }
 }
 
 fn hex(hash: Sha256) -> String {
@@ -556,6 +625,28 @@ mod tests {
         // Accepted, never answered: the request must give up by itself.
         let _held = server.accept().unwrap();
         assert_eq!(rx.recv_timeout(Duration::from_secs(5)), Ok(true));
+    }
+
+    #[test]
+    fn a_server_silent_mid_body_lets_its_thread_go() {
+        use std::io::Write as _;
+        let server = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}/model.onnx", server.local_addr().unwrap());
+        let (tx, rx) = mpsc::channel();
+        std::thread::spawn(move || {
+            let mut body = Vec::new();
+            let r = open(&url, Duration::from_millis(300))
+                .and_then(|mut b| b.read_to_end(&mut body).map_err(DownloadError::Io));
+            let _ = tx.send((r.is_err(), body.len()));
+        });
+
+        // A head promising 1000 bytes, 10 of them, then silence with the connection open.
+        let (mut held, _) = server.accept().unwrap();
+        let mut request = [0; 1024];
+        let _ = held.read(&mut request).unwrap();
+        held.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\n0123456789")
+            .unwrap();
+        assert_eq!(rx.recv_timeout(Duration::from_secs(5)), Ok((true, 10)));
     }
 
     #[test]
