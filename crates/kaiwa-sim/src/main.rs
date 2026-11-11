@@ -3,8 +3,9 @@
 //! `validate` checks the personas; `run` plays their journeys in text mode against the engine
 //! with recorded tutor answers, and the long journeys over simulated days against the learning
 //! model (`days`); `trace` writes the traceability table. Audio and GUI modes follow with the
-//! app.
+//! app; `run --app` also checks the built app (`app`).
 
+mod app;
 mod days;
 mod engine;
 mod hands_free;
@@ -46,6 +47,9 @@ enum Command {
         /// A real tutor from KAIWA_PROVIDER instead of the recorded answers (local test).
         #[arg(long)]
         live: bool,
+        /// The built app (release, feature `demo`): also run the checks that need it.
+        #[arg(long)]
+        app: Option<PathBuf>,
     },
     /// Play one long journey over simulated days and print it session by session.
     Days {
@@ -171,7 +175,14 @@ fn main() -> ExitCode {
             persona,
             report,
             live,
-        } => match run_all(&cli.root, persona.as_deref(), report.as_deref(), live) {
+            app,
+        } => match run_all(
+            &cli.root,
+            persona.as_deref(),
+            report.as_deref(),
+            live,
+            app.as_deref(),
+        ) {
             Ok(true) => ExitCode::SUCCESS,
             Ok(false) => ExitCode::FAILURE,
             Err(error) => {
@@ -187,6 +198,7 @@ fn run_all(
     persona: Option<&str>,
     report: Option<&std::path::Path>,
     live: bool,
+    app: Option<&std::path::Path>,
 ) -> anyhow::Result<bool> {
     let ids: Vec<String> = match persona {
         Some(p) => vec![p.to_string()],
@@ -199,7 +211,16 @@ fn run_all(
     for id in ids {
         all.extend(run::run_persona(root, &id, live)?);
     }
-    let (mut pass, mut fail, mut live, mut open) = (0, 0, 0, 0);
+    if let Some(bin) = app {
+        for j in &mut all {
+            for (cid, outcome) in j.checks.iter_mut() {
+                if *outcome == run::Outcome::AppOnly {
+                    *outcome = app::check(cid, root, bin);
+                }
+            }
+        }
+    }
+    let (mut pass, mut fail, mut live, mut app_only, mut open) = (0, 0, 0, 0, 0);
     for j in &all {
         for (cid, outcome) in &j.checks {
             match outcome {
@@ -212,11 +233,15 @@ fn run_all(
                     println!("FAIL  {} / {}: {}", j.journey, cid, why);
                 }
                 run::Outcome::LiveOnly => live += 1,
+                run::Outcome::AppOnly => app_only += 1,
                 run::Outcome::NotAutomated => open += 1,
             }
         }
     }
-    println!("{pass} passed, {fail} failed, {live} live only (--live), {open} not automated yet");
+    println!(
+        "{pass} passed, {fail} failed, {live} live only (--live), {app_only} app only (--app), \
+         {open} not automated yet"
+    );
     if let Some(path) = report {
         std::fs::write(path, serde_json::to_string_pretty(&all)?)?;
     }

@@ -237,7 +237,7 @@ Mengengerüst: bis 10 000 Sitzungen und 20 000 Lernobjekte pro Profil ohne spür
 |---|---|---|
 | /LL010/ | M | **Antwortlatenz** (Sprechende → erster Ton der KI): p50 ≤ 1,5 s und p95 ≤ 3 s mit Cloud-Anbietern; p50 ≤ 3 s lokal auf Referenzhardware (Framework Laptop 13, AMD Ryzen 7 7840U, 32 GB, ohne dGPU). Bis zur Antwort zeigt das System sichtbar „hört zu / denkt nach“. |
 | /LL011/ | M | Das Plasmoid öffnet in ≤ 300 ms (Dienst läuft) und ist ≤ 2 s nach Start bereit zum Sprechen. |
-| /LL012/ | S | Speicher im Leerlauf ≤ 150 MB (ohne geladene Modelle). Modelle werden nach Inaktivität entladen (einstellbar). |
+| /LL012/ | S | Speicher im Leerlauf ≤ 150 MB PSS (ohne geladene Modelle; PSS teilt gemeinsam genutzte Bibliotheken auf die Programme auf, die sie nutzen). Modelle werden nach Inaktivität entladen (einstellbar). |
 | /LL020/ | M | Profil-Ansicht, Lernpfad und Statistik laden in ≤ 500 ms bei der Datenmenge aus Kap. 5. |
 
 ### 6.2 Qualität der Sprachverarbeitung

@@ -197,6 +197,13 @@
           "assert": "Nach dem Modell-Download null ausgehende Verbindungen (DNS eingeschlossen) von App, Plasmoid und kaiwad."
         },
         {
+          "id": "lena_app_egress",
+          "requirements": [
+            "/LL401/"
+          ],
+          "assert": "Die App selbst baut in einem Gespräch keine Verbindung nach draußen auf und fragt keinen Namen an (DNS), mit aufgezeichnetem Tutor und ohne Modelle (strace). Der Tutor, die Modelle, Plasmoid und kaiwad bleiben bei lena_zero_egress."
+        },
+        {
           "id": "lena_transparency",
           "requirements": [
             "/LF711/"
@@ -245,7 +252,14 @@
           "requirements": [
             "/LL012/"
           ],
-          "assert": "10 min nach der Sitzung sind die Modelle entladen (Voreinstellung) und der Speicher im Leerlauf ≤ 150 MB."
+          "assert": "Im Leerlauf ohne geladene Modelle (frisches Profil, Fenster offen) braucht die App ≤ 150 MB PSS."
+        },
+        {
+          "id": "lena_models_unload",
+          "requirements": [
+            "/LL012/"
+          ],
+          "assert": "10 min nach der Sitzung sind die Modelle entladen (Voreinstellung) und der Speicher wieder ≤ 150 MB PSS."
         },
         {
           "id": "lena_stats_fast",

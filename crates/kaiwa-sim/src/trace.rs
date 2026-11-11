@@ -145,8 +145,9 @@ pub fn table(root: &Path) -> Result<String> {
                         .entry(req.as_str().unwrap_or_default().to_string())
                         .or_default();
                     entry.ids.push(cid.to_string());
+                    // An app check runs in the CI's Qt job (`--app`); no merge without it.
                     match outcomes.get(cid) {
-                        Some(Outcome::Pass) => entry.pass += 1,
+                        Some(Outcome::Pass | Outcome::AppOnly) => entry.pass += 1,
                         Some(Outcome::Fail(_)) => entry.fail += 1,
                         _ => {}
                     }
@@ -222,7 +223,9 @@ pub fn table(root: &Path) -> Result<String> {
          weder noch; *Vorgabe* = Plattform- oder Architekturvorgabe (/LL5xx/) ohne Prüfregel, \
          geprüft über CI und Pakete; *rot* = eine automatische Prüfregel scheitert. *Geprüft* heißt nicht, dass \
          die Anforderung ganz erfüllt ist: Prüfregeln für Audio, GUI und den echten Tutor laufen \
-         noch nicht automatisch.\n\
+         noch nicht automatisch. Die Prüfregeln an der gebauten App (`hinnerk_narrow`, \
+         `hinnerk_font`, `lena_idle_memory`, `lena_app_egress`) laufen im Qt-Job der CI \
+         (`kaiwa-sim run --app`) und zählen darum als grün.\n\
          - Was bewusst ruht (Plasmoid auf dem Zweig `later/plasmoid`), steht in \
          [`STAND.md`](STAND.md).\n\
          \n\

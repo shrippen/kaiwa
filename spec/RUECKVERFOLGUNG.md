@@ -3,13 +3,13 @@
 Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft, dass die Datei aktuell ist. Nicht von Hand bearbeiten.
 
 - **Code:** Crates (`core` = `kaiwa-core` …) und `app`, deren Quelltext die ID nennt.
-- **Stand:** *geprüft* = mindestens eine Prüfregel läuft automatisch und ist grün; *Code* = der Code nennt die ID, aber keine Prüfregel läuft automatisch; *offen* = weder noch; *Vorgabe* = Plattform- oder Architekturvorgabe (/LL5xx/) ohne Prüfregel, geprüft über CI und Pakete; *rot* = eine automatische Prüfregel scheitert. *Geprüft* heißt nicht, dass die Anforderung ganz erfüllt ist: Prüfregeln für Audio, GUI und den echten Tutor laufen noch nicht automatisch.
+- **Stand:** *geprüft* = mindestens eine Prüfregel läuft automatisch und ist grün; *Code* = der Code nennt die ID, aber keine Prüfregel läuft automatisch; *offen* = weder noch; *Vorgabe* = Plattform- oder Architekturvorgabe (/LL5xx/) ohne Prüfregel, geprüft über CI und Pakete; *rot* = eine automatische Prüfregel scheitert. *Geprüft* heißt nicht, dass die Anforderung ganz erfüllt ist: Prüfregeln für Audio, GUI und den echten Tutor laufen noch nicht automatisch. Die Prüfregeln an der gebauten App (`hinnerk_narrow`, `hinnerk_font`, `lena_idle_memory`, `lena_app_egress`) laufen im Qt-Job der CI (`kaiwa-sim run --app`) und zählen darum als grün.
 - Was bewusst ruht (Plasmoid auf dem Zweig `later/plasmoid`), steht in [`STAND.md`](STAND.md).
 
 | Priorität | geprüft | Code | offen | Vorgabe | rot |
 |---|---|---|---|---|---|
-| Muss | 51 | 21 | 5 | 3 | 0 |
-| Soll | 12 | 7 | 5 | 0 | 0 |
+| Muss | 52 | 20 | 5 | 3 | 0 |
+| Soll | 13 | 6 | 5 | 0 | 0 |
 | Kann | 0 | 0 | 2 | 1 | 0 |
 
 | ID | Prio | Anforderung | Code | Stand | Prüfregeln |
@@ -91,7 +91,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. | app, backend, store | geprüft | 1 von 1 automatisch grün: `hinnerk_own_profile` |
 | /LL010/ | M | Antwortlatenz (Sprechende → erster Ton der KI): p50 ≤ 1,5 s und p95 ≤ … | app, backend | geprüft | 1 von 3 automatisch grün: `lena_responsive`, `lena_suggest_smaller`, `theo_latency` |
 | /LL011/ | M | Das Plasmoid öffnet in ≤ 300 ms (Dienst läuft) und ist ≤ 2 s nach … | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_fast` |
-| /LL012/ | S | Speicher im Leerlauf ≤ 150 MB (ohne geladene Modelle). | app, lang, store | Code | 0 von 1 automatisch grün: `lena_idle_memory` |
+| /LL012/ | S | Speicher im Leerlauf ≤ 150 MB PSS (ohne geladene Modelle; PSS teilt … | app, lang, store | geprüft | 1 von 2 automatisch grün: `lena_idle_memory`, `lena_models_unload` |
 | /LL020/ | M | Profil-Ansicht, Lernpfad und Statistik laden in ≤ 500 ms bei der … | store | geprüft | 1 von 1 automatisch grün: `lena_stats_fast` |
 | /LL100/ | M | Die STT-Zeichenfehlerrate (CER) für Lernendensprache auf dem … | speech | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LL110/ | M | Fehlalarmrate der Verbesserungsvorschläge (Vorschlag bei korrekter … | core | Code | 0 von 1 automatisch grün: `theo_fp` |
@@ -99,15 +99,15 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL112/ | M | Erklärungen stehen immer in der UI-Sprache und sind im Niveau der … | ai, app, backend | geprüft | 2 von 4 automatisch grün: `emi_explain_examples`, `hinnerk_plain_words`, `mara_explain_de`, `theo_ui_en` |
 | /LL200/ | M | Vollständig per Tastatur bedienbar, mit sichtbarem Fokus (Kante … | – | geprüft | 1 von 1 automatisch grün: `theo_keyboard` |
 | /LL201/ | M | Screenreader: Alle Bedienelemente haben Accessible-Namen und -Rollen … | – | geprüft | 1 von 1 automatisch grün: `hinnerk_a11y_names` |
-| /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App … | app, store | geprüft | 1 von 2 automatisch grün: `hinnerk_font`, `hinnerk_targets` |
+| /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App … | app, store | geprüft | 2 von 2 automatisch grün: `hinnerk_font`, `hinnerk_targets` |
 | /LL203/ | M | Kontraste erreichen WCAG AA in System, Kante und Kante Light. | – | geprüft | 1 von 1 automatisch grün: `hinnerk_targets` |
 | /LL204/ | S | Untertitel für alles Gesprochene. | app, speech, store | geprüft | 1 von 1 automatisch grün: `hinnerk_tts_slow` |
 | /LL300/ | M | Keine Dark Patterns: keine künstliche Verknappung, keine Schuld- oder … | backend, core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
 | /LL301/ | M | Die GUI wird aus Kante erzeugt (siehe Kap. 8). | app | Code | 0 von 1 automatisch grün: `selin_win_style` |
 | /LL302/ | M | Die KI-Figuren bleiben im Lernkontext. | core | Code | 0 von 1 automatisch grün: `jonas_inappropriate` |
-| /LL303/ | M | Das Fenster ist mindestens 533 px breit, logische Pixel (800 auf … | app, backend | Code | 0 von 1 automatisch grün: `hinnerk_narrow` |
+| /LL303/ | M | Das Fenster ist mindestens 533 px breit, logische Pixel (800 auf … | app, backend | geprüft | 1 von 1 automatisch grün: `hinnerk_narrow` |
 | /LL400/ | M | Lokal zuerst: Alle Muss-Funktionen sind mit lokalen Bausteinen … | ai | Code | 0 von 1 automatisch grün: `lena_zero_egress` |
-| /LL401/ | M | Im Nur-lokal-Modus gibt es keine ausgehenden Verbindungen außer zu … | app, speech | geprüft | 1 von 2 automatisch grün: `lena_download_announced`, `lena_zero_egress` |
+| /LL401/ | M | Im Nur-lokal-Modus gibt es keine ausgehenden Verbindungen außer zu … | app, speech | geprüft | 2 von 3 automatisch grün: `lena_app_egress`, `lena_download_announced`, `lena_zero_egress` |
 | /LL402/ | M | DSGVO-Konformität: Zweckbindung, Löschung, Export und Auskunft über … | store | geprüft | 1 von 1 automatisch grün: `lena_delete` |
 | /LL500/ | M | Hauptplattform: KDE Plasma 6 (aktuelle und vorige Minor-Version) … | – | Vorgabe | – |
 | /LL501/ | S | Windows 10/11 und macOS (aktuelle und vorige Version): App ohne … | – | offen | 0 von 1 automatisch grün: `selin_win_style` |

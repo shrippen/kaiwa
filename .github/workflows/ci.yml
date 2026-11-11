@@ -72,7 +72,7 @@ jobs:
       - name: Runs in the Arch container
         run: grep -q '^ID=arch' /etc/os-release
       - name: Tools
-        run: pacman -Syu --noconfirm --needed git nodejs base-devel rust qt6-base qt6-declarative qt6-shadertools qt6-svg kirigami alsa-lib pkgconf
+        run: pacman -Syu --noconfirm --needed git nodejs base-devel rust qt6-base qt6-declarative qt6-shadertools qt6-svg kirigami alsa-lib pkgconf strace
       - uses: actions/checkout@v4
       - name: Kante (public mirror)
         run: git clone --depth 1 https://github.com/shrippen/Kante.git ../Kante
@@ -118,6 +118,12 @@ jobs:
           timeout 120 ./target/debug/kaiwa --shot /tmp/place.png --view place --kind 1 --say "$L|$L|$L|$L|read:21" 2>&1 | tee -a /tmp/app.log
           test -s /tmp/place.png
           ! grep -E 'qrc:.*(Error|Unable|is not|TypeError|ReferenceError)' /tmp/app.log
+      # U-03 (owner, 11.11.2026): hinnerk_narrow, hinnerk_font, lena_idle_memory (PSS, U-01) and
+      # lena_app_egress (strace) against a release build with the demo.
+      - name: App checks (533 px, 160 %, idle memory, no egress)
+        run: |
+          cargo build --locked --release -p kaiwa-app --features demo
+          cargo run --locked -q -p kaiwa-sim -- run --app target/release/kaiwa
       - name: Packaging files (/LL500/)
         run: |
           pacman -S --noconfirm --needed desktop-file-utils appstream
