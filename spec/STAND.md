@@ -64,9 +64,9 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | Nr. | Entscheidung | Stand |
 |---|---|---|
 | U-01 | /LL012/: 150 MB gelten als PSS | umgesetzt: Lastenheft, `lena_idle_memory` misst PSS neben einem zweiten Kirigami-Fenster (wie auf dem Desktop), 122 MB |
-| U-02 | Download: eigene Verbindung mit Zeitlimit je Lesevorgang | offen |
+| U-02 | Download: eigene Verbindung mit Zeitlimit je Lesevorgang | umgesetzt (#96): `download::Idle` begrenzt jede Leseoperation auf 30 s |
 | U-03 | App-Prüfungen in der CI | umgesetzt: `kaiwa-sim run --app` im Qt-Job; `hinnerk_narrow`, `hinnerk_font`, `lena_idle_memory`, `lena_app_egress` (strace, aufgezeichneter Tutor). Lokal bleiben `lena_zero_egress` (lokaler Tutor, Modelle, kaiwad), `lena_models_unload`, der Blick auf die Bilder, Überlappungen und Furigana |
-| U-04 | /LF215/: Überspringen ohne Prüfgespräch, Lastenheft anpassen | offen |
+| U-04 | /LF215/: Überspringen ohne Prüfgespräch, Lastenheft anpassen | umgesetzt (#97) |
 
 ## Entscheidungen aus Fragenpaket 12 (2026-11-10)
 
