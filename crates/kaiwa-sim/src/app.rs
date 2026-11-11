@@ -6,9 +6,12 @@
 //!   hinnerk_narrow     every view at the narrowest window: no text cut off (/LL303/)
 //!   hinnerk_font       every view at 160 % on a 1366 px laptop: no text cut off (/LL202/)
 //!   lena_idle_memory   a fresh profile, idle: PSS at most 150 MB (/LL012/, U-01)
-//!   lena_zero_egress   a conversation under strace: no connection off the machine (/LL400/)
+//!   lena_app_egress    a conversation under strace: no connection off the machine (/LL401/)
 //!
-//! Overlaps, furigana and a look at the pictures stay in the local test (spec/LOKALER-TEST.md).
+//! The recorded tutor and no models: what the local tutor, the models and kaiwad send, and
+//! whether the models are unloaded, stays in the local test (lena_zero_egress,
+//! lena_models_unload), as do overlaps, furigana and a look at the pictures
+//! (spec/LOKALER-TEST.md).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -24,7 +27,7 @@ pub const APP: &[&str] = &[
     "hinnerk_narrow",
     "hinnerk_font",
     "lena_idle_memory",
-    "lena_zero_egress",
+    "lena_app_egress",
 ];
 
 /// /LL012/, measured as PSS (U-01): the app's share of the memory it maps, shared Qt libraries
@@ -67,7 +70,7 @@ pub fn check(id: &str, root: &Path, bin: &Path) -> Outcome {
             "hinnerk_narrow" => narrow(root, bin, &tmp),
             "hinnerk_font" => font(bin, &tmp),
             "lena_idle_memory" => memory(bin, &tmp),
-            "lena_zero_egress" => egress(bin, &tmp),
+            "lena_app_egress" => egress(bin, &tmp),
             _ => Ok(Some(format!("no app check {id}"))),
         });
     let _ = fs::remove_dir_all(&tmp);
@@ -203,7 +206,7 @@ fn qt_bin(name: &str) -> Result<PathBuf> {
     Ok(PathBuf::from(String::from_utf8(out.stdout)?.trim()).join(name))
 }
 
-/// lena_zero_egress: a conversation with the recorded tutor under strace; every connection
+/// lena_app_egress: a conversation with the recorded tutor under strace; every connection
 /// and every datagram with an address must stay on the machine.
 fn egress(bin: &Path, tmp: &Path) -> Result<Option<String>> {
     let trace = tmp.join("egress.strace");

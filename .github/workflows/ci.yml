@@ -119,7 +119,7 @@ jobs:
           test -s /tmp/place.png
           ! grep -E 'qrc:.*(Error|Unable|is not|TypeError|ReferenceError)' /tmp/app.log
       # U-03 (owner, 11.11.2026): hinnerk_narrow, hinnerk_font, lena_idle_memory (PSS, U-01) and
-      # lena_zero_egress (strace) against a release build with the demo.
+      # lena_app_egress (strace) against a release build with the demo.
       - name: App checks (533 px, 160 %, idle memory, no egress)
         run: |
           cargo build --locked --release -p kaiwa-app --features demo

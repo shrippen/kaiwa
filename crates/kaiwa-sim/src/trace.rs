@@ -224,7 +224,7 @@ pub fn table(root: &Path) -> Result<String> {
          geprüft über CI und Pakete; *rot* = eine automatische Prüfregel scheitert. *Geprüft* heißt nicht, dass \
          die Anforderung ganz erfüllt ist: Prüfregeln für Audio, GUI und den echten Tutor laufen \
          noch nicht automatisch. Die Prüfregeln an der gebauten App (`hinnerk_narrow`, \
-         `hinnerk_font`, `lena_idle_memory`, `lena_zero_egress`) laufen im Qt-Job der CI \
+         `hinnerk_font`, `lena_idle_memory`, `lena_app_egress`) laufen im Qt-Job der CI \
          (`kaiwa-sim run --app`) und zählen darum als grün.\n\
          - Was bewusst ruht (Plasmoid auf dem Zweig `later/plasmoid`), steht in \
          [`STAND.md`](STAND.md).\n\
