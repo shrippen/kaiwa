@@ -99,7 +99,7 @@ ReazonSpeech, Kokoro und kaiwa-kana-ctc in den Einstellungen unter „Modelle“
 
 ## 4. Rechner und Oberfläche (Framework 13)
 
-1. **Speicher im Leerlauf** (`lena_idle_memory`): Ein Gespräch mit Sprechen führen, dann 10 Minuten nichts tun und `ps -o rss= -C kaiwa` ausgeben (in KB). Die Modelle müssen entladen sein, Ziel ≤ 150 MB.
+1. **Speicher im Leerlauf** (`lena_idle_memory`): Ein Gespräch mit Sprechen führen, dann 10 Minuten nichts tun und `grep Pss: /proc/$(pidof kaiwa)/smaps_rollup` ausgeben (in kB). Die Modelle müssen entladen sein, Ziel ≤ 150 MB PSS (U-01). Ohne Gespräch und Modelle prüft die CI dasselbe (`kaiwa-sim run --app`).
 2. **Flüssig** (`lena_responsive`): `QSG_RENDER_TIMING=1 cargo run -p kaiwa-app 2> qa/local/<datum>/frames.log` und ein Gespräch mit Sprechen führen. Die Bildzeiten stehen im Log, Ziel < 50 ms. „Denkt nach“ sichtbar, Abbrechen geht jederzeit?
 3. **Nichts geht nach draußen** (`lena_zero_egress`): Tutor lokal (Ollama in den Einstellungen, keine `KAIWA_*`-Variablen gesetzt), Modelle geladen, dann
    `strace -f -e trace=connect,sendto,sendmsg -o qa/local/<datum>/egress.log ./target/debug/kaiwa` und ein Gespräch führen. Erlaubt sind nur Verbindungen zu `127.0.0.1`/`::1` (Ollama) und lokale Sockets (D-Bus, PipeWire). Jede andere Adresse und jede DNS-Anfrage (Port 53) ist ein Befund.

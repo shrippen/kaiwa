@@ -97,6 +97,8 @@ pub enum Outcome {
     Fail(String),
     /// Judges the tutor: runs only with `--live` ([`LIVE`]).
     LiveOnly,
+    /// Needs the built app: runs only with `--app` ([`crate::app::APP`]).
+    AppOnly,
     NotAutomated,
 }
 
@@ -709,6 +711,7 @@ pub fn run_persona_with(
                     .or_else(|| crate::engine::check(cid, root, &persona))
                     .or_else(|| crate::profile::check(cid, root))
                     .or_else(|| crate::ui::check(cid, root))
+                    .or_else(|| crate::app::pending(cid))
                     .unwrap_or(Outcome::NotAutomated);
                 checks.insert(cid.to_string(), outcome);
             }
@@ -771,6 +774,7 @@ pub fn run_persona_with(
                 .or_else(|| crate::engine::check(cid, root, &persona))
                 .or_else(|| crate::profile::check(cid, root))
                 .or_else(|| crate::ui::check(cid, root))
+                .or_else(|| crate::app::pending(cid))
                 .unwrap_or(Outcome::NotAutomated);
             checks.insert(cid.to_string(), outcome);
         }

@@ -55,7 +55,18 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 ## Nacht zum 2026-11-11
 
-[Nachtbericht mit Fragenpaket 13](https://claude.ai/artifact/Y3ak5E9vXKRKJSfY5i6bfo) (U-01 bis U-04, offen). Gemergt: #90 (Mindestbreite 533 px, S-01 bis S-07; Kante 1.78 aus Kante #139; die Wochenkarte endet am Tag des Backends, `heatEnd`), #91 (eine gescheiterte Ansicht lässt der Seite ihre Vorgaben, `views::text`), #92 (Zeitlimit für Anfrage und Antwortkopf des Modell-Downloads), #93 (Pausenmodus über das Backend, `jonas_sick_pause`). Gemessen: Kaiwa im Leerlauf 178 MB RSS, 120 MB PSS (Release, offscreen, frisches Profil); /LL012/ nennt 150 MB, ob RSS oder PSS, entscheidet U-01.
+[Nachtbericht mit Fragenpaket 13](https://claude.ai/artifact/Y3ak5E9vXKRKJSfY5i6bfo) (U-01 bis U-04, beantwortet am 2026-11-11, siehe unten). Gemergt: #90 (Mindestbreite 533 px, S-01 bis S-07; Kante 1.78 aus Kante #139; die Wochenkarte endet am Tag des Backends, `heatEnd`), #91 (eine gescheiterte Ansicht lässt der Seite ihre Vorgaben, `views::text`), #92 (Zeitlimit für Anfrage und Antwortkopf des Modell-Downloads), #93 (Pausenmodus über das Backend, `jonas_sick_pause`). Gemessen: Kaiwa im Leerlauf 178 MB RSS, 120 MB PSS (Release, offscreen, frisches Profil); /LL012/ nennt 150 MB, ob RSS oder PSS, entscheidet U-01.
+
+## Entscheidungen aus Fragenpaket 13 (2026-11-11)
+
+[Nachtbericht mit Fragenpaket 13](https://claude.ai/artifact/Y3ak5E9vXKRKJSfY5i6bfo), Antworten des Eigentümers am 2026-11-11.
+
+| Nr. | Entscheidung | Stand |
+|---|---|---|
+| U-01 | /LL012/: 150 MB gelten als PSS | umgesetzt: Lastenheft, `lena_idle_memory` misst PSS neben einem zweiten Kirigami-Fenster (wie auf dem Desktop), 122 MB |
+| U-02 | Download: eigene Verbindung mit Zeitlimit je Lesevorgang | offen |
+| U-03 | App-Prüfungen in der CI | umgesetzt: `kaiwa-sim run --app` im Qt-Job; `hinnerk_narrow`, `hinnerk_font`, `lena_idle_memory`, `lena_zero_egress` (strace). Blick auf die Bilder, Überlappungen und Furigana bleiben im lokalen Test |
+| U-04 | /LF215/: Überspringen ohne Prüfgespräch, Lastenheft anpassen | offen |
 
 ## Entscheidungen aus Fragenpaket 12 (2026-11-10)
 
