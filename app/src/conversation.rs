@@ -76,7 +76,7 @@ pub mod qobject {
         /// Take the skip the placement result offers, up to the unit `last` (/LF215/).
         #[qinvokable]
         #[cxx_name = "skipPlacement"]
-        fn skip_placement(self: Pin<&mut Conversation>, last: &QString);
+        fn skip_placement(self: Pin<&mut Conversation>, last: &QString) -> bool;
 
         /// Continue the session that was interrupted (/LF121/).
         #[qinvokable]
@@ -550,9 +550,12 @@ impl qobject::Conversation {
         self.as_mut().set_placing(false);
     }
 
-    fn skip_placement(self: Pin<&mut Self>, last: &QString) {
+    fn skip_placement(self: Pin<&mut Self>, last: &QString) -> bool {
         // Only the offer that ends at `last`, once (a second click changes nothing).
-        let _ = views::take_placement_skip(&state(), &last.to_string());
+        views::take_placement_skip(&state(), &last.to_string()).unwrap_or_else(|e| {
+            eprintln!("kaiwa: {e}");
+            false
+        })
     }
 
     /// Shows a session (new or restored) and loads speech once.
