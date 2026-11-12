@@ -12,11 +12,15 @@
 //! - register from the register mistakes at the polite stages;
 //! - reading kana and kanji are not part of a conversation: the learner says it (two choices).
 
+use std::sync::Arc;
+
+use kaiwa_ai::ChatProvider;
 use serde::{Deserialize, Serialize};
 
 use crate::difficulty::{Difficulty, Knob};
 use crate::learner::{LearnerModel, Skill, level_index};
-use crate::session::{Session, Stats};
+use crate::session::{Coaching, Session, Stats};
+use crate::{Amount, Scenario};
 
 /// The stages: scenario and level of the material (learner model scale, 0–8).
 pub const STAGES: [(&str, f64); 4] = [
@@ -52,6 +56,20 @@ pub fn difficulty_at(level: f64) -> Difficulty {
     // Help only on request: the placement measures what the learner can do alone.
     d.set(Knob::Help, Knob::Help.steps() - 1);
     d
+}
+
+/// The session of stage `i`: its scenario at the stage's level, without stepping in by
+/// itself (help only on request, the level stays), because the stage is judged at that level.
+pub fn stage_session(
+    scenario: Scenario,
+    provider: Arc<dyn ChatProvider>,
+    amount: Amount,
+    lang: &str,
+    i: usize,
+) -> Session {
+    Session::new(scenario, provider, amount, lang)
+        .with_difficulty(difficulty_at(STAGES[i].1))
+        .with_coaching(Coaching::Off)
 }
 
 /// What one stage showed.
@@ -104,6 +122,13 @@ impl StageResult {
     pub fn success(&self) -> f64 {
         (self.listening + self.speaking) / 2.0
     }
+
+    /// Whether the next stage follows. A stage judged before its turns ran out had all its
+    /// goals reached: that is keeping up, and one or two turns are too few to stop the
+    /// placement on (a single slip in a single turn would be speaking 0).
+    fn kept_up(&self) -> bool {
+        self.turns < TURNS_PER_STAGE || self.success() >= GO_ON
+    }
 }
 
 /// What the learner says about reading (not part of a conversation).
@@ -130,9 +155,7 @@ impl Placement {
     pub fn next_stage(&self) -> Option<usize> {
         match self.results.last() {
             None => Some(0),
-            Some(r) if r.success() >= GO_ON && self.results.len() < STAGES.len() => {
-                Some(self.results.len())
-            }
+            Some(r) if r.kept_up() && self.results.len() < STAGES.len() => Some(self.results.len()),
             _ => None,
         }
     }
@@ -229,9 +252,30 @@ mod tests {
 
     /// Stage 1 against a tutor that answers every turn with `analysis` (JSON), in order.
     fn played(analyses: &[&str]) -> (Placement, Vec<Step>) {
-        use crate::{Amount, Input, Scenario};
+        let (p, _, steps, _) = play(analyses);
+        (p, steps)
+    }
+
+    fn played_session(analyses: &[&str]) -> (Session, Vec<Step>) {
+        let (_, s, steps, _) = play(analyses);
+        (s, steps)
+    }
+
+    fn outcomes(analyses: &[&str]) -> (Placement, Vec<crate::session::TurnOutcome>) {
+        let (p, _, _, o) = play(analyses);
+        (p, o)
+    }
+
+    fn play(
+        analyses: &[&str],
+    ) -> (
+        Placement,
+        Session,
+        Vec<Step>,
+        Vec<crate::session::TurnOutcome>,
+    ) {
+        use crate::Input;
         use kaiwa_ai::mock::MockProvider;
-        use std::sync::Arc;
         let fixtures: Vec<String> = analyses
             .iter()
             .enumerate()
@@ -242,18 +286,18 @@ mod tests {
             "../../../data/scenarios/n5-02-jikoshoukai.json"
         ))
         .unwrap();
-        let mut s = Session::new(scenario, Arc::new(tutor), Amount::Little, "de")
-            .with_difficulty(difficulty_at(STAGES[0].1));
+        let mut s = stage_session(scenario, Arc::new(tutor), Amount::Little, "de", 0);
         let mut p = Placement::default();
         let mut steps = Vec::new();
+        let mut outs = Vec::new();
         for i in 0..analyses.len() {
-            s.turn(&format!("turn {i}"), Input::Typed).unwrap();
+            outs.push(s.turn(&format!("turn {i}"), Input::Typed).unwrap());
             steps.push(p.after_turn(&s));
             if steps.last() != Some(&Step::Go) {
                 break;
             }
         }
-        (p, steps)
+        (p, s, steps, outs)
     }
 
     const FINE: &str = r#"{"understood":true,"corrections":[]}"#;
@@ -278,6 +322,38 @@ mod tests {
         let (p, steps) = played(&[LOST; 4]);
         assert_eq!(steps.last(), Some(&Step::Over));
         assert_eq!(p.results.len(), 1);
+    }
+
+    /// Both goals of stage 1 in one turn, with a particle mistake.
+    const GOALS_SLIP: &str = r#"{"understood":true,"goals_met":["name","origin"],"corrections":[{"original":"ドイツが","better":"ドイツから","severity":"wrong","kind":"particle","explanation":"x"}]}"#;
+
+    #[test]
+    fn goals_reached_early_do_not_end_the_placement() {
+        // One fluent turn with a slip reaches both goals of stage 1: too few turns to stop
+        // the placement, so stage 2 follows.
+        let (p, steps) = played(&[GOALS_SLIP]);
+        assert_eq!(steps, [Step::Next(1)]);
+        assert_eq!(p.results[0].turns, 1);
+    }
+
+    #[test]
+    fn help_comes_only_on_request() {
+        // Three understood turns without a goal: no help by itself, the stage measures what
+        // the learner can do alone.
+        let (s, steps) = played_session(&[FINE, FINE, FINE]);
+        assert_eq!(steps, [Step::Go; 3]);
+        assert!(s.turns().iter().all(|t| !t.aided));
+        assert_eq!(s.stats().goals_unaided, s.stats().goals_met);
+        let (_, outcomes) = outcomes(&[FINE, FINE, FINE]);
+        assert!(outcomes.iter().all(|o| o.help.is_none()), "{outcomes:?}");
+    }
+
+    #[test]
+    fn the_stage_level_stays_the_same() {
+        // Two turns not understood ease a normal talk; a stage keeps its level, because it
+        // is judged at that level.
+        let (_, outcomes) = outcomes(&[LOST, LOST]);
+        assert!(outcomes.iter().all(|o| o.eased.is_none()));
     }
 
     #[test]
