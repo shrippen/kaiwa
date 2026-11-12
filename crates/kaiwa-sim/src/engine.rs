@@ -769,46 +769,59 @@ fn skip_once(p: &Value) -> Result<Option<String>> {
     Ok(skip_offer(&b)?.map(|u| format!("the keigo unit {} is offered", u.id)))
 }
 
-/// /LF215/: after Emi's placement, skipping is offered at once, up to the keigo path (the first
-/// unit with a keigo scenario, n4-13); not so for a beginner.
+/// /LF215/: after Emi's placement the backend offers to skip up to the keigo path (the first
+/// unit with a keigo scenario, n4-13); taking it leaves that unit as the current one. A
+/// beginner is offered nothing.
 fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
-    let c = Curriculum::from_dir(&root.join("data/curriculum"))?;
-    let mut keigo_units = std::collections::BTreeSet::new();
-    for u in &c.units {
-        for s in &u.scenarios {
-            let text = std::fs::read_to_string(root.join(format!("data/scenarios/{s}.json")))?;
-            if kaiwa_core::Scenario::from_json(&text)?.register
-                == kaiwa_core::scenario::Register::Keigo
-            {
-                keigo_units.insert(u.id.clone());
-            }
-        }
-    }
-    let keigo = |u: &kaiwa_core::curriculum::Unit| keigo_units.contains(&u.id);
-    let emi = c.placement_skip(&placed(p), &CourseProgress::default(), keigo);
-    let mara = c.placement_skip(
-        &placed(&persona(root, "mara")?),
-        &CourseProgress::default(),
-        keigo,
-    );
-    if emi.is_empty() {
-        return Ok(Some("no skip offered after the placement".into()));
-    }
-    if !mara.is_empty() {
+    use kaiwa_backend::views::{placement_offer, take_placement_skip};
+    let b = kaiwa_backend::TempBackend::new("skip-placement", false)?;
+    let place = |p: &Value| -> Result<()> {
+        let mut l = b.store.learning()?;
+        l.model = placed(p);
+        Ok(b.store.set_learning(&l)?)
+    };
+    place(&persona(root, "mara")?)?;
+    if !placement_offer(&b)?.units.is_empty() {
         return Ok(Some("a beginner is offered to skip".into()));
     }
-    // The offer ends right before the first keigo unit on the path.
-    let first_keigo = c.units.iter().position(keigo);
-    let last = c.units.iter().position(|u| Some(&u.id) == emi.last());
-    Ok(match (first_keigo, last) {
-        (Some(k), Some(l)) if l + 1 == k => None,
-        (Some(k), _) => Some(format!(
-            "the offer ends at {:?}, not right before the keigo unit {}",
-            emi.last(),
-            c.units[k].id
-        )),
-        (None, _) => None,
-    })
+    place(p)?;
+    let offer = placement_offer(&b)?;
+    let Some(last) = offer.units.last() else {
+        return Ok(Some("no skip offered after the placement".into()));
+    };
+    if !take_placement_skip(&b, last)? {
+        return Ok(Some("the offer could not be taken".into()));
+    }
+    // The path goes on right after the skipped units, at the first keigo unit.
+    let c = &b.curriculum;
+    let Some(k) = c.units.iter().position(|u| &u.id == last) else {
+        return Ok(Some(format!("the offer ends at unknown {last}")));
+    };
+    let Some(next) = c.units.get(k + 1) else {
+        return Ok(Some("nothing left after the offer".into()));
+    };
+    let lang = b.store.profile()?.ui_lang;
+    let current = c
+        .path(&b.store.learning()?.course, &lang)
+        .into_iter()
+        .find(|u| u.state == kaiwa_core::curriculum::NodeState::Current);
+    if current.as_ref().is_none_or(|u| u.id != next.id) {
+        return Ok(Some(format!(
+            "after the skip the path is at {:?}, not at {}",
+            current.map(|u| u.id),
+            next.id
+        )));
+    }
+    let keigo = next.scenarios.iter().any(|s| {
+        b.scenarios
+            .get(s)
+            .is_some_and(|s| s.register == kaiwa_core::scenario::Register::Keigo)
+    });
+    if !keigo {
+        return Ok(Some(format!("{} after the offer has no keigo", next.id)));
+    }
+    // Once: a second click skips nothing more.
+    Ok(take_placement_skip(&b, last)?.then(|| "the offer can be taken twice".into()))
 }
 
 /// /LF711/: only local parts: nothing leaves the device.
