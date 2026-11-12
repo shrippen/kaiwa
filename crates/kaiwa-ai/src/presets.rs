@@ -125,7 +125,8 @@ const LOCAL_HOSTS: [&str; 4] = ["localhost", "127.0.0.1", "[::1]", "0.0.0.0"];
 /// `http://user@Host:80/p?q` gives `host`; `http://[::1]:80/` gives `[::1]`.
 fn host_of(url: &str) -> String {
     let rest = url.split_once("://").map_or(url, |(_, r)| r);
-    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+    // A backslash ends it too, as in the WHATWG parser the HTTP client uses.
+    let authority = rest.split(['/', '\\', '?', '#']).next().unwrap_or_default();
     let host_port = authority.rsplit_once('@').map_or(authority, |(_, h)| h);
 
     // An IPv6 literal keeps its brackets; its colons are not a port.
@@ -225,6 +226,8 @@ mod tests {
             "https://gpu.example.com/localhost",
             "https://gpu.example.com/?h=127.0.0.1",
             "https://127.0.0.1.example.com/v1",
+            // WHATWG ends the authority at a backslash: the host is gpu.example.com.
+            "http://gpu.example.com\\@localhost/v1",
             "",
         ] {
             assert!(!local_host(url), "{url}");
