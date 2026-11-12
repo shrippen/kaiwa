@@ -251,6 +251,26 @@ fn export_and_import_carry_everything() {
 }
 
 #[test]
+fn import_keeps_that_the_learner_reviewed() {
+    let a = Store::in_memory().unwrap();
+    let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
+    let id = a.begin_session(&session.snapshot(), at(0, 9)).unwrap();
+    session.turn("コーヒーを好きです。", Input::Spoken).unwrap();
+    a.record(id, &session, at(0, 9), at(0, 9).plus_secs(300), None)
+        .unwrap();
+    words_before_a_break(&a, at(1, 9));
+    for day in 2..=9 {
+        a.review("ことば0", Grade::Good, at(day, 9)).unwrap();
+    }
+
+    // Reviewing daily is no break: the import must not start a refresher.
+    let b = Store::in_memory().unwrap();
+    b.import(&a.export(at(9, 10)).unwrap()).unwrap();
+    assert_eq!(b.last_practice().unwrap(), a.last_practice().unwrap());
+    assert!(!b.today(at(9, 11)).unwrap().refresher);
+}
+
+#[test]
 fn a_goal_changed_during_the_day_is_the_days_goal() {
     let store = Store::in_memory().unwrap();
     let c = curriculum();

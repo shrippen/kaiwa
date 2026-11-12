@@ -1112,8 +1112,15 @@ impl Store {
                 ],
             )?;
         }
+        let mut reviewed: Option<Moment> = None;
         for i in v["items"].as_array().into_iter().flatten() {
-            self.put_item(&serde_json::from_value(i.clone())?)?;
+            let item: Item = serde_json::from_value(i.clone())?;
+            reviewed = reviewed.max(item.last_review);
+            self.put_item(&item)?;
+        }
+        // `state` is not exported; without this, reviewing since the last talk reads as a break.
+        if let Some(at) = reviewed {
+            self.set_state_value("reviewed", &at)?;
         }
         for d in v["days"].as_array().into_iter().flatten() {
             let n = d["n"]
