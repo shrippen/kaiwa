@@ -98,12 +98,17 @@ pub fn state(provider: &str, env: impl Fn(&str) -> Option<String>) -> KeyState {
 
 /// Stores a key in the keyring; a blank key is an error.
 pub fn store(provider: &str, key: &str) -> Result<(), String> {
+    imp::set(provider, usable(key)?)
+}
+
+/// The key as it is stored: trimmed, and not blank. Blank is no key: removing one is its own
+/// step ([`remove`]).
+fn usable(key: &str) -> Result<&str, String> {
     let key = key.trim();
-    // Blank is no key: removing one is its own step ([`remove`]).
     if key.is_empty() {
         return Err("empty key".into());
     }
-    imp::set(provider, key)
+    Ok(key)
 }
 
 /// Removes the provider's key from the keyring.
@@ -117,7 +122,10 @@ mod tests {
 
     #[test]
     fn a_blank_key_is_no_key() {
-        // Spaces pasted by mistake must not remove the stored key (settings, review T-05).
+        // Spaces pasted by mistake must not remove the stored key (settings, review T-05);
+        // checked without the keyring, which the CI does not have.
+        assert!(usable("   ").is_err());
+        assert_eq!(usable(" sk-1 "), Ok("sk-1"));
         assert!(store("kaiwa-test-blank", "   ").is_err());
     }
 

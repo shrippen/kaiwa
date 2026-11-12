@@ -93,12 +93,12 @@ pub mod qobject {
         #[cxx_name = "newProfile"]
         fn new_profile(self: Pin<&mut KaiwaApp>, name: &QString);
 
-        /// Keeps the tutor's API key in the system keyring; empty removes it (/LF713/).
+        /// Keeps the tutor's API key in the system keyring; a blank key is refused (/LF713/).
         #[qinvokable]
         #[cxx_name = "storeKey"]
         fn store_key(self: Pin<&mut KaiwaApp>, key: &QString);
 
-        /// Removes the tutor's API key from the keyring.
+        /// Removes the tutor's API key from the keyring (/LF713/).
         #[qinvokable]
         #[cxx_name = "removeKey"]
         fn remove_key(self: Pin<&mut KaiwaApp>);
