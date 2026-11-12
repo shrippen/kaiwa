@@ -4,6 +4,7 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import Kante
 import org.shrippen.kaiwa
+import "leave.js" as Leave
 
 // One scenario as a conversation (M1): the character speaks with furigana, the learner
 // types (speech follows with spike 0.3), help comes in three steps, corrections sit under
@@ -52,7 +53,7 @@ Kirigami.ScrollablePage {
     // offers to continue at once; during a running talk it asks first (owner, 9.11.2026).
     onBackRequested: function (event) {
         event.accepted = true
-        if (page.started && !conv.finished && !page.placementOver)
+        if (Leave.asks(page.started, conv.finished, page.placementOver, conv.placementAsk))
             leaveDialog.open()
         else
             page.done()
@@ -649,7 +650,8 @@ Kirigami.ScrollablePage {
         // Own buttons, so both say what they do in the app's language (the platform's
         // Cancel would read "Abbrechen" next to "Einstufung abbrechen").
         standardButtons: QQC2.Dialog.NoButton
-        // The answer it waited for ended the talk or the placement: nothing to leave any more.
+        // The answer it waited for ended the talk or the placement's stages: the page changes
+        // under the dialog (at the reading questions, Back asks again).
         Connections {
             target: page
             function onPlacementOverChanged() { if (page.placementOver) leaveDialog.close() }
