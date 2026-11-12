@@ -271,6 +271,23 @@ fn import_keeps_that_the_learner_reviewed() {
 }
 
 #[test]
+fn import_rejects_a_file_missing_an_array() {
+    let a = Store::in_memory().unwrap();
+    words_before_a_break(&a, at(1, 9));
+    let json = a.export(at(2, 9)).unwrap();
+
+    for key in ["sessions", "items", "days", "pauses", "disputes"] {
+        let mut part = json.clone();
+        part.as_object_mut().unwrap().remove(key);
+        let b = Store::in_memory().unwrap();
+        assert!(b.import(&part).is_err(), "{key} missing was accepted");
+        // Rolled back: nothing of the file stays.
+        assert!(b.items().unwrap().is_empty(), "{key}: items stayed");
+        assert_eq!(b.profile().unwrap(), Profile::default(), "{key}: profile");
+    }
+}
+
+#[test]
 fn a_goal_changed_during_the_day_is_the_days_goal() {
     let store = Store::in_memory().unwrap();
     let c = curriculum();
