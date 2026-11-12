@@ -420,7 +420,7 @@ Kirigami.ScrollablePage {
                 text: page.recorded && page.recorded.skip
                     ? page.t("Bis „" + page.recorded.skip.title + "“ überspringen", "Skip up to “" + page.recorded.skip.title + "”")
                     : ""
-                emphasis: KanteButton.Emphasis.Primary
+                // "Los geht's" stays the one primary action.
                 onClicked: {
                     conv.skipPlacement(page.recorded.skip.last)
                     page.skipTaken = true
