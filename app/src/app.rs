@@ -98,6 +98,11 @@ pub mod qobject {
         #[cxx_name = "storeKey"]
         fn store_key(self: Pin<&mut KaiwaApp>, key: &QString);
 
+        /// Removes the tutor's API key from the keyring.
+        #[qinvokable]
+        #[cxx_name = "removeKey"]
+        fn remove_key(self: Pin<&mut KaiwaApp>);
+
         /// Starts at zero without the placement (/LF200/).
         #[qinvokable]
         #[cxx_name = "skipPlacement"]
@@ -632,6 +637,19 @@ impl qobject::KaiwaApp {
         let msg = match (kaiwa_ai::secrets::store(&provider, &key.to_string()), de) {
             (Ok(()), true) => "Der Schlüssel liegt im Schlüsselbund.".to_string(),
             (Ok(()), false) => "The key is in the keyring.".to_string(),
+            (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
+            (Err(e), false) => format!("The keyring refused: {e}"),
+        };
+        self.as_mut().set_notice(QString::from(&msg));
+        self.as_mut().refresh();
+    }
+
+    fn remove_key(mut self: Pin<&mut Self>) {
+        let provider = state().tutor_env()("KAIWA_PROVIDER").unwrap_or_default();
+        let de = self.lang().to_string() == "de";
+        let msg = match (kaiwa_ai::secrets::remove(&provider), de) {
+            (Ok(()), true) => "Der Schlüssel ist aus dem Schlüsselbund entfernt.".to_string(),
+            (Ok(()), false) => "The key is removed from the keyring.".to_string(),
             (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
             (Err(e), false) => format!("The keyring refused: {e}"),
         };

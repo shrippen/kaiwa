@@ -424,14 +424,14 @@ QQC2.ScrollView {
                 }
                 KanteButton {
                     text: page.t("Im Schlüsselbund speichern", "Keep in the keyring")
-                    enabled: apiKey.text.length > 0
+                    enabled: apiKey.text.trim().length > 0
                     onClicked: { page.kaiwa.storeKey(apiKey.text); apiKey.text = "" }
                 }
                 KanteButton {
                     visible: !!page.p.key && page.p.key.stored && page.p.key.canStore
                     text: page.t("Entfernen", "Remove")
                     emphasis: KanteButton.Emphasis.Quiet
-                    onClicked: page.kaiwa.storeKey("")
+                    onClicked: page.kaiwa.removeKey()
                 }
             }
         }
