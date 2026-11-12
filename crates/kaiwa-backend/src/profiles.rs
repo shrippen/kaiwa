@@ -79,6 +79,31 @@ pub fn create(dir: &Path, name: &str, lang: &str) -> anyhow::Result<PathBuf> {
 }
 
 impl Backend {
+    /// Deletes every piece of data of this profile (/LF710/): recordings, then the database
+    /// files; an empty profile with the same language takes its place.
+    pub fn wipe(&mut self) -> anyhow::Result<()> {
+        // The emptied profile keeps the language the page is in.
+        let lang = self.store.profile().map(|p| p.ui_lang).ok();
+        if let Err(e) = self.delete_recordings() {
+            eprintln!("kaiwa: {e:#}");
+        }
+
+        // Close the file before removing it. Whether that works or not, the store is the file
+        // again afterwards: on a failure what follows must not go to memory, lost at the next
+        // start.
+        self.store = Store::in_memory()?;
+        let deleted = kaiwa_store::delete_profile(&self.path);
+        self.store = Store::open(&self.path)?;
+        deleted?;
+
+        if let Some(lang) = lang {
+            let mut p = self.store.profile()?;
+            p.ui_lang = lang;
+            self.store.set_profile(&p)?;
+        }
+        Ok(())
+    }
+
     /// The directory of this profile and its siblings.
     pub fn dir(&self) -> PathBuf {
         self.path
@@ -121,6 +146,30 @@ impl Backend {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_failed_delete_keeps_the_profile_on_disk() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("kaiwa-wipe-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(DEFAULT);
+        let mut b = Backend::open_at(path.clone(), false).unwrap();
+
+        // A directory the files cannot be removed from.
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+        assert!(b.wipe().is_err());
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+        // What happens next still lands in the file, not in memory lost at the next start.
+        let mut p = b.store.profile().unwrap();
+        p.name = "Lena".into();
+        b.store.set_profile(&p).unwrap();
+        assert_eq!(Store::open(&path).unwrap().profile().unwrap().name, "Lena");
+
+        drop(b);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 
     #[test]
     fn profiles_are_separate_and_one_is_current() {
