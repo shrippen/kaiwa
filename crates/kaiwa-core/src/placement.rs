@@ -1,7 +1,8 @@
 //! The placement by conversation (Lastenheft /LF200/): short stages at rising levels instead of a
 //! test, about 5–8 minutes in all, skippable and repeatable. Each stage plays a scenario at a
-//! fixed difficulty for [`TURNS_PER_STAGE`] turns (or until its goals are reached); the next
-//! stage follows while the learner keeps up (success ≥ [`GO_ON`]). Turns the tutor analysed
+//! fixed difficulty for [`TURNS_PER_STAGE`] turns (or until its goals are reached), without
+//! help or an easier setting unless asked ([`stage_session`]); the next stage follows while
+//! the learner keeps up (success ≥ [`GO_ON`]; a stage ended early by its goals: listening). Turns the tutor analysed
 //! with gaps (T-11) are not judged: a stage waits for turns that can be, for at most twice
 //! its turns, and a placement with a stage that could not be judged changes nothing
 //! ([`Placement::after_turn`]). The result is a level per skill, no grade:
@@ -124,10 +125,14 @@ impl StageResult {
     }
 
     /// Whether the next stage follows. A stage judged before its turns ran out had all its
-    /// goals reached: that is keeping up, and one or two turns are too few to stop the
-    /// placement on (a single slip in a single turn would be speaking 0).
+    /// goals reached; one or two turns are too few to stop on a slip (a single slip in a
+    /// single turn is speaking 0), so there listening alone decides: lines understood
+    /// without help.
     fn kept_up(&self) -> bool {
-        self.turns < TURNS_PER_STAGE || self.success() >= GO_ON
+        if self.turns < TURNS_PER_STAGE {
+            return self.listening >= GO_ON;
+        }
+        self.success() >= GO_ON
     }
 }
 
@@ -334,6 +339,36 @@ mod tests {
         let (p, steps) = played(&[GOALS_SLIP]);
         assert_eq!(steps, [Step::Next(1)]);
         assert_eq!(p.results[0].turns, 1);
+    }
+
+    #[test]
+    fn goals_reached_early_with_every_line_translated_end_it() {
+        // Both goals in two turns, each line translated first: nothing understood alone, so
+        // the placement is over (reviewer of #101).
+        use crate::Input;
+        use crate::session::Aid;
+        use kaiwa_ai::mock::MockProvider;
+        let name = r#"{"understood":true,"goals_met":["name"],"corrections":[]}"#;
+        let origin = r#"{"understood":true,"goals_met":["origin"],"corrections":[]}"#;
+        let fixtures: Vec<String> = [name, origin]
+            .iter()
+            .enumerate()
+            .map(|(i, a)| format!(r#"{{"learner":"turn {i}","reply":"はい。","analysis":{a}}}"#))
+            .collect();
+        let tutor = MockProvider::from_json(&format!("[{}]", fixtures.join(","))).unwrap();
+        let scenario = Scenario::from_json(include_str!(
+            "../../../data/scenarios/n5-02-jikoshoukai.json"
+        ))
+        .unwrap();
+        let mut s = stage_session(scenario, Arc::new(tutor), Amount::Little, "de", 0);
+        let mut p = Placement::default();
+        let mut steps = Vec::new();
+        for i in 0..2 {
+            s.aid(Aid::Translate);
+            s.turn(&format!("turn {i}"), Input::Typed).unwrap();
+            steps.push(p.after_turn(&s));
+        }
+        assert_eq!(steps, [Step::Go, Step::Over]);
     }
 
     #[test]
