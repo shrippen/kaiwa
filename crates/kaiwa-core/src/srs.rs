@@ -168,7 +168,8 @@ impl Item {
         let g = grade as u8 as f64;
         let (s, d) = match (self.stability, self.difficulty, self.last_review) {
             (Some(s), Some(d), Some(last)) => {
-                let elapsed = now.days_since(last).max(0.0);
+                // Whole days between the review dates, as in FSRS-5 (fsrs-rs `delta_t: u32`).
+                let elapsed = (now.day().0 - last.day().0).max(0) as f64;
                 let r = forgetting(elapsed, s);
                 let d2 = next_difficulty(d, g);
                 let s2 = if now.day() == last.day() {
@@ -362,6 +363,21 @@ mod tests {
             },
             at(0),
         )
+    }
+
+    /// FSRS-5 counts whole days between review dates (fsrs-rs: `delta_t: u32`), so a review
+    /// just after midnight is one day later. Reference value 3.4452 (S after Hard, then Good
+    /// at delta_t = 1).
+    #[test]
+    fn elapsed_days_are_calendar_days() {
+        let late = Day::from_ymd(2026, 10, 1)
+            .start(120)
+            .plus_secs(23 * 3600 + 50 * 60);
+        let mut i = item();
+        i.review(Grade::Hard, late);
+        i.review(Grade::Good, late.plus_secs(20 * 60));
+        let s = i.stability.unwrap();
+        assert!((s - 3.4452).abs() < 1e-3, "{s}");
     }
 
     #[test]
