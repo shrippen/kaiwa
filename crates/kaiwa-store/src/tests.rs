@@ -609,3 +609,31 @@ fn a_running_pause_can_be_ended() {
     store.end_pause(today).unwrap();
     assert_eq!(store.pauses().unwrap().len(), 2);
 }
+
+#[test]
+fn a_new_placement_keeps_the_history() {
+    use kaiwa_core::learner::{ErrorStat, Skill};
+    let store = Store::in_memory().unwrap();
+
+    // Mistakes, the learner's own corrections and pronunciation from talks so far.
+    let mut l = store.learning().unwrap();
+    l.model.errors.insert(
+        "particle".into(),
+        ErrorStat {
+            corrected: 7,
+            rate: 0.4,
+        },
+    );
+    l.model.corrections_by_learner = 3;
+    l.model.set(Skill::Pronunciation, 3.5);
+    store.set_learning(&l).unwrap();
+
+    // Placing again sets the levels it measured, nothing else (/LF200/, /LF202/).
+    let placed = kaiwa_core::LearnerModel::placed(&[(Skill::Speaking, "n4")]);
+    store.set_placement(placed.clone()).unwrap();
+    let m = store.learning().unwrap().model;
+    assert_eq!(m.level(Skill::Speaking), placed.level(Skill::Speaking));
+    assert_eq!(m.errors["particle"].corrected, 7);
+    assert_eq!(m.corrections_by_learner, 3);
+    assert_eq!(m.level(Skill::Pronunciation), 3.5);
+}

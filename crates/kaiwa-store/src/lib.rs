@@ -19,7 +19,7 @@ use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum};
 use kaiwa_core::difficulty::{Change, Difficulty, Regulator};
 use kaiwa_core::feedback::Amount;
-use kaiwa_core::learner::LearnerModel;
+use kaiwa_core::learner::{LearnerModel, Skill};
 use kaiwa_core::progress::{DailyGoal, DayRecord, Pause, Streak, XP_REVIEW, streak};
 use kaiwa_core::session::{Session, SessionState};
 use kaiwa_core::srs::{self, Grade, Item};
@@ -503,8 +503,15 @@ impl Store {
     }
 
     /// After the placement (/LF200/): the model and the difficulty that fits it.
-    pub fn set_placement(&self, model: LearnerModel) -> Result<()> {
+    /// Takes the levels a placement measured. The history stays: mistakes, the learner's own
+    /// corrections (/LF202/) and pronunciation, which a talk does not show (typed turns count
+    /// too).
+    pub fn set_placement(&self, placed: LearnerModel) -> Result<()> {
         let mut l = self.learning()?;
+        let mut model = placed;
+        model.errors = std::mem::take(&mut l.model.errors);
+        model.corrections_by_learner = l.model.corrections_by_learner;
+        model.set(Skill::Pronunciation, l.model.level(Skill::Pronunciation));
         l.regulator = Regulator::new(Difficulty::for_learner(&model));
         l.model = model;
         self.set_learning(&l)?;
