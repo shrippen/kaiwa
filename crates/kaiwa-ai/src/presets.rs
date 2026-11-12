@@ -118,11 +118,27 @@ pub fn preset(id: &str) -> Option<&'static Preset> {
     PRESETS.iter().find(|p| p.id == id)
 }
 
-/// A server on this computer.
+const LOCAL_HOSTS: [&str; 4] = ["localhost", "127.0.0.1", "[::1]", "0.0.0.0"];
+
+/// The lowercase host of `url`, without scheme, userinfo and port.
+///
+/// `http://user@Host:80/p?q` gives `host`; `http://[::1]:80/` gives `[::1]`.
+fn host_of(url: &str) -> String {
+    let rest = url.split_once("://").map_or(url, |(_, r)| r);
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+    let host_port = authority.rsplit_once('@').map_or(authority, |(_, h)| h);
+
+    // An IPv6 literal keeps its brackets; its colons are not a port.
+    let host = match host_port.strip_prefix('[') {
+        Some(_) => host_port.split_inclusive(']').next().unwrap_or_default(),
+        None => host_port.split(':').next().unwrap_or_default(),
+    };
+    host.to_ascii_lowercase()
+}
+
+/// A server on this computer. The host must match exactly: `abc.localhost.run` is remote.
 pub fn local_host(url: &str) -> bool {
-    ["localhost", "127.0.0.1", "[::1]", "0.0.0.0"]
-        .iter()
-        .any(|h| url.contains(h))
+    LOCAL_HOSTS.contains(&host_of(url).as_str())
 }
 
 impl Preset {
@@ -187,5 +203,29 @@ mod tests {
             anthropic.base_url(remote).as_deref(),
             Some("https://api.anthropic.com")
         );
+    }
+
+    #[test]
+    fn local_host_matches_the_host_only() {
+        for url in [
+            "http://localhost:11434/v1",
+            "http://127.0.0.1:8080",
+            "http://[::1]:8080/v1",
+            "http://0.0.0.0:8080",
+            "HTTP://LocalHost/v1",
+            "localhost:11434",
+        ] {
+            assert!(local_host(url), "{url}");
+        }
+        for url in [
+            "https://abc.localhost.run/v1",
+            "http://localhost:1@gpu.example.com/v1",
+            "https://gpu.example.com/localhost",
+            "https://gpu.example.com/?h=127.0.0.1",
+            "https://127.0.0.1.example.com/v1",
+            "",
+        ] {
+            assert!(!local_host(url), "{url}");
+        }
     }
 }
