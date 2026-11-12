@@ -273,6 +273,10 @@ fn import_keeps_that_the_learner_reviewed() {
 #[test]
 fn import_rejects_a_file_missing_an_array() {
     let a = Store::in_memory().unwrap();
+    // A profile unlike the default, so a profile left behind by the import would show.
+    let mut p = a.profile().unwrap();
+    p.name = "Lena".into();
+    a.set_profile(&p).unwrap();
     words_before_a_break(&a, at(1, 9));
     let json = a.export(at(2, 9)).unwrap();
 
@@ -284,6 +288,7 @@ fn import_rejects_a_file_missing_an_array() {
         // Rolled back: nothing of the file stays.
         assert!(b.items().unwrap().is_empty(), "{key}: items stayed");
         assert_eq!(b.profile().unwrap(), Profile::default(), "{key}: profile");
+        assert_eq!(b.last_practice().unwrap(), None, "{key}: practice");
     }
 }
 
