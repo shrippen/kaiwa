@@ -31,9 +31,11 @@
   <file>Kante/KanteDropZone.qml</file>
   <file>Kante/KanteEmptyState.qml</file>
   <file>Kante/KanteFieldSkin.qml</file>
+  <file>Kante/KanteFileDrop.qml</file>
   <file>Kante/KanteFocusFollow.qml</file>
   <file>Kante/KanteFocusTrap.qml</file>
   <file>Kante/KanteFretboard.qml</file>
+  <file>Kante/KanteGlassPanel.qml</file>
   <file>Kante/KanteGoalMeter.qml</file>
   <file>Kante/KanteHazard.qml</file>
   <file>Kante/KanteHeading.qml</file>
@@ -81,6 +83,7 @@
   <file>Kante/KanteReveal.qml</file>
   <file>Kante/KanteRubyText.qml</file>
   <file>Kante/KanteRunner.qml</file>
+  <file>Kante/KanteScatterChart.qml</file>
   <file>Kante/KanteScope.qml</file>
   <file>Kante/KanteScrollMeter.qml</file>
   <file>Kante/KanteSearchCombo.qml</file>
