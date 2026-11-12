@@ -88,9 +88,10 @@ impl Backend {
             eprintln!("kaiwa: {e:#}");
         }
 
-        // Close the file before removing it. Whether that works or not, the store is the file
-        // again afterwards: on a failure what follows must not go to memory, lost at the next
-        // start.
+        // Close the file before removing it. Whether removing works or not, the file is opened
+        // again: on a failure what follows must not go to memory, lost at the next start.
+        // Only when opening itself fails (a full disk) does the store stay in memory, and the
+        // error says so.
         self.store = Store::in_memory()?;
         let deleted = kaiwa_store::delete_profile(&self.path);
         self.store = Store::open(&self.path)?;
@@ -147,6 +148,7 @@ impl Backend {
 mod tests {
     use super::*;
 
+    #[cfg(unix)]
     #[test]
     fn a_failed_delete_keeps_the_profile_on_disk() {
         use std::os::unix::fs::PermissionsExt;
@@ -156,8 +158,15 @@ mod tests {
         let path = dir.join(DEFAULT);
         let mut b = Backend::open_at(path.clone(), false).unwrap();
 
-        // A directory the files cannot be removed from.
+        // A directory the files cannot be removed from. Root may write there anyway: then
+        // there is nothing to show.
         std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+        if std::fs::write(dir.join("probe"), b"").is_ok() {
+            std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+            drop(b);
+            std::fs::remove_dir_all(&dir).unwrap();
+            return;
+        }
         assert!(b.wipe().is_err());
         std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o755)).unwrap();
 
