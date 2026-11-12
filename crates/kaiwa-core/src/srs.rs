@@ -172,7 +172,7 @@ impl Item {
                 let elapsed = (now.day().0 - last.day().0).max(0) as f64;
                 let r = forgetting(elapsed, s);
                 let d2 = next_difficulty(d, g);
-                let s2 = if now.day() == last.day() {
+                let s2 = if elapsed == 0.0 {
                     // Same day: the short-term formula of FSRS-5.
                     s * (W[17] * (g - 3.0 + W[18])).exp()
                 } else if grade == Grade::Again {
@@ -379,6 +379,23 @@ mod tests {
         i.review(Grade::Good, late.plus_secs(20 * 60));
         let s = i.stability.unwrap();
         assert!((s - 3.4452).abs() < 1e-3, "{s}");
+    }
+
+    /// A local day that steps back (a flight west) is no day elapsed: the same-day formula,
+    /// as for two reviews on one day.
+    #[test]
+    fn a_day_back_is_the_same_day() {
+        let tokyo = Day::from_ymd(2026, 10, 2).start(540).plus_secs(6 * 3600);
+        let berlin = Moment::new(tokyo.unix + 30 * 60, 120);
+        assert!(berlin.day() < tokyo.day());
+        let mut flown = item();
+        flown.review(Grade::Good, tokyo);
+        flown.review(Grade::Good, berlin);
+        let mut stayed = item();
+        stayed.review(Grade::Good, tokyo);
+        stayed.review(Grade::Good, tokyo.plus_secs(30 * 60));
+        let (a, b) = (flown.stability.unwrap(), stayed.stability.unwrap());
+        assert!((a - b).abs() < 1e-9, "{a} vs {b}");
     }
 
     /// fsrs-rs 2.0 `stability_after_failure` caps the new stability at
