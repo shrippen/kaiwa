@@ -180,7 +180,8 @@ impl Item {
                         * d.powf(-W[12])
                         * ((s + 1.0).powf(W[13]) - 1.0)
                         * (W[14] * (1.0 - r)).exp();
-                    fail.min(s)
+                    // Capped below the old stability, as in fsrs-rs 2.0.
+                    fail.min(s / (W[17] * W[18]).exp())
                 } else {
                     let hard = if grade == Grade::Hard { W[15] } else { 1.0 };
                     let easy = if grade == Grade::Easy { W[16] } else { 1.0 };
@@ -378,6 +379,17 @@ mod tests {
         i.review(Grade::Good, late.plus_secs(20 * 60));
         let s = i.stability.unwrap();
         assert!((s - 3.4452).abs() < 1e-3, "{s}");
+    }
+
+    /// fsrs-rs 2.0 `stability_after_failure` caps the new stability at
+    /// `s / exp(w17 * w18)`, not at `s`. Reference value 2.2539.
+    #[test]
+    fn lapse_stability_is_capped_below_old() {
+        let mut i = item();
+        i.review(Grade::Good, at(0));
+        i.review(Grade::Again, at(59));
+        let s = i.stability.unwrap();
+        assert!((s - 2.2539).abs() < 1e-3, "{s}");
     }
 
     #[test]
