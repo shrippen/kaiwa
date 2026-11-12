@@ -85,19 +85,30 @@ Item {
             Layout.preferredWidth: !row.narrow && row.titleWidth > 0 ? row.titleWidth : -1
             Layout.alignment: Qt.AlignTop
             spacing: 2
-            Row {
+            // A long title wraps inside the column instead of pushing the control out of the row.
+            RowLayout {
+                id: titleLine
+                Layout.fillWidth: true
                 spacing: KanteStyle.unit(8)
                 Text {
                     id: titleText
+                    objectName: "settingTitle"
+                    // As wide as its text, narrower where the column is (it wraps there): the mark
+                    // follows the text. Not bound to the column's width, which the layout itself
+                    // sets: that loop left the title at width 0 (Kante 1.80).
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: implicitWidth
                     text: row.title
                     color: KanteStyle.strongTextColor
                     font: KanteStyle.defaultFont
+                    wrapMode: Text.WordWrap
                 }
                 Rectangle {
+                    objectName: "settingMark"
                     visible: row.modified
-                    width: KanteStyle.unit(6)
-                    height: width
-                    anchors.verticalCenter: parent.verticalCenter
+                    Layout.preferredWidth: KanteStyle.unit(6)
+                    Layout.preferredHeight: KanteStyle.unit(6)
+                    Layout.alignment: Qt.AlignVCenter
                     color: KanteStyle.focusColor
                 }
             }
