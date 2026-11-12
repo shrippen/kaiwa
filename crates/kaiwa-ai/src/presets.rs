@@ -133,7 +133,8 @@ fn host_of(url: &str) -> String {
         Some(_) => host_port.split_inclusive(']').next().unwrap_or_default(),
         None => host_port.split(':').next().unwrap_or_default(),
     };
-    host.to_ascii_lowercase()
+    // A trailing dot names the same host (`localhost.`).
+    host.trim_end_matches('.').to_ascii_lowercase()
 }
 
 /// A server on this computer. The host must match exactly: `abc.localhost.run` is remote.
@@ -214,6 +215,7 @@ mod tests {
             "http://0.0.0.0:8080",
             "HTTP://LocalHost/v1",
             "localhost:11434",
+            "http://localhost./v1",
         ] {
             assert!(local_host(url), "{url}");
         }
