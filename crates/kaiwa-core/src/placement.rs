@@ -372,6 +372,17 @@ mod tests {
     }
 
     #[test]
+    fn a_stage_that_goes_on_takes_marks() {
+        // Goals reached in a turn with gaps: the stage goes on although its goals are done;
+        // a misheard turn after that can still be marked (review of #113).
+        let (mut s, steps) = played_session(&[GAP_GOALS, GOALS_SLIP]);
+        assert_eq!(steps, [Step::Go, Step::Go]);
+        assert!(s.done());
+        assert!(s.mark_misrecognized(1));
+        assert!(s.stats().mistakes.is_empty());
+    }
+
+    #[test]
     fn help_comes_only_on_request() {
         // Three understood turns without a goal: no help by itself, the stage measures what
         // the learner can do alone.

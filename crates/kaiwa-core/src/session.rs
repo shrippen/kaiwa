@@ -263,6 +263,14 @@ pub enum Coaching {
     Off,
 }
 
+/// Whether the talk is stored as finished ([`Session::close`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+enum Record {
+    #[default]
+    Open,
+    Recorded,
+}
+
 pub struct Session {
     pub scenario: Scenario,
     pub lang: String,
@@ -293,6 +301,8 @@ pub struct Session {
     learner_level: Option<f64>,
     /// Set by the caller, not part of the saved state (a placement stage is not saved).
     coaching: Coaching,
+    /// Not part of the saved state: a recorded talk is not continued.
+    recorded: Record,
 }
 
 impl Session {
@@ -326,6 +336,7 @@ impl Session {
             spent_secs: 0,
             learner_level: None,
             coaching: Coaching::default(),
+            recorded: Record::default(),
         }
     }
 
@@ -408,6 +419,7 @@ impl Session {
             spent_secs: st.spent_secs,
             learner_level: None,
             coaching: Coaching::default(),
+            recorded: Record::default(),
         }
     }
 
@@ -669,11 +681,18 @@ impl Session {
         }
     }
 
+    /// The talk is recorded (the caller stored it): marks would change only what the page shows,
+    /// so they are refused from now on. Not `done()`: a placement stage goes on after its goals
+    /// when a turn was analysed with gaps, and is never recorded.
+    pub fn close(&mut self) {
+        self.recorded = Record::Recorded;
+    }
+
     /// The learner marks a turn's transcript as misrecognised (/LF113/): its corrections no longer
-    /// count as mistakes and do not go into the review. Refused once the talk is done: it is
-    /// recorded by then, a mark would only change what the page shows.
+    /// count as mistakes and do not go into the review. Refused once the talk is recorded
+    /// ([`Session::close`]).
     pub fn mark_misrecognized(&mut self, turn: usize) -> bool {
-        if self.done() {
+        if self.recorded == Record::Recorded {
             return false;
         }
         match self.turns.get_mut(turn) {
@@ -687,9 +706,9 @@ impl Session {
 
     /// The learner disputes a correction (/LF307/). It stays visible, marked as disputed, and
     /// is kept for the QA (/LD060/), but it no longer counts as a mistake. Refused once the
-    /// talk is done, as for a misrecognition mark.
+    /// talk is recorded, as for a misrecognition mark.
     pub fn dispute(&mut self, turn: usize, better: &str) -> Option<Correction> {
-        if self.done() {
+        if self.recorded == Record::Recorded {
             return None;
         }
         let t = self.turns.get_mut(turn)?;
@@ -1267,6 +1286,7 @@ mod tests {
         s.turn("仕事はプロデューサーです。", Input::Typed).unwrap();
         s.turn("コーヒーを好きです。", Input::Spoken).unwrap();
         assert!(s.done());
+        s.close();
 
         // The talk is recorded: a mark would change the page, not the record.
         assert!(!s.mark_misrecognized(3));

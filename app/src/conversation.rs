@@ -402,6 +402,7 @@ impl qobject::Conversation {
                         .record_on(id, &guard, begun, end, day, Some(&st.curriculum))
                     {
                         Ok(r) => {
+                            guard.close();
                             if let Err(e) = st.track_grammar(&guard, end) {
                                 eprintln!("kaiwa: {e:#}");
                             }
@@ -993,6 +994,9 @@ impl qobject::Conversation {
             return;
         };
         let markup = entry["markup"].as_str().unwrap_or_default().to_string();
+        // The aid belongs to the clicked line: the turn that answers it (a line already
+        // answered gives a past turn, and the aid counts for nothing).
+        let line = kaiwa_backend::talk::turns(&self.log[..i]);
         // Already there, or on its way (a second click asks the tutor no second time).
         let translated = entry.get("translation").is_some() || entry["translating"] == true;
         let Some(session) = self.session.clone() else {
@@ -1013,7 +1017,6 @@ impl qobject::Conversation {
                 }
                 if let Ok(mut s) = session.lock() {
                     let kind = if aid == 0 { Aid::Repeat } else { Aid::Slow };
-                    let line = s.line();
                     s.aid(kind, line);
                 }
                 self.save();
@@ -1028,8 +1031,8 @@ impl qobject::Conversation {
                     e["translating"] = json!(true);
                 }
                 self.as_mut().publish_turns();
-                // The line the aid belongs to; a turn sent meanwhile leaves it behind.
-                let asked_at = session.lock().map(|s| s.line()).unwrap_or_default();
+                // A turn sent meanwhile leaves the clicked line behind: the aid counts for nothing.
+                let asked_at = line;
                 std::thread::spawn(move || {
                     let line = kaiwa_core::plain(&markup);
                     // Asked without holding the session (the window needs it meanwhile).
