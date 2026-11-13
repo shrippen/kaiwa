@@ -211,6 +211,10 @@ mod tests {
 
     #[test]
     fn a_short_talk_is_two_goals_and_continues_in_the_app() {
+        // It arms the process's meter; the cost tests read it.
+        let _turn = crate::cost::tests::METER
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let b = backend("short");
         let now = Moment::new(1_791_100_000, 120);
         let mut t = ShortTalk::start(&b, now).unwrap();

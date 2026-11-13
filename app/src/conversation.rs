@@ -281,6 +281,8 @@ pub struct ConversationRust {
     said: Arc<Mutex<SpeechCache>>,
     /// The voice of this conversation's character (/LF117/); a loaded voice switches to it.
     voice_name: String,
+    /// What the voice owes the talk while it loads: an early reply, the opening once.
+    debt: kaiwa_backend::talk::Debt,
 }
 
 /// The mora check's model and the reading of what the learner meant.
@@ -605,6 +607,7 @@ impl qobject::Conversation {
             }
             // A new conversation loads what is missing itself (below).
             rust.unloaded = false;
+            rust.debt.reset();
         }
         self.as_mut().set_title(QString::from(&title));
         self.as_mut().set_scenario(QString::from(&scenario));
@@ -642,6 +645,12 @@ impl qobject::Conversation {
             }
             // Speak the opening of the new scenario.
             if let Some(o) = opening {
+                let voice = if self.speaker.is_some() && *self.voice_on() {
+                    kaiwa_backend::talk::Voice::Ready
+                } else {
+                    kaiwa_backend::talk::Voice::Off
+                };
+                self.as_mut().rust_mut().debt.opening_said(voice);
                 self.as_mut().speak(&o);
             }
             return;
@@ -817,6 +826,10 @@ impl qobject::Conversation {
 
     fn speak_at(mut self: Pin<&mut Self>, markup: &str, speed: f32, reply: bool) {
         let Some(speaker) = self.speaker.clone() else {
+            // The voice is still loading (after the idle time): say the reply when it is ready.
+            if reply && *self.voice_on() {
+                self.as_mut().rust_mut().debt.reply_early(markup);
+            }
             return;
         };
         if !*self.voice_on() {
@@ -1377,6 +1390,9 @@ impl qobject::Conversation {
             self.as_mut().set_talk_state(ERROR);
             return;
         };
+        if !kaiwa_backend::talk::may_recognize(*self.busy()) {
+            return;
+        }
         // No voice in it (no microphone, muted, wrong input): say so instead of letting the
         // recognition invent sounds from the silence (/LF104/). A tap too short to measure
         // goes on as before.
@@ -1405,11 +1421,15 @@ impl qobject::Conversation {
             }
         }
         self.as_mut().set_talk_state(THINKING);
+        // A spoken turn in flight is busy like a typed one: no typed send, help or listening
+        // aid meanwhile, or the recognised turn would be dropped or get the other one's index.
+        self.as_mut().set_busy(true);
         let by_pause = std::mem::take(&mut self.as_mut().rust_mut().ended_by_pause);
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let text = recognizer.transcribe(&rec.samples, rec.sample_rate);
             let _ = thread.queue(move |mut q| {
+                q.as_mut().set_busy(false);
                 q.as_mut().set_talk_state(READY);
                 q.as_mut().after_turn(by_pause, &text);
                 if !text.is_empty() {
@@ -1495,10 +1515,9 @@ impl qobject::Conversation {
             // Only spoken turns have a response time.
             self.as_mut().rust_mut().speech_end = None;
             self.as_mut().rust_mut().empty_turns.reset();
-            // Typed instead of spoken: hands-free stops listening until the reply is through.
-            if *self.hands_free() {
-                self.as_mut().close_mic();
-            }
+            // Typed instead of spoken: the microphone closes, hands-free or not; a recording
+            // finishing during this turn would run a second one beside it.
+            self.as_mut().close_mic();
         }
         self.as_mut().wake();
         let session = self.session.clone()?;
@@ -1652,13 +1671,22 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
             q.as_mut().rust_mut().speaker = Some(speaker);
             q.as_mut().set_voice(QString::from("Übergangsstimme"));
             q.as_mut().set_voice_note(QString::default());
-            if q.log.len() == 1 && !*q.busy() {
-                let opening = q.log[0]["markup"].as_str().unwrap_or_default().to_string();
-                q.speak(&opening);
+            let (lines, busy) = (q.log.len(), *q.busy());
+            let voice = if *q.voice_on() {
+                kaiwa_backend::talk::Voice::Ready
             } else {
+                kaiwa_backend::talk::Voice::Off
+            };
+            match q.as_mut().rust_mut().debt.voice_ready(lines, busy, voice) {
+                // The reply came before the voice did; no listening aid, no response time.
+                kaiwa_backend::talk::Owed::Reply(markup) => q.speak(&markup),
+                kaiwa_backend::talk::Owed::Opening => {
+                    let opening = q.log[0]["markup"].as_str().unwrap_or_default().to_string();
+                    q.speak(&opening);
+                }
                 // A talk continued, or the models back after the idle time: hands-free
                 // listens without waiting for a click.
-                q.listen_again();
+                kaiwa_backend::talk::Owed::Nothing => q.listen_again(),
             }
         }
         Err(e) => {
@@ -1669,6 +1697,7 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
                 (e, false) => format!("The character answers without a voice: {}", speech_text(&e, "en")),
             };
             q.as_mut().set_voice_note(QString::from(&text));
+            q.as_mut().rust_mut().debt.forgive();
             // Without a voice nothing is spoken: hands-free listens right away, in a new
             // talk, one continued and when the models are back after the idle time.
             q.as_mut().listen_again();

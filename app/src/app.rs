@@ -373,6 +373,16 @@ impl qobject::KaiwaApp {
 
     fn set_setting(mut self: Pin<&mut Self>, key: &QString, value: &QString) {
         let (key, value) = (key.to_string(), value.to_string());
+        // The brake follows the new limit at once (/LF714/).
+        if key == "costLimit" {
+            let edited = state().set_cost_limit(value.parse().ok(), now());
+            if let Err(e) = edited {
+                self.as_mut().say_unreadable(&e);
+                return;
+            }
+            self.as_mut().refresh();
+            return;
+        }
         {
             let st = state();
             // A profile that cannot be read stays as it is; the learner is told.
@@ -410,7 +420,6 @@ impl qobject::KaiwaApp {
                         }
                     }
                     "reminder" => p.reminder = value.parse().ok(),
-                    "costLimit" => p.cost_limit_cents = value.parse().ok(),
                     "moraHints" => p.mora_hints = value == "true",
                     "unloadAfter" => p.unload_after_min = value.parse().ok(),
                     "handsFree" => p.hands_free = value == "true",

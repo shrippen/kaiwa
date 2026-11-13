@@ -4,6 +4,7 @@
 
 use kaiwa_ai::cost::{Spent, meter};
 use kaiwa_core::clock::Moment;
+use kaiwa_store::StoreError;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -56,6 +57,15 @@ impl Backend {
         let limit = self.store.profile()?.cost_limit_cents;
         let spent = self.month_cost(now)?.cents;
         meter().set_budget(limit.map(|l| (f64::from(l) - spent).max(0.0)));
+        Ok(())
+    }
+
+    /// Stores the limit and re-arms the brake at once (/LF714/).
+    pub fn set_cost_limit(&self, limit: Option<u32>, now: Moment) -> Result<(), StoreError> {
+        self.store.update_profile(|p| p.cost_limit_cents = limit)?;
+        if let Err(e) = self.arm_brake(now) {
+            eprintln!("kaiwa: {e:#}");
+        }
         Ok(())
     }
 
@@ -115,15 +125,42 @@ impl Backend {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     fn backend(name: &str) -> crate::TempBackend {
         crate::TempBackend::new(name, false).unwrap()
     }
 
+    /// The meter is the process's; tests that set its budget take turns.
+    pub(crate) static METER: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    #[test]
+    fn a_new_limit_brakes_or_frees_at_once() {
+        let _turn = METER.lock().unwrap_or_else(|e| e.into_inner());
+        let b = backend("cost-limit");
+        let now = Moment::new(1_791_100_000, 120);
+        let spent = Spent {
+            cents: 60.0,
+            calls: 8,
+            unknown_calls: 0,
+        };
+        b.book(spent, now, false).unwrap();
+        assert!(!meter().exhausted(), "no limit, no brake");
+
+        b.set_cost_limit(Some(50), now).unwrap();
+        assert!(meter().exhausted(), "a limit below the spent cents holds");
+
+        b.set_cost_limit(Some(100), now).unwrap();
+        assert!(!meter().exhausted(), "a raised limit frees the next turn");
+
+        b.set_cost_limit(None, now).unwrap();
+        assert!(!meter().exhausted());
+    }
+
     #[test]
     fn the_month_adds_up_and_the_limit_brakes() {
+        let _turn = METER.lock().unwrap_or_else(|e| e.into_inner());
         let b = backend("cost");
         let now = Moment::new(1_791_100_000, 120);
         let mut p = b.store.profile().unwrap();
