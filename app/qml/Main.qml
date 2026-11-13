@@ -4,6 +4,7 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import Kante
 import org.shrippen.kaiwa
+import "tabs.js" as Tabs
 
 // Kaiwa's window (Lastenheft Kap. 7): tabs for today, the learning path, review, profile and
 // settings; a conversation opens as its own page on top. The GUI comes from Kante (/LL301/;
@@ -127,7 +128,13 @@ Kirigami.ApplicationWindow {
                 // Everything due, as the start page counts it (the review page holds ten at a time).
                 readonly property int reviewCount: kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0
                 currentIndex: Math.max(0, root.views.indexOf(root.arg("--view", "start")))
-                onActivated: function (i) { currentIndex = i; kaiwa.openReview("") }
+                onActivated: function (i) {
+                    if (!Tabs.changes(currentIndex, i)) {
+                        return
+                    }
+                    currentIndex = i
+                    kaiwa.openReview("")
+                }
             }
         }
 
