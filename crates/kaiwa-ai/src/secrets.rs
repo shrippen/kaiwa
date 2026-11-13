@@ -3,12 +3,19 @@
 //! file or the profile. Service `org.shrippen.kaiwa`, one entry per provider (its preset id,
 //! `crate::presets`) and profile: user `<provider>/<profile>` (decision V-01); deleting the
 //! profile deletes its keys. An environment variable still wins, for the owner's local test.
+//!
+//! [`Keys`] is what the rest of Kaiwa uses: a [`KeyStore`] (the keyring, or [`MemoryKeys`] in
+//! tests) and the profile's [`KeyHome`]. A profile outside the profiles directory has no
+//! keyring access at all.
 
 use std::collections::HashMap;
-use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 const SERVICE: &str = "org.shrippen.kaiwa";
+
+/// What a profile outside the profiles directory is told when it stores a key.
+pub const ENV_ONLY: &str = "Nur für Profile im Profilordner";
 
 /// Where a provider's key comes from.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,6 +27,53 @@ pub enum KeyState {
     Missing,
     /// No keyring on this system (or it refused); the reason.
     Unavailable(String),
+}
+
+/// Where keys are kept, by entry user name.
+pub trait KeyStore: Send + Sync {
+    fn get(&self, user: &str) -> Result<Option<String>, String>;
+    fn set(&self, user: &str, key: &str) -> Result<(), String>;
+    /// A missing entry is not an error.
+    fn delete(&self, user: &str) -> Result<(), String>;
+}
+
+/// The system keyring.
+pub struct Keyring;
+
+impl KeyStore for Keyring {
+    fn get(&self, user: &str) -> Result<Option<String>, String> {
+        imp::get(user)
+    }
+    fn set(&self, user: &str, key: &str) -> Result<(), String> {
+        imp::set(user, key)
+    }
+    fn delete(&self, user: &str) -> Result<(), String> {
+        imp::delete(user)
+    }
+}
+
+/// Keys in memory, owned by whoever made it (tests, `kaiwa-sim`).
+#[derive(Default)]
+pub struct MemoryKeys(Mutex<HashMap<String, String>>);
+
+impl MemoryKeys {
+    fn map(&self) -> std::sync::MutexGuard<'_, HashMap<String, String>> {
+        self.0.lock().unwrap_or_else(|e| e.into_inner())
+    }
+}
+
+impl KeyStore for MemoryKeys {
+    fn get(&self, user: &str) -> Result<Option<String>, String> {
+        Ok(self.map().get(user).cloned())
+    }
+    fn set(&self, user: &str, key: &str) -> Result<(), String> {
+        self.map().insert(user.to_string(), key.to_string());
+        Ok(())
+    }
+    fn delete(&self, user: &str) -> Result<(), String> {
+        self.map().remove(user);
+        Ok(())
+    }
 }
 
 #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
@@ -64,47 +118,139 @@ mod imp {
     }
 }
 
-/// Tests and `kaiwa-sim` never touch the real keyring: once switched, this process keeps its
-/// keys in memory.
-static IN_MEMORY: AtomicBool = AtomicBool::new(false);
-static MEMORY: Mutex<Option<HashMap<String, String>>> = Mutex::new(None);
-
-/// Keeps the keys of this process in memory from now on (tests, `kaiwa-sim`).
-pub fn use_memory() {
-    IN_MEMORY.store(true, Ordering::SeqCst);
+/// Which keys a profile may use. The one place that decides it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum KeyHome {
+    /// A profile in the profiles directory: its keys, named by its id (the file name without
+    /// `.kaiwa`).
+    Keyring(String),
+    /// Any other profile file (`KAIWA_PROFILE`, the demo, a temporary directory): the
+    /// environment only, the keyring is never read or written.
+    EnvOnly,
 }
 
-/// The keyring entry's user name: `<provider>/<profile>`.
-fn user(provider: &str, profile: &str) -> String {
-    format!("{provider}/{profile}")
-}
-
-fn memory<T>(f: impl FnOnce(&mut HashMap<String, String>) -> T) -> T {
-    let mut m = MEMORY.lock().unwrap_or_else(|e| e.into_inner());
-    f(m.get_or_insert_with(HashMap::new))
-}
-
-fn get(user: &str) -> Result<Option<String>, String> {
-    if IN_MEMORY.load(Ordering::SeqCst) {
-        return Ok(memory(|m| m.get(user).cloned()));
+impl KeyHome {
+    /// The home of the profile file `path`, given the profiles directory `dir`.
+    pub fn of(path: &Path, dir: &Path) -> Self {
+        let in_dir = path.parent().is_some_and(|p| same_dir(p, dir));
+        let id = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .and_then(|n| n.strip_suffix(".kaiwa"))
+            .filter(|id| !id.is_empty());
+        match id {
+            Some(id) if in_dir => Self::Keyring(id.to_string()),
+            _ => Self::EnvOnly,
+        }
     }
-    imp::get(user)
 }
 
-fn set(user: &str, key: &str) -> Result<(), String> {
-    if IN_MEMORY.load(Ordering::SeqCst) {
-        memory(|m| m.insert(user.to_string(), key.to_string()));
-        return Ok(());
-    }
-    imp::set(user, key)
+fn same_dir(a: &Path, b: &Path) -> bool {
+    a == b || matches!((a.canonicalize(), b.canonicalize()), (Ok(a), Ok(b)) if a == b)
 }
 
-fn delete(user: &str) -> Result<(), String> {
-    if IN_MEMORY.load(Ordering::SeqCst) {
-        memory(|m| m.remove(user));
-        return Ok(());
+/// The keys of one profile.
+#[derive(Clone)]
+pub struct Keys {
+    store: Arc<dyn KeyStore>,
+    home: KeyHome,
+}
+
+impl Keys {
+    pub fn new(store: Arc<dyn KeyStore>, home: KeyHome) -> Self {
+        Self { store, home }
     }
-    imp::delete(user)
+
+    /// No keyring: the environment only.
+    pub fn env_only() -> Self {
+        Self::new(Arc::new(MemoryKeys::default()), KeyHome::EnvOnly)
+    }
+
+    fn user(&self, provider: &str) -> Option<String> {
+        match &self.home {
+            KeyHome::Keyring(id) => Some(format!("{provider}/{id}")),
+            KeyHome::EnvOnly => None,
+        }
+    }
+
+    /// The key of a provider: the environment first, then the keyring.
+    pub fn key(&self, provider: &str, env: impl Fn(&str) -> Option<String>) -> Option<String> {
+        if !takes_key(provider) {
+            return None;
+        }
+        env(env_var(provider))
+            .filter(|k| !k.is_empty())
+            .or_else(|| self.store.get(&self.user(provider)?).ok().flatten())
+    }
+
+    pub fn state(&self, provider: &str, env: impl Fn(&str) -> Option<String>) -> KeyState {
+        if env(env_var(provider)).is_some_and(|k| !k.is_empty()) {
+            return KeyState::Environment;
+        }
+        let Some(user) = self.user(provider) else {
+            return KeyState::Unavailable(ENV_ONLY.into());
+        };
+        match self.store.get(&user) {
+            Ok(Some(_)) => KeyState::Keyring,
+            Ok(None) => KeyState::Missing,
+            Err(e) => KeyState::Unavailable(e),
+        }
+    }
+
+    /// Stores a key in the keyring; a blank key is an error.
+    pub fn store(&self, provider: &str, key: &str) -> Result<(), String> {
+        let key = usable(key)?;
+        let user = self.user(provider).ok_or(ENV_ONLY)?;
+        self.store.set(&user, key)
+    }
+
+    /// Removes the provider's key of the profile from the keyring.
+    pub fn remove(&self, provider: &str) -> Result<(), String> {
+        let Some(user) = self.user(provider) else {
+            return Ok(());
+        };
+        self.store.delete(&user)
+    }
+
+    /// Removes the profile's keys of every provider (the profile is deleted). Every provider
+    /// is tried; the errors come back together.
+    pub fn remove_all(&self) -> Result<(), String> {
+        let errors: Vec<String> = keyed()
+            .filter_map(|p| self.remove(p).err().map(|e| format!("{p}: {e}")))
+            .collect();
+        if errors.is_empty() {
+            return Ok(());
+        }
+        Err(errors.join("; "))
+    }
+
+    /// One-time move of the keys from before V-01, one entry per provider (user
+    /// `<provider>`), to this profile: stored under the new name, then the old entry removed.
+    /// Without an old entry nothing happens. A profile that has its own key keeps it; the old
+    /// entry goes anyway. Nothing for a profile without a keyring home.
+    pub fn migrate(&self) -> Result<(), String> {
+        for provider in keyed() {
+            let Some(new) = self.user(provider) else {
+                return Ok(());
+            };
+            let Some(key) = self.store.get(provider)? else {
+                continue;
+            };
+            if self.store.get(&new)?.is_none() {
+                self.store.set(&new, &key)?;
+            }
+            self.store.delete(provider)?;
+        }
+        Ok(())
+    }
+}
+
+/// The providers that take a key.
+fn keyed() -> impl Iterator<Item = &'static str> {
+    crate::presets::PRESETS
+        .iter()
+        .filter(|p| p.key_env.is_some())
+        .map(|p| p.id)
 }
 
 /// The variable that overrides the keyring for a provider (its preset's); an unknown one
@@ -121,34 +267,8 @@ fn takes_key(provider: &str) -> bool {
     crate::presets::preset(provider).is_none_or(|p| p.key_env.is_some())
 }
 
-/// The key of a provider for a profile: the environment first, then the keyring.
-pub fn key(provider: &str, profile: &str, env: impl Fn(&str) -> Option<String>) -> Option<String> {
-    if !takes_key(provider) {
-        return None;
-    }
-    env(env_var(provider))
-        .filter(|k| !k.is_empty())
-        .or_else(|| get(&user(provider, profile)).ok().flatten())
-}
-
-pub fn state(provider: &str, profile: &str, env: impl Fn(&str) -> Option<String>) -> KeyState {
-    if env(env_var(provider)).is_some_and(|k| !k.is_empty()) {
-        return KeyState::Environment;
-    }
-    match get(&user(provider, profile)) {
-        Ok(Some(_)) => KeyState::Keyring,
-        Ok(None) => KeyState::Missing,
-        Err(e) => KeyState::Unavailable(e),
-    }
-}
-
-/// Stores a key in the keyring; a blank key is an error.
-pub fn store(provider: &str, profile: &str, key: &str) -> Result<(), String> {
-    set(&user(provider, profile), usable(key)?)
-}
-
 /// The key as it is stored: trimmed, and not blank. Blank is no key: removing one is its own
-/// step ([`remove`]).
+/// step ([`Keys::remove`]).
 fn usable(key: &str) -> Result<&str, String> {
     let key = key.trim();
     if key.is_empty() {
@@ -157,131 +277,147 @@ fn usable(key: &str) -> Result<&str, String> {
     Ok(key)
 }
 
-/// Removes the provider's key of the profile from the keyring.
-pub fn remove(provider: &str, profile: &str) -> Result<(), String> {
-    delete(&user(provider, profile))
-}
-
-/// The providers that take a key.
-fn keyed() -> impl Iterator<Item = &'static str> {
-    crate::presets::PRESETS
-        .iter()
-        .filter(|p| p.key_env.is_some())
-        .map(|p| p.id)
-}
-
-/// Removes the profile's keys of every provider (the profile is deleted). Every provider is
-/// tried; the errors come back together.
-pub fn remove_all(profile: &str) -> Result<(), String> {
-    let errors: Vec<String> = keyed()
-        .filter_map(|p| remove(p, profile).err().map(|e| format!("{p}: {e}")))
-        .collect();
-    if errors.is_empty() {
-        return Ok(());
-    }
-    Err(errors.join("; "))
-}
-
-/// One-time move of the keys from before V-01, one entry per provider (user `<provider>`), to
-/// `profile`: stored under the new name, then the old entry removed. Without an old entry
-/// nothing happens, so running it again changes nothing. A profile that has its own key keeps
-/// it; the old entry goes anyway.
-pub fn migrate(profile: &str) -> Result<(), String> {
-    for provider in keyed() {
-        let Some(key) = get(provider)? else {
-            continue;
-        };
-        let new = user(provider, profile);
-        if get(&new)?.is_none() {
-            set(&new, &key)?;
-        }
-        delete(provider)?;
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    const NONE: fn(&str) -> Option<String> = |_| None;
+
+    fn home(id: &str, store: &Arc<MemoryKeys>) -> Keys {
+        Keys::new(store.clone(), KeyHome::Keyring(id.into()))
+    }
+
+    /// A keyring that refuses everything, like a system without Secret Service.
+    struct Refusing;
+
+    impl KeyStore for Refusing {
+        fn get(&self, _: &str) -> Result<Option<String>, String> {
+            Err("no Secret Service".into())
+        }
+        fn set(&self, _: &str, _: &str) -> Result<(), String> {
+            Err("no Secret Service".into())
+        }
+        fn delete(&self, _: &str) -> Result<(), String> {
+            Err("no Secret Service".into())
+        }
+    }
+
     #[test]
     fn a_blank_key_is_no_key() {
-        // Spaces pasted by mistake must not remove the stored key (settings, review T-05);
-        // checked without the keyring, which the CI does not have.
+        // Spaces pasted by mistake must not remove the stored key (settings, review T-05).
         assert!(usable("   ").is_err());
         assert_eq!(usable(" sk-1 "), Ok("sk-1"));
-        assert!(store("kaiwa-test-blank", "p", "   ").is_err());
+        let keys = home("a", &Arc::default());
+        assert!(keys.store("anthropic", "   ").is_err());
     }
 
     #[test]
     fn the_environment_wins() {
+        let keys = home("a", &Arc::default());
         let env = |k: &str| (k == "ANTHROPIC_API_KEY").then(|| "from-env".to_string());
-        assert_eq!(key("anthropic", "p", env).as_deref(), Some("from-env"));
-        assert_eq!(state("anthropic", "p", env), KeyState::Environment);
+        assert_eq!(keys.key("anthropic", env).as_deref(), Some("from-env"));
+        assert_eq!(keys.state("anthropic", env), KeyState::Environment);
         assert_eq!(env_var("custom"), "KAIWA_API_KEY");
         assert_eq!(env_var("openrouter"), "OPENROUTER_API_KEY");
         let env = |k: &str| (k == "KAIWA_API_KEY").then(|| "x".to_string());
-        assert_eq!(key("ollama", "p", env), None);
+        assert_eq!(keys.key("ollama", env), None);
     }
 
     #[test]
     fn without_a_keyring_the_state_says_why() {
-        // In CI there is no Secret Service: the state is Missing or Unavailable, never a panic.
-        use_memory();
-        let s = state("kaiwa-test-provider", "p", |_| None);
-        assert!(
-            matches!(s, KeyState::Missing | KeyState::Unavailable(_)),
-            "{s:?}"
+        // A keyring that refuses: the state names the reason, nothing panics, and storing
+        // or removing is an error.
+        let keys = Keys::new(Arc::new(Refusing), KeyHome::Keyring("a".into()));
+        assert_eq!(
+            keys.state("anthropic", NONE),
+            KeyState::Unavailable("no Secret Service".into())
         );
+        assert_eq!(keys.key("anthropic", NONE), None);
+        assert!(keys.store("anthropic", "sk").is_err());
+        assert!(keys.remove_all().is_err());
     }
 
     #[test]
     fn a_profile_does_not_see_the_key_of_another() {
-        use_memory();
-        store("anthropic", "kp-a", "sk-a").unwrap();
-        let none = |_: &str| None;
-        assert_eq!(key("anthropic", "kp-a", none).as_deref(), Some("sk-a"));
-        assert_eq!(key("anthropic", "kp-b", none), None);
-        assert_eq!(state("anthropic", "kp-b", none), KeyState::Missing);
+        let store = Arc::new(MemoryKeys::default());
+        let (a, b) = (home("a", &store), home("b", &store));
+        a.store("anthropic", "sk-a").unwrap();
+        assert_eq!(a.key("anthropic", NONE).as_deref(), Some("sk-a"));
+        assert_eq!(b.key("anthropic", NONE), None);
+        assert_eq!(b.state("anthropic", NONE), KeyState::Missing);
 
-        // Removing B's key (none) leaves A's.
-        store("anthropic", "kp-b", "sk-b").unwrap();
-        remove("anthropic", "kp-b").unwrap();
-        assert_eq!(key("anthropic", "kp-a", none).as_deref(), Some("sk-a"));
-        assert_eq!(key("anthropic", "kp-b", none), None);
-        remove("anthropic", "kp-a").unwrap();
+        // Removing B's key leaves A's.
+        b.store("anthropic", "sk-b").unwrap();
+        b.remove("anthropic").unwrap();
+        assert_eq!(a.key("anthropic", NONE).as_deref(), Some("sk-a"));
+        assert_eq!(b.key("anthropic", NONE), None);
     }
 
     #[test]
     fn remove_all_takes_every_provider_of_the_profile() {
-        use_memory();
-        let none = |_: &str| None;
-        store("anthropic", "kp-all", "sk-1").unwrap();
-        store("openai", "kp-all", "sk-2").unwrap();
-        store("openai", "kp-other", "sk-3").unwrap();
-        remove_all("kp-all").unwrap();
-        assert_eq!(key("anthropic", "kp-all", none), None);
-        assert_eq!(key("openai", "kp-all", none), None);
-        assert_eq!(key("openai", "kp-other", none).as_deref(), Some("sk-3"));
-        remove_all("kp-other").unwrap();
+        let store = Arc::new(MemoryKeys::default());
+        let (a, b) = (home("a", &store), home("b", &store));
+        a.store("anthropic", "sk-1").unwrap();
+        a.store("openai", "sk-2").unwrap();
+        b.store("openai", "sk-3").unwrap();
+        a.remove_all().unwrap();
+        assert_eq!(a.key("anthropic", NONE), None);
+        assert_eq!(a.key("openai", NONE), None);
+        assert_eq!(b.key("openai", NONE).as_deref(), Some("sk-3"));
     }
 
     #[test]
     fn migration_moves_the_old_entry_once() {
-        use_memory();
-        let none = |_: &str| None;
+        let store = Arc::new(MemoryKeys::default());
         // Before V-01: one entry per provider.
-        set("mistral", "sk-old").unwrap();
+        store.set("mistral", "sk-old").unwrap();
+        let (first, second) = (home("first", &store), home("second", &store));
 
-        migrate("kp-first").unwrap();
-        assert_eq!(key("mistral", "kp-first", none).as_deref(), Some("sk-old"));
-        assert_eq!(get("mistral"), Ok(None), "the old entry is gone");
+        first.migrate().unwrap();
+        assert_eq!(first.key("mistral", NONE).as_deref(), Some("sk-old"));
+        assert_eq!(store.get("mistral"), Ok(None), "the old entry is gone");
 
         // Again, and for another profile: nothing moves.
-        migrate("kp-first").unwrap();
-        migrate("kp-second").unwrap();
-        assert_eq!(key("mistral", "kp-first", none).as_deref(), Some("sk-old"));
-        assert_eq!(key("mistral", "kp-second", none), None);
-        remove_all("kp-first").unwrap();
+        first.migrate().unwrap();
+        second.migrate().unwrap();
+        assert_eq!(first.key("mistral", NONE).as_deref(), Some("sk-old"));
+        assert_eq!(second.key("mistral", NONE), None);
+    }
+
+    #[test]
+    fn only_a_profile_in_the_profiles_dir_has_a_keyring_home() {
+        let dir = Path::new("/p/profiles");
+        let home = |f: &str| KeyHome::of(Path::new(f), dir);
+        assert_eq!(
+            home("/p/profiles/default.kaiwa"),
+            KeyHome::Keyring("default".into())
+        );
+        // The same file name elsewhere (KAIWA_PROFILE, demo, tmp) is not the same profile.
+        assert_eq!(home("/tmp/kaiwa-demo-1/default.kaiwa"), KeyHome::EnvOnly);
+        assert_eq!(home("/p/profiles/sub/default.kaiwa"), KeyHome::EnvOnly);
+        assert_eq!(home("/p/profiles/.kaiwa"), KeyHome::EnvOnly);
+        assert_eq!(home("/p/profiles/notes.txt"), KeyHome::EnvOnly);
+    }
+
+    #[test]
+    fn an_env_only_profile_never_reaches_the_store() {
+        let store = Arc::new(MemoryKeys::default());
+        store.set("anthropic/default", "sk-real").unwrap();
+        let keys = Keys::new(store.clone(), KeyHome::EnvOnly);
+
+        assert_eq!(keys.key("anthropic", NONE), None);
+        assert_eq!(
+            keys.state("anthropic", NONE),
+            KeyState::Unavailable(ENV_ONLY.into())
+        );
+        assert_eq!(keys.store("anthropic", "sk-x"), Err(ENV_ONLY.to_string()));
+        keys.remove("anthropic").unwrap();
+        keys.remove_all().unwrap();
+        keys.migrate().unwrap();
+        assert_eq!(store.get("anthropic/default"), Ok(Some("sk-real".into())));
+
+        // The environment still works.
+        let env = |k: &str| (k == "ANTHROPIC_API_KEY").then(|| "from-env".to_string());
+        assert_eq!(keys.key("anthropic", env).as_deref(), Some("from-env"));
     }
 }

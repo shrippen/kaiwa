@@ -9,6 +9,7 @@ use std::time::Instant;
 
 use anyhow::Result;
 use kaiwa_ai::mock::MockProvider;
+use kaiwa_ai::secrets::KeyStore;
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::Curriculum;
 use kaiwa_core::session::{Input, Session};
@@ -220,13 +221,18 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     };
     let mut found = Vec::new();
 
-    // The keys of the profiles (V-01) never go to the real keyring here.
-    kaiwa_ai::secrets::use_memory();
-    let no_env = |_: &str| None;
-    let key_of = |b: &Backend| kaiwa_ai::secrets::key("anthropic", &b.profile_id(), no_env);
+    // The keys of the profiles (V-01) are in memory here, never in the real keyring.
+    let keys = std::sync::Arc::new(kaiwa_ai::secrets::MemoryKeys::default());
+    let open = |path: PathBuf| Backend::open_with(path, false, keys.clone(), &dir);
+    let key_of = |b: &Backend| {
+        let id = b.path.file_stem().map(|s| s.to_string_lossy().to_string());
+        keys.get(&format!("anthropic/{}", id.unwrap_or_default()))
+            .ok()
+            .flatten()
+    };
 
     // Hinnerk: his settings, two talks, a month's cost.
-    let hinnerk = Backend::open_at(profiles::current_in(&dir), false)?;
+    let hinnerk = open(profiles::current_in(&dir))?;
     let mut p = hinnerk.store.profile()?;
     p.name = "Hinnerk".into();
     p.text_scale = 1.6;
@@ -261,7 +267,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     if profiles::current_in(&dir) != file {
         found.push("the new profile is not the one in use".into());
     }
-    let ole = Backend::open_at(file.clone(), false)?;
+    let ole = open(file.clone())?;
     let op = ole.store.profile()?;
     let fresh = kaiwa_store::Profile::default();
     if op.name != "Ole" || op.ui_lang != "en" {
@@ -324,7 +330,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     if profiles::current_in(&dir) != his_file {
         found.push("the profile chosen last is not the one opened".into());
     }
-    let hinnerk = Backend::open_at(profiles::current_in(&dir), false)?;
+    let hinnerk = open(profiles::current_in(&dir))?;
     let after = all(&hinnerk)?;
     if after != before {
         let part = before
@@ -342,12 +348,12 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     drop(hinnerk);
 
     // Deleting the grandson's profile takes his key and leaves his grandfather's.
-    let mut ole = Backend::open_at(file, false)?;
+    let mut ole = open(file)?;
     ole.wipe()?;
     if key_of(&ole).is_some() {
         found.push("the key outlived the deleted profile".into());
     }
-    let hinnerk = Backend::open_at(his_file.clone(), false)?;
+    let hinnerk = open(his_file.clone())?;
     if key_of(&hinnerk).as_deref() != Some("sk-hinnerk") {
         found.push("deleting a profile took another profile's key".into());
     }

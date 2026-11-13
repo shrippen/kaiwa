@@ -24,7 +24,7 @@ pub mod talk;
 pub mod views;
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use kaiwa_ai::ChatProvider;
@@ -267,6 +267,8 @@ pub struct Backend {
     pub grammar_matcher: kaiwa_core::grammar::Matcher,
     pub scenarios: BTreeMap<String, Scenario>,
     pub demo_data: bool,
+    /// The keys of this profile ([`kaiwa_ai::secrets::KeyHome`]).
+    keys: kaiwa_ai::secrets::Keys,
 }
 
 impl Backend {
@@ -276,6 +278,7 @@ impl Backend {
         let demo_data = std::env::var_os("KAIWA_DEMO").is_some();
         #[cfg(not(any(test, feature = "demo")))]
         let demo_data = false;
+        let own_dir = std::env::var_os("KAIWA_PROFILE").is_none() && !demo_data;
         let path = if let Some(p) = std::env::var_os("KAIWA_PROFILE") {
             PathBuf::from(p)
         } else if demo_data {
@@ -287,9 +290,9 @@ impl Backend {
         };
         let st = Self::open_at(path, demo_data)?;
 
-        // The keys of before V-01 go to the profile open at the first start. Never in the
-        // demo, which stays off the keyring.
-        if !demo_data {
+        // The keys of before V-01 go to the profile open at the first start: one from the
+        // profiles directory, not one named by KAIWA_PROFILE or the demo.
+        if own_dir {
             st.migrate_keys();
         }
         Ok(st)
@@ -311,10 +314,27 @@ impl Backend {
     pub fn open_at(path: PathBuf, demo: bool) -> anyhow::Result<Self> {
         // Tests never touch the real keyring.
         #[cfg(test)]
-        kaiwa_ai::secrets::use_memory();
+        let store = Arc::new(kaiwa_ai::secrets::MemoryKeys::default());
+        #[cfg(not(test))]
+        let store = Arc::new(kaiwa_ai::secrets::Keyring);
+        Self::open_with(path, demo, store, &kaiwa_store::profiles_dir())
+    }
+
+    /// Like [`Backend::open_at`], with the keys in `store` for the profiles in `profiles_dir`
+    /// (tests and `kaiwa-sim` pass a [`kaiwa_ai::secrets::MemoryKeys`]).
+    pub fn open_with(
+        path: PathBuf,
+        demo: bool,
+        store: Arc<dyn kaiwa_ai::secrets::KeyStore>,
+        profiles_dir: &Path,
+    ) -> anyhow::Result<Self> {
+        let keys = kaiwa_ai::secrets::Keys::new(
+            store,
+            kaiwa_ai::secrets::KeyHome::of(&path, profiles_dir),
+        );
         #[cfg_attr(not(any(test, feature = "demo")), allow(unused_variables))]
         let fresh = !path.exists();
-        let store = Store::open(&path)?;
+        let db = Store::open(&path)?;
         let curriculum = Curriculum::from_files(CURRICULUM)?;
         let grammar = kaiwa_core::grammar::Catalogue::from_files(GRAMMAR)?;
         let scenarios = SCENARIOS
@@ -322,7 +342,8 @@ impl Backend {
             .map(|j| Scenario::from_json(j).map(|s| (s.id.clone(), s)))
             .collect::<Result<_, _>>()?;
         let st = Backend {
-            store,
+            store: db,
+            keys,
             path,
             curriculum,
             grammar_matcher: grammar.matcher(),
@@ -408,6 +429,11 @@ impl Backend {
             .unwrap_or_default()
     }
 
+    /// The keys of this profile.
+    pub(crate) fn keys(&self) -> &kaiwa_ai::secrets::Keys {
+        &self.keys
+    }
+
     /// The tutor of the profile (Q-15).
     pub fn tutor(&self) -> kaiwa_ai::Tutor {
         self.store.profile().map(|p| p.tutor).unwrap_or_default()
@@ -423,7 +449,7 @@ impl Backend {
     /// environment). Without one, a demo build replays the recorded answers (`true`); any other
     /// build says that no tutor is set up.
     pub fn provider(&self, scenario: &str) -> (Arc<dyn ChatProvider>, bool) {
-        match kaiwa_ai::provider_from(&self.profile_id(), self.tutor_env()) {
+        match kaiwa_ai::provider_from(&self.keys, self.tutor_env()) {
             Ok(Some(p)) => return (p, false),
             Ok(None) => {}
             Err(e) => eprintln!("kaiwa: {e}"),

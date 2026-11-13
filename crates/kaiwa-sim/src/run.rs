@@ -25,9 +25,6 @@ use kaiwa_core::{Amount, Input, Scenario, Session, Summary, TurnOutcome, norm};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-/// `--live` takes the key of the default profile (the environment's, else the keyring's).
-const LIVE_PROFILE: &str = "default";
-
 #[derive(Debug, Deserialize)]
 pub struct Script {
     pub journey: String,
@@ -154,7 +151,7 @@ fn amount_of(persona: &Value) -> Amount {
 /// instead of the recorded answers, for the owner's local test.
 pub fn play(root: &Path, persona: &Value, script: &Script, live: bool) -> Result<Run> {
     let provider: Arc<dyn kaiwa_ai::ChatProvider> = if live {
-        kaiwa_ai::provider_from_env(LIVE_PROFILE)
+        kaiwa_ai::provider_from_env()
             .map_err(anyhow::Error::msg)?
             .context("--live needs KAIWA_PROVIDER (see app/README.md)")?
     } else {
@@ -680,7 +677,7 @@ pub fn run_persona(root: &Path, persona_id: &str, live: bool) -> Result<Vec<Jour
     // With --live the tutor's settings are checked once, before anything is played.
     let tutor = if live {
         Some(
-            kaiwa_ai::provider_from_env(LIVE_PROFILE)
+            kaiwa_ai::provider_from_env()
                 .map_err(anyhow::Error::msg)?
                 .context("--live needs KAIWA_PROVIDER (see app/README.md)")?,
         )

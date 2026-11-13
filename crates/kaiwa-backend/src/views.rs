@@ -92,7 +92,7 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         .collect();
     // No tutor and no recordings (a package without a tutor set up): say so first (Q-15).
     let needs_tutor = !crate::DEMO
-        && !kaiwa_ai::provider_from(&st.profile_id(), st.tutor_env()).is_ok_and(|p| p.is_some());
+        && !kaiwa_ai::provider_from(st.keys(), st.tutor_env()).is_ok_and(|p| p.is_some());
     Ok(json!({
         "free": free,
         "needsTutor": needs_tutor,
@@ -718,12 +718,10 @@ pub fn tutor_view(st: &Backend, lang: &str) -> Value {
     let env = st.tutor_env();
     let provider = env("KAIWA_PROVIDER").unwrap_or_default();
     let overridden = std::env::var("KAIWA_PROVIDER").is_ok_and(|v| !v.is_empty());
-    let ready =
-        kaiwa_ai::provider_from(&st.profile_id(), st.tutor_env()).is_ok_and(|p| p.is_some());
+    let ready = kaiwa_ai::provider_from(st.keys(), st.tutor_env()).is_ok_and(|p| p.is_some());
     let de = lang != "en";
     let p = preset(&provider);
-    let missing_key = p.is_some_and(|p| p.needs_key())
-        && kaiwa_ai::secrets::key(&provider, &st.profile_id(), &env).is_none();
+    let missing_key = p.is_some_and(|p| p.needs_key()) && st.keys().key(&provider, &env).is_none();
     let missing_server = p.is_some_and(|p| p.base_url(&env).is_none());
     let status = match (provider.as_str(), p, de) {
         ("", _, true) => "Kein Tutor eingerichtet. Ohne Tutor gibt es keine Gespräche.",
@@ -769,7 +767,7 @@ pub fn tutor_view(st: &Backend, lang: &str) -> Value {
 /// The tutor's API key (/LF713/): which provider, where its key comes from, in words; `null`
 /// for a provider without a key (a server on this computer).
 pub fn key_view(st: &Backend, lang: &str) -> Value {
-    use kaiwa_ai::secrets::{KeyState, state};
+    use kaiwa_ai::secrets::KeyState;
     let env = st.tutor_env();
     let Some(p) = env("KAIWA_PROVIDER")
         .and_then(|id| kaiwa_ai::presets::preset(&id))
@@ -779,7 +777,7 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
     };
     let provider = p.id.to_string();
     let de = lang != "en";
-    let s = state(&provider, &st.profile_id(), env);
+    let s = st.keys().state(&provider, env);
     let text = match (&s, de) {
         (KeyState::Environment, true) => "Aus der Umgebung (lokaler Test).".to_string(),
         (KeyState::Environment, false) => "From the environment (local test).".to_string(),

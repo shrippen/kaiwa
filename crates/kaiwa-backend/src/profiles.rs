@@ -11,6 +11,8 @@ use crate::Backend;
 
 const CURRENT: &str = "current";
 const DEFAULT: &str = "default.kaiwa";
+/// Its presence: the keys of before V-01 have moved.
+const KEYS_MIGRATED: &str = "keys-migrated";
 
 /// The profile in use in `dir` (`default.kaiwa` until another is chosen).
 pub fn current_in(dir: &Path) -> PathBuf {
@@ -97,7 +99,7 @@ impl Backend {
 
         // The profile's keys go with it (V-01). A keyring that refuses does not stop the
         // deletion.
-        if let Err(e) = kaiwa_ai::secrets::remove_all(&self.profile_id()) {
+        if let Err(e) = self.keys.remove_all() {
             eprintln!("kaiwa: the keyring kept keys of this profile: {e}");
         }
         self.store = Store::open(&self.path)?;
@@ -109,14 +111,6 @@ impl Backend {
             self.store.set_profile(&p)?;
         }
         Ok(())
-    }
-
-    /// The profile's id in the keyring: its file name without `.kaiwa`.
-    pub fn profile_id(&self) -> String {
-        self.path
-            .file_stem()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_default()
     }
 
     /// The provider whose key the settings show: the tutor's, when it takes a key.
@@ -131,19 +125,29 @@ impl Backend {
     /// without a key.
     pub fn store_key(&self, key: &str) -> Option<Result<(), String>> {
         let provider = self.key_provider()?;
-        Some(kaiwa_ai::secrets::store(provider, &self.profile_id(), key))
+        Some(self.keys.store(provider, key))
     }
 
     /// Removes this profile's key of the tutor's provider; other profiles keep theirs.
     pub fn remove_key(&self) -> Option<Result<(), String>> {
         let provider = self.key_provider()?;
-        Some(kaiwa_ai::secrets::remove(provider, &self.profile_id()))
+        Some(self.keys.remove(provider))
     }
 
-    /// Moves the keys of before V-01 (one per provider) to this profile, once.
+    /// Moves the keys of before V-01 (one per provider) to this profile, once: a marker in
+    /// the profiles directory says it is done, and from then on the keyring is not read at
+    /// start. A failure leaves the marker out, so the next start tries again.
     pub fn migrate_keys(&self) {
-        if let Err(e) = kaiwa_ai::secrets::migrate(&self.profile_id()) {
+        let marker = self.dir().join(KEYS_MIGRATED);
+        if marker.exists() {
+            return;
+        }
+        if let Err(e) = self.keys.migrate() {
             eprintln!("kaiwa: the keys stay where they are: {e}");
+            return;
+        }
+        if let Err(e) = std::fs::write(&marker, b"") {
+            eprintln!("kaiwa: {e}");
         }
     }
 
@@ -189,6 +193,7 @@ impl Backend {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
 
     #[cfg(unix)]
     #[test]
@@ -263,20 +268,51 @@ mod tests {
         std::fs::remove_dir_all(&dir).unwrap();
     }
 
-    #[test]
-    fn a_profile_has_its_own_key_and_takes_it_along() {
-        let dir = std::env::temp_dir().join(format!("kaiwa-keys-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        let tutor = |b: &Backend| {
+    use kaiwa_ai::secrets::{ENV_ONLY, KeyStore, MemoryKeys};
+
+    /// A directory with profiles whose keys are in `store`.
+    struct Keyed {
+        dir: PathBuf,
+        store: Arc<MemoryKeys>,
+    }
+
+    impl Keyed {
+        fn new(name: &str) -> Self {
+            let dir = std::env::temp_dir().join(format!("kaiwa-{name}-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+            Self {
+                dir,
+                store: Arc::default(),
+            }
+        }
+
+        /// A profile in the directory whose tutor is Anthropic.
+        fn open(&self, file: &str) -> Backend {
+            self.open_in(&self.dir, file)
+        }
+
+        fn open_in(&self, dir: &Path, file: &str) -> Backend {
+            let b =
+                Backend::open_with(dir.join(file), false, self.store.clone(), &self.dir).unwrap();
             let mut p = b.store.profile().unwrap();
             p.tutor.provider = "anthropic".into();
             b.store.set_profile(&p).unwrap();
-        };
-        let mut a = Backend::open_at(dir.join("keya.kaiwa"), false).unwrap();
-        let b = Backend::open_at(dir.join("keyb.kaiwa"), false).unwrap();
-        tutor(&a);
-        tutor(&b);
+            b
+        }
+    }
+
+    impl Drop for Keyed {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.dir);
+        }
+    }
+
+    #[test]
+    fn a_profile_has_its_own_key_and_takes_it_along() {
+        let k = Keyed::new("keys");
+        let mut a = k.open("keya.kaiwa");
+        let b = k.open("keyb.kaiwa");
         let ready = |b: &Backend| crate::views::tutor_view(b, "en")["ready"] == true;
 
         // The key of A makes A ready, not B.
@@ -288,17 +324,77 @@ mod tests {
 
         // Removing in B leaves A's key.
         b.remove_key().unwrap().unwrap();
-        let none = |_: &str| None;
-        let key = |p: &str| kaiwa_ai::secrets::key("anthropic", p, none);
-        assert_eq!(key("keya").as_deref(), Some("sk-a"));
+        assert_eq!(k.store.get("anthropic/keya"), Ok(Some("sk-a".into())));
 
         // Deleting the profile deletes its keys, for every provider.
-        kaiwa_ai::secrets::store("openai", "keya", "sk-o").unwrap();
+        k.store.set("openai/keya", "sk-o").unwrap();
         a.wipe().unwrap();
-        assert_eq!(key("keya"), None);
-        assert_eq!(kaiwa_ai::secrets::key("openai", "keya", none), None);
+        assert_eq!(k.store.get("anthropic/keya"), Ok(None));
+        assert_eq!(k.store.get("openai/keya"), Ok(None));
+    }
 
-        drop((a, b));
+    #[test]
+    fn a_profile_outside_the_profiles_dir_has_no_keyring() {
+        let k = Keyed::new("keys-out");
+        let elsewhere = k.dir.join("elsewhere");
+        std::fs::create_dir_all(&elsewhere).unwrap();
+        k.store.set("anthropic/default", "sk-real").unwrap();
+
+        // Same file name as the real profile, in another directory (KAIWA_PROFILE, demo).
+        let mut b = k.open_in(&elsewhere, "default.kaiwa");
+        assert_eq!(b.store_key("sk-x"), Some(Err(ENV_ONLY.to_string())));
+        assert_eq!(b.keys().key("anthropic", |_| None), None);
+        b.remove_key().unwrap().unwrap();
+        b.wipe().unwrap();
+        b.migrate_keys();
+        assert_eq!(k.store.get("anthropic/default"), Ok(Some("sk-real".into())));
+    }
+
+    #[test]
+    fn the_old_keys_move_once() {
+        let k = Keyed::new("keys-migrate");
+        k.store.set("anthropic", "sk-old").unwrap();
+        let b = k.open("first.kaiwa");
+
+        b.migrate_keys();
+        assert_eq!(k.store.get("anthropic/first"), Ok(Some("sk-old".into())));
+        assert_eq!(k.store.get("anthropic"), Ok(None));
+        assert!(k.dir.join(KEYS_MIGRATED).exists());
+
+        // From then on the old entries are not even read: one that turns up again stays.
+        k.store.set("anthropic", "sk-later").unwrap();
+        k.open("second.kaiwa").migrate_keys();
+        assert_eq!(k.store.get("anthropic"), Ok(Some("sk-later".into())));
+        assert_eq!(k.store.get("anthropic/second"), Ok(None));
+    }
+
+    #[test]
+    fn a_keyring_that_refuses_does_not_stop_the_deletion() {
+        struct Refusing;
+        impl KeyStore for Refusing {
+            fn get(&self, _: &str) -> Result<Option<String>, String> {
+                Err("locked".into())
+            }
+            fn set(&self, _: &str, _: &str) -> Result<(), String> {
+                Err("locked".into())
+            }
+            fn delete(&self, _: &str) -> Result<(), String> {
+                Err("locked".into())
+            }
+        }
+        let dir = std::env::temp_dir().join(format!("kaiwa-keys-refuse-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("refuse.kaiwa");
+        let mut b = Backend::open_with(path, false, Arc::new(Refusing), &dir).unwrap();
+        let mut p = b.store.profile().unwrap();
+        p.name = "Lena".into();
+        b.store.set_profile(&p).unwrap();
+
+        b.wipe().unwrap();
+        assert_eq!(b.store.profile().unwrap().name, "");
+
+        drop(b);
         std::fs::remove_dir_all(&dir).unwrap();
     }
 }
