@@ -64,6 +64,49 @@ fn a_profile_from_before_the_mora_hints_reads() {
 }
 
 #[test]
+fn a_placement_sets_the_feedback_until_the_learner_chose() {
+    let n4 = || kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, "n4")]);
+    let n3 = || kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, "n3")]);
+
+    // Not chosen: the level sets it, again on a new placement.
+    let s = Store::in_memory().unwrap();
+    s.set_placement(n4()).unwrap();
+    let p = s.profile().unwrap();
+    assert_eq!(p.feedback, Amount::Normal);
+    assert_eq!(p.feedback_source, FeedbackSource::Level);
+    s.set_placement(n3()).unwrap();
+    assert_eq!(s.profile().unwrap().feedback, Amount::Much);
+
+    // Chosen: it stays, even when the choice is the old default.
+    let s = Store::in_memory().unwrap();
+    s.set_feedback(Amount::Little).unwrap();
+    assert_eq!(s.profile().unwrap().feedback_source, FeedbackSource::Chosen);
+    s.set_placement(n4()).unwrap();
+    assert_eq!(s.profile().unwrap().feedback, Amount::Little);
+}
+
+#[test]
+fn a_profile_from_before_the_feedback_source_reads() {
+    let from = |amount: &str| {
+        let s = Store::in_memory().unwrap();
+        let mut old = serde_json::to_value(Profile::default()).unwrap();
+        let o = old.as_object_mut().unwrap();
+        o.remove("feedback_source");
+        o.insert("feedback".into(), amount.into());
+        s.db.execute(
+            "INSERT INTO settings (key, value) VALUES ('profile', ?1)",
+            [old.to_string()],
+        )
+        .unwrap();
+        s.profile().unwrap()
+    };
+    // The old default was never a pick; any other amount was.
+    assert_eq!(from("little").feedback_source, FeedbackSource::Level);
+    assert_eq!(from("normal").feedback_source, FeedbackSource::Chosen);
+    assert_eq!(from("much").feedback_source, FeedbackSource::Chosen);
+}
+
+#[test]
 fn an_interrupted_session_continues_where_it_stopped() {
     let path = temp("resume");
     {

@@ -8,7 +8,7 @@ use kaiwa_core::curriculum::NodeState;
 use kaiwa_core::difficulty::KNOBS;
 use kaiwa_core::learner::SKILLS;
 use kaiwa_core::progress::{DailyGoal, streak_note};
-use kaiwa_store::Script;
+use kaiwa_store::{FeedbackSource, Script};
 use serde_json::{Value, json};
 
 use crate::Backend;
@@ -650,6 +650,8 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "goal": goal,
         "gamification": p.gamification,
         "feedback": p.feedback,
+        // The amount follows the placement's speaking level until the learner picks one (V-02).
+        "feedbackByLevel": p.placed && p.feedback_source == FeedbackSource::Level,
         "script": match p.script { Script::Furigana => 0, Script::Kana => 1, Script::Hidden => 2 },
         "endPause": p.end_pause_secs,
         "keepRecordings": p.keep_recordings_days,

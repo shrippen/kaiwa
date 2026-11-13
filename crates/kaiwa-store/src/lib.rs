@@ -66,6 +66,17 @@ pub enum Script {
     Hidden,
 }
 
+/// Where the amount of feedback comes from (/LF304/, V-02).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum FeedbackSource {
+    /// The speaking level of the placement sets it.
+    #[default]
+    Level,
+    /// The learner picked it in the settings; a placement leaves it.
+    Chosen,
+}
+
 /// The profile (/LD010/).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Profile {
@@ -76,6 +87,8 @@ pub struct Profile {
     /// XP, streak and ring; off shows only the path (/LF605/).
     pub gamification: bool,
     pub feedback: Amount,
+    #[serde(default)]
+    pub feedback_source: FeedbackSource,
     pub script: Script,
     /// Silence after which a spoken turn ends, 1.2 to 5 s (/LF101/).
     pub end_pause_secs: f32,
@@ -118,6 +131,22 @@ pub struct Profile {
     pub microphone: Option<String>,
 }
 
+/// A profile from before `feedback_source`: "little" was the fixed default, so it was never a
+/// pick; any other amount was.
+fn migrate_feedback_source(profile: &mut serde_json::Value) {
+    let Some(o) = profile.as_object_mut() else {
+        return;
+    };
+    if o.contains_key("feedback_source") {
+        return;
+    }
+    let source = match o.get("feedback").and_then(|f| f.as_str()) {
+        Some("normal" | "much") => FeedbackSource::Chosen,
+        _ => FeedbackSource::Level,
+    };
+    o.insert("feedback_source".into(), serde_json::json!(source));
+}
+
 fn yes() -> bool {
     true
 }
@@ -138,6 +167,7 @@ impl Default for Profile {
             daily_goal: DailyGoal::default(),
             gamification: true,
             feedback: Amount::Little,
+            feedback_source: FeedbackSource::Level,
             script: Script::Furigana,
             end_pause_secs: 1.2,
             keep_recordings_days: None,
@@ -455,9 +485,13 @@ impl Store {
     // ── Profile ──
 
     pub fn profile(&self) -> Result<Profile> {
-        Ok(self
-            .get_json("SELECT value FROM settings WHERE key = ?1", "profile")?
-            .unwrap_or_default())
+        let raw: Option<serde_json::Value> =
+            self.get_json("SELECT value FROM settings WHERE key = ?1", "profile")?;
+        let Some(mut v) = raw else {
+            return Ok(Profile::default());
+        };
+        migrate_feedback_source(&mut v);
+        Ok(serde_json::from_value(v)?)
     }
 
     /// Reads, changes and writes the profile. A profile that cannot be read is never written
@@ -494,6 +528,14 @@ impl Store {
             params![serde_json::to_string(p)?],
         )?;
         Ok(())
+    }
+
+    /// The learner picks the amount of feedback: a placement no longer changes it.
+    pub fn set_feedback(&self, a: Amount) -> Result<Profile> {
+        self.update_profile(|p| {
+            p.feedback = a;
+            p.feedback_source = FeedbackSource::Chosen;
+        })
     }
 
     // ── Learning state ──
@@ -541,6 +583,9 @@ impl Store {
         }
         let mut p = self.profile()?;
         p.placed = true;
+        if p.feedback_source == FeedbackSource::Level {
+            p.feedback = Amount::for_level(l.model.level(Skill::Speaking));
+        }
         self.set_profile(&p)
     }
 

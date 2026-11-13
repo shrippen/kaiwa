@@ -141,7 +141,7 @@ use cxx_qt::Threading;
 use cxx_qt_lib::QString;
 use kaiwa_core::learner::Skill;
 use kaiwa_core::progress::DailyGoal;
-use kaiwa_store::Script;
+use kaiwa_store::{FeedbackSource, Script};
 use serde_json::json;
 
 use crate::state::views;
@@ -397,6 +397,7 @@ impl qobject::KaiwaApp {
                     "feedback" => {
                         if let Ok(a) = serde_json::from_value(json!(value)) {
                             p.feedback = a;
+                            p.feedback_source = FeedbackSource::Chosen;
                         }
                     }
                     "script" => {
