@@ -53,6 +53,16 @@ pub fn jmdict_prefix(ipadic: &str) -> Option<&'static str> {
     })
 }
 
+/// Whether the JMdict `code` is of the kind `prefix` (from [`jmdict_prefix`]). A noun is `n`,
+/// `n-suf` …, a pronoun (代名詞, IPADIC's 名詞 too) `pn`; not every code that starts
+/// with an n (`num`).
+pub fn fits(prefix: &str, code: &str) -> bool {
+    if prefix != "n" {
+        return code.starts_with(prefix);
+    }
+    code == "n" || code.starts_with("n-") || code == "pn"
+}
+
 /// The label of a JMnedict name kind in `lang` ("de" or "en"): "Name · Familienname".
 pub fn name_label(kinds: &[String], lang: &str) -> String {
     let de = lang == "de";

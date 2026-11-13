@@ -67,6 +67,27 @@ const HONORIFICS: [(&str, &str); 6] = [
     ("先生", "せんせい"),
 ];
 
+/// Beats any difference in frequency (`nf` is 1 to 48): a word spelled like a pronoun is it.
+const PRONOUN_BONUS: i64 = 60;
+
+/// For a word in kana, an entry usually written in kana (JMdict's `uk`, no common kanji
+/// spelling): 居る for いる, not 射る or 要る.
+const KANA_BONUS: i64 = 40;
+
+/// The rank of a common entry without `nf` (it has another priority, as 為る and 何 have):
+/// the middle of the bands, an entry without any priority ranks last.
+const COMMON_NF: i64 = 30;
+const RARE_NF: i64 = 50;
+
+/// Whether an entry must be of the part of speech the tokenizer gave.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Fit {
+    Prefer,
+    Require,
+    /// Like `Require`, and an expression (いらっしゃいませ) fits any part of speech.
+    Expression,
+}
+
 /// Kinds a conversation meets first, preferred when a spelling has several entries.
 const COMMON_KINDS: [&str; 7] = [
     "surname", "given", "fem", "masc", "place", "station", "person",
@@ -217,23 +238,30 @@ impl Dictionary {
     /// own), then in its dictionary form (食べました → 食べる).
     pub fn lookup_word(&self, w: &crate::LineWord, lang: &str) -> Result<Option<Entry>, LangError> {
         let pos = pos::jmdict_prefix(&w.pos);
-        if w.text != w.key
-            && let Some(e) = self.lookup_with(&w.text, None, pos, lang)?
-        {
+        let inflected = w.text != w.key;
+        // An entry of the wrong kind comes last: した is する, not 舌 (tongue).
+        if inflected && let Some(e) = self.lookup_with(&w.text, None, pos, Fit::Expression, lang)? {
             return Ok(Some(e));
         }
-        if let Some(e) = self.lookup_with(&w.key, w.reading.as_deref(), pos, lang)? {
+        let reading = w.reading.as_deref();
+        if let Some(e) = self.lookup_with(&w.key, reading, pos, Fit::Require, lang)? {
+            return Ok(Some(e));
+        }
+        if inflected && let Some(e) = self.lookup_with(&w.text, None, pos, Fit::Prefer, lang)? {
+            return Ok(Some(e));
+        }
+        if let Some(e) = self.lookup_with(&w.key, reading, pos, Fit::Prefer, lang)? {
             return Ok(Some(e));
         }
         if let Some(f) = &w.fallback
-            && let Some(e) = self.lookup_with(f, None, pos, lang)?
+            && let Some(e) = self.lookup_with(f, None, pos, Fit::Prefer, lang)?
         {
             return Ok(Some(e));
         }
         // JMdict writes latin letters in a word full width (Ｔシャツ).
         let wide = full_width(&w.key);
         if wide != w.key {
-            return self.lookup_with(&wide, None, pos, lang);
+            return self.lookup_with(&wide, None, pos, Fit::Prefer, lang);
         }
         Ok(None)
     }
@@ -246,16 +274,18 @@ impl Dictionary {
         reading: Option<&str>,
         lang: &str,
     ) -> Result<Option<Entry>, LangError> {
-        self.lookup_with(key, reading, None, lang)
+        self.lookup_with(key, reading, None, Fit::Prefer, lang)
     }
 
     /// `pos`: the start of the JMdict code the word's part of speech has (`prt` for a
-    /// particle), to choose は the particle over 葉.
+    /// particle), to choose は the particle over 葉; with [`Fit::Require`] an entry of another
+    /// kind does not count.
     fn lookup_with(
         &self,
         key: &str,
         reading: Option<&str>,
         pos: Option<&str>,
+        fit: Fit,
         lang: &str,
     ) -> Result<Option<Entry>, LangError> {
         let mut st = self.db.prepare(
@@ -270,9 +300,21 @@ impl Dictionary {
             let forms = self.forms(id)?;
             let reads = reading.is_some_and(|r| forms.iter().any(|f| f.kind == "r" && f.text == r));
             let fits = pos.is_some_and(|p| self.has_pos(id, p).unwrap_or(false));
+            let phrase = fit == Fit::Expression && self.has_pos(id, "exp").unwrap_or(false);
+            if fit != Fit::Prefer && pos.is_some() && !fits && !phrase {
+                continue;
+            }
+            // The tokenizer's 名詞 holds the pronouns (ここ, なん) too, JMdict tells them apart.
+            let pronoun = pos == Some("n") && self.has_pos(id, "pn").unwrap_or(false);
+            let kana = !key.chars().any(|c| matches!(c, '\u{4e00}'..='\u{9fff}'))
+                && self.usually_kana(id).unwrap_or(false);
             // A matching reading first, then the part of speech, then common and frequent words.
-            let score = i64::from(reads) * 1000 + i64::from(fits) * 500 + i64::from(common) * 100
-                - nf.unwrap_or(50);
+            let score = i64::from(reads) * 1000
+                + i64::from(fits) * 500
+                + i64::from(common) * 100
+                + i64::from(pronoun) * PRONOUN_BONUS
+                + i64::from(kana) * KANA_BONUS
+                - nf.unwrap_or(if common { COMMON_NF } else { RARE_NF });
             if best.as_ref().is_none_or(|b| score > b.1) {
                 best = Some((id, score, forms, common));
             }
@@ -357,12 +399,21 @@ impl Dictionary {
     }
 
     /// Whether one of the entry's English senses has a part of speech starting with `prefix`.
+    fn usually_kana(&self, id: i64) -> Result<bool, LangError> {
+        Ok(self.db.query_row(
+            "SELECT count(*) FROM sense WHERE entry = ?1 AND lang = 'en' AND misc LIKE '%\"uk\"%'
+                 AND NOT EXISTS (SELECT 1 FROM form WHERE entry = ?1 AND kind = 'k' AND common = 1)",
+            [id],
+            |r| r.get::<_, i64>(0),
+        )? > 0)
+    }
+
     fn has_pos(&self, id: i64, prefix: &str) -> Result<bool, LangError> {
         Ok(self
             .senses(id)?
             .iter()
             .filter(|s| s.lang == "en")
-            .any(|s| s.pos.iter().any(|p| p.starts_with(prefix))))
+            .any(|s| s.pos.iter().any(|p| pos::fits(prefix, p))))
     }
 
     fn forms(&self, id: i64) -> Result<Vec<Form>, LangError> {

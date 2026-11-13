@@ -164,3 +164,59 @@ fn content_words_are_in_the_dictionary() {
     }
     assert!(unknown.is_empty(), "not in the dictionary: {unknown:?}");
 }
+
+/// The entry a click on the word `text` of `line` shows (/LF112/).
+fn shown(line: &str, text: &str) -> kaiwa_lang::Entry {
+    let (_, ws) = annotate(&Words::new().unwrap(), line);
+    let w = ws.iter().find(|w| w.text == text).unwrap();
+    dict().lookup_word(w, "en").unwrap().unwrap()
+}
+
+/// A conjugated verb shows the verb, not a noun spelled like its inflected form.
+#[test]
+fn a_conjugated_verb_shows_the_verb() {
+    for (line, text, word, meaning) in [
+        ("勉強した", "した", "する", "to do"),
+        ("宿題をした", "した", "する", "to do"),
+        ("友だちがきた", "きた", "くる", "to come"),
+        ("{東京|とうきょう}に{来|き}た", "来た", "来る", "to come"),
+        ("ここにいた", "いた", "いる", "to be"),
+        ("あそこにいって", "いって", "いく", "to go"),
+    ] {
+        let e = shown(line, text);
+        assert_eq!(e.word, word, "{line}: {text}");
+        assert!(
+            e.pos.iter().any(|p| p.starts_with("verb")),
+            "{line}: {:?}",
+            e.pos
+        );
+        assert!(
+            e.senses[0].iter().any(|g| g.starts_with(meaning)),
+            "{line}: {:?}",
+            e.senses
+        );
+    }
+}
+
+/// A common pronoun beats a rarer noun spelled alike.
+#[test]
+fn a_pronoun_beats_a_rarer_noun() {
+    let e = shown("ここにいた", "ここ");
+    assert!(e.pos.iter().any(|p| p == "pronoun"), "{:?}", e.pos);
+    let e = shown("これはなんですか", "なん");
+    assert!(e.senses[0].iter().any(|g| g == "what"), "{:?}", e.senses);
+    assert!(e.pos.iter().any(|p| p == "pronoun"), "{:?}", e.pos);
+}
+
+/// IPADIC reads かって as かつ and よんだ as よぶ; the entry is still a verb, no noun.
+#[test]
+fn a_misread_verb_still_gets_a_verb() {
+    for text in ["かって", "よん"] {
+        let e = shown("ほんをかって、よんだ", text);
+        assert!(
+            e.pos.iter().any(|p| p.starts_with("verb")),
+            "{text}: {:?}",
+            e.pos
+        );
+    }
+}
