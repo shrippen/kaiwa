@@ -81,7 +81,8 @@ impl Debt {
         if let Some(markup) = self.reply.take().filter(|_| voice == Voice::Ready) {
             return Owed::Reply(markup);
         }
-        if lines != 1 || busy || self.opening_said {
+        // An opening cannot be said to a switched-off voice; it stays owed.
+        if lines != 1 || busy || self.opening_said || voice == Voice::Off {
             return Owed::Nothing;
         }
 
@@ -171,6 +172,17 @@ mod tests {
         let mut d = Debt::default();
         d.opening_said(Voice::Off);
         assert_eq!(d.voice_ready(1, false, Voice::Ready), Owed::Opening);
+    }
+
+    #[test]
+    fn an_opening_owed_to_a_voice_switched_off_is_not_said() {
+        let mut d = Debt::default();
+        assert_eq!(d.voice_ready(1, false, Voice::Off), Owed::Nothing);
+        assert_eq!(
+            d.voice_ready(1, false, Voice::Ready),
+            Owed::Opening,
+            "still owed once the voice is on"
+        );
     }
 
     #[test]
