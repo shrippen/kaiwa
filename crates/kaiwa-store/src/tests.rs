@@ -836,6 +836,13 @@ fn a_failing_review_leaves_nothing_behind() {
 }
 
 #[test]
+fn only_the_default_profiles_dir_has_keyring_homes() {
+    // KAIWA_DATA set: no directory has keyring homes (their ids would collide with the real ones).
+    assert_eq!(keyring_dir_for(true), None);
+    assert_eq!(keyring_dir_for(false), Some(profiles_dir()));
+}
+
+#[test]
 fn export_carries_the_costs_per_month() {
     let a = Store::in_memory().unwrap();
     a.set_state_value("cost.2026-10", &month(12.5, 3)).unwrap();

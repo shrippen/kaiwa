@@ -83,7 +83,7 @@ Die Lautumschrift ist ein Nachbau von misakis japanischer G2P auf lindera mit IP
 
 ## Tutor (ADR-004, Q-15)
 
-Der Tutor wird in den Einstellungen unter „Tutor“ eingerichtet. Zur Wahl stehen Voreinstellungen (`kaiwa_ai::presets`): Ollama und LM Studio auf diesem Rechner, Anthropic Claude, OpenRouter, OpenAI, Google Gemini, Mistral und ein eigener OpenAI-kompatibler Server. Außer bei Anthropic gehört ein Modellname dazu, beim eigenen Server die Adresse. Der API-Schlüssel liegt im Schlüsselbund des Systems (/LF713/), je Anbieter ein Eintrag. Ohne Tutor gibt es keine Gespräche, die App sagt das, statt etwas zu erfinden. Für den lokalen Test überschreiben Umgebungsvariablen die Einstellungen:
+Der Tutor wird in den Einstellungen unter „Tutor“ eingerichtet. Zur Wahl stehen Voreinstellungen (`kaiwa_ai::presets`): Ollama und LM Studio auf diesem Rechner, Anthropic Claude, OpenRouter, OpenAI, Google Gemini, Mistral und ein eigener OpenAI-kompatibler Server. Außer bei Anthropic gehört ein Modellname dazu, beim eigenen Server die Adresse. Der API-Schlüssel liegt im Schlüsselbund des Systems (/LF713/), je Profil und Anbieter ein Eintrag; mit dem Profil wird er gelöscht. Ein Profil außerhalb des Profilordners (`KAIWA_PROFILE`, Demo) und `kaiwa-sim run --live` lesen Schlüssel nur aus der Umgebung. Ohne Tutor gibt es keine Gespräche, die App sagt das, statt etwas zu erfinden. Für den lokalen Test überschreiben Umgebungsvariablen die Einstellungen:
 
 ```sh
 KAIWA_PROVIDER=anthropic ANTHROPIC_API_KEY=… cargo run -p kaiwa-app

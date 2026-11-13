@@ -85,8 +85,8 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         })
         .collect();
     // No tutor and no recordings (a package without a tutor set up): say so first (Q-15).
-    let needs_tutor =
-        !crate::DEMO && !kaiwa_ai::provider_from(st.tutor_env()).is_ok_and(|p| p.is_some());
+    let needs_tutor = !crate::DEMO
+        && !kaiwa_ai::provider_from(st.keys(), st.tutor_env()).is_ok_and(|p| p.is_some());
     Ok(json!({
         "free": free,
         "needsTutor": needs_tutor,
@@ -713,11 +713,10 @@ pub fn tutor_view(st: &Backend, lang: &str) -> Value {
     let env = st.tutor_env();
     let provider = env("KAIWA_PROVIDER").unwrap_or_default();
     let overridden = std::env::var("KAIWA_PROVIDER").is_ok_and(|v| !v.is_empty());
-    let ready = kaiwa_ai::provider_from(st.tutor_env()).is_ok_and(|p| p.is_some());
+    let ready = kaiwa_ai::provider_from(st.keys(), st.tutor_env()).is_ok_and(|p| p.is_some());
     let de = lang != "en";
     let p = preset(&provider);
-    let missing_key =
-        p.is_some_and(|p| p.needs_key()) && kaiwa_ai::secrets::key(&provider, &env).is_none();
+    let missing_key = p.is_some_and(|p| p.needs_key()) && st.keys().key(&provider, &env).is_none();
     let missing_server = p.is_some_and(|p| p.base_url(&env).is_none());
     let status = match (provider.as_str(), p, de) {
         ("", _, true) => "Kein Tutor eingerichtet. Ohne Tutor gibt es keine Gespräche.",
@@ -763,7 +762,7 @@ pub fn tutor_view(st: &Backend, lang: &str) -> Value {
 /// The tutor's API key (/LF713/): which provider, where its key comes from, in words; `null`
 /// for a provider without a key (a server on this computer).
 pub fn key_view(st: &Backend, lang: &str) -> Value {
-    use kaiwa_ai::secrets::{KeyState, state};
+    use kaiwa_ai::secrets::KeyState;
     let env = st.tutor_env();
     let Some(p) = env("KAIWA_PROVIDER")
         .and_then(|id| kaiwa_ai::presets::preset(&id))
@@ -773,26 +772,33 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
     };
     let provider = p.id.to_string();
     let de = lang != "en";
-    let s = state(&provider, env);
+    let s = st.keys().state(&provider, env);
+    let var = kaiwa_ai::secrets::env_var(&provider);
     let text = match (&s, de) {
         (KeyState::Environment, true) => "Aus der Umgebung (lokaler Test).".to_string(),
         (KeyState::Environment, false) => "From the environment (local test).".to_string(),
-        (KeyState::Keyring, true) => "Im Schlüsselbund des Systems gespeichert.".to_string(),
-        (KeyState::Keyring, false) => "Kept in the system keyring.".to_string(),
+        (KeyState::Keyring, true) => "Im Schlüsselbund gespeichert, für dieses Profil.".to_string(),
+        (KeyState::Keyring, false) => "Kept in the keyring, for this profile.".to_string(),
         (KeyState::Missing, true) if p.needs_key() => format!(
-            "Fehlt. Du bekommst ihn unter {}. Er wird im Schlüsselbund gespeichert, nie in einer Datei.",
+            "Fehlt. Du bekommst ihn unter {}. Er wird für dieses Profil im Schlüsselbund gespeichert, nie in einer Datei.",
             p.keys_at
         ),
         (KeyState::Missing, false) if p.needs_key() => format!(
-            "Missing. You get it at {}. It is kept in the keyring, never in a file.",
+            "Missing. You get it at {}. It is kept in the keyring for this profile, never in a file.",
             p.keys_at
         ),
         (KeyState::Missing, true) => {
-            "Nur nötig, wenn der Server einen verlangt. Er wird im Schlüsselbund gespeichert, nie in einer Datei.".to_string()
+            "Nur nötig, wenn der Server einen verlangt. Er wird für dieses Profil im Schlüsselbund gespeichert, nie in einer Datei.".to_string()
         }
         (KeyState::Missing, false) => {
-            "Only needed when the server asks for one. It is kept in the keyring, never in a file.".to_string()
+            "Only needed when the server asks for one. It is kept in the keyring for this profile, never in a file.".to_string()
         }
+        (KeyState::EnvOnly, true) => format!(
+            "Dieses Profil liegt außerhalb des Profilordners; der Schlüssel kommt nur aus der Umgebungsvariable {var}."
+        ),
+        (KeyState::EnvOnly, false) => format!(
+            "This profile is outside the profiles folder; the key comes only from the environment variable {var}."
+        ),
         (KeyState::Unavailable(e), true) => format!("Kein Schlüsselbund erreichbar ({e})."),
         (KeyState::Unavailable(e), false) => format!("No keyring reachable ({e})."),
     };
@@ -800,9 +806,30 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
         "provider": provider,
         "label": if p.id == "custom" && !de { "OpenAI-compatible" } else { p.label },
         "stored": matches!(s, KeyState::Keyring | KeyState::Environment),
-        "canStore": !matches!(s, KeyState::Unavailable(_) | KeyState::Environment),
+        "canStore": !matches!(
+            s,
+            KeyState::Unavailable(_) | KeyState::Environment | KeyState::EnvOnly
+        ),
         "text": text,
     })
+}
+
+/// Why a key was not stored, in words.
+pub fn key_error(e: &kaiwa_ai::secrets::KeyError, lang: &str) -> String {
+    use kaiwa_ai::secrets::KeyError;
+    let de = lang != "en";
+    match (e, de) {
+        (KeyError::Empty, true) => "Kein Schlüssel eingegeben.".to_string(),
+        (KeyError::Empty, false) => "No key entered.".to_string(),
+        (KeyError::EnvOnly, true) => {
+            "Dieses Profil liegt außerhalb des Profilordners; sein Schlüssel kommt nur aus der Umgebung.".to_string()
+        }
+        (KeyError::EnvOnly, false) => {
+            "This profile is outside the profiles folder; its key comes only from the environment.".to_string()
+        }
+        (KeyError::Keyring(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
+        (KeyError::Keyring(e), false) => format!("The keyring refused: {e}"),
+    }
 }
 
 /// "What leaves the device?" (/LF711/), from `kaiwa_ai::privacy`, for the tutor set up.
@@ -813,6 +840,35 @@ pub fn privacy(st: &Backend, lang: &str) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_profile_outside_the_profiles_dir_says_the_key_is_the_environments() {
+        // TempBackend lives in a temporary directory: no keyring home.
+        let b = crate::TempBackend::new("key-env-only", false).unwrap();
+        let mut p = b.store.profile().unwrap();
+        p.tutor.provider = "anthropic".into();
+        b.store.set_profile(&p).unwrap();
+        if std::env::var_os("ANTHROPIC_API_KEY").is_some()
+            || std::env::var_os("KAIWA_PROVIDER").is_some()
+        {
+            return;
+        }
+
+        let de = key_view(&b, "de");
+        assert_eq!(de["canStore"], false);
+        assert_eq!(de["stored"], false);
+        let text = de["text"].as_str().unwrap();
+        assert!(text.contains("außerhalb des Profilordners"), "{text}");
+        assert!(text.contains("ANTHROPIC_API_KEY"), "{text}");
+        assert!(!text.contains("Schlüsselbund erreichbar"), "{text}");
+        let en = key_view(&b, "en")["text"].as_str().unwrap().to_string();
+        assert!(en.contains("outside the profiles folder"), "{en}");
+        assert!(en.contains("ANTHROPIC_API_KEY"), "{en}");
+
+        let e = kaiwa_ai::secrets::KeyError::EnvOnly;
+        assert!(!key_error(&e, "de").contains("Schlüsselbund hat abgelehnt"));
+        assert!(!key_error(&e, "en").contains("refused"));
+    }
 
     #[test]
     fn privacy_is_local_without_a_cloud_provider() {

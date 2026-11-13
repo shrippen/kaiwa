@@ -44,7 +44,8 @@ enum Command {
         /// requirements, the curves of the long journeys (/LL604/).
         #[arg(long)]
         report: Option<PathBuf>,
-        /// A real tutor from KAIWA_PROVIDER instead of the recorded answers (local test).
+        /// A real tutor from KAIWA_PROVIDER instead of the recorded answers (local test); the key
+        /// comes from the environment only, never from the keyring.
         #[arg(long)]
         live: bool,
         /// The built app (release, feature `demo`): also run the checks that need it.

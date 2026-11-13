@@ -679,8 +679,8 @@ QQC2.ScrollView {
         standardButtons: QQC2.Dialog.Ok | QQC2.Dialog.Cancel
         QQC2.Label {
             width: KanteStyle.unit(360)
-            text: page.t("Gesprächsverlauf, Lernstand, Wiederholung und Einstellungen werden endgültig gelöscht. Ein Export vorher behält eine Kopie.",
-                         "Conversations, progress, review and settings are deleted for good. Export first to keep a copy.")
+            text: page.t("Gesprächsverlauf, Lernstand, Wiederholung, Einstellungen und die API-Schlüssel dieses Profils werden endgültig gelöscht. Ein Export vorher behält eine Kopie (ohne Schlüssel).",
+                         "Conversations, progress, review, settings and the API keys of this profile are deleted for good. Export first to keep a copy (without keys).")
             wrapMode: Text.Wrap
             font: KanteStyle.defaultFont
             color: KanteStyle.textColor

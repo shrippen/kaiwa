@@ -671,26 +671,26 @@ impl qobject::KaiwaApp {
     }
 
     fn store_key(mut self: Pin<&mut Self>, key: &QString) {
-        let provider = state().tutor_env()("KAIWA_PROVIDER").unwrap_or_default();
         let de = self.lang().to_string() == "de";
         // Only a provider that takes a key has a keyring entry.
-        if kaiwa_ai::presets::preset(&provider).is_none_or(|p| p.key_env.is_none()) {
+        let Some(result) = state().store_key(&key.to_string()) else {
             return;
-        }
-        let msg = match (kaiwa_ai::secrets::store(&provider, &key.to_string()), de) {
+        };
+        let msg = match (result, de) {
             (Ok(()), true) => "Der Schlüssel liegt im Schlüsselbund.".to_string(),
             (Ok(()), false) => "The key is in the keyring.".to_string(),
-            (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
-            (Err(e), false) => format!("The keyring refused: {e}"),
+            (Err(e), _) => kaiwa_backend::views::key_error(&e, if de { "de" } else { "en" }),
         };
         self.as_mut().set_notice(QString::from(&msg));
         self.as_mut().refresh();
     }
 
     fn remove_key(mut self: Pin<&mut Self>) {
-        let provider = state().tutor_env()("KAIWA_PROVIDER").unwrap_or_default();
         let de = self.lang().to_string() == "de";
-        let msg = match (kaiwa_ai::secrets::remove(&provider), de) {
+        let Some(result) = state().remove_key() else {
+            return;
+        };
+        let msg = match (result, de) {
             (Ok(()), true) => "Der Schlüssel ist aus dem Schlüsselbund entfernt.".to_string(),
             (Ok(()), false) => "The key is removed from the keyring.".to_string(),
             (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),

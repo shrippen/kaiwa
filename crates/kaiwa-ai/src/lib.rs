@@ -72,9 +72,10 @@ pub fn analysis_schema() -> serde_json::Value {
 }
 
 /// The tutor named by the environment, for the owner's local test (ADR-004); `None` when
-/// none is configured. See [`provider_from`].
+/// none is configured. The key comes from the environment only, never from the keyring. See
+/// [`provider_from`].
 pub fn provider_from_env() -> Result<Option<std::sync::Arc<dyn ChatProvider>>, String> {
-    provider_from(|k| std::env::var(k).ok())
+    provider_from(&secrets::Keys::env_only(), |k| std::env::var(k).ok())
 }
 
 /// The tutor named by `env` (the settings with the environment on top, [`Tutor::lookup`]);
@@ -85,6 +86,7 @@ pub fn provider_from_env() -> Result<Option<std::sync::Arc<dyn ChatProvider>>, S
 ///   KAIWA_PROVIDER=ollama      KAIWA_MODEL=…  [KAIWA_OPENAI_BASE=… over the preset's server]
 ///   KAIWA_PROVIDER=custom      KAIWA_MODEL=…  KAIWA_OPENAI_BASE=…  [KAIWA_API_KEY=…]
 pub fn provider_from(
+    keys: &secrets::Keys,
     env: impl Fn(&str) -> Option<String>,
 ) -> Result<Option<std::sync::Arc<dyn ChatProvider>>, String> {
     let env = |k: &str| env(k).filter(|v| !v.is_empty());
@@ -98,11 +100,15 @@ pub fn provider_from(
             known.join(", ")
         ));
     };
-    let key = secrets::key(p.id, env);
+    let key = keys.key(p.id, env);
     if p.needs_key() && key.is_none() {
+        let var = p.key_env.unwrap_or_default();
+        // A profile without a keyring home has no settings to put the key in.
+        if !keys.keyring_home() {
+            return Err(format!("KAIWA_PROVIDER={id} needs a key: set {var}"));
+        }
         return Err(format!(
-            "KAIWA_PROVIDER={id} needs a key: in the settings (system keyring) or {}",
-            p.key_env.unwrap_or_default()
+            "KAIWA_PROVIDER={id} needs a key: in the settings (system keyring) or {var}"
         ));
     }
     match p.api {
