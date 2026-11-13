@@ -196,7 +196,7 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
     - Kosten: Zwei Prozesse auf einem Profil (zweite App, später Plasmoid) können das Limit zusammen doppelt ausgeben, und `book` liest und schreibt den Monat ohne Transaktion.
     - Aufnahmen: Die Frist wird nur beim Öffnen des Profils und beim Ändern der Einstellung durchgesetzt, nicht im laufenden Betrieb.
     - Erinnerung: „Später“ über Mitternacht verschiebt die Erinnerung auf den nächsten Tag (wirkt erst mit M4).
-    - Nachschlagen: IPADIC liefert für かって/よんだ die Grundform かつ/よぶ; ohne Beugungsform im `LineWord` nicht zu lösen. Noch Zwillinge (auch vor #114): じゃ → 蛇, こと → 琴, そう/よう, と als „if“ statt „with“. Der Kommentar zu なら in `dict.rs` nennt den falschen Weg.
+    - Nachschlagen: IPADIC liefert für かって/よんだ die Grundform かつ/よぶ; ohne Beugungsform im `LineWord` nicht zu lösen. Noch Zwillinge (auch vor #114): こと → 琴, そう/よう, と als „if“ statt „with“. IPADIC trennt こうちゃ in こう + ちゃ; ちゃ zeigt dann ては.
     - Export: Exporte im Format 1 vom 9. bis 14.10.2026 tragen alte Einheiten-Ids (nur Testdaten).
 
 ## Lessons learned

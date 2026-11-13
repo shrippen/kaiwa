@@ -108,6 +108,10 @@ enum Fit {
     Common,
 }
 
+/// JMdict codes of a particle IPADIC knows that JMdict has as a copula or an expression
+/// (じゃ, a contraction of では), tried when JMdict has no particle of the spelling.
+const PARTICLE_ALTERNATIVES: [&str; 2] = ["cop", "exp"];
+
 /// Kinds a conversation meets first, preferred when a spelling has several entries.
 const COMMON_KINDS: [&str; 7] = [
     "surname", "given", "fem", "masc", "place", "station", "person",
@@ -270,6 +274,17 @@ impl Dictionary {
         if verbal && let Some(e) = self.lookup_form(w, pos, lang)? {
             return Ok(Some(e));
         }
+        if w.pos == "助詞"
+            && self
+                .lookup_with(&w.key, reading, pos, Fit::Require, lang)?
+                .is_none()
+        {
+            for tag in PARTICLE_ALTERNATIVES {
+                if let Some(e) = self.lookup_with(&w.key, reading, Some(tag), Fit::Require, lang)? {
+                    return Ok(Some(e));
+                }
+            }
+        }
         if inflected && let Some(e) = self.lookup_with(&w.text, None, pos, Fit::Prefer, lang)? {
             return Ok(Some(e));
         }
@@ -303,7 +318,7 @@ impl Dictionary {
         let ended = VERB_ENDINGS.iter().any(|e| w.text.ends_with(e));
         // An auxiliary is never a noun's stem: なら is not 奈良. A conditional that is an
         // entry of its own wins over the base form: a particle (たら) or a conjunction
-        // (だったら, でしたら), not だ or です. なら is an auxiliary entry, found below.
+        // (だったら, でしたら), not だ or です. なら is both: the conjunction (1009470) wins in the loop.
         let auxiliary = w.pos == "助動詞";
         for tag in ["prt", "conj"] {
             if kana
