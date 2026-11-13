@@ -1405,11 +1405,15 @@ impl qobject::Conversation {
             }
         }
         self.as_mut().set_talk_state(THINKING);
+        // A spoken turn in flight is busy like a typed one: no typed send, help or listening
+        // aid meanwhile, or the recognised turn would be dropped or get the other one's index.
+        self.as_mut().set_busy(true);
         let by_pause = std::mem::take(&mut self.as_mut().rust_mut().ended_by_pause);
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let text = recognizer.transcribe(&rec.samples, rec.sample_rate);
             let _ = thread.queue(move |mut q| {
+                q.as_mut().set_busy(false);
                 q.as_mut().set_talk_state(READY);
                 q.as_mut().after_turn(by_pause, &text);
                 if !text.is_empty() {
