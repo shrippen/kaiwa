@@ -76,29 +76,29 @@ QQC2.ScrollView {
             section: page.t("Üben", "Practice")
             title: page.t("Tagesziel", "Daily goal")
             hint: page.t("Minuten gesprochen pro Tag; Getipptes zählt nicht", "Minutes spoken a day; typing does not count")
-            KanteSegmented {
+            Choice {
                 readonly property var values: [3, 5, 10, 15, 20]
                 model: values.map(function (m) { return m + " min" })
-                currentIndex: Math.max(0, values.indexOf(page.p.goal.value))
+                shown: Math.max(0, values.indexOf(page.p.goal.value))
                 onActivated: function (i) { page.kaiwa.setSetting("goal", String(values[i])) }
             }
         }
         Row {
             title: page.t("Verbesserungen", "Corrections")
             hint: page.t("Wenig: nur Fehler. Viel: auch Stil", "Little: mistakes only. Much: style too")
-            KanteSegmented {
+            Choice {
                 readonly property var values: ["little", "normal", "much"]
                 model: [page.t("Wenig", "Little"), page.t("Normal", "Normal"), page.t("Viel", "Much")]
-                currentIndex: Math.max(0, values.indexOf(page.p.feedback))
+                shown: Math.max(0, values.indexOf(page.p.feedback))
                 onActivated: function (i) { page.kaiwa.setSetting("feedback", values[i]) }
             }
         }
         Row {
             title: page.t("Schrift der Figur", "The character's text")
             hint: page.t("Ohne Text übst du reines Hören", "Without text you practise pure listening")
-            KanteSegmented {
+            Choice {
                 model: [page.t("Mit Furigana", "With furigana"), page.t("Nur Kana", "Kana only"), page.t("Nur hören", "Listen only")]
-                currentIndex: page.p.script || 0
+                shown: page.p.script || 0
                 onActivated: function (i) { page.kaiwa.setSetting("script", String(i)) }
             }
         }
@@ -107,19 +107,19 @@ QQC2.ScrollView {
             title: page.t("Sprechen", "Speaking")
             hint: page.t("Freisprechen: Kaiwa hört nach jeder Antwort der Figur von selbst zu, eine Pause beendet deinen Satz",
                          "Hands-free: Kaiwa listens by itself after each reply of the character, a pause ends your sentence")
-            KanteSegmented {
+            Choice {
                 model: [page.t("Taste halten", "Hold the key"), page.t("Freisprechen", "Hands-free")]
-                currentIndex: page.p.handsFree === true ? 1 : 0
+                shown: page.p.handsFree === true ? 1 : 0
                 onActivated: function (i) { page.kaiwa.setSetting("handsFree", i === 1 ? "true" : "false") }
             }
         }
         Row {
             title: page.t("Ende eines Zugs", "End of a turn")
             hint: page.t("Beim Freisprechen: so lange Stille, bis Kaiwa annimmt, dass du fertig bist", "Hands-free: silence until Kaiwa takes it you are done")
-            KanteSegmented {
+            Choice {
                 readonly property var values: [1.2, 2, 3, 5]
                 model: [page.t("1,2 s", "1.2 s"), "2 s", "3 s", "5 s"]
-                currentIndex: Math.max(0, values.indexOf(page.p.endPause))
+                shown: Math.max(0, values.indexOf(page.p.endPause))
                 onActivated: function (i) { page.kaiwa.setSetting("endPause", String(values[i])) }
             }
         }
@@ -262,10 +262,10 @@ QQC2.ScrollView {
             title: page.t("Modelle entladen", "Unload models")
             hint: page.t("Nach so langer Pause gibt Kaiwa den Speicher der Sprachmodelle frei; beim nächsten Sprechen lädt es sie wieder (ein paar Sekunden)",
                          "After a pause this long Kaiwa frees the memory of the speech models; the next time you speak it loads them again (a few seconds)")
-            KanteSegmented {
+            Choice {
                 readonly property var values: [5, 10, 30, null]
                 model: ["5 min", "10 min", "30 min", page.t("Nie", "Never")]
-                currentIndex: Math.max(0, values.indexOf(page.p.unloadAfter === undefined ? 10 : page.p.unloadAfter))
+                shown: Math.max(0, values.indexOf(page.p.unloadAfter === undefined ? 10 : page.p.unloadAfter))
                 onActivated: function (i) { page.kaiwa.setSetting("unloadAfter", values[i] === null ? "" : String(values[i])) }
             }
         }
@@ -305,10 +305,10 @@ QQC2.ScrollView {
             visible: false
             title: page.t("Erinnerung", "Reminder")
             hint: page.t("Höchstens eine am Tag, über das Plasmoid; nur solange das Tagesziel offen ist", "At most one a day, through the plasmoid; only while the daily goal is open")
-            KanteSegmented {
+            Choice {
                 readonly property var values: [null, 8 * 60, 12 * 60 + 30, 19 * 60]
                 model: [page.t("Aus", "Off"), "08:00", "12:30", "19:00"]
-                currentIndex: Math.max(0, values.indexOf(page.p.reminder === undefined ? null : page.p.reminder))
+                shown: Math.max(0, values.indexOf(page.p.reminder === undefined ? null : page.p.reminder))
                 onActivated: function (i) { page.kaiwa.setSetting("reminder", values[i] === null ? "" : String(values[i])) }
             }
         }
@@ -318,27 +318,27 @@ QQC2.ScrollView {
             title: page.t("Textgröße", "Text size")
             hint: page.t("Vergrößert die ganze Oberfläche mit den Lesehilfen, zusätzlich zur Systemeinstellung; gilt ab dem nächsten Start",
                          "Enlarges the whole interface with the readings, on top of the system setting; from the next start")
-            KanteSegmented {
+            Choice {
                 // Up to 160 % (owner, 10.11.2026; kaiwa_store::TEXT_SCALE_MAX).
                 readonly property var values: [1.0, 1.25, 1.5, 1.6]
                 model: ["100 %", "125 %", "150 %", "160 %"]
-                currentIndex: Math.max(0, values.indexOf(page.p.textScale === undefined ? 1.0 : page.p.textScale))
+                shown: Math.max(0, values.indexOf(page.p.textScale === undefined ? 1.0 : page.p.textScale))
                 onActivated: function (i) { page.kaiwa.setSetting("textScale", String(values[i])) }
             }
         }
         Row {
             title: page.t("Stil", "Style")
-            KanteSegmented {
+            Choice {
                 model: ["System", "Kante", "Kante Light"]
-                currentIndex: page.p.style || 0
+                shown: page.p.style || 0
                 onActivated: function (i) { page.kaiwa.setSetting("style", String(i)) }
             }
         }
         Row {
             title: page.t("Sprache", "Language")
-            KanteSegmented {
+            Choice {
                 model: ["Deutsch", "English"]
-                currentIndex: page.p.uiLang === "en" ? 1 : 0
+                shown: page.p.uiLang === "en" ? 1 : 0
                 onActivated: function (i) { page.kaiwa.setSetting("uiLang", i === 1 ? "en" : "de") }
             }
         }
@@ -542,10 +542,10 @@ QQC2.ScrollView {
             hint: (page.p.cost ? [page.p.cost.text, page.p.cost.unknown].filter(function (x) { return x.length > 0 }).join(" ") : "")
                 + page.t(" Geschätzt aus dem Preis, den der Anbieter meldet, sonst aus den Listenpreisen. Am Limit antwortet der Cloud-Tutor bis Monatsende nicht mehr.",
                          " Estimated from the price the provider reports, else from list prices. At the limit the cloud tutor stops answering until the month ends.")
-            KanteSegmented {
+            Choice {
                 readonly property var values: [null, 200, 500, 1000, 2000]
                 model: [page.t("Ohne", "None"), "2 €", "5 €", "10 €", "20 €"]
-                currentIndex: Math.max(0, values.indexOf(page.p.costLimit === undefined ? null : page.p.costLimit))
+                shown: Math.max(0, values.indexOf(page.p.costLimit === undefined ? null : page.p.costLimit))
                 onActivated: function (i) { page.kaiwa.setSetting("costLimit", values[i] === null ? "" : String(values[i])) }
             }
         }
@@ -584,10 +584,10 @@ QQC2.ScrollView {
         Row {
             title: page.t("Aufnahmen behalten", "Keep recordings")
             hint: page.t("Zum Vergleichen mit früher. Abschalten löscht sie sofort; die Abschriften bleiben", "To compare with earlier. Turning it off deletes them at once; the transcripts stay")
-            KanteSegmented {
+            Choice {
                 readonly property var values: [null, 7, 30]
                 model: [page.t("Nein", "No"), page.t("7 Tage", "7 days"), page.t("30 Tage", "30 days")]
-                currentIndex: Math.max(0, values.indexOf(page.p.keepRecordings === undefined ? null : page.p.keepRecordings))
+                shown: Math.max(0, values.indexOf(page.p.keepRecordings === undefined ? null : page.p.keepRecordings))
                 onActivated: function (i) { page.kaiwa.setSetting("keepRecordings", values[i] === null ? "" : String(values[i])) }
             }
         }

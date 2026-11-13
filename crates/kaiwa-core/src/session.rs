@@ -263,6 +263,14 @@ pub enum Coaching {
     Off,
 }
 
+/// Whether the talk is stored as finished ([`Session::close`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+enum Record {
+    #[default]
+    Open,
+    Recorded,
+}
+
 pub struct Session {
     pub scenario: Scenario,
     pub lang: String,
@@ -293,6 +301,8 @@ pub struct Session {
     learner_level: Option<f64>,
     /// Set by the caller, not part of the saved state (a placement stage is not saved).
     coaching: Coaching,
+    /// Not part of the saved state: a recorded talk is not continued.
+    recorded: Record,
 }
 
 impl Session {
@@ -326,6 +336,7 @@ impl Session {
             spent_secs: 0,
             learner_level: None,
             coaching: Coaching::default(),
+            recorded: Record::default(),
         }
     }
 
@@ -408,6 +419,7 @@ impl Session {
             spent_secs: st.spent_secs,
             learner_level: None,
             coaching: Coaching::default(),
+            recorded: Record::default(),
         }
     }
 
@@ -506,8 +518,18 @@ impl Session {
         })
     }
 
-    /// A listening aid on the character's last line: repeat, slower, translate (/LF111/).
-    pub fn aid(&mut self, aid: Aid) {
+    /// The index of the character's line the learner answers next: the turns so far.
+    pub fn line(&self) -> usize {
+        self.turns.len()
+    }
+
+    /// A listening aid on the character's line `line` (see `line`): repeat, slower, translate
+    /// (/LF111/). Ignored once the learner has answered that line: a translation arriving
+    /// late must not mark the next turn as aided.
+    pub fn aid(&mut self, aid: Aid, line: usize) {
+        if line != self.line() {
+            return;
+        }
         *self.aids.entry(aid).or_default() += 1;
         self.aid_on_line = true;
     }
@@ -517,7 +539,7 @@ impl Session {
     /// the tutor.
     pub fn translate(&mut self, line: &str) -> Result<String, AiError> {
         let text = self.translating(line).run()?;
-        self.aid(Aid::Translate);
+        self.aid(Aid::Translate, self.line());
         Ok(text)
     }
 
@@ -659,9 +681,20 @@ impl Session {
         }
     }
 
+    /// The talk is recorded (the caller stored it): marks would change only what the page shows,
+    /// so they are refused from now on. Not `done()`: a placement stage goes on after its goals
+    /// when a turn was analysed with gaps, and is never recorded.
+    pub fn close(&mut self) {
+        self.recorded = Record::Recorded;
+    }
+
     /// The learner marks a turn's transcript as misrecognised (/LF113/): its corrections no longer
-    /// count as mistakes and do not go into the review.
+    /// count as mistakes and do not go into the review. Refused once the talk is recorded
+    /// ([`Session::close`]).
     pub fn mark_misrecognized(&mut self, turn: usize) -> bool {
+        if self.recorded == Record::Recorded {
+            return false;
+        }
         match self.turns.get_mut(turn) {
             Some(t) => {
                 t.misrecognized = true;
@@ -672,8 +705,12 @@ impl Session {
     }
 
     /// The learner disputes a correction (/LF307/). It stays visible, marked as disputed, and
-    /// is kept for the QA (/LD060/), but it no longer counts as a mistake.
+    /// is kept for the QA (/LD060/), but it no longer counts as a mistake. Refused once the
+    /// talk is recorded, as for a misrecognition mark.
     pub fn dispute(&mut self, turn: usize, better: &str) -> Option<Correction> {
+        if self.recorded == Record::Recorded {
+            return None;
+        }
         let t = self.turns.get_mut(turn)?;
         let c = t
             .corrections
@@ -1209,12 +1246,26 @@ mod tests {
     }
 
     #[test]
+    fn a_late_aid_does_not_mark_the_next_turn() {
+        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        // The translation of the opening is asked, the learner answers meanwhile.
+        let asked_at = s.line();
+        s.turn("マラです。よろしくおねがいします。", Input::Spoken)
+            .unwrap();
+        s.aid(Aid::Translate, asked_at);
+        s.turn("ドイツのハンブルクから来ました。", Input::Spoken)
+            .unwrap();
+        assert!(!s.turns()[1].aided);
+        assert_eq!(s.stats().understood_unaided, 2);
+    }
+
+    #[test]
     fn stats_count_success_without_help() {
         let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
         s.turn("マラです。よろしくおねがいします。", Input::Spoken)
             .unwrap();
         s.help();
-        s.aid(Aid::Slow);
+        s.aid(Aid::Slow, s.line());
         s.turn("ドイツのハンブルクから来ました。", Input::Spoken)
             .unwrap();
         let st = s.stats();
@@ -1223,6 +1274,30 @@ mod tests {
         assert!((st.success() - 0.5).abs() < 1e-9);
         assert_eq!((st.helps, st.aids), (1, 1));
         assert!(st.speaking_secs > 0);
+    }
+
+    #[test]
+    fn nothing_is_marked_once_the_talk_is_done() {
+        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        s.turn("マラです。よろしくおねがいします。", Input::Spoken)
+            .unwrap();
+        s.turn("ドイツのハンブルクから来ました。", Input::Spoken)
+            .unwrap();
+        s.turn("仕事はプロデューサーです。", Input::Typed).unwrap();
+        s.turn("コーヒーを好きです。", Input::Spoken).unwrap();
+        assert!(s.done());
+        s.close();
+
+        // The talk is recorded: a mark would change the page, not the record.
+        assert!(!s.mark_misrecognized(3));
+        assert!(!s.turns()[3].misrecognized);
+        assert!(s.dispute(3, "コーヒーが好きです").is_none());
+        assert!(s.turns()[3].disputed.is_empty());
+        assert!(
+            s.summary()
+                .review
+                .contains(&"コーヒーが好きです".to_string())
+        );
     }
 
     #[test]

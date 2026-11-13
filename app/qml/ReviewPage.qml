@@ -23,6 +23,8 @@ QQC2.ScrollView {
     // The item on screen by its text: every refresh parses a new object for the same item.
     readonly property string currentText: current ? current.text : ""
     readonly property var answer: kaiwa.answer.length > 0 ? JSON.parse(kaiwa.answer) : null
+    // The answer could not be saved: the page shows why instead of a date.
+    readonly property bool failed: answer !== null && answer.error !== undefined
     // A mini conversation: the item has the character's line to answer.
     readonly property bool talk: current !== null && !!current.cue
     // The form is on screen: asked for as a hint (help) or shown after a spoken answer.
@@ -242,9 +244,12 @@ QQC2.ScrollView {
             Layout.leftMargin: KanteStyle.unit(18)
             Layout.rightMargin: KanteStyle.unit(18)
             visible: page.answer !== null
-            kind: page.answer && page.answer.right ? KanteCallout.Kind.Ok : KanteCallout.Kind.Info
-            title: page.answer && page.answer.right ? page.t("Gut", "Good") : page.t("Noch einmal später", "Again later")
-            text: page.answer
+            kind: page.failed ? KanteCallout.Kind.Warn
+                : page.answer && page.answer.right ? KanteCallout.Kind.Ok : KanteCallout.Kind.Info
+            title: page.failed ? page.t("Nicht gespeichert", "Not saved")
+                : page.answer && page.answer.right ? page.t("Gut", "Good") : page.t("Noch einmal später", "Again later")
+            text: page.failed ? page.t("Die Antwort wurde nicht gespeichert: ", "The answer was not saved: ") + page.answer.error
+                : page.answer
                 ? (page.answer.right ? page.t("Wieder dran am ", "Back on ") + page.answer.next
                                      : page.t("So heißt es: ", "It goes: ") + page.answer.expected + page.t(". Morgen kommt es wieder.", ". It comes back tomorrow."))
                 : ""

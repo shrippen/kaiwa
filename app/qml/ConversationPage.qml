@@ -255,7 +255,7 @@ Kirigami.ScrollablePage {
                                 size: KanteButton.Size.Small
                                 emphasis: KanteButton.Emphasis.Quiet
                                 text: modelData.disputed ? page.t("Widersprochen", "Disputed") : page.t("Widersprechen", "Dispute")
-                                enabled: !modelData.disputed
+                                enabled: !modelData.disputed && !conv.finished
                                 Accessible.description: page.t("Der Satz war richtig: Kaiwa merkt sich den Widerspruch und zählt es nicht als Fehler.", "The sentence was right: Kaiwa keeps the dispute and does not count it as a mistake.")
                                 onClicked: conv.dispute(msg.index, modelData.better)
                             }
@@ -286,7 +286,7 @@ Kirigami.ScrollablePage {
                 }
                 // /LF113/: what Kaiwa heard; a misrecognition is no learning mistake.
                 KanteButton {
-                    visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized && !msg.modelData.failed
+                    visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized && !msg.modelData.failed && !conv.finished
                     size: KanteButton.Size.Small
                     emphasis: KanteButton.Emphasis.Quiet
                     text: page.t("Falsch erkannt", "Misheard")

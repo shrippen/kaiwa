@@ -402,6 +402,7 @@ impl qobject::Conversation {
                         .record_on(id, &guard, begun, end, day, Some(&st.curriculum))
                     {
                         Ok(r) => {
+                            guard.close();
                             if let Err(e) = st.track_grammar(&guard, end) {
                                 eprintln!("kaiwa: {e:#}");
                             }
@@ -677,8 +678,9 @@ impl qobject::Conversation {
         };
         if let Some(session) = &self.session
             && let Ok(mut s) = session.lock()
+            && !s.mark_misrecognized(turn)
         {
-            s.mark_misrecognized(turn);
+            return;
         }
         if let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize) {
             e["corrections"] = json!([]);
@@ -992,6 +994,9 @@ impl qobject::Conversation {
             return;
         };
         let markup = entry["markup"].as_str().unwrap_or_default().to_string();
+        // The aid belongs to the clicked line: the turn that answers it (a line already
+        // answered gives a past turn, and the aid counts for nothing).
+        let line = kaiwa_backend::talk::turns(&self.log[..i]);
         // Already there, or on its way (a second click asks the tutor no second time).
         let translated = entry.get("translation").is_some() || entry["translating"] == true;
         let Some(session) = self.session.clone() else {
@@ -1011,7 +1016,8 @@ impl qobject::Conversation {
                     return;
                 }
                 if let Ok(mut s) = session.lock() {
-                    s.aid(if aid == 0 { Aid::Repeat } else { Aid::Slow });
+                    let kind = if aid == 0 { Aid::Repeat } else { Aid::Slow };
+                    s.aid(kind, line);
                 }
                 self.save();
                 self.as_mut().interrupt();
@@ -1025,6 +1031,8 @@ impl qobject::Conversation {
                     e["translating"] = json!(true);
                 }
                 self.as_mut().publish_turns();
+                // A turn sent meanwhile leaves the clicked line behind: the aid counts for nothing.
+                let asked_at = line;
                 std::thread::spawn(move || {
                     let line = kaiwa_core::plain(&markup);
                     // Asked without holding the session (the window needs it meanwhile).
@@ -1044,7 +1052,7 @@ impl qobject::Conversation {
                             Some(Ok(text)) => {
                                 // It counts as help once the learner has it (/LF212/).
                                 if let Ok(mut s) = session.lock() {
-                                    s.aid(Aid::Translate);
+                                    s.aid(Aid::Translate, asked_at);
                                 }
                                 if let Some(e) = q.as_mut().rust_mut().log.get_mut(i) {
                                     e["translation"] = json!(text);
