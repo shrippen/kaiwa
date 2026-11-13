@@ -26,9 +26,13 @@ use kaiwa_core::srs::{self, Grade, Item};
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
-/// The export format; 2 names the tutor by its preset (migration 3). An export of format 1
-/// is read with [`tutor_ids_3`].
-pub const EXPORT_SCHEMA: &str = "kaiwa-export/2";
+/// The export format; 2 names the tutor by its preset (migration 3), 3 adds the monthly
+/// costs (V-04). An export of format 1 is read with [`tutor_ids_3`], one of format 2 has no
+/// costs.
+pub const EXPORT_SCHEMA: &str = "kaiwa-export/3";
+
+/// The device state of a month's costs is `cost.<year>-<month>`; the export keeps the months.
+pub const COST_STATE_PREFIX: &str = "cost.";
 
 /// The largest text size the app offers (/LL202/; owner, 10.11.2026: 160 % for now). Above
 /// it the profile page no longer fits a small laptop's window (`tools/font-160.sh`). A profile
@@ -476,6 +480,28 @@ impl Store {
             "SELECT value FROM settings WHERE key = ?1",
             &format!("state.{key}"),
         )
+    }
+
+    /// The state values whose key starts with `prefix`, by the rest of the key.
+    pub fn state_values(
+        &self,
+        prefix: &str,
+    ) -> Result<std::collections::BTreeMap<String, serde_json::Value>> {
+        let mut stmt = self
+            .db
+            .prepare("SELECT key, value FROM settings WHERE key LIKE ?1")?;
+        let strip = format!("state.{prefix}");
+        let rows: Vec<(String, String)> = stmt
+            .query_map(params![format!("{strip}%")], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<rusqlite::Result<_>>()?;
+        let mut out = std::collections::BTreeMap::new();
+        for (k, v) in rows {
+            let Some(rest) = k.strip_prefix(&strip) else {
+                continue;
+            };
+            out.insert(rest.to_string(), serde_json::from_str(&v)?);
+        }
+        Ok(out)
     }
 
     pub fn set_state_value<T: Serialize>(&self, key: &str, v: &T) -> Result<()> {
@@ -1111,15 +1137,21 @@ impl Store {
             "days": days,
             "pauses": self.pauses()?,
             "disputes": self.disputes()?,
+            "costs": self.state_values(COST_STATE_PREFIX)?,
         }))
     }
 
     /// Reads an export into this (new, empty) profile.
     pub fn import(&self, v: &serde_json::Value) -> Result<()> {
         let mut profile = v["profile"].clone();
+        let mut costs_in_file = true;
         match v["schema"].as_str() {
             Some(EXPORT_SCHEMA) => {}
-            Some("kaiwa-export/1") => tutor_ids_3(&mut profile),
+            Some("kaiwa-export/2") => costs_in_file = false,
+            Some("kaiwa-export/1") => {
+                costs_in_file = false;
+                tutor_ids_3(&mut profile);
+            }
             _ => return Err(StoreError::WrongFormat(v["schema"].to_string())),
         }
         let empty: i64 = self
@@ -1172,6 +1204,15 @@ impl Store {
         }
         for d in array(v, "disputes")? {
             self.add_dispute(&serde_json::from_value(d.clone())?)?;
+        }
+        // A month of the file replaces the same month of the (empty) profile.
+        if costs_in_file {
+            let costs = v["costs"]
+                .as_object()
+                .ok_or_else(|| StoreError::WrongFormat("costs".into()))?;
+            for (month, m) in costs {
+                self.set_state_value(&format!("{COST_STATE_PREFIX}{month}"), m)?;
+            }
         }
         tx.commit()?;
         Ok(())

@@ -543,6 +543,11 @@ fn export(root: &Path) -> Result<Option<String>> {
 fn import(root: &Path) -> Result<Option<String>> {
     let dir = temp_dir("import");
     let store = three_sessions(root, &dir.join("lena.kaiwa"))?;
+    // V-04: the month's costs travel with the export.
+    store.set_state_value(
+        "cost.2026-10",
+        &serde_json::json!({ "cents": 60.0, "calls": 8, "unknown_calls": 0, "sessions": 1 }),
+    )?;
     let json = store.export(at(3, 9 * 3600))?;
     if store.import(&json).is_ok() {
         return Ok(Some("a profile with data took an import".into()));
@@ -550,7 +555,10 @@ fn import(root: &Path) -> Result<Option<String>> {
     let new = Store::open(&dir.join("new.kaiwa"))?;
     new.import(&json)?;
     let back = new.export(at(3, 9 * 3600))?;
-    for part in ["profile", "learning", "sessions", "items", "days"] {
+    if json["costs"]["2026-10"]["cents"] != 60.0 {
+        return Ok(Some("the export holds no costs".into()));
+    }
+    for part in ["profile", "learning", "sessions", "items", "days", "costs"] {
         if back[part] != json[part] {
             return Ok(Some(format!("{part} differs after the import")));
         }

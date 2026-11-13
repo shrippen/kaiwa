@@ -733,3 +733,36 @@ fn a_failing_review_leaves_nothing_behind() {
     assert_eq!(s.item(text).unwrap().unwrap(), item, "item unchanged");
     assert!(s.state_value::<Moment>("reviewed").unwrap().is_none());
 }
+
+#[test]
+fn export_carries_the_costs_per_month() {
+    let a = Store::in_memory().unwrap();
+    a.set_state_value("cost.2026-10", &serde_json::json!({ "cents": 12.5 }))
+        .unwrap();
+    a.set_state_value("cost.2026-11", &serde_json::json!({ "cents": 60.0 }))
+        .unwrap();
+    a.set_state_value("reviewed", &at(0, 9)).unwrap();
+    let json = a.export(at(1, 9)).unwrap();
+    assert_eq!(json["costs"]["2026-11"]["cents"], 60.0);
+    assert!(json["costs"].get("reviewed").is_none(), "only the costs");
+
+    let b = Store::in_memory().unwrap();
+    b.import(&json).unwrap();
+    assert_eq!(b.export(at(1, 9)).unwrap()["costs"], json["costs"]);
+}
+
+#[test]
+fn an_export_of_format_2_has_no_costs() {
+    let a = Store::in_memory().unwrap();
+    let mut old = a.export(at(1, 9)).unwrap();
+    old["schema"] = "kaiwa-export/2".into();
+    old.as_object_mut().unwrap().remove("costs");
+    let b = Store::in_memory().unwrap();
+    b.import(&old).unwrap();
+    assert_eq!(b.export(at(1, 9)).unwrap()["costs"], serde_json::json!({}));
+
+    // From format 3 on the costs are required, like the arrays.
+    let mut cut = a.export(at(1, 9)).unwrap();
+    cut.as_object_mut().unwrap().remove("costs");
+    assert!(Store::in_memory().unwrap().import(&cut).is_err());
+}

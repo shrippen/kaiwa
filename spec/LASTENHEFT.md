@@ -209,7 +209,7 @@ Oberflächen:
 | /LF711/ | M | Die Ansicht **„Was verlässt das Gerät?“** zeigt je Baustein (STT, LLM, TTS) den Anbieter, ob er lokal oder in der Cloud läuft, und welche Daten (Audio, Text) übertragen werden. | Transparenz (Lena). |
 | /LF712/ | M | Aufnahmen werden standardmäßig **nicht** gespeichert. Speichern ist ein Opt-in für Vergleich und Fortschritt, mit eigener Aufbewahrungsdauer. | Datensparsamkeit. |
 | /LF713/ | M | API-Schlüssel liegen im System-Schlüsselbund (KWallet, Secret Service, Windows Credential Manager, macOS Keychain), nie im Klartext. | Sicherheit. |
-| /LF714/ | S | **Kostenbremse** für Cloud-Anbieter: geschätzte Kosten pro Sitzung und Monat, mit einem Limit, das man selbst setzt. *Kein Limit voreingestellt (I-06); die Preise prüft Claude zu jedem Release (I-05).* | Keine Überraschungen. |
+| /LF714/ | S | **Kostenbremse** für Cloud-Anbieter: geschätzte Kosten pro Sitzung und Monat, mit einem Limit, das man selbst setzt. *Kein Limit voreingestellt (I-06); die Preise prüft Claude zu jedem Release (I-05). Der Export enthält die Kosten je Monat, der Import übernimmt sie, damit die Bremse im selben Monat nicht wieder das ganze Limit erlaubt (V-04, 13.11.2026).* | Keine Überraschungen. |
 | /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. *Ohne Schutz der Profile gegeneinander (I-08).* | Gemeinsamer Rechner. |
 
 ---
