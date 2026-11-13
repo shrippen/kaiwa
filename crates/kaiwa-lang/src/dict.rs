@@ -301,14 +301,17 @@ impl Dictionary {
         let long = w.text.chars().count() > 1;
         let kana = long && !w.text.chars().any(is_kanji);
         let ended = VERB_ENDINGS.iter().any(|e| w.text.ends_with(e));
-        // An auxiliary is never a noun's stem: なら is not 奈良. Its conditional forms are
-        // entries of their own in JMdict, as particles (なら, たら: "if").
+        // An auxiliary is never a noun's stem: なら is not 奈良. A conditional that is an
+        // entry of its own wins over the base form: a particle (たら) or a conjunction
+        // (だったら, でしたら), not だ or です. なら is an auxiliary entry, found below.
         let auxiliary = w.pos == "助動詞";
-        if kana
-            && auxiliary
-            && let Some(e) = self.lookup_with(&w.text, None, Some("prt"), Fit::Require, lang)?
-        {
-            return Ok(Some(e));
+        for tag in ["prt", "conj"] {
+            if kana
+                && auxiliary
+                && let Some(e) = self.lookup_with(&w.text, None, Some(tag), Fit::Require, lang)?
+            {
+                return Ok(Some(e));
+            }
         }
         if kana
             && !auxiliary
