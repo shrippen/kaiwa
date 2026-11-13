@@ -460,6 +460,15 @@ impl Store {
             .unwrap_or_default())
     }
 
+    /// Reads, changes and writes the profile. A profile that cannot be read is never written
+    /// over: the read error comes back and the stored row stays.
+    pub fn update_profile(&self, f: impl FnOnce(&mut Profile)) -> Result<Profile> {
+        let mut p = self.profile()?;
+        f(&mut p);
+        self.set_profile(&p)?;
+        Ok(p)
+    }
+
     /// A small value of the device's state (not part of the export), e.g. when the last
     /// reminder went out.
     pub fn state_value<T: for<'de> Deserialize<'de>>(&self, key: &str) -> Result<Option<T>> {

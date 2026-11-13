@@ -239,6 +239,15 @@ fn q(v: &serde_json::Value) -> QString {
 }
 
 impl qobject::KaiwaApp {
+    /// Tells the learner a profile that cannot be read was left as it is.
+    fn say_unreadable(mut self: Pin<&mut Self>, e: &kaiwa_store::StoreError) {
+        let msg = match self.lang().to_string() == "de" {
+            true => format!("Das Profil ließ sich nicht lesen, nichts geändert: {e}"),
+            false => format!("The profile could not be read, nothing changed: {e}"),
+        };
+        self.as_mut().set_notice(QString::from(&msg));
+    }
+
     fn refresh(mut self: Pin<&mut Self>) {
         let now = now();
         let unit = self.review_unit().to_string();
@@ -366,75 +375,82 @@ impl qobject::KaiwaApp {
         let (key, value) = (key.to_string(), value.to_string());
         {
             let st = state();
-            let mut p = st.store.profile().unwrap_or_default();
-            match key.as_str() {
-                "goal" => {
-                    if let Ok(m) = value.parse::<u32>() {
-                        p.daily_goal = DailyGoal::Minutes(m.clamp(1, 120));
+            // A profile that cannot be read stays as it is; the learner is told.
+            let edited = st.store.update_profile(|p| {
+                match key.as_str() {
+                    "goal" => {
+                        if let Ok(m) = value.parse::<u32>() {
+                            p.daily_goal = DailyGoal::Minutes(m.clamp(1, 120));
+                        }
                     }
-                }
-                "gamification" => p.gamification = value == "true",
-                "feedback" => {
-                    if let Ok(a) = serde_json::from_value(json!(value)) {
-                        p.feedback = a;
+                    "gamification" => p.gamification = value == "true",
+                    "feedback" => {
+                        if let Ok(a) = serde_json::from_value(json!(value)) {
+                            p.feedback = a;
+                        }
                     }
-                }
-                "script" => {
-                    p.script = match value.as_str() {
-                        "1" => Script::Kana,
-                        "2" => Script::Hidden,
-                        _ => Script::Furigana,
+                    "script" => {
+                        p.script = match value.as_str() {
+                            "1" => Script::Kana,
+                            "2" => Script::Hidden,
+                            _ => Script::Furigana,
+                        }
                     }
-                }
-                "endPause" => {
-                    if let Ok(s) = value.parse::<f32>() {
-                        p.end_pause_secs = s.clamp(1.2, 5.0);
+                    "endPause" => {
+                        if let Ok(s) = value.parse::<f32>() {
+                            p.end_pause_secs = s.clamp(1.2, 5.0);
+                        }
                     }
-                }
-                "style" => p.style = value.parse().unwrap_or(0).min(2),
-                "uiLang" => {
-                    p.ui_lang = if value == "en" {
-                        "en".into()
-                    } else {
-                        "de".into()
+                    "style" => p.style = value.parse().unwrap_or(0).min(2),
+                    "uiLang" => {
+                        p.ui_lang = if value == "en" {
+                            "en".into()
+                        } else {
+                            "de".into()
+                        }
                     }
-                }
-                "reminder" => p.reminder = value.parse().ok(),
-                "costLimit" => p.cost_limit_cents = value.parse().ok(),
-                "moraHints" => p.mora_hints = value == "true",
-                "unloadAfter" => p.unload_after_min = value.parse().ok(),
-                "handsFree" => p.hands_free = value == "true",
-                "textScale" => {
-                    if let Ok(s) = value.parse::<f32>() {
-                        p.text_scale = s.clamp(1.0, kaiwa_store::TEXT_SCALE_MAX);
+                    "reminder" => p.reminder = value.parse().ok(),
+                    "costLimit" => p.cost_limit_cents = value.parse().ok(),
+                    "moraHints" => p.mora_hints = value == "true",
+                    "unloadAfter" => p.unload_after_min = value.parse().ok(),
+                    "handsFree" => p.hands_free = value == "true",
+                    "textScale" => {
+                        if let Ok(s) = value.parse::<f32>() {
+                            p.text_scale = s.clamp(1.0, kaiwa_store::TEXT_SCALE_MAX);
+                        }
                     }
-                }
-                "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
-                "name" => p.name = value,
-                // The tutor (Q-15): a preset id or "" for none; model and server for an
-                // OpenAI-compatible one.
-                // Model and server belong to the provider: a new one starts without them, so
-                // no server of the old one is used by mistake.
-                "tutorProvider" => {
-                    let id = kaiwa_ai::presets::preset(&value)
-                        .map(|p| p.id.to_string())
-                        .unwrap_or_default();
-                    if id != p.tutor.provider {
-                        p.tutor = kaiwa_ai::Tutor {
-                            provider: id,
-                            ..Default::default()
-                        };
+                    "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
+                    "name" => p.name = value,
+                    // The tutor (Q-15): a preset id or "" for none; model and server for an
+                    // OpenAI-compatible one.
+                    // Model and server belong to the provider: a new one starts without them, so
+                    // no server of the old one is used by mistake.
+                    "tutorProvider" => {
+                        let id = kaiwa_ai::presets::preset(&value)
+                            .map(|p| p.id.to_string())
+                            .unwrap_or_default();
+                        if id != p.tutor.provider {
+                            p.tutor = kaiwa_ai::Tutor {
+                                provider: id,
+                                ..Default::default()
+                            };
+                        }
                     }
+                    // The microphone (a device id from MicTest.devices); "" is the default.
+                    "microphone" => p.microphone = (!value.is_empty()).then_some(value),
+                    "tutorModel" => p.tutor.model = value.trim().to_string(),
+                    "tutorBase" => p.tutor.base_url = value.trim().to_string(),
+                    _ => {}
                 }
-                // The microphone (a device id from MicTest.devices); "" is the default.
-                "microphone" => p.microphone = (!value.is_empty()).then_some(value),
-                "tutorModel" => p.tutor.model = value.trim().to_string(),
-                "tutorBase" => p.tutor.base_url = value.trim().to_string(),
-                _ => return,
-            }
-            if let Err(e) = st.store.set_profile(&p) {
-                eprintln!("kaiwa: {e}");
-            }
+            });
+            let p = match edited {
+                Ok(p) => p,
+                Err(e) => {
+                    drop(st);
+                    self.as_mut().say_unreadable(&e);
+                    return;
+                }
+            };
             // A day already begun is judged by the goal it ends with (/LF602/).
             if key == "goal"
                 && let Err(e) = st.store.set_day_goal(now().day(), p.daily_goal)
@@ -696,10 +712,11 @@ impl qobject::KaiwaApp {
 
     fn skip_placement(mut self: Pin<&mut Self>) {
         {
-            let st = state();
-            let mut p = st.store.profile().unwrap_or_default();
-            p.placed = true;
-            let _ = st.store.set_profile(&p);
+            let edited = state().store.update_profile(|p| p.placed = true);
+            if let Err(e) = edited {
+                self.as_mut().say_unreadable(&e);
+                return;
+            }
         }
         self.as_mut().refresh();
     }

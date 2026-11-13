@@ -679,3 +679,41 @@ fn a_new_placement_keeps_the_history() {
     assert_eq!(m.corrections_by_learner, 3);
     assert_eq!(m.level(Skill::Pronunciation), 3.5);
 }
+
+/// A profile row that does not parse (a bad import, a hand edit).
+fn break_profile(s: &Store) {
+    s.db.execute(
+        "INSERT INTO settings (key, value) VALUES ('profile', '{\"gamification\": 3}')
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        [],
+    )
+    .unwrap();
+}
+
+fn profile_row(s: &Store) -> String {
+    s.db.query_row(
+        "SELECT value FROM settings WHERE key = 'profile'",
+        [],
+        |r| r.get(0),
+    )
+    .unwrap()
+}
+
+#[test]
+fn an_unreadable_profile_is_not_written_over() {
+    let s = Store::in_memory().unwrap();
+    break_profile(&s);
+    let before = profile_row(&s);
+
+    let r = s.update_profile(|p| p.name = "Mara".into());
+
+    assert!(r.is_err(), "the read error comes back");
+    assert_eq!(profile_row(&s), before, "the row stays as it was");
+}
+
+#[test]
+fn update_profile_changes_a_readable_profile() {
+    let s = Store::in_memory().unwrap();
+    s.update_profile(|p| p.name = "Mara".into()).unwrap();
+    assert_eq!(s.profile().unwrap().name, "Mara");
+}
