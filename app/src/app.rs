@@ -26,7 +26,7 @@ pub mod qobject {
         /// UI language, "de" or "en".
         #[qproperty(QString, lang)]
         #[qproperty(bool, gamification)]
-        /// The last review answer: {"right", "expected", "next"}.
+        /// The last review answer: {"right", "expected", "next"}, or {"error"} if not saved.
         #[qproperty(QString, answer)]
         /// A short message after an action (export, deletion).
         #[qproperty(QString, notice)]

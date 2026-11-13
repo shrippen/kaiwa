@@ -7,9 +7,11 @@
 use kaiwa_core::clock::Moment;
 use kaiwa_core::difficulty::Knob;
 use kaiwa_core::session::Input;
-use kaiwa_core::srs::Grade;
+use kaiwa_core::srs::{Grade, Item};
 use kaiwa_core::{Session, TurnOutcome};
 use serde_json::{Value, json};
+
+use kaiwa_store::Result as StoreResult;
 
 use crate::Backend;
 
@@ -139,24 +141,40 @@ impl ShortTalk {
 impl Backend {
     /// Checks a review answer (/LF502/): spoken or typed, compared without punctuation.
     pub fn answer_review(&self, text: &str, said: &str, helped: bool, now: Moment) -> Value {
-        // A mini conversation looks for the form in the sentence, a word said after is the whole
-        // answer (/LF230/).
-        let right = match self.store.item(text) {
-            Ok(Some(item)) => item.answered(said),
-            _ => kaiwa_core::norm(said) == kaiwa_core::norm(text),
-        };
-        let grade = Grade::of(right, helped, false);
-        let next = match self.store.review(text, grade, now) {
-            Ok(Some(item)) => item.due.iso(),
-            _ => String::new(),
-        };
-        json!({ "right": right, "expected": text, "said": said, "next": next })
+        let item = self.store.item(text);
+        answer(text, said, helped, item, |grade| {
+            self.store.review(text, grade, now)
+        })
     }
+}
+
+/// The answer's words for the page; `{"error": …}` when nothing was saved.
+fn answer(
+    text: &str,
+    said: &str,
+    helped: bool,
+    item: StoreResult<Option<Item>>,
+    review: impl FnOnce(Grade) -> StoreResult<Option<Item>>,
+) -> Value {
+    // A mini conversation looks for the form in the sentence, a word said after is the whole
+    // answer (/LF230/).
+    let right = match item {
+        Ok(Some(item)) => item.answered(said),
+        Ok(None) => kaiwa_core::norm(said) == kaiwa_core::norm(text),
+        Err(e) => return json!({ "error": e.to_string() }),
+    };
+    let next = match review(Grade::of(right, helped, false)) {
+        Ok(Some(item)) => item.due.iso(),
+        Ok(None) => String::new(),
+        Err(e) => return json!({ "error": e.to_string() }),
+    };
+    json!({ "right": right, "expected": text, "said": said, "next": next })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kaiwa_store::StoreError;
 
     fn backend(name: &str) -> crate::TempBackend {
         crate::TempBackend::new(name, true).unwrap()
@@ -225,5 +243,26 @@ mod tests {
             Moment::new(1_791_100_000, 120),
         );
         assert_eq!(v["right"], true);
+    }
+
+    #[test]
+    fn a_review_that_was_not_saved_says_so() {
+        let v = answer("袋", "袋", false, Ok(None), |_| {
+            Err(StoreError::NoSession(1))
+        });
+        assert!(
+            v["error"].as_str().unwrap().contains("no session 1"),
+            "the page gets the error: {v}"
+        );
+        assert!(v.get("next").is_none(), "no date for what was not saved");
+    }
+
+    #[test]
+    fn an_unreadable_item_is_no_answer() {
+        let v = answer("袋", "袋", false, Err(StoreError::NoSession(2)), |_| {
+            Ok(None)
+        });
+        assert!(v["error"].is_string(), "the item is not guessed: {v}");
+        assert!(v.get("right").is_none());
     }
 }

@@ -717,3 +717,19 @@ fn update_profile_changes_a_readable_profile() {
     s.update_profile(|p| p.name = "Mara".into()).unwrap();
     assert_eq!(s.profile().unwrap().name, "Mara");
 }
+
+#[test]
+fn a_failing_review_leaves_nothing_behind() {
+    let s = Store::in_memory().unwrap();
+    let text = "コーヒーが好きです";
+    let item = Item::new(text, srs::ItemKind::Word, srs::Source::NewWord, at(0, 9));
+    s.put_item(&item).unwrap();
+    // The profile is read last: the writes before it must not stay.
+    break_profile(&s);
+
+    let r = s.review(text, Grade::Good, at(1, 9));
+
+    assert!(r.is_err());
+    assert_eq!(s.item(text).unwrap().unwrap(), item, "item unchanged");
+    assert!(s.state_value::<Moment>("reviewed").unwrap().is_none());
+}

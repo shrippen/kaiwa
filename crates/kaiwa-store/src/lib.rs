@@ -919,6 +919,11 @@ impl Store {
 
     /// One review answer: FSRS, the unit's review record, the day.
     pub fn review(&self, text: &str, grade: Grade, now: Moment) -> Result<Option<Item>> {
+        // One transaction: a failure part-way leaves no half a review.
+        self.batch(|s| s.review_in(text, grade, now))
+    }
+
+    fn review_in(&self, text: &str, grade: Grade, now: Moment) -> Result<Option<Item>> {
         let key = kaiwa_core::norm(text);
         let Some(mut item): Option<Item> =
             self.get_json("SELECT value FROM items WHERE key = ?1", &key)?
