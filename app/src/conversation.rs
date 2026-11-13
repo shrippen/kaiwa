@@ -1012,7 +1012,9 @@ impl qobject::Conversation {
                     return;
                 }
                 if let Ok(mut s) = session.lock() {
-                    s.aid(if aid == 0 { Aid::Repeat } else { Aid::Slow });
+                    let kind = if aid == 0 { Aid::Repeat } else { Aid::Slow };
+                    let line = s.line();
+                    s.aid(kind, line);
                 }
                 self.save();
                 self.as_mut().interrupt();
@@ -1026,6 +1028,8 @@ impl qobject::Conversation {
                     e["translating"] = json!(true);
                 }
                 self.as_mut().publish_turns();
+                // The line the aid belongs to; a turn sent meanwhile leaves it behind.
+                let asked_at = session.lock().map(|s| s.line()).unwrap_or_default();
                 std::thread::spawn(move || {
                     let line = kaiwa_core::plain(&markup);
                     // Asked without holding the session (the window needs it meanwhile).
@@ -1045,7 +1049,7 @@ impl qobject::Conversation {
                             Some(Ok(text)) => {
                                 // It counts as help once the learner has it (/LF212/).
                                 if let Ok(mut s) = session.lock() {
-                                    s.aid(Aid::Translate);
+                                    s.aid(Aid::Translate, asked_at);
                                 }
                                 if let Some(e) = q.as_mut().rust_mut().log.get_mut(i) {
                                     e["translation"] = json!(text);

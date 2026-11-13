@@ -364,7 +364,7 @@ mod tests {
         let mut p = Placement::default();
         let mut steps = Vec::new();
         for i in 0..2 {
-            s.aid(Aid::Translate);
+            s.aid(Aid::Translate, s.line());
             s.turn(&format!("turn {i}"), Input::Typed).unwrap();
             steps.push(p.after_turn(&s));
         }

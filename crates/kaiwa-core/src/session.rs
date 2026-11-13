@@ -506,8 +506,18 @@ impl Session {
         })
     }
 
-    /// A listening aid on the character's last line: repeat, slower, translate (/LF111/).
-    pub fn aid(&mut self, aid: Aid) {
+    /// The index of the character's line the learner answers next: the turns so far.
+    pub fn line(&self) -> usize {
+        self.turns.len()
+    }
+
+    /// A listening aid on the character's line `line` (see `line`): repeat, slower, translate
+    /// (/LF111/). Ignored once the learner has answered that line: a translation arriving
+    /// late must not mark the next turn as aided.
+    pub fn aid(&mut self, aid: Aid, line: usize) {
+        if line != self.line() {
+            return;
+        }
         *self.aids.entry(aid).or_default() += 1;
         self.aid_on_line = true;
     }
@@ -517,7 +527,7 @@ impl Session {
     /// the tutor.
     pub fn translate(&mut self, line: &str) -> Result<String, AiError> {
         let text = self.translating(line).run()?;
-        self.aid(Aid::Translate);
+        self.aid(Aid::Translate, self.line());
         Ok(text)
     }
 
@@ -1217,12 +1227,26 @@ mod tests {
     }
 
     #[test]
+    fn a_late_aid_does_not_mark_the_next_turn() {
+        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        // The translation of the opening is asked, the learner answers meanwhile.
+        let asked_at = s.line();
+        s.turn("マラです。よろしくおねがいします。", Input::Spoken)
+            .unwrap();
+        s.aid(Aid::Translate, asked_at);
+        s.turn("ドイツのハンブルクから来ました。", Input::Spoken)
+            .unwrap();
+        assert!(!s.turns()[1].aided);
+        assert_eq!(s.stats().understood_unaided, 2);
+    }
+
+    #[test]
     fn stats_count_success_without_help() {
         let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
         s.turn("マラです。よろしくおねがいします。", Input::Spoken)
             .unwrap();
         s.help();
-        s.aid(Aid::Slow);
+        s.aid(Aid::Slow, s.line());
         s.turn("ドイツのハンブルクから来ました。", Input::Spoken)
             .unwrap();
         let st = s.stats();
