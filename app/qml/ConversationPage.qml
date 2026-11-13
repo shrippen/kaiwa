@@ -299,7 +299,9 @@ Kirigami.ScrollablePage {
                 }
                 Text {
                     visible: msg.modelData.misrecognized === true
-                    text: page.t("Als falsch erkannt markiert. Das zählt nicht als Fehler.", "Marked as misheard. It does not count as a mistake.")
+                    text: page.recorded && page.recorded.markKept === true
+                        ? page.t("Als falsch erkannt markiert. Die Aufzeichnung bleibt.", "Marked as misheard. The record stays.")
+                        : page.t("Als falsch erkannt markiert. Das zählt nicht als Fehler.", "Marked as misheard. It does not count as a mistake.")
                     color: KanteStyle.mutedTextColor
                     font: KanteStyle.smallFont
                 }
@@ -447,7 +449,9 @@ Kirigami.ScrollablePage {
             // V-05: the marks of the talk above stay possible and correct the saved talk.
             Text {
                 Layout.fillWidth: true
-                text: page.t("„Falsch erkannt“ und „Widersprechen“ oben korrigieren das gespeicherte Gespräch.", "“Misheard” and “Dispute” above correct the saved talk.")
+                text: page.recorded && page.recorded.markKept === true
+                    ? page.t("Markiert, aber die Aufzeichnung bleibt: Seitdem wurde ein anderes Gespräch aufgezeichnet.", "Marked, but the record stays: another talk was recorded since.")
+                    : page.t("„Falsch erkannt“ und „Widersprechen“ oben korrigieren das gespeicherte Gespräch.", "“Misheard” and “Dispute” above correct the saved talk.")
                 color: KanteStyle.mutedTextColor
                 font: KanteStyle.smallFont
                 wrapMode: Text.Wrap

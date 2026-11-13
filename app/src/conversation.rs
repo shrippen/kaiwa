@@ -752,6 +752,13 @@ impl qobject::Conversation {
                 eprintln!("kaiwa: {e:#}");
                 drop(s);
                 self.save();
+                // The record stays (a later talk was recorded, or this one has no record to
+                // redo): the page says so instead of promising a correction.
+                let mut recorded: Value =
+                    serde_json::from_str(&self.recorded().to_string()).unwrap_or(json!({}));
+                recorded["markKept"] = json!(true);
+                self.as_mut()
+                    .set_recorded(QString::from(&recorded.to_string()));
                 return;
             }
         };

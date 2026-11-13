@@ -219,6 +219,30 @@ struct Recording {
     added: Vec<String>,
 }
 
+/// The corrections a summary puts into the review, with what the review shows for them.
+fn corrected_of(summary: &kaiwa_core::session::Summary) -> Vec<srs::Corrected> {
+    summary
+        .corrected
+        .iter()
+        .map(|sh| srs::Corrected {
+            better: sh.correction.better.clone(),
+            kind: serde_json::to_value(sh.correction.kind)
+                .ok()
+                .and_then(|v| v.as_str().map(str::to_string))
+                .unwrap_or_default(),
+            original: summary
+                .mistakes
+                .get(&kaiwa_core::norm(&sh.correction.better))
+                .cloned()
+                .filter(|o| !o.is_empty()),
+            cue: summary
+                .cues
+                .get(&kaiwa_core::norm(&sh.correction.better))
+                .cloned(),
+        })
+        .collect()
+}
+
 /// The start page in one call (/LL020/).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Today {
@@ -733,26 +757,7 @@ impl Store {
             .map(|u| u.id.clone());
         let mut items = self.items()?;
         let before = items.len();
-        let corrections: Vec<srs::Corrected> = summary
-            .corrected
-            .iter()
-            .map(|sh| srs::Corrected {
-                better: sh.correction.better.clone(),
-                kind: serde_json::to_value(sh.correction.kind)
-                    .ok()
-                    .and_then(|v| v.as_str().map(str::to_string))
-                    .unwrap_or_default(),
-                original: summary
-                    .mistakes
-                    .get(&kaiwa_core::norm(&sh.correction.better))
-                    .cloned()
-                    .filter(|o| !o.is_empty()),
-                cue: summary
-                    .cues
-                    .get(&kaiwa_core::norm(&sh.correction.better))
-                    .cloned(),
-            })
-            .collect();
+        let corrections = corrected_of(&summary);
         srs::add_from_summary(
             &mut items,
             &summary.review,
@@ -862,9 +867,11 @@ impl Store {
             return Err(StoreError::NoRecording(id));
         };
         let mut recording: Recording = serde_json::from_str(&stored)?;
+        // The newest is the one recorded last: a talk begun earlier but finished later is.
         let later: i64 = self.db.query_row(
-            "SELECT COUNT(*) FROM sessions WHERE finished = 1 AND id > ?1",
-            params![id],
+            "SELECT COUNT(*) FROM sessions
+             WHERE finished = 1 AND (ended > ?2 OR (ended = ?2 AND id > ?1))",
+            params![id, ended.unix],
             |r| r.get(0),
         )?;
         if later > 0 {
@@ -886,12 +893,8 @@ impl Store {
         self.set_learning(&l)?;
 
         // The review items: what this talk added stays only if the summary still has it.
-        let review: Vec<String> = s
-            .summary()
-            .review
-            .iter()
-            .map(|r| kaiwa_core::norm(r))
-            .collect();
+        let summary = s.summary();
+        let review: Vec<String> = summary.review.iter().map(|r| kaiwa_core::norm(r)).collect();
         let (keep, drop): (Vec<String>, Vec<String>) = recording
             .added
             .into_iter()
@@ -899,6 +902,32 @@ impl Store {
         for key in &drop {
             self.db
                 .execute("DELETE FROM items WHERE key = ?1", params![key])?;
+        }
+        // A card that stays is built from the turns that stay, as if the marked turn had
+        // been marked before the end.
+        let corrections = corrected_of(&summary);
+        for key in &keep {
+            let Some(mut item) = self.item(key)? else {
+                continue;
+            };
+            let found = corrections
+                .iter()
+                .find(|c| kaiwa_core::norm(&c.better) == *key);
+            (item.kind, item.source) = match found {
+                Some(c) => (
+                    srs::ItemKind::Pattern,
+                    srs::Source::Correction {
+                        kind: c.kind.clone(),
+                    },
+                ),
+                None if item.text.chars().count() <= 6 => {
+                    (srs::ItemKind::Word, srs::Source::NewWord)
+                }
+                None => (srs::ItemKind::Phrase, srs::Source::NewWord),
+            };
+            item.cue = found.and_then(|c| c.cue.clone());
+            item.original = found.and_then(|c| c.original.clone());
+            self.put_item(&item)?;
         }
         recording.added = keep;
 

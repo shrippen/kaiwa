@@ -879,4 +879,66 @@ fn only_the_newest_talk_can_be_corrected() {
         Err(StoreError::Superseded(_))
     ));
     assert_eq!(store.learning().unwrap(), learning, "nothing changed");
+
+    // The newest is the one recorded last, not the one begun last (/LF121/): A is begun,
+    // left, B begun and finished, then A continued and finished.
+    let store = Store::in_memory().unwrap();
+    let mut a = talk_ending_in_a_mistake();
+    let mut b = talk_ending_in_a_mistake();
+    let id_a = store.begin_session(&a.snapshot(), at(0, 9)).unwrap();
+    let id_b = store.begin_session(&b.snapshot(), at(0, 10)).unwrap();
+    store
+        .record(id_b, &b, at(0, 10), at(0, 11), Some(&c))
+        .unwrap();
+    store
+        .record(id_a, &a, at(0, 9), at(0, 12), Some(&c))
+        .unwrap();
+    b.mark_misrecognized(3);
+    assert!(matches!(
+        store.correct(id_b, &b, |_, _| {}),
+        Err(StoreError::Superseded(_))
+    ));
+    a.mark_misrecognized(3);
+    store.correct(id_a, &a, |_, _| {}).unwrap();
+}
+
+/// Marking turn 0 of a talk whose turn 2 has the same correction: the card that stays is the
+/// one of turn 2 (its original, its line), as if turn 0 had been marked before the end.
+#[test]
+fn a_card_that_stays_comes_from_the_turns_that_stay() {
+    let c = curriculum();
+    let (start, end) = (at(0, 9), at(0, 9).plus_secs(6 * 60));
+    let talk = || {
+        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        for t in [
+            "コーヒーを好きです。",
+            "マラです。よろしくおねがいします。",
+            "コーヒーを好きです。",
+            "ドイツのハンブルクから来ました。",
+            "仕事はプロデューサーです。",
+        ] {
+            s.turn(t, Input::Spoken).unwrap();
+        }
+        s
+    };
+
+    let store = Store::in_memory().unwrap();
+    let mut session = talk();
+    let id = store.begin_session(&session.snapshot(), start).unwrap();
+    store.record(id, &session, start, end, Some(&c)).unwrap();
+    session.mark_misrecognized(0);
+    store.correct(id, &session, |_, _| {}).unwrap();
+
+    let expected = Store::in_memory().unwrap();
+    let mut marked = talk();
+    let id2 = expected.begin_session(&marked.snapshot(), start).unwrap();
+    marked.mark_misrecognized(0);
+    expected.record(id2, &marked, start, end, Some(&c)).unwrap();
+    let liked = |s: &Store| {
+        s.item("コーヒーが好きです")
+            .unwrap()
+            .expect("the card stays")
+    };
+    assert_eq!(liked(&store), liked(&expected));
+    assert_ne!(liked(&expected).cue, None, "a line to answer");
 }
