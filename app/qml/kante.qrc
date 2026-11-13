@@ -89,6 +89,7 @@
   <file>Kante/KanteSearchCombo.qml</file>
   <file>Kante/KanteSectionLabel.qml</file>
   <file>Kante/KanteSegmented.qml</file>
+  <file>Kante/KanteSettingGroup.qml</file>
   <file>Kante/KanteSettingRow.qml</file>
   <file>Kante/KanteSettle.qml</file>
   <file>Kante/KanteSheetSkin.qml</file>
@@ -101,6 +102,7 @@
   <file>Kante/KanteStatusLight.qml</file>
   <file>Kante/KanteSteps.qml</file>
   <file>Kante/KanteSticker.qml</file>
+  <file>Kante/KanteStickyHeader.qml</file>
   <file>Kante/KanteStyle.qml</file>
   <file>Kante/KanteSwatch.qml</file>
   <file>Kante/KanteSwatchPicker.qml</file>
