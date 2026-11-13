@@ -125,7 +125,7 @@ impl Backend {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     fn backend(name: &str) -> crate::TempBackend {
@@ -133,7 +133,7 @@ mod tests {
     }
 
     /// The meter is the process's; tests that set its budget take turns.
-    static METER: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    pub(crate) static METER: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     #[test]
     fn a_new_limit_brakes_or_frees_at_once() {
