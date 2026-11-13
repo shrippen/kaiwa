@@ -108,8 +108,8 @@ enum Fit {
     Common,
 }
 
-/// JMdict codes of a particle IPADIC knows that JMdict has as a copula or an expression
-/// (じゃ, a contraction of では), tried when JMdict has no particle of the spelling.
+/// JMdict codes tried for a particle IPADIC knows and JMdict has no particle of: じゃ
+/// finds the copula (2851029, "be; is", right for じゃない), ちゃ the expression ては.
 const PARTICLE_ALTERNATIVES: [&str; 2] = ["cop", "exp"];
 
 /// Kinds a conversation meets first, preferred when a spelling has several entries.
