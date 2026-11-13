@@ -253,6 +253,16 @@ pub const HELP_AFTER: Duration = Duration::from_secs(4);
 /// Turns in a row without getting closer to a goal before help comes by itself.
 pub const STUCK_AFTER: u32 = 3;
 
+/// Whether the session steps in by itself: help after being stuck, an easier setting after
+/// misses (/LF213/). A placement stage measures what the learner can do alone at its level.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Coaching {
+    #[default]
+    On,
+    /// Help only on request, the difficulty stays.
+    Off,
+}
+
 pub struct Session {
     pub scenario: Scenario,
     pub lang: String,
@@ -281,6 +291,8 @@ pub struct Session {
     /// The learner's own speaking level on the learner model's scale, for a free talk
     /// (/LF116/); set by the caller from the learner model, not part of the saved state.
     learner_level: Option<f64>,
+    /// Set by the caller, not part of the saved state (a placement stage is not saved).
+    coaching: Coaching,
 }
 
 impl Session {
@@ -313,6 +325,7 @@ impl Session {
             grammar: Vec::new(),
             spent_secs: 0,
             learner_level: None,
+            coaching: Coaching::default(),
         }
     }
 
@@ -357,6 +370,12 @@ impl Session {
         self
     }
 
+    /// Whether the session steps in by itself ([`Coaching`]).
+    pub fn with_coaching(mut self, c: Coaching) -> Self {
+        self.coaching = c;
+        self
+    }
+
     /// Plays the session at a difficulty: prompts, goals per scenario, help timing (/LF211/).
     pub fn with_difficulty(mut self, d: Difficulty) -> Self {
         self.difficulty = d;
@@ -388,6 +407,7 @@ impl Session {
             grammar: Vec::new(),
             spent_secs: st.spent_secs,
             learner_level: None,
+            coaching: Coaching::default(),
         }
     }
 
@@ -580,7 +600,7 @@ impl Session {
 
         let help = if goals_met_now.is_empty() {
             self.stuck += 1;
-            if self.stuck >= STUCK_AFTER && !self.done() {
+            if self.stuck >= STUCK_AFTER && !self.done() && self.coaching == Coaching::On {
                 self.stuck = 0;
                 if self.help_level < 1 {
                     self.help_level = 1;
@@ -596,7 +616,7 @@ impl Session {
         };
 
         // The regulator inside the session takes no step from a turn analysed with gaps.
-        let eased = if analysis.incomplete {
+        let eased = if analysis.incomplete || self.coaching == Coaching::Off {
             None
         } else {
             self.live.turn(analysis.understood, &self.difficulty)

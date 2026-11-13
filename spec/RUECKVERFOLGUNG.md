@@ -38,7 +38,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF122/ | S | Lernende dürfen in die UI-Sprache wechseln („Wie sagt man …?“). | core | Code | 0 von 2 automatisch grün: `hinnerk_german_word_help`, `mara_codeswitch` |
 | /LF200/ | M | Einstufung per Gespräch (5–8 min) mit steigender Schwierigkeit. | app, core, store | geprüft | 2 von 2 automatisch grün: `emi_ceiling`, `selin_profile_split` |
 | /LF201/ | M | Das Lernermodell führt getrennte Fähigkeiten: Hörverstehen (Tempo … | app, backend, core, store | geprüft | 2 von 2 automatisch grün: `emi_ceiling`, `selin_profile_split` |
-| /LF202/ | M | Das Lernermodell ist für Lernende einsehbar (Profil-Ansicht in … | app, backend, core | geprüft | 1 von 1 automatisch grün: `selin_profile_visible` |
+| /LF202/ | M | Das Lernermodell ist für Lernende einsehbar (Profil-Ansicht in … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `selin_profile_visible` |
 | /LF210/ | M | Der Schwierigkeitsregler zielt auf eine Erfolgsquote von etwa 80 % … | core, store | geprüft | 3 von 3 automatisch grün: `emi_no_baby_talk`, `hinnerk_pace`, `mara_success_band` |
 | /LF211/ | M | Stellgrößen: Anteil unbekannter Wörter (≤ 5 %), Satzlänge … | app, core | geprüft | 2 von 2 automatisch grün: `hinnerk_tts_slow`, `selin_settings_split` |
 | /LF212/ | M | Hilfen (Wiederholung, Zeitlupe, Übersetzung, Hilfe-Stufen) fließen in … | app, core | geprüft | 1 von 1 automatisch grün: `mara_hints_silent` |

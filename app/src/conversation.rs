@@ -435,10 +435,9 @@ impl qobject::Conversation {
         self.begin_stage(0);
     }
 
-    /// Plays stage `i` of the placement: its scenario at the stage's level, help only on
-    /// request, nothing stored.
+    /// Plays stage `i` of the placement ([`placement::stage_session`]), nothing stored.
     fn begin_stage(mut self: Pin<&mut Self>, i: usize) {
-        let (id, level) = STAGES[i];
+        let id = STAGES[i].0;
         let prepared = {
             let st = state();
             let profile = st.store.profile().unwrap_or_default();
@@ -449,8 +448,8 @@ impl qobject::Conversation {
         };
         let (provider, demo) = state().provider(&scenario.id);
         let log = vec![json!({ "who": "character", "markup": scenario.opening.clone() })];
-        let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
-            .with_difficulty(placement::difficulty_at(level));
+        let session =
+            placement::stage_session(scenario, provider, profile.feedback, &profile.ui_lang, i);
         let lang = profile.ui_lang;
         self.as_mut().begin(session, None, demo, log, lang.clone());
         let word = if lang == "en" {
@@ -511,14 +510,8 @@ impl qobject::Conversation {
         };
         p.kana = reading(kana);
         p.kanji = reading(kanji);
-        let mut model = p.result();
-        // A talk does not show pronunciation (typed turns count too): it stays as it was.
-        let before = state()
-            .store
-            .learning()
-            .map(|l| l.model)
-            .unwrap_or_default();
-        model.set(Skill::Pronunciation, before.level(Skill::Pronunciation));
+        // The store keeps what a talk does not show (pronunciation) and the history.
+        let model = p.result();
         let lang = self.lang.clone();
         let words: Vec<String> = model
             .describe(&lang)
