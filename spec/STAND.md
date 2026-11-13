@@ -210,10 +210,6 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
     - Erinnerung: „Später“ über Mitternacht verschiebt die Erinnerung auf den nächsten Tag (wirkt erst mit M4).
     - Nachschlagen: IPADIC liefert für かって/よんだ die Grundform かつ/よぶ; ohne Beugungsform im `LineWord` nicht zu lösen. Noch Zwillinge (auch vor #114): こと → 琴, そう/よう, と als „if“ statt „with“. IPADIC trennt こうちゃ in こう + ちゃ; ちゃ zeigt dann ては. じゃ für das Orts-では (ここじゃ) zeigt die Kopula „be; is“.
     - Export: Exporte im Format 1 vom 9. bis 14.10.2026 tragen alte Einheiten-Ids (nur Testdaten).
-14. **Kleinigkeiten aus den Reviews zu Fragenpaket 14, noch offen:**
-    - Schlüssel (#125): Mit `KAIWA_DATA` sagen die Einstellungen „außerhalb des Profilordners“, obwohl der Ordner dann `$KAIWA_DATA` ist; README und `start.sh` nennen den Fall nicht.
-    - Verbesserungen (#124): Ein Profil von vor #124 mit übersprungener Einstufung und „Wenig“ gilt als „nach Einstufung“.
-    - Markieren (#126): Scheitert schon das Aufzeichnen (DB-Fehler), meldet die Bilanz nach einer Markierung „Seitdem wurde ein anderes Gespräch aufgezeichnet“ und zeigt „undefined“ in der Kennzahlenzeile.
 
 ## Lessons learned
 
