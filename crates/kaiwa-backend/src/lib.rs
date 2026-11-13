@@ -317,21 +317,19 @@ impl Backend {
         let store = Arc::new(kaiwa_ai::secrets::MemoryKeys::default());
         #[cfg(not(test))]
         let store = Arc::new(kaiwa_ai::secrets::Keyring);
-        Self::open_with(path, demo, store, &kaiwa_store::profiles_dir())
+        Self::open_with(path, demo, store, kaiwa_store::keyring_dir().as_deref())
     }
 
-    /// Like [`Backend::open_at`], with the keys in `store` for the profiles in `profiles_dir`
+    /// Like [`Backend::open_at`], with the keys in `store` for the profiles in `keyring_dir`
     /// (tests and `kaiwa-sim` pass a [`kaiwa_ai::secrets::MemoryKeys`]).
     pub fn open_with(
         path: PathBuf,
         demo: bool,
         store: Arc<dyn kaiwa_ai::secrets::KeyStore>,
-        profiles_dir: &Path,
+        keyring_dir: Option<&Path>,
     ) -> anyhow::Result<Self> {
-        let keys = kaiwa_ai::secrets::Keys::new(
-            store,
-            kaiwa_ai::secrets::KeyHome::of(&path, profiles_dir),
-        );
+        let keys =
+            kaiwa_ai::secrets::Keys::new(store, kaiwa_ai::secrets::KeyHome::of(&path, keyring_dir));
         #[cfg_attr(not(any(test, feature = "demo")), allow(unused_variables))]
         let fresh = !path.exists();
         let db = Store::open(&path)?;

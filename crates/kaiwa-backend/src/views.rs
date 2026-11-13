@@ -778,6 +778,7 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
     let provider = p.id.to_string();
     let de = lang != "en";
     let s = st.keys().state(&provider, env);
+    let var = kaiwa_ai::secrets::env_var(&provider);
     let text = match (&s, de) {
         (KeyState::Environment, true) => "Aus der Umgebung (lokaler Test).".to_string(),
         (KeyState::Environment, false) => "From the environment (local test).".to_string(),
@@ -797,6 +798,12 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
         (KeyState::Missing, false) => {
             "Only needed when the server asks for one. It is kept in the keyring for this profile, never in a file.".to_string()
         }
+        (KeyState::EnvOnly, true) => format!(
+            "Dieses Profil liegt außerhalb des Profilordners; der Schlüssel kommt nur aus der Umgebungsvariable {var}."
+        ),
+        (KeyState::EnvOnly, false) => format!(
+            "This profile is outside the profiles folder; the key comes only from the environment variable {var}."
+        ),
         (KeyState::Unavailable(e), true) => format!("Kein Schlüsselbund erreichbar ({e})."),
         (KeyState::Unavailable(e), false) => format!("No keyring reachable ({e})."),
     };
@@ -804,9 +811,30 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
         "provider": provider,
         "label": if p.id == "custom" && !de { "OpenAI-compatible" } else { p.label },
         "stored": matches!(s, KeyState::Keyring | KeyState::Environment),
-        "canStore": !matches!(s, KeyState::Unavailable(_) | KeyState::Environment),
+        "canStore": !matches!(
+            s,
+            KeyState::Unavailable(_) | KeyState::Environment | KeyState::EnvOnly
+        ),
         "text": text,
     })
+}
+
+/// Why a key was not stored, in words.
+pub fn key_error(e: &kaiwa_ai::secrets::KeyError, lang: &str) -> String {
+    use kaiwa_ai::secrets::KeyError;
+    let de = lang != "en";
+    match (e, de) {
+        (KeyError::Empty, true) => "Kein Schlüssel eingegeben.".to_string(),
+        (KeyError::Empty, false) => "No key entered.".to_string(),
+        (KeyError::EnvOnly, true) => {
+            "Dieses Profil liegt außerhalb des Profilordners; sein Schlüssel kommt nur aus der Umgebung.".to_string()
+        }
+        (KeyError::EnvOnly, false) => {
+            "This profile is outside the profiles folder; its key comes only from the environment.".to_string()
+        }
+        (KeyError::Keyring(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
+        (KeyError::Keyring(e), false) => format!("The keyring refused: {e}"),
+    }
 }
 
 /// "What leaves the device?" (/LF711/), from `kaiwa_ai::privacy`, for the tutor set up.
@@ -817,6 +845,35 @@ pub fn privacy(st: &Backend, lang: &str) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_profile_outside_the_profiles_dir_says_the_key_is_the_environments() {
+        // TempBackend lives in a temporary directory: no keyring home.
+        let b = crate::TempBackend::new("key-env-only", false).unwrap();
+        let mut p = b.store.profile().unwrap();
+        p.tutor.provider = "anthropic".into();
+        b.store.set_profile(&p).unwrap();
+        if std::env::var_os("ANTHROPIC_API_KEY").is_some()
+            || std::env::var_os("KAIWA_PROVIDER").is_some()
+        {
+            return;
+        }
+
+        let de = key_view(&b, "de");
+        assert_eq!(de["canStore"], false);
+        assert_eq!(de["stored"], false);
+        let text = de["text"].as_str().unwrap();
+        assert!(text.contains("außerhalb des Profilordners"), "{text}");
+        assert!(text.contains("ANTHROPIC_API_KEY"), "{text}");
+        assert!(!text.contains("Schlüsselbund erreichbar"), "{text}");
+        let en = key_view(&b, "en")["text"].as_str().unwrap().to_string();
+        assert!(en.contains("outside the profiles folder"), "{en}");
+        assert!(en.contains("ANTHROPIC_API_KEY"), "{en}");
+
+        let e = kaiwa_ai::secrets::KeyError::EnvOnly;
+        assert!(!key_error(&e, "de").contains("Schlüsselbund hat abgelehnt"));
+        assert!(!key_error(&e, "en").contains("refused"));
+    }
 
     #[test]
     fn privacy_is_local_without_a_cloud_provider() {

@@ -733,3 +733,10 @@ fn a_failing_review_leaves_nothing_behind() {
     assert_eq!(s.item(text).unwrap().unwrap(), item, "item unchanged");
     assert!(s.state_value::<Moment>("reviewed").unwrap().is_none());
 }
+
+#[test]
+fn only_the_default_profiles_dir_has_keyring_homes() {
+    // KAIWA_DATA set: no directory has keyring homes (their ids would collide with the real ones).
+    assert_eq!(keyring_dir_for(true), None);
+    assert_eq!(keyring_dir_for(false), Some(profiles_dir()));
+}

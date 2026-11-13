@@ -86,7 +86,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF710/ | M | Export aller eigenen Daten (Profil, Verlauf, Wiederholung) als offene … | app, backend, store | geprüft | 3 von 3 automatisch grün: `lena_delete`, `lena_export`, `lena_import` |
 | /LF711/ | M | Die Ansicht „Was verlässt das Gerät?“ zeigt je Baustein (STT, LLM … | ai, app, backend | geprüft | 2 von 2 automatisch grün: `lena_transparency`, `selin_win_mixed` |
 | /LF712/ | M | Aufnahmen werden standardmäßig nicht gespeichert. | app, backend, store | geprüft | 2 von 2 automatisch grün: `lena_default_no_audio`, `lena_retention` |
-| /LF713/ | M | API-Schlüssel liegen im System-Schlüsselbund (KWallet, Secret … | ai, app, backend | geprüft | 1 von 2 automatisch grün: `hinnerk_own_profile`, `selin_win_keys` |
+| /LF713/ | M | API-Schlüssel liegen im System-Schlüsselbund (KWallet, Secret … | ai, app, backend, store | geprüft | 1 von 2 automatisch grün: `hinnerk_own_profile`, `selin_win_keys` |
 | /LF714/ | S | Kostenbremse für Cloud-Anbieter: geschätzte Kosten pro Sitzung und … | ai, app, backend, store | geprüft | 1 von 1 automatisch grün: `jonas_cost_limit` |
 | /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. | app, backend, store | geprüft | 1 von 1 automatisch grün: `hinnerk_own_profile` |
 | /LL010/ | M | Antwortlatenz (Sprechende → erster Ton der KI): p50 ≤ 1,5 s und p95 ≤ … | app, backend | geprüft | 1 von 3 automatisch grün: `lena_responsive`, `lena_suggest_smaller`, `theo_latency` |

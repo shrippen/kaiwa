@@ -672,8 +672,7 @@ impl qobject::KaiwaApp {
         let msg = match (result, de) {
             (Ok(()), true) => "Der Schlüssel liegt im Schlüsselbund.".to_string(),
             (Ok(()), false) => "The key is in the keyring.".to_string(),
-            (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
-            (Err(e), false) => format!("The keyring refused: {e}"),
+            (Err(e), _) => kaiwa_backend::views::key_error(&e, if de { "de" } else { "en" }),
         };
         self.as_mut().set_notice(QString::from(&msg));
         self.as_mut().refresh();

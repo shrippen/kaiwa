@@ -102,9 +102,13 @@ pub fn provider_from(
     };
     let key = keys.key(p.id, env);
     if p.needs_key() && key.is_none() {
+        let var = p.key_env.unwrap_or_default();
+        // A profile without a keyring home has no settings to put the key in.
+        if !keys.keyring_home() {
+            return Err(format!("KAIWA_PROVIDER={id} needs a key: set {var}"));
+        }
         return Err(format!(
-            "KAIWA_PROVIDER={id} needs a key: in the settings (system keyring) or {}",
-            p.key_env.unwrap_or_default()
+            "KAIWA_PROVIDER={id} needs a key: in the settings (system keyring) or {var}"
         ));
     }
     match p.api {

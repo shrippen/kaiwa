@@ -4,6 +4,7 @@
 
 use std::path::{Path, PathBuf};
 
+use kaiwa_ai::secrets::KeyError;
 use kaiwa_store::{Store, profiles_in};
 use serde_json::{Value, json};
 
@@ -123,7 +124,7 @@ impl Backend {
 
     /// Stores the key of the tutor's provider for this profile; `None` for a provider
     /// without a key.
-    pub fn store_key(&self, key: &str) -> Option<Result<(), String>> {
+    pub fn store_key(&self, key: &str) -> Option<Result<(), KeyError>> {
         let provider = self.key_provider()?;
         Some(self.keys.store(provider, key))
     }
@@ -137,7 +138,10 @@ impl Backend {
     /// Moves the keys of before V-01 (one per provider) to this profile, once: a marker in
     /// the profiles directory says it is done, and from then on the keyring is not read at
     /// start. A failure leaves the marker out, so the next start tries again.
-    pub fn migrate_keys(&self) {
+    pub(crate) fn migrate_keys(&self) {
+        if !self.keys.keyring_home() {
+            return;
+        }
         let marker = self.dir().join(KEYS_MIGRATED);
         if marker.exists() {
             return;
@@ -268,7 +272,7 @@ mod tests {
         std::fs::remove_dir_all(&dir).unwrap();
     }
 
-    use kaiwa_ai::secrets::{ENV_ONLY, KeyStore, MemoryKeys};
+    use kaiwa_ai::secrets::{KeyError, KeyStore, MemoryKeys};
 
     /// A directory with profiles whose keys are in `store`.
     struct Keyed {
@@ -293,8 +297,8 @@ mod tests {
         }
 
         fn open_in(&self, dir: &Path, file: &str) -> Backend {
-            let b =
-                Backend::open_with(dir.join(file), false, self.store.clone(), &self.dir).unwrap();
+            let b = Backend::open_with(dir.join(file), false, self.store.clone(), Some(&self.dir))
+                .unwrap();
             let mut p = b.store.profile().unwrap();
             p.tutor.provider = "anthropic".into();
             b.store.set_profile(&p).unwrap();
@@ -342,7 +346,7 @@ mod tests {
 
         // Same file name as the real profile, in another directory (KAIWA_PROFILE, demo).
         let mut b = k.open_in(&elsewhere, "default.kaiwa");
-        assert_eq!(b.store_key("sk-x"), Some(Err(ENV_ONLY.to_string())));
+        assert_eq!(b.store_key("sk-x"), Some(Err(KeyError::EnvOnly)));
         assert_eq!(b.keys().key("anthropic", |_| None), None);
         b.remove_key().unwrap().unwrap();
         b.wipe().unwrap();
@@ -386,7 +390,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("refuse.kaiwa");
-        let mut b = Backend::open_with(path, false, Arc::new(Refusing), &dir).unwrap();
+        let mut b = Backend::open_with(path, false, Arc::new(Refusing), Some(&dir)).unwrap();
         let mut p = b.store.profile().unwrap();
         p.name = "Lena".into();
         b.store.set_profile(&p).unwrap();

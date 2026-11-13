@@ -14,9 +14,6 @@ use std::sync::{Arc, Mutex};
 
 const SERVICE: &str = "org.shrippen.kaiwa";
 
-/// What a profile outside the profiles directory is told when it stores a key.
-pub const ENV_ONLY: &str = "Nur für Profile im Profilordner";
-
 /// Where a provider's key comes from.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyState {
@@ -25,8 +22,31 @@ pub enum KeyState {
     /// In the system keyring.
     Keyring,
     Missing,
+    /// The profile has no keyring home ([`KeyHome::EnvOnly`]) and the environment has no key.
+    EnvOnly,
     /// No keyring on this system (or it refused); the reason.
     Unavailable(String),
+}
+
+/// Why a key was not stored; the view layer words it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum KeyError {
+    /// Blank.
+    Empty,
+    /// The profile has no keyring home ([`KeyHome::EnvOnly`]).
+    EnvOnly,
+    /// The keyring refused; its reason.
+    Keyring(String),
+}
+
+impl std::fmt::Display for KeyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Empty => f.write_str("empty key"),
+            Self::EnvOnly => f.write_str("the profile has no keyring entry"),
+            Self::Keyring(e) => f.write_str(e),
+        }
+    }
 }
 
 /// Where keys are kept, by entry user name.
@@ -130,9 +150,11 @@ pub enum KeyHome {
 }
 
 impl KeyHome {
-    /// The home of the profile file `path`, given the profiles directory `dir`.
-    pub fn of(path: &Path, dir: &Path) -> Self {
-        let in_dir = path.parent().is_some_and(|p| same_dir(p, dir));
+    /// The home of the profile file `path`, given the profiles directory `dir`. `None`: no
+    /// directory has keyring homes (`KAIWA_DATA` moves the profiles elsewhere, and their ids
+    /// would collide with the real ones).
+    pub fn of(path: &Path, dir: Option<&Path>) -> Self {
+        let in_dir = dir.is_some_and(|d| path.parent().is_some_and(|p| same_dir(p, d)));
         let id = path
             .file_name()
             .and_then(|n| n.to_str())
@@ -162,8 +184,13 @@ impl Keys {
     }
 
     /// No keyring: the environment only.
-    pub fn env_only() -> Self {
+    pub(crate) fn env_only() -> Self {
         Self::new(Arc::new(MemoryKeys::default()), KeyHome::EnvOnly)
+    }
+
+    /// Whether the profile has keyring entries, or the environment is its only source.
+    pub fn keyring_home(&self) -> bool {
+        self.home != KeyHome::EnvOnly
     }
 
     fn user(&self, provider: &str) -> Option<String> {
@@ -188,7 +215,7 @@ impl Keys {
             return KeyState::Environment;
         }
         let Some(user) = self.user(provider) else {
-            return KeyState::Unavailable(ENV_ONLY.into());
+            return KeyState::EnvOnly;
         };
         match self.store.get(&user) {
             Ok(Some(_)) => KeyState::Keyring,
@@ -198,10 +225,10 @@ impl Keys {
     }
 
     /// Stores a key in the keyring; a blank key is an error.
-    pub fn store(&self, provider: &str, key: &str) -> Result<(), String> {
+    pub fn store(&self, provider: &str, key: &str) -> Result<(), KeyError> {
         let key = usable(key)?;
-        let user = self.user(provider).ok_or(ENV_ONLY)?;
-        self.store.set(&user, key)
+        let user = self.user(provider).ok_or(KeyError::EnvOnly)?;
+        self.store.set(&user, key).map_err(KeyError::Keyring)
     }
 
     /// Removes the provider's key of the profile from the keyring.
@@ -269,10 +296,10 @@ fn takes_key(provider: &str) -> bool {
 
 /// The key as it is stored: trimmed, and not blank. Blank is no key: removing one is its own
 /// step ([`Keys::remove`]).
-fn usable(key: &str) -> Result<&str, String> {
+fn usable(key: &str) -> Result<&str, KeyError> {
     let key = key.trim();
     if key.is_empty() {
-        return Err("empty key".into());
+        return Err(KeyError::Empty);
     }
     Ok(key)
 }
@@ -305,7 +332,7 @@ mod tests {
     #[test]
     fn a_blank_key_is_no_key() {
         // Spaces pasted by mistake must not remove the stored key (settings, review T-05).
-        assert!(usable("   ").is_err());
+        assert_eq!(usable("   "), Err(KeyError::Empty));
         assert_eq!(usable(" sk-1 "), Ok("sk-1"));
         let keys = home("a", &Arc::default());
         assert!(keys.store("anthropic", "   ").is_err());
@@ -386,7 +413,7 @@ mod tests {
 
     #[test]
     fn only_a_profile_in_the_profiles_dir_has_a_keyring_home() {
-        let dir = Path::new("/p/profiles");
+        let dir = Some(Path::new("/p/profiles"));
         let home = |f: &str| KeyHome::of(Path::new(f), dir);
         assert_eq!(
             home("/p/profiles/default.kaiwa"),
@@ -397,6 +424,11 @@ mod tests {
         assert_eq!(home("/p/profiles/sub/default.kaiwa"), KeyHome::EnvOnly);
         assert_eq!(home("/p/profiles/.kaiwa"), KeyHome::EnvOnly);
         assert_eq!(home("/p/profiles/notes.txt"), KeyHome::EnvOnly);
+        // KAIWA_DATA: no directory is the real one.
+        assert_eq!(
+            KeyHome::of(Path::new("/p/profiles/default.kaiwa"), None),
+            KeyHome::EnvOnly
+        );
     }
 
     #[test]
@@ -406,11 +438,8 @@ mod tests {
         let keys = Keys::new(store.clone(), KeyHome::EnvOnly);
 
         assert_eq!(keys.key("anthropic", NONE), None);
-        assert_eq!(
-            keys.state("anthropic", NONE),
-            KeyState::Unavailable(ENV_ONLY.into())
-        );
-        assert_eq!(keys.store("anthropic", "sk-x"), Err(ENV_ONLY.to_string()));
+        assert_eq!(keys.state("anthropic", NONE), KeyState::EnvOnly);
+        assert_eq!(keys.store("anthropic", "sk-x"), Err(KeyError::EnvOnly));
         keys.remove("anthropic").unwrap();
         keys.remove_all().unwrap();
         keys.migrate().unwrap();
@@ -419,5 +448,23 @@ mod tests {
         // The environment still works.
         let env = |k: &str| (k == "ANTHROPIC_API_KEY").then(|| "from-env".to_string());
         assert_eq!(keys.key("anthropic", env).as_deref(), Some("from-env"));
+        assert_eq!(keys.state("anthropic", env), KeyState::Environment);
+    }
+
+    #[test]
+    fn without_a_keyring_home_the_missing_key_names_only_the_variable() {
+        let env = |k: &str| (k == "KAIWA_PROVIDER").then(|| "anthropic".to_string());
+        let Err(e) = crate::provider_from(&Keys::env_only(), env) else {
+            panic!("no key, no tutor");
+        };
+        assert!(e.contains("ANTHROPIC_API_KEY"), "{e}");
+        assert!(!e.contains("keyring") && !e.contains("settings"), "{e}");
+
+        // A profile with a keyring home may use either.
+        let keys = home("a", &Arc::default());
+        let Err(e) = crate::provider_from(&keys, env) else {
+            panic!("no key, no tutor");
+        };
+        assert!(e.contains("keyring"), "{e}");
     }
 }

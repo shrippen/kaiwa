@@ -240,6 +240,17 @@ pub fn profiles_dir() -> PathBuf {
         .join("kaiwa/profiles")
 }
 
+/// The profiles directory whose profiles have keyring entries (/LF713/): the default one. With
+/// `$KAIWA_DATA` set there is none: that directory holds other profiles, with the same file
+/// names as the real ones.
+pub fn keyring_dir() -> Option<PathBuf> {
+    keyring_dir_for(std::env::var_os("KAIWA_DATA").is_some())
+}
+
+fn keyring_dir_for(data_set: bool) -> Option<PathBuf> {
+    (!data_set).then(profiles_dir)
+}
+
 /// Removes a profile completely (/LF710/, /LL402/): the database and SQLite's side files.
 pub fn delete_profile(path: &Path) -> Result<()> {
     for suffix in ["", "-wal", "-shm", "-journal"] {
