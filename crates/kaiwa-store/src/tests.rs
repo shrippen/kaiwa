@@ -64,6 +64,107 @@ fn a_profile_from_before_the_mora_hints_reads() {
 }
 
 #[test]
+fn a_placement_sets_the_feedback_until_the_learner_chose() {
+    let n4 = || kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, "n4")]);
+    let n3 = || kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, "n3")]);
+
+    // Not chosen: the level sets it, again on a new placement.
+    let s = Store::in_memory().unwrap();
+    s.set_placement(n4()).unwrap();
+    let p = s.profile().unwrap();
+    assert_eq!(p.feedback, Amount::Normal);
+    assert_eq!(p.feedback_source, FeedbackSource::Level);
+    s.set_placement(n3()).unwrap();
+    assert_eq!(s.profile().unwrap().feedback, Amount::Much);
+
+    // Chosen: it stays, even when the choice is the old default.
+    let s = Store::in_memory().unwrap();
+    s.set_feedback(Amount::Little).unwrap();
+    assert_eq!(s.profile().unwrap().feedback_source, FeedbackSource::Chosen);
+    s.set_placement(n4()).unwrap();
+    assert_eq!(s.profile().unwrap().feedback, Amount::Little);
+}
+
+/// A profile row as an older version wrote it: no `feedback_source`.
+fn old_profile(amount: &str, placed: bool) -> serde_json::Value {
+    let mut old = serde_json::to_value(Profile::default()).unwrap();
+    let o = old.as_object_mut().unwrap();
+    o.remove("feedback_source");
+    o.insert("feedback".into(), amount.into());
+    o.insert("placed".into(), placed.into());
+    old
+}
+
+fn with_row(profile: &serde_json::Value, speaking: &str) -> Store {
+    let s = Store::in_memory().unwrap();
+    s.db.execute(
+        "INSERT INTO settings (key, value) VALUES ('profile', ?1)",
+        [profile.to_string()],
+    )
+    .unwrap();
+    let mut l = s.learning().unwrap();
+    l.model = kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, speaking)]);
+    s.set_learning(&l).unwrap();
+    s
+}
+
+#[test]
+fn a_profile_from_before_the_feedback_source_reads() {
+    // A pick is a pick.
+    for amount in ["normal", "much"] {
+        let p = with_row(&old_profile(amount, true), "n3")
+            .profile()
+            .unwrap();
+        assert_eq!(p.feedback_source, FeedbackSource::Chosen, "{amount}");
+    }
+    // The old default after a placement: the level would have set it.
+    let p = with_row(&old_profile("little", true), "n3")
+        .profile()
+        .unwrap();
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Much, FeedbackSource::Level)
+    );
+    // The old default without a placement: nobody set it.
+    let p = with_row(&old_profile("little", false), "n3")
+        .profile()
+        .unwrap();
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Little, FeedbackSource::Default)
+    );
+}
+
+#[test]
+fn an_old_export_imports_with_the_same_rule() {
+    let import = |amount: &str| {
+        let src = with_row(&old_profile(amount, true), "n3");
+        let mut export = src.export(at(1, 9)).unwrap();
+        export["profile"] = old_profile(amount, true);
+        let dst = Store::in_memory().unwrap();
+        dst.import(&export).unwrap();
+        dst.profile().unwrap()
+    };
+    assert_eq!(import("much").feedback_source, FeedbackSource::Chosen);
+    let p = import("little");
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Much, FeedbackSource::Level)
+    );
+}
+
+#[test]
+fn a_skipped_placement_leaves_the_feedback_default() {
+    let s = Store::in_memory().unwrap();
+    s.update_profile(|p| p.placed = true).unwrap();
+    let p = s.profile().unwrap();
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Little, FeedbackSource::Default)
+    );
+}
+
+#[test]
 fn an_interrupted_session_continues_where_it_stopped() {
     let path = temp("resume");
     {

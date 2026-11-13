@@ -53,7 +53,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF301/ | M | Jeder Vorschlag zeigt: eigene Form → bessere Form (als Diff), eine … | app | geprüft | 1 von 1 automatisch grün: `mara_diff_audio` |
 | /LF302/ | M | Vorschläge haben einen Schweregrad: *verhindert Verständnis* … | ai, core | geprüft | 1 von 2 automatisch grün: `emi_keigo_detect`, `selin_register_flag` |
 | /LF303/ | M | Bei korrekten Äußerungen gibt es keinen Verbesserungsvorschlag. | ai, core | geprüft | 1 von 3 automatisch grün: `selin_casual_ok`, `theo_fp`, `theo_pitch_no_nitpick` |
-| /LF304/ | M | Wie viel Feedback angezeigt wird, ist einstellbar: *wenig* (nur … | app, core | geprüft | 1 von 1 automatisch grün: `mara_little_feedback` |
+| /LF304/ | M | Wie viel Feedback angezeigt wird, ist einstellbar: *wenig* (nur … | app, core, store | geprüft | 2 von 2 automatisch grün: `emi_feedback_level`, `mara_little_feedback` |
 | /LF305/ | M | Recast: Die KI greift Fehler im Gespräch natürlich auf, indem sie die … | core | geprüft | 1 von 1 automatisch grün: `selin_recast` |
 | /LF306/ | M | Nur Fehler mit dem Schweregrad *verhindert Verständnis* unterbrechen … | core | geprüft | 1 von 1 automatisch grün: `mara_little_feedback` |
 | /LF307/ | S | Lernende können einem Vorschlag widersprechen („Das ist korrekt“). | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `theo_dispute` |

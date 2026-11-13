@@ -24,6 +24,7 @@
       "properties": {
         "ui_lang": { "enum": ["de", "en"] },
         "feedback": { "enum": ["little", "normal", "much"] },
+        "feedback_source": { "enum": ["default", "level", "chosen"] },
         "script": { "enum": ["furigana", "kana", "hidden"] },
         "gamification": { "type": "boolean" },
         "keep_recordings_days": { "type": ["integer", "null"], "minimum": 1 },
