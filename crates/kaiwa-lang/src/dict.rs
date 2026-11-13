@@ -301,7 +301,17 @@ impl Dictionary {
         let long = w.text.chars().count() > 1;
         let kana = long && !w.text.chars().any(is_kanji);
         let ended = VERB_ENDINGS.iter().any(|e| w.text.ends_with(e));
+        // An auxiliary is never a noun's stem: なら is not 奈良. Its conditional forms are
+        // entries of their own in JMdict, as particles (なら, たら: "if").
+        let auxiliary = w.pos == "助動詞";
         if kana
+            && auxiliary
+            && let Some(e) = self.lookup_with(&w.text, None, Some("prt"), Fit::Require, lang)?
+        {
+            return Ok(Some(e));
+        }
+        if kana
+            && !auxiliary
             && !ended
             && let Some(e) = self.lookup_with(&w.text, None, Some("n"), Fit::Common, lang)?
         {
@@ -354,7 +364,9 @@ impl Dictionary {
             // kanji the tokenizer's 何時 would take a pronoun (いつ) from the noun (なんじ).
             let kana_noun = noun && kana_key;
             let pronoun = kana_noun && self.has_pos(id, "pn").unwrap_or(false);
-            let number = kana_noun && self.has_pos(id, "num").unwrap_or(false);
+            // A number first of all (三 さん), not a word with a number among its senses
+            // (京 きょう, the capital and 10¹⁶, would take 今日 from きょう).
+            let number = kana_noun && self.first_pos(id, "num").unwrap_or(false);
             // An expression is as good as an interjection (やった, いってらっしゃい).
             let fits = pronoun
                 || pos.is_some_and(|p| self.has_pos(id, p).unwrap_or(false))
@@ -482,6 +494,15 @@ impl Dictionary {
             .iter()
             .filter(|s| s.lang == "en")
             .any(|s| s.pos.iter().any(|p| pos::fits(prefix, p))))
+    }
+
+    /// Whether the entry's first English sense has a part of speech of the kind `prefix`.
+    fn first_pos(&self, id: i64, prefix: &str) -> Result<bool, LangError> {
+        Ok(self
+            .senses(id)?
+            .iter()
+            .find(|s| s.lang == "en")
+            .is_some_and(|s| s.pos.iter().any(|p| pos::fits(prefix, p))))
     }
 
     fn forms(&self, id: i64) -> Result<Vec<Form>, LangError> {
