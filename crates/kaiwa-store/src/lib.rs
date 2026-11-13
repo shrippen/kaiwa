@@ -34,6 +34,40 @@ pub const EXPORT_SCHEMA: &str = "kaiwa-export/3";
 /// The device state of a month's costs is `cost.<year>-<month>`; the export keeps the months.
 pub const COST_STATE_PREFIX: &str = "cost.";
 
+/// What a month cost so far (/LF714/). The store owns the shape because the export carries it.
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CostMonth {
+    pub cents: f64,
+    pub calls: u32,
+    pub unknown_calls: u32,
+    /// Sessions that cost something (a talk with a local tutor is not one of them).
+    pub sessions: u32,
+    /// The talk going on has cost something; it counts as a session when it ends.
+    #[serde(default)]
+    pub paid: bool,
+}
+
+impl CostMonth {
+    fn add(&mut self, other: &CostMonth) {
+        self.cents += other.cents;
+        self.calls += other.calls;
+        self.unknown_calls += other.unknown_calls;
+        self.sessions += other.sessions;
+        self.paid |= other.paid;
+    }
+}
+
+/// Whether `key` reads `YYYY-MM`.
+fn is_month_key(key: &str) -> bool {
+    let b = key.as_bytes();
+    let digits = |r: std::ops::Range<usize>| b[r].iter().all(u8::is_ascii_digit);
+    b.len() == 7
+        && digits(0..4)
+        && b[4] == b'-'
+        && digits(5..7)
+        && (b"01".as_slice()..=b"12".as_slice()).contains(&&b[5..7])
+}
+
 /// The largest text size the app offers (/LL202/; owner, 10.11.2026: 160 % for now). Above
 /// it the profile page no longer fits a small laptop's window (`tools/font-160.sh`). A profile
 /// that holds more is shown and started at this size.
@@ -473,8 +507,8 @@ impl Store {
         Ok(p)
     }
 
-    /// A small value of the device's state (not part of the export), e.g. when the last
-    /// reminder went out.
+    /// A small value of the device's state, e.g. when the last reminder went out. Only the
+    /// costs (`cost.*`) are part of the export.
     pub fn state_value<T: for<'de> Deserialize<'de>>(&self, key: &str) -> Result<Option<T>> {
         self.get_json(
             "SELECT value FROM settings WHERE key = ?1",
@@ -483,7 +517,7 @@ impl Store {
     }
 
     /// The state values whose key starts with `prefix`, by the rest of the key.
-    pub fn state_values(
+    fn state_values(
         &self,
         prefix: &str,
     ) -> Result<std::collections::BTreeMap<String, serde_json::Value>> {
@@ -1205,13 +1239,18 @@ impl Store {
         for d in array(v, "disputes")? {
             self.add_dispute(&serde_json::from_value(d.clone())?)?;
         }
-        // A month of the file replaces the same month of the (empty) profile.
+        // A placement may have booked costs before the import: the file's month adds to them.
         if costs_in_file {
-            let costs = v["costs"]
-                .as_object()
-                .ok_or_else(|| StoreError::WrongFormat("costs".into()))?;
-            for (month, m) in costs {
-                self.set_state_value(&format!("{COST_STATE_PREFIX}{month}"), m)?;
+            let wrong = || StoreError::WrongFormat("costs".into());
+            for (month, m) in v["costs"].as_object().ok_or_else(wrong)? {
+                let add: CostMonth = serde_json::from_value(m.clone()).map_err(|_| wrong())?;
+                if !is_month_key(month) {
+                    return Err(wrong());
+                }
+                let key = format!("{COST_STATE_PREFIX}{month}");
+                let mut sum: CostMonth = self.state_value(&key)?.unwrap_or_default();
+                sum.add(&add);
+                self.set_state_value(&key, &sum)?;
             }
         }
         tx.commit()?;

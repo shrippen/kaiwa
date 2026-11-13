@@ -737,10 +737,8 @@ fn a_failing_review_leaves_nothing_behind() {
 #[test]
 fn export_carries_the_costs_per_month() {
     let a = Store::in_memory().unwrap();
-    a.set_state_value("cost.2026-10", &serde_json::json!({ "cents": 12.5 }))
-        .unwrap();
-    a.set_state_value("cost.2026-11", &serde_json::json!({ "cents": 60.0 }))
-        .unwrap();
+    a.set_state_value("cost.2026-10", &month(12.5, 3)).unwrap();
+    a.set_state_value("cost.2026-11", &month(60.0, 8)).unwrap();
     a.set_state_value("reviewed", &at(0, 9)).unwrap();
     let json = a.export(at(1, 9)).unwrap();
     assert_eq!(json["costs"]["2026-11"]["cents"], 60.0);
@@ -765,4 +763,47 @@ fn an_export_of_format_2_has_no_costs() {
     let mut cut = a.export(at(1, 9)).unwrap();
     cut.as_object_mut().unwrap().remove("costs");
     assert!(Store::in_memory().unwrap().import(&cut).is_err());
+}
+
+fn month(cents: f64, calls: u32) -> serde_json::Value {
+    serde_json::json!({ "cents": cents, "calls": calls, "unknown_calls": 1, "sessions": 2, "paid": false })
+}
+
+#[test]
+fn import_rejects_costs_that_are_no_months() {
+    let a = Store::in_memory().unwrap();
+    let json = a.export(at(1, 9)).unwrap();
+    let bad = [
+        ("2026-10", serde_json::json!({ "cents": 60.0 })),
+        ("2026-1", month(1.0, 1)),
+        ("x", month(1.0, 1)),
+        ("2026-13", month(1.0, 1)),
+    ];
+    for (key, value) in bad {
+        let mut part = json.clone();
+        part["costs"] = serde_json::json!({ key: value });
+        let b = Store::in_memory().unwrap();
+        assert!(
+            matches!(b.import(&part), Err(StoreError::WrongFormat(_))),
+            "{key} was accepted"
+        );
+        assert!(b.state_values(COST_STATE_PREFIX).unwrap().is_empty());
+    }
+}
+
+#[test]
+fn import_adds_to_the_costs_already_booked() {
+    let a = Store::in_memory().unwrap();
+    a.set_state_value("cost.2026-11", &month(60.0, 8)).unwrap();
+    let json = a.export(at(1, 9)).unwrap();
+
+    // A placement with a cloud tutor booked costs before the import.
+    let b = Store::in_memory().unwrap();
+    b.set_state_value("cost.2026-11", &month(5.0, 2)).unwrap();
+    b.import(&json).unwrap();
+    let sum: serde_json::Value = b.state_value("cost.2026-11").unwrap().unwrap();
+    assert_eq!(sum["cents"], 65.0);
+    assert_eq!(sum["calls"], 10);
+    assert_eq!(sum["unknown_calls"], 2);
+    assert_eq!(sum["sessions"], 4);
 }

@@ -5,23 +5,11 @@
 use kaiwa_ai::cost::{Spent, meter};
 use kaiwa_core::clock::Moment;
 use kaiwa_store::{COST_STATE_PREFIX, StoreError};
-use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::Backend;
 
-/// What a month cost so far.
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Month {
-    pub cents: f64,
-    pub calls: u32,
-    pub unknown_calls: u32,
-    /// Sessions that cost something (a talk with a local tutor is not one of them).
-    pub sessions: u32,
-    /// The talk going on has cost something; it counts as a session when it ends.
-    #[serde(default)]
-    pub paid: bool,
-}
+pub use kaiwa_store::CostMonth as Month;
 
 fn key(now: Moment) -> String {
     let (y, m) = now.day().month();

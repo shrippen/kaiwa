@@ -507,10 +507,16 @@ fn resume(root: &Path) -> Result<Option<String>> {
     })
 }
 
+/// A month of costs, as the export carries it (/LF714/).
+fn a_month() -> serde_json::Value {
+    serde_json::json!({ "cents": 60.0, "calls": 8, "unknown_calls": 0, "sessions": 1, "paid": false })
+}
+
 /// /LF710/: the export is valid JSON after the published schema and holds every part.
 fn export(root: &Path) -> Result<Option<String>> {
     let dir = temp_dir("export");
     let store = three_sessions(root, &dir.join("lena.kaiwa"))?;
+    store.set_state_value("cost.2026-10", &a_month())?;
     let json = store.export(at(3, 9 * 3600))?;
     let text = serde_json::to_string_pretty(&json)?;
     let parsed: serde_json::Value = serde_json::from_str(&text)?;
@@ -544,10 +550,7 @@ fn import(root: &Path) -> Result<Option<String>> {
     let dir = temp_dir("import");
     let store = three_sessions(root, &dir.join("lena.kaiwa"))?;
     // V-04: the month's costs travel with the export.
-    store.set_state_value(
-        "cost.2026-10",
-        &serde_json::json!({ "cents": 60.0, "calls": 8, "unknown_calls": 0, "sessions": 1 }),
-    )?;
+    store.set_state_value("cost.2026-10", &a_month())?;
     let json = store.export(at(3, 9 * 3600))?;
     if store.import(&json).is_ok() {
         return Ok(Some("a profile with data took an import".into()));
