@@ -239,11 +239,11 @@ fn q(v: &serde_json::Value) -> QString {
 }
 
 impl qobject::KaiwaApp {
-    /// Tells the learner a profile that cannot be read was left as it is.
+    /// Tells the learner the profile was left as it is (it could not be read or written).
     fn say_unreadable(mut self: Pin<&mut Self>, e: &kaiwa_store::StoreError) {
         let msg = match self.lang().to_string() == "de" {
-            true => format!("Das Profil ließ sich nicht lesen, nichts geändert: {e}"),
-            false => format!("The profile could not be read, nothing changed: {e}"),
+            true => format!("Das Profil ließ sich nicht ändern, nichts geändert: {e}"),
+            false => format!("The profile could not be changed, nothing changed: {e}"),
         };
         self.as_mut().set_notice(QString::from(&msg));
     }
