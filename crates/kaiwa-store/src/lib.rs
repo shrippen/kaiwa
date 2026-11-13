@@ -34,6 +34,9 @@ pub const EXPORT_SCHEMA: &str = "kaiwa-export/3";
 /// The device state of a month's costs is `cost.<year>-<month>`; the export keeps the months.
 pub const COST_STATE_PREFIX: &str = "cost.";
 
+/// Device state set by an import; a profile that took one takes no second (costs would double).
+const IMPORTED_STATE: &str = "imported";
+
 /// What a month cost so far (/LF714/). The store owns the shape because the export carries it.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CostMonth {
@@ -1191,7 +1194,9 @@ impl Store {
         let empty: i64 = self
             .db
             .query_row("SELECT COUNT(*) FROM sessions", [], |r| r.get(0))?;
-        if empty > 0 || !self.items()?.is_empty() {
+        // A file without sessions or items leaves no trace but the marker.
+        let imported: Option<bool> = self.state_value(IMPORTED_STATE)?;
+        if empty > 0 || !self.items()?.is_empty() || imported.is_some() {
             return Err(StoreError::NotEmpty);
         }
         let tx = self.db.unchecked_transaction()?;
@@ -1253,6 +1258,7 @@ impl Store {
                 self.set_state_value(&key, &sum)?;
             }
         }
+        self.set_state_value(IMPORTED_STATE, &true)?;
         tx.commit()?;
         Ok(())
     }

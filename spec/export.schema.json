@@ -80,8 +80,18 @@
     "costs": {
       "type": "object",
       "description": "The estimated cost of each month (/LF714/), by \"YYYY-MM\".",
-      "propertyNames": { "pattern": "^[0-9]{4}-[0-9]{2}$" },
-      "additionalProperties": { "type": "object", "required": ["cents", "calls", "unknown_calls", "sessions"] }
+      "propertyNames": { "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["cents", "calls", "unknown_calls", "sessions"],
+        "properties": {
+          "cents": { "type": "number", "minimum": 0 },
+          "calls": { "type": "integer", "minimum": 0 },
+          "unknown_calls": { "type": "integer", "minimum": 0 },
+          "sessions": { "type": "integer", "minimum": 0 },
+          "paid": { "type": "boolean" }
+        }
+      }
     },
     "disputes": {
       "type": "array",

@@ -807,3 +807,17 @@ fn import_adds_to_the_costs_already_booked() {
     assert_eq!(sum["unknown_calls"], 2);
     assert_eq!(sum["sessions"], 4);
 }
+
+#[test]
+fn a_second_import_is_refused() {
+    let a = Store::in_memory().unwrap();
+    a.set_state_value("cost.2026-11", &month(60.0, 8)).unwrap();
+    let json = a.export(at(1, 9)).unwrap();
+
+    // The file has no sessions or items, so only a marker tells the profile took an import.
+    let b = Store::in_memory().unwrap();
+    b.import(&json).unwrap();
+    assert!(matches!(b.import(&json), Err(StoreError::NotEmpty)));
+    let sum: serde_json::Value = b.state_value("cost.2026-11").unwrap().unwrap();
+    assert_eq!(sum["cents"], 60.0, "counted once");
+}
