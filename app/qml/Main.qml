@@ -127,7 +127,7 @@ Kirigami.ApplicationWindow {
                 // Everything due, as the start page counts it (the review page holds ten at a time).
                 readonly property int reviewCount: kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0
                 currentIndex: Math.max(0, root.views.indexOf(root.arg("--view", "start")))
-                onActivated: function (i) { currentIndex = i; kaiwa.refresh() }
+                onActivated: function (i) { currentIndex = i; kaiwa.openReview("") }
             }
         }
 
@@ -137,7 +137,7 @@ Kirigami.ApplicationWindow {
             StartPage {
                 kaiwa: kaiwa
                 onTalk: function (scenario, resume) { root.talk(scenario, resume) }
-                onShowTab: function (i) { tabs.currentIndex = i }
+                onShowTab: function (i) { kaiwa.openReview(""); tabs.currentIndex = i }
                 onPlace: root.place()
             }
             PathPage {

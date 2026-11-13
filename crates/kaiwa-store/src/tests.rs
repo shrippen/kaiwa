@@ -251,6 +251,48 @@ fn export_and_import_carry_everything() {
 }
 
 #[test]
+fn import_keeps_that_the_learner_reviewed() {
+    let a = Store::in_memory().unwrap();
+    let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
+    let id = a.begin_session(&session.snapshot(), at(0, 9)).unwrap();
+    session.turn("コーヒーを好きです。", Input::Spoken).unwrap();
+    a.record(id, &session, at(0, 9), at(0, 9).plus_secs(300), None)
+        .unwrap();
+    words_before_a_break(&a, at(1, 9));
+    for day in 2..=9 {
+        a.review("ことば0", Grade::Good, at(day, 9)).unwrap();
+    }
+
+    // Reviewing daily is no break: the import must not start a refresher.
+    let b = Store::in_memory().unwrap();
+    b.import(&a.export(at(9, 10)).unwrap()).unwrap();
+    assert_eq!(b.last_practice().unwrap(), a.last_practice().unwrap());
+    assert!(!b.today(at(9, 11)).unwrap().refresher);
+}
+
+#[test]
+fn import_rejects_a_file_missing_an_array() {
+    let a = Store::in_memory().unwrap();
+    // A profile unlike the default, so a profile left behind by the import would show.
+    let mut p = a.profile().unwrap();
+    p.name = "Lena".into();
+    a.set_profile(&p).unwrap();
+    words_before_a_break(&a, at(1, 9));
+    let json = a.export(at(2, 9)).unwrap();
+
+    for key in ["sessions", "items", "days", "pauses", "disputes"] {
+        let mut part = json.clone();
+        part.as_object_mut().unwrap().remove(key);
+        let b = Store::in_memory().unwrap();
+        assert!(b.import(&part).is_err(), "{key} missing was accepted");
+        // Rolled back: nothing of the file stays.
+        assert!(b.items().unwrap().is_empty(), "{key}: items stayed");
+        assert_eq!(b.profile().unwrap(), Profile::default(), "{key}: profile");
+        assert_eq!(b.last_practice().unwrap(), None, "{key}: practice");
+    }
+}
+
+#[test]
 fn a_goal_changed_during_the_day_is_the_days_goal() {
     let store = Store::in_memory().unwrap();
     let c = curriculum();
@@ -608,4 +650,32 @@ fn a_running_pause_can_be_ended() {
     // Nothing running: ending changes nothing.
     store.end_pause(today).unwrap();
     assert_eq!(store.pauses().unwrap().len(), 2);
+}
+
+#[test]
+fn a_new_placement_keeps_the_history() {
+    use kaiwa_core::learner::{ErrorStat, Skill};
+    let store = Store::in_memory().unwrap();
+
+    // Mistakes, the learner's own corrections and pronunciation from talks so far.
+    let mut l = store.learning().unwrap();
+    l.model.errors.insert(
+        "particle".into(),
+        ErrorStat {
+            corrected: 7,
+            rate: 0.4,
+        },
+    );
+    l.model.corrections_by_learner = 3;
+    l.model.set(Skill::Pronunciation, 3.5);
+    store.set_learning(&l).unwrap();
+
+    // Placing again sets the levels it measured, nothing else (/LF200/, /LF202/).
+    let placed = kaiwa_core::LearnerModel::placed(&[(Skill::Speaking, "n4")]);
+    store.set_placement(placed.clone()).unwrap();
+    let m = store.learning().unwrap().model;
+    assert_eq!(m.level(Skill::Speaking), placed.level(Skill::Speaking));
+    assert_eq!(m.errors["particle"].corrected, 7);
+    assert_eq!(m.corrections_by_learner, 3);
+    assert_eq!(m.level(Skill::Pronunciation), 3.5);
 }

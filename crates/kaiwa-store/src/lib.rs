@@ -19,7 +19,7 @@ use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum};
 use kaiwa_core::difficulty::{Change, Difficulty, Regulator};
 use kaiwa_core::feedback::Amount;
-use kaiwa_core::learner::LearnerModel;
+use kaiwa_core::learner::{LearnerModel, Skill};
 use kaiwa_core::progress::{DailyGoal, DayRecord, Pause, Streak, XP_REVIEW, streak};
 use kaiwa_core::session::{Session, SessionState};
 use kaiwa_core::srs::{self, Grade, Item};
@@ -287,6 +287,13 @@ const MIGRATIONS: &[&str] = &[
      WHERE key = 'profile' AND json_extract(value, '$.tutor.provider') = 'openai';",
 ];
 
+/// A required array of an export; missing is an error, so a cut-off file imports nothing.
+fn array<'a>(v: &'a serde_json::Value, key: &str) -> Result<&'a Vec<serde_json::Value>> {
+    v[key]
+        .as_array()
+        .ok_or_else(|| StoreError::WrongFormat(key.into()))
+}
+
 /// Migration 3 for a profile outside the database (an export of format 1): "openai" was any
 /// OpenAI-compatible server, Ollama on this computer without a server.
 fn tutor_ids_3(profile: &mut serde_json::Value) {
@@ -503,8 +510,15 @@ impl Store {
     }
 
     /// After the placement (/LF200/): the model and the difficulty that fits it.
-    pub fn set_placement(&self, model: LearnerModel) -> Result<()> {
+    /// Takes the levels a placement measured. The history stays: mistakes, the learner's own
+    /// corrections (/LF202/) and pronunciation, which a talk does not show (typed turns count
+    /// too).
+    pub fn set_placement(&self, placed: LearnerModel) -> Result<()> {
         let mut l = self.learning()?;
+        let mut model = placed;
+        model.errors = std::mem::take(&mut l.model.errors);
+        model.corrections_by_learner = l.model.corrections_by_learner;
+        model.set(Skill::Pronunciation, l.model.level(Skill::Pronunciation));
         l.regulator = Regulator::new(Difficulty::for_learner(&model));
         l.model = model;
         self.set_learning(&l)?;
@@ -875,6 +889,17 @@ impl Store {
         Ok(srs::due(&items, now, limit).into_iter().cloned().collect())
     }
 
+    /// Like [`Store::due`], but only the items of `unit`.
+    pub fn due_in(&self, unit: &str, now: Moment, limit: usize) -> Result<Vec<Item>> {
+        self.reenter(now)?;
+        let items: Vec<Item> = self
+            .items()?
+            .into_iter()
+            .filter(|i| i.unit.as_deref() == Some(unit))
+            .collect();
+        Ok(srs::due(&items, now, limit).into_iter().cloned().collect())
+    }
+
     /// The review item of `text`, if there is one.
     pub fn item(&self, text: &str) -> Result<Option<Item>> {
         self.get_json(
@@ -1092,7 +1117,7 @@ impl Store {
         let tx = self.db.unchecked_transaction()?;
         self.set_profile(&serde_json::from_value(profile)?)?;
         self.set_learning(&serde_json::from_value(v["learning"].clone())?)?;
-        for s in v["sessions"].as_array().into_iter().flatten() {
+        for s in array(v, "sessions")? {
             let row: SessionRow = serde_json::from_value(s["row"].clone())?;
             let state: SessionState = serde_json::from_value(s["state"].clone())?;
             self.db.execute(
@@ -1112,19 +1137,26 @@ impl Store {
                 ],
             )?;
         }
-        for i in v["items"].as_array().into_iter().flatten() {
-            self.put_item(&serde_json::from_value(i.clone())?)?;
+        let mut reviewed: Option<Moment> = None;
+        for i in array(v, "items")? {
+            let item: Item = serde_json::from_value(i.clone())?;
+            reviewed = reviewed.max(item.last_review);
+            self.put_item(&item)?;
         }
-        for d in v["days"].as_array().into_iter().flatten() {
+        // `state` is not exported; without this, reviewing since the last talk reads as a break.
+        if let Some(at) = reviewed {
+            self.set_state_value("reviewed", &at)?;
+        }
+        for d in array(v, "days")? {
             let n = d["n"]
                 .as_i64()
                 .ok_or_else(|| StoreError::WrongFormat("day".into()))?;
             self.put_day(Day(n), &serde_json::from_value(d["record"].clone())?)?;
         }
-        for p in v["pauses"].as_array().into_iter().flatten() {
+        for p in array(v, "pauses")? {
             self.add_pause(serde_json::from_value(p.clone())?)?;
         }
-        for d in v["disputes"].as_array().into_iter().flatten() {
+        for d in array(v, "disputes")? {
             self.add_dispute(&serde_json::from_value(d.clone())?)?;
         }
         tx.commit()?;

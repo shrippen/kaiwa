@@ -285,7 +285,10 @@ QQC2.ScrollView {
             hint: page.p.pausedUntil
                 ? page.t("Pause bis einschließlich " + page.p.pausedUntil.day + "." + page.p.pausedUntil.month + ".",
                          "Paused up to and including " + page.p.pausedUntil.iso)
-                : page.t("Urlaub oder krank: die Serie wartet", "Holiday or ill: the streak waits")
+                // The streak only where gamification is on (/LF605/).
+                : page.p.gamification === true
+                ? page.t("Urlaub oder krank: die Serie wartet", "Holiday or ill: the streak waits")
+                : page.t("Urlaub oder krank: Kaiwa wartet", "Holiday or ill: Kaiwa waits")
             RowLayout {
                 spacing: KanteStyle.unit(8)
                 KanteButton { text: page.t("3 Tage", "3 days"); onClicked: page.kaiwa.pause(3) }
@@ -424,14 +427,14 @@ QQC2.ScrollView {
                 }
                 KanteButton {
                     text: page.t("Im Schlüsselbund speichern", "Keep in the keyring")
-                    enabled: apiKey.text.length > 0
+                    enabled: apiKey.text.trim().length > 0
                     onClicked: { page.kaiwa.storeKey(apiKey.text); apiKey.text = "" }
                 }
                 KanteButton {
                     visible: !!page.p.key && page.p.key.stored && page.p.key.canStore
                     text: page.t("Entfernen", "Remove")
                     emphasis: KanteButton.Emphasis.Quiet
-                    onClicked: page.kaiwa.storeKey("")
+                    onClicked: page.kaiwa.removeKey()
                 }
             }
         }

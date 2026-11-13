@@ -17,7 +17,9 @@ QQC2.ScrollView {
     readonly property var items: kaiwa.review.length > 0 ? JSON.parse(kaiwa.review) : []
     readonly property var current: items.length > 0 ? items[0] : null
     // Everything due, as the start page and the tab count it; the list holds ten at a time.
-    readonly property int remaining: Math.max(items.length, kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0)
+    // Narrowed to one unit (its path node): the unit's own count.
+    readonly property var scope: kaiwa.reviewScope.length > 0 ? JSON.parse(kaiwa.reviewScope) : null
+    readonly property int remaining: scope ? scope.due : Math.max(items.length, kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0)
     // The item on screen by its text: every refresh parses a new object for the same item.
     readonly property string currentText: current ? current.text : ""
     readonly property var answer: kaiwa.answer.length > 0 ? JSON.parse(kaiwa.answer) : null
@@ -38,6 +40,24 @@ QQC2.ScrollView {
             Layout.leftMargin: KanteStyle.unit(18)
             text: page.t("Wiederholen", "Review")
             pageTitle: true
+        }
+
+        // Which unit this review is about, and the way back to everything due.
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            visible: page.scope !== null
+            spacing: KanteStyle.unit(8)
+            KanteSectionLabel {
+                Layout.fillWidth: true
+                text: page.scope ? page.t("Wiederholung: ", "Review: ") + page.scope.title + " · " + page.t("noch ", "") + page.scope.due + page.t("", " left") : ""
+            }
+            KanteButton {
+                text: page.t("Alles Fällige", "All due")
+                emphasis: KanteButton.Emphasis.Quiet
+                onClicked: page.kaiwa.openReview("")
+            }
         }
 
         KanteEmptyState {

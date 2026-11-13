@@ -73,6 +73,11 @@ pub mod qobject {
         #[cxx_name = "finishPlacement"]
         fn finish_placement(self: Pin<&mut Conversation>, kana: i32, kanji: i32);
 
+        /// Take the skip the placement result offers, up to the unit `last` (/LF215/).
+        #[qinvokable]
+        #[cxx_name = "skipPlacement"]
+        fn skip_placement(self: Pin<&mut Conversation>, last: &QString) -> bool;
+
         /// Continue the session that was interrupted (/LF121/).
         #[qinvokable]
         fn resume(self: Pin<&mut Conversation>);
@@ -207,7 +212,7 @@ use kaiwa_speech::tts::{self, SpeechCache, Voice};
 use kaiwa_speech::{Synthesizer, Transcriber};
 use serde_json::{Value, json};
 
-use crate::state::{now, state};
+use crate::state::{now, state, views};
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -435,10 +440,9 @@ impl qobject::Conversation {
         self.begin_stage(0);
     }
 
-    /// Plays stage `i` of the placement: its scenario at the stage's level, help only on
-    /// request, nothing stored.
+    /// Plays stage `i` of the placement ([`placement::stage_session`]), nothing stored.
     fn begin_stage(mut self: Pin<&mut Self>, i: usize) {
-        let (id, level) = STAGES[i];
+        let id = STAGES[i].0;
         let prepared = {
             let st = state();
             let profile = st.store.profile().unwrap_or_default();
@@ -449,8 +453,8 @@ impl qobject::Conversation {
         };
         let (provider, demo) = state().provider(&scenario.id);
         let log = vec![json!({ "who": "character", "markup": scenario.opening.clone() })];
-        let session = Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
-            .with_difficulty(placement::difficulty_at(level));
+        let session =
+            placement::stage_session(scenario, provider, profile.feedback, &profile.ui_lang, i);
         let lang = profile.ui_lang;
         self.as_mut().begin(session, None, demo, log, lang.clone());
         let word = if lang == "en" {
@@ -511,14 +515,8 @@ impl qobject::Conversation {
         };
         p.kana = reading(kana);
         p.kanji = reading(kanji);
-        let mut model = p.result();
-        // A talk does not show pronunciation (typed turns count too): it stays as it was.
-        let before = state()
-            .store
-            .learning()
-            .map(|l| l.model)
-            .unwrap_or_default();
-        model.set(Skill::Pronunciation, before.level(Skill::Pronunciation));
+        // The store keeps what a talk does not show (pronunciation) and the history.
+        let model = p.result();
         let lang = self.lang.clone();
         let words: Vec<String> = model
             .describe(&lang)
@@ -530,10 +528,27 @@ impl qobject::Conversation {
             eprintln!("kaiwa: {e}");
         }
         let minutes = (p.results.len() as u32 * TURNS_PER_STAGE).div_ceil(2);
-        let r = json!({ "placement": words, "stages": p.results.len(), "minutes": minutes });
+        // The skip the result offers (/LF215/); none for a beginner.
+        let offer = views::placement_offer(&state()).unwrap_or_default();
+        let skip = (!offer.units.is_empty())
+            .then(|| json!({ "last": offer.units.last(), "title": offer.title }));
+        let r = json!({
+            "placement": words,
+            "stages": p.results.len(),
+            "minutes": minutes,
+            "skip": skip,
+        });
         self.as_mut().set_recorded(QString::from(&r.to_string()));
         self.as_mut().set_placement_ask(false);
         self.as_mut().set_placing(false);
+    }
+
+    fn skip_placement(self: Pin<&mut Self>, last: &QString) -> bool {
+        // Only the offer that ends at `last`, once (a second click changes nothing).
+        views::take_placement_skip(&state(), &last.to_string()).unwrap_or_else(|e| {
+            eprintln!("kaiwa: {e}");
+            false
+        })
     }
 
     /// Shows a session (new or restored) and loads speech once.

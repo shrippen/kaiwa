@@ -95,8 +95,10 @@ QQC2.ScrollView {
                     openText: page.t("offen", "open")
                     onActivated: function (i) {
                         var n = level.modelData.nodes[i]
-                        if (n.kind === "review") page.showTab(2)
-                        else page.talk(n.id)
+                        if (n.kind !== "review") { page.talk(n.id); return }
+                        // This unit's due items, not all of them.
+                        page.kaiwa.openReview(n.id)
+                        page.showTab(2)
                     }
                 }
             }

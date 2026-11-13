@@ -176,6 +176,37 @@ pub fn path(st: &Backend) -> anyhow::Result<Value> {
 /// The items to review now, at most `limit` (/LF230/, /LF502/: five in the plasmoid).
 pub fn review(st: &Backend, now: Moment, limit: usize) -> anyhow::Result<Value> {
     let due = st.store.due(now, limit)?;
+    review_rows(st, &due)
+}
+
+/// The review of one unit, what its path node opens; all due items when none of it is due.
+pub fn review_unit(st: &Backend, now: Moment, limit: usize, unit: &str) -> anyhow::Result<Value> {
+    let due = st.store.due_in(unit, now, limit)?;
+    if due.is_empty() {
+        return review(st, now, limit);
+    }
+    review_rows(st, &due)
+}
+
+/// The unit a review is narrowed to, {"id", "title", "due"}; null when none of it is due.
+pub fn review_scope(st: &Backend, now: Moment, unit: &str) -> anyhow::Result<Value> {
+    let due = st.store.due_in(unit, now, usize::MAX)?.len();
+    if due == 0 {
+        return Ok(Value::Null);
+    }
+    let p = st.store.profile()?;
+    let course = st.store.learning()?.course;
+    let title = st
+        .curriculum
+        .path(&course, &p.ui_lang)
+        .into_iter()
+        .find(|u| u.id == unit)
+        .map(|u| u.title)
+        .unwrap_or_default();
+    Ok(json!({ "id": unit, "title": title, "due": due }))
+}
+
+fn review_rows(st: &Backend, due: &[kaiwa_core::srs::Item]) -> anyhow::Result<Value> {
     let de = st.store.profile()?.ui_lang == "de";
     Ok(Value::Array(
         due.iter()
@@ -265,6 +296,13 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
     }))
 }
 
+/// Whether the scenario `id` is in keigo.
+fn has_keigo(st: &Backend, id: &str) -> bool {
+    st.scenarios
+        .get(id)
+        .is_some_and(|s| s.register == kaiwa_core::scenario::Register::Keigo)
+}
+
 /// The unit the skip offer is about (/LF215/, T-08), if there is an offer: three sessions in a
 /// row went almost without a slip since the last skip, and the unit the learner is in now is
 /// not one with keigo while the learner's register lacks it (as after the placement,
@@ -284,11 +322,7 @@ pub fn skip_offer(st: &Backend) -> anyhow::Result<Option<kaiwa_core::curriculum:
     else {
         return Ok(None);
     };
-    let keigo = unit.scenarios.iter().any(|s| {
-        st.scenarios
-            .get(&s.id)
-            .is_some_and(|s| s.register == kaiwa_core::scenario::Register::Keigo)
-    });
+    let keigo = unit.scenarios.iter().any(|s| has_keigo(st, &s.id));
     let keigo_ok = l.model.level(Skill::Register) >= level_index("keigo_basic").unwrap_or(f64::MAX);
     Ok((keigo_ok || !keigo).then_some(unit))
 }
@@ -303,6 +337,39 @@ pub fn take_skip(st: &Backend, unit: &str) -> anyhow::Result<bool> {
     let mut l = st.store.learning()?;
     l.course.skipped_units.insert(unit.to_string());
     l.regulator.took_skip();
+    st.store.set_learning(&l)?;
+    Ok(true)
+}
+
+/// The skip offered after the placement (/LF215/): the units up to the first keigo unit the
+/// learner's register lacks, and the title of the last. No units, no offer.
+#[derive(Debug, Default)]
+pub struct PlacementOffer {
+    pub units: Vec<String>,
+    pub title: String,
+}
+
+/// What the placement lets the learner skip (`Curriculum::placement_skip`).
+pub fn placement_offer(st: &Backend) -> anyhow::Result<PlacementOffer> {
+    let l = st.store.learning()?;
+    let keigo = |u: &kaiwa_core::curriculum::Unit| u.scenarios.iter().any(|s| has_keigo(st, s));
+    let units = st.curriculum.placement_skip(&l.model, &l.course, keigo);
+    let Some(last) = units.last().and_then(|id| st.curriculum.unit(id)) else {
+        return Ok(PlacementOffer::default());
+    };
+    let title = last.title.get(&st.store.profile()?.ui_lang).to_string();
+    Ok(PlacementOffer { units, title })
+}
+
+/// Takes the placement offer ending at unit `last`: its units count as done. Nothing happens
+/// when the offer ends elsewhere or is gone (a second click, an old page).
+pub fn take_placement_skip(st: &Backend, last: &str) -> anyhow::Result<bool> {
+    let offer = placement_offer(st)?;
+    if offer.units.last().is_none_or(|u| u != last) {
+        return Ok(false);
+    }
+    let mut l = st.store.learning()?;
+    l.course.skipped_units.extend(offer.units);
     st.store.set_learning(&l)?;
     Ok(true)
 }
@@ -884,6 +951,66 @@ mod tests {
     }
 
     #[test]
+    fn a_review_node_opens_the_review_of_its_unit() {
+        let b = crate::TempBackend::new("review-unit", false).unwrap();
+        let now = crate::now();
+        let (a, other) = (&b.curriculum.units[0], &b.curriculum.units[1]);
+        // The other unit's items are less stable, so they come first in the whole review.
+        let put = |text: &str, unit: &str, added: Moment| {
+            let mut item = kaiwa_core::srs::Item::new(
+                text,
+                kaiwa_core::srs::ItemKind::Phrase,
+                kaiwa_core::srs::Source::NewWord,
+                added,
+            );
+            item.unit = Some(unit.to_string());
+            item.due = now.day();
+            b.store.put_item(&item).unwrap();
+        };
+        put("はじめまして", &a.id, now);
+        put("おはよう", &a.id, now);
+        for (n, text) in ["ありがとう", "すみません", "さようなら"]
+            .iter()
+            .enumerate()
+        {
+            put(text, &other.id, now.plus_secs(-(10 + n as i64) * 86_400));
+        }
+
+        let all = review(&b, now, 10).unwrap();
+        assert_eq!(all[0]["unit"], other.id.as_str());
+
+        let items = review_unit(&b, now, 10, &a.id).unwrap();
+        let items = items.as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        assert!(items.iter().all(|i| i["unit"] == a.id.as_str()));
+
+        let scope = review_scope(&b, now, &a.id).unwrap();
+        assert_eq!(scope["id"], a.id.as_str());
+        assert_eq!(scope["due"], 2);
+        assert!(scope["title"].as_str().is_some_and(|t| !t.is_empty()));
+    }
+
+    #[test]
+    fn a_unit_without_due_items_reviews_everything_due() {
+        let b = crate::TempBackend::new("review-unit-done", false).unwrap();
+        let now = crate::now();
+        let (a, other) = (&b.curriculum.units[0], &b.curriculum.units[1]);
+        let mut item = kaiwa_core::srs::Item::new(
+            "ありがとう",
+            kaiwa_core::srs::ItemKind::Phrase,
+            kaiwa_core::srs::Source::NewWord,
+            now,
+        );
+        item.unit = Some(other.id.clone());
+        item.due = now.day();
+        b.store.put_item(&item).unwrap();
+
+        assert_eq!(review_scope(&b, now, &a.id).unwrap(), Value::Null);
+        let items = review_unit(&b, now, 10, &a.id).unwrap();
+        assert_eq!(items.as_array().unwrap().len(), 1);
+    }
+
+    #[test]
     fn the_text_size_is_one_of_the_steps_of_the_settings() {
         let b = crate::TempBackend::new("text-scale", false).unwrap();
         // The steps of SettingsPage.qml; a size from before the limit shows as the largest.
@@ -893,6 +1020,32 @@ mod tests {
             b.store.set_profile(&p).unwrap();
             assert_eq!(profile(&b).unwrap()["textScale"], json!(shown), "{kept}");
         }
+    }
+
+    #[test]
+    fn the_placement_offer_is_taken_once_and_not_for_a_beginner() {
+        use kaiwa_core::LearnerModel;
+        use kaiwa_core::learner::Skill;
+        let b = crate::TempBackend::new("placement-offer", false).unwrap();
+        assert!(placement_offer(&b).unwrap().units.is_empty());
+
+        let mut l = b.store.learning().unwrap();
+        l.model = LearnerModel::placed(&[
+            (Skill::Speaking, "n3"),
+            (Skill::Listening, "n3"),
+            (Skill::Register, "plain"),
+        ]);
+        b.store.set_learning(&l).unwrap();
+        let offer = placement_offer(&b).unwrap();
+        let last = offer.units.last().unwrap().clone();
+        assert!(!offer.title.is_empty());
+        assert!(!take_placement_skip(&b, &b.curriculum.units[0].id).unwrap());
+
+        assert!(take_placement_skip(&b, &last).unwrap());
+        assert!(!take_placement_skip(&b, &last).unwrap());
+        let skipped = b.store.learning().unwrap().course.skipped_units;
+        assert_eq!(skipped.len(), offer.units.len());
+        assert!(placement_offer(&b).unwrap().units.is_empty());
     }
 
     #[test]

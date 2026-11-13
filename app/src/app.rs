@@ -15,6 +15,10 @@ pub mod qobject {
         #[qproperty(QString, today)]
         #[qproperty(QString, path)]
         #[qproperty(QString, review)]
+        /// The unit the review is narrowed to (a review node of the path); empty: all due.
+        #[qproperty(QString, review_unit, cxx_name = "reviewUnit")]
+        /// That unit as {"id", "title", "due"}; empty when the review is not narrowed.
+        #[qproperty(QString, review_scope, cxx_name = "reviewScope")]
         #[qproperty(QString, learner)]
         #[qproperty(QString, stats)]
         #[qproperty(QString, profile)]
@@ -48,6 +52,11 @@ pub mod qobject {
         /// "I know this already" (up) or "too hard" for a skill (/LF202/).
         #[qinvokable]
         fn nudge(self: Pin<&mut KaiwaApp>, skill: &QString, up: bool);
+
+        /// Narrows the review to `unit` (empty: all due again).
+        #[qinvokable]
+        #[cxx_name = "openReview"]
+        fn open_review(self: Pin<&mut KaiwaApp>, unit: &QString);
 
         /// A review answer: what the learner said or typed for `text` (/LF230/).
         #[qinvokable]
@@ -93,10 +102,15 @@ pub mod qobject {
         #[cxx_name = "newProfile"]
         fn new_profile(self: Pin<&mut KaiwaApp>, name: &QString);
 
-        /// Keeps the tutor's API key in the system keyring; empty removes it (/LF713/).
+        /// Keeps the tutor's API key in the system keyring; a blank key is refused (/LF713/).
         #[qinvokable]
         #[cxx_name = "storeKey"]
         fn store_key(self: Pin<&mut KaiwaApp>, key: &QString);
+
+        /// Removes the tutor's API key from the keyring (/LF713/).
+        #[qinvokable]
+        #[cxx_name = "removeKey"]
+        fn remove_key(self: Pin<&mut KaiwaApp>);
 
         /// Starts at zero without the placement (/LF200/).
         #[qinvokable]
@@ -137,6 +151,8 @@ pub struct KaiwaAppRust {
     today: QString,
     path: QString,
     review: QString,
+    review_unit: QString,
+    review_scope: QString,
     learner: QString,
     stats: QString,
     profile: QString,
@@ -157,6 +173,8 @@ impl Default for KaiwaAppRust {
             today: Default::default(),
             path: Default::default(),
             review: Default::default(),
+            review_unit: Default::default(),
+            review_scope: Default::default(),
             learner: Default::default(),
             stats: Default::default(),
             profile: Default::default(),
@@ -223,14 +241,22 @@ fn q(v: &serde_json::Value) -> QString {
 impl qobject::KaiwaApp {
     fn refresh(mut self: Pin<&mut Self>) {
         let now = now();
-        let (today, path, review, learner, stats, profile, lang, gam, privacy) = {
+        let unit = self.review_unit().to_string();
+        let (today, path, review, scope, learner, stats, profile, lang, gam, privacy) = {
             let st = state();
             let p = st.store.profile().unwrap_or_default();
             let privacy = views::privacy(&st, &p.ui_lang);
             (
                 views::today(&st, now),
                 views::path(&st),
-                views::review(&st, now, 10),
+                match unit.is_empty() {
+                    true => views::review(&st, now, 10),
+                    false => views::review_unit(&st, now, 10, &unit),
+                },
+                match unit.is_empty() {
+                    true => Ok(serde_json::Value::Null),
+                    false => views::review_scope(&st, now, &unit),
+                },
                 views::learner(&st),
                 views::stats(&st, now),
                 views::profile(&st),
@@ -243,6 +269,17 @@ impl qobject::KaiwaApp {
         self.as_mut().set_today(ok(today));
         self.as_mut().set_path(ok(path));
         self.as_mut().set_review(ok(review));
+        // The unit is done: back to all due items.
+        let scope = scope.unwrap_or_default();
+        if scope.is_null() {
+            self.as_mut().set_review_unit(QString::default());
+        }
+        let scope = if scope.is_null() {
+            QString::default()
+        } else {
+            q(&scope)
+        };
+        self.as_mut().set_review_scope(scope);
         self.as_mut().set_learner(ok(learner));
         self.as_mut().set_stats(ok(stats));
         // Where the mora check's model belongs and whether it is there (/LF320/, F-08).
@@ -427,6 +464,11 @@ impl qobject::KaiwaApp {
                 let _ = st.store.set_learning(&l);
             }
         }
+        self.as_mut().refresh();
+    }
+
+    fn open_review(mut self: Pin<&mut Self>, unit: &QString) {
+        self.as_mut().set_review_unit(unit.clone());
         self.as_mut().refresh();
     }
 
@@ -632,6 +674,19 @@ impl qobject::KaiwaApp {
         let msg = match (kaiwa_ai::secrets::store(&provider, &key.to_string()), de) {
             (Ok(()), true) => "Der Schlüssel liegt im Schlüsselbund.".to_string(),
             (Ok(()), false) => "The key is in the keyring.".to_string(),
+            (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
+            (Err(e), false) => format!("The keyring refused: {e}"),
+        };
+        self.as_mut().set_notice(QString::from(&msg));
+        self.as_mut().refresh();
+    }
+
+    fn remove_key(mut self: Pin<&mut Self>) {
+        let provider = state().tutor_env()("KAIWA_PROVIDER").unwrap_or_default();
+        let de = self.lang().to_string() == "de";
+        let msg = match (kaiwa_ai::secrets::remove(&provider), de) {
+            (Ok(()), true) => "Der Schlüssel ist aus dem Schlüsselbund entfernt.".to_string(),
+            (Ok(()), false) => "The key is removed from the keyring.".to_string(),
             (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
             (Err(e), false) => format!("The keyring refused: {e}"),
         };
