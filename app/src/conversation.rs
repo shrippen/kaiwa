@@ -753,12 +753,11 @@ impl qobject::Conversation {
                 drop(s);
                 self.save();
                 // The record stays (a later talk was recorded, or this one has no record to
-                // redo): the page says so instead of promising a correction.
-                let mut recorded: Value =
-                    serde_json::from_str(&self.recorded().to_string()).unwrap_or(json!({}));
-                recorded["markKept"] = json!(true);
-                self.as_mut()
-                    .set_recorded(QString::from(&recorded.to_string()));
+                // redo): the page says so instead of promising a correction. Without a record
+                // there is nothing to say.
+                if let Some(kept) = keep_mark(&self.recorded().to_string()) {
+                    self.as_mut().set_recorded(QString::from(&kept));
+                }
                 return;
             }
         };
@@ -1882,6 +1881,17 @@ fn log_of(scenario: &Scenario, state: &SessionState, lang: &str) -> Vec<Value> {
     log
 }
 
+/// The record of the summary with the kept mark in it. `None` without a record (recording the
+/// talk failed): the mark has nothing to stay with.
+fn keep_mark(recorded: &str) -> Option<String> {
+    let mut recorded: Value = serde_json::from_str(recorded).ok()?;
+    if !recorded.is_object() {
+        return None;
+    }
+    recorded["markKept"] = json!(true);
+    Some(recorded.to_string())
+}
+
 /// What the end of the session did, in words (/LF310/, /LF603/, /LF605/).
 fn recorded_json(
     r: &kaiwa_store::Recorded,
@@ -1899,4 +1909,21 @@ fn recorded_json(
         "scenarioDone": r.scenario_done,
         "minutes": r.day.speaking_secs / 60,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::keep_mark;
+
+    #[test]
+    fn a_kept_mark_needs_a_record() {
+        // Recording failed: `recorded` is empty, the page must not get a record from it.
+        assert_eq!(keep_mark(""), None);
+        assert_eq!(keep_mark("null"), None);
+
+        let kept = keep_mark(r#"{"minutes":3,"xp":null}"#).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&kept).unwrap();
+        assert_eq!(v["markKept"], true);
+        assert_eq!(v["minutes"], 3);
+    }
 }

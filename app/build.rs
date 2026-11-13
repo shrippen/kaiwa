@@ -11,6 +11,7 @@ fn main() {
         "qml/SettingsPage.qml",
         "qml/Choice.qml",
         "qml/leave.js",
+        "qml/record.js",
     ]))
     // Kante, copied unchanged by tools/sync-kante.sh, compiled in under qrc:/qt/qml/Kante.
     .qrc("qml/kante.qrc")
