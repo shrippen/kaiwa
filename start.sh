@@ -2,6 +2,7 @@
 # Kaiwa from the repository: one entry point for the app, the demo and the QA runner.
 #
 #   ./start.sh                 the app with your profile (~/.local/share/kaiwa or $KAIWA_DATA)
+#                              (with $KAIWA_DATA, API keys come only from the environment)
 #   ./start.sh demo [de|en]    the app built with the demo: a fresh demo profile (temporary, two
 #                              weeks of history), recorded tutor answers, the screenshot switches
 #   ./start.sh sim [args…]     kaiwa-sim, default `run` (the persona journeys in text mode)

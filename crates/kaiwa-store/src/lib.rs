@@ -179,31 +179,18 @@ pub struct Profile {
 }
 
 /// A profile from before `feedback_source` (in the database or an export). Any amount but
-/// "little" was a pick. "little" was the fixed default: after a placement the level would have
-/// set it (from `speaking`, the model's speaking level), before one nobody set it.
-///
-/// Skipping the placement only set `placed`; the model stayed the starting model. A speaking
-/// level still at the start is therefore no placement. Safe: a real placement that ends at
-/// exactly the start level gives "little" anyway; only the hint "after the placement" differs.
-fn migrate_feedback_source(profile: &mut serde_json::Value, speaking: Option<f64>) {
+/// "little" was a pick. "little" was the fixed default, and nothing tells a real placement from
+/// a skipped one: both only set `placed` and the model, and every talk moves the model on. So
+/// "little" stays the default; a new placement sets it by level, as for every profile.
+fn migrate_feedback_source(profile: &mut serde_json::Value) {
     let Some(o) = profile.as_object_mut() else {
         return;
     };
     if o.contains_key("feedback_source") {
         return;
     }
-    let start = LearnerModel::default().level(Skill::Speaking);
-    let placed = o.get("placed").and_then(|p| p.as_bool()) == Some(true)
-        && speaking.is_some_and(|level| level != start);
-    let source = match (o.get("feedback").and_then(|f| f.as_str()), speaking) {
-        (Some("normal" | "much"), _) => FeedbackSource::Chosen,
-        (_, Some(level)) if placed => {
-            o.insert(
-                "feedback".into(),
-                serde_json::json!(Amount::for_level(level)),
-            );
-            FeedbackSource::Level
-        }
+    let source = match o.get("feedback").and_then(|f| f.as_str()) {
+        Some("normal" | "much") => FeedbackSource::Chosen,
         _ => FeedbackSource::Default,
     };
     o.insert("feedback_source".into(), serde_json::json!(source));
@@ -602,11 +589,7 @@ impl Store {
         let Some(mut v) = raw else {
             return Ok(Profile::default());
         };
-        // The model is read only for a profile that still needs the migration.
-        if v.get("feedback_source").is_none() {
-            let speaking = self.learning().ok().map(|l| l.model.level(Skill::Speaking));
-            migrate_feedback_source(&mut v, speaking);
-        }
+        migrate_feedback_source(&mut v);
         Ok(serde_json::from_value(v)?)
     }
 
@@ -1426,8 +1409,7 @@ impl Store {
             }
             _ => return Err(StoreError::WrongFormat(v["schema"].to_string())),
         }
-        let speaking = v["learning"]["model"]["skills"]["speaking"].as_f64();
-        migrate_feedback_source(&mut profile, speaking);
+        migrate_feedback_source(&mut profile);
         let empty: i64 = self
             .db
             .query_row("SELECT COUNT(*) FROM sessions", [], |r| r.get(0))?;
