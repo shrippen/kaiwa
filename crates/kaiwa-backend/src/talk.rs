@@ -32,6 +32,19 @@ pub enum Owed {
     Nothing,
 }
 
+/// Whether the character can speak right now: the voice is loaded and switched on.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Voice {
+    Ready,
+    Off,
+}
+
+/// Whether a recording may be recognised now: a turn (typed or spoken) still running owns
+/// the conversation, a second one would reorder the log.
+pub fn may_recognize(busy: bool) -> bool {
+    !busy
+}
+
 /// What the character could not say yet because the voice was not there: a reply that came
 /// early, and whether the opening was said (a reload after the idle time must not say it
 /// again).
@@ -47,9 +60,9 @@ impl Debt {
         *self = Self::default();
     }
 
-    /// The opening was said (or is being said).
-    pub fn opening_said(&mut self) {
-        self.opening_said = true;
+    /// The opening was said (or is being said). Without a voice it was dropped: still owed.
+    pub fn opening_said(&mut self, voice: Voice) {
+        self.opening_said = voice == Voice::Ready;
     }
 
     /// A reply came and there was no voice to say it; the latest one is kept.
@@ -63,8 +76,9 @@ impl Debt {
     }
 
     /// The voice is ready; what does the talk want now? `lines` is the log's length.
-    pub fn voice_ready(&mut self, lines: usize, busy: bool) -> Owed {
-        if let Some(markup) = self.reply.take() {
+    pub fn voice_ready(&mut self, lines: usize, busy: bool, voice: Voice) -> Owed {
+        // A reply owed to a voice the learner switched off meanwhile is not said.
+        if let Some(markup) = self.reply.take().filter(|_| voice == Voice::Ready) {
             return Owed::Reply(markup);
         }
         if lines != 1 || busy || self.opening_said {
@@ -103,11 +117,18 @@ mod tests {
     #[test]
     fn a_reply_before_the_voice_is_said_once_the_voice_is_ready() {
         let mut d = Debt::default();
-        d.opening_said();
+        d.opening_said(Voice::Ready);
         d.reply_early("もしもし");
         d.reply_early("こんにちは");
-        assert_eq!(d.voice_ready(3, false), Owed::Reply("こんにちは".into()));
-        assert_eq!(d.voice_ready(3, false), Owed::Nothing, "only once");
+        assert_eq!(
+            d.voice_ready(3, false, Voice::Ready),
+            Owed::Reply("こんにちは".into())
+        );
+        assert_eq!(
+            d.voice_ready(3, false, Voice::Ready),
+            Owed::Nothing,
+            "only once"
+        );
     }
 
     #[test]
@@ -115,29 +136,55 @@ mod tests {
         let mut d = Debt::default();
         d.reply_early("こんにちは");
         d.forgive();
-        assert_eq!(d.voice_ready(3, false), Owed::Nothing);
+        assert_eq!(d.voice_ready(3, false, Voice::Ready), Owed::Nothing);
     }
 
     #[test]
     fn the_opening_is_said_the_first_time_only() {
         let mut d = Debt::default();
-        assert_eq!(d.voice_ready(1, false), Owed::Opening);
+        assert_eq!(d.voice_ready(1, false, Voice::Ready), Owed::Opening);
         // Idle unload, a reload while the talk is still at the opening.
-        assert_eq!(d.voice_ready(1, false), Owed::Nothing);
+        assert_eq!(d.voice_ready(1, false, Voice::Ready), Owed::Nothing);
         d.reset();
-        assert_eq!(d.voice_ready(1, false), Owed::Opening, "a new talk");
+        assert_eq!(
+            d.voice_ready(1, false, Voice::Ready),
+            Owed::Opening,
+            "a new talk"
+        );
     }
 
     #[test]
     fn an_opening_said_elsewhere_is_not_said_again() {
         let mut d = Debt::default();
-        d.opening_said();
-        assert_eq!(d.voice_ready(1, false), Owed::Nothing);
+        d.opening_said(Voice::Ready);
+        assert_eq!(d.voice_ready(1, false, Voice::Ready), Owed::Nothing);
     }
 
     #[test]
     fn a_turn_in_flight_has_no_opening() {
         let mut d = Debt::default();
-        assert_eq!(d.voice_ready(1, true), Owed::Nothing);
+        assert_eq!(d.voice_ready(1, true, Voice::Ready), Owed::Nothing);
+    }
+
+    #[test]
+    fn an_opening_dropped_for_want_of_a_voice_is_still_owed() {
+        let mut d = Debt::default();
+        d.opening_said(Voice::Off);
+        assert_eq!(d.voice_ready(1, false, Voice::Ready), Owed::Opening);
+    }
+
+    #[test]
+    fn a_reply_owed_to_a_voice_switched_off_is_dropped() {
+        let mut d = Debt::default();
+        d.opening_said(Voice::Ready);
+        d.reply_early("こんにちは");
+        assert_eq!(d.voice_ready(3, false, Voice::Off), Owed::Nothing);
+        assert_eq!(d.voice_ready(3, false, Voice::Ready), Owed::Nothing, "gone");
+    }
+
+    #[test]
+    fn no_recognition_while_a_turn_runs() {
+        assert!(!may_recognize(true));
+        assert!(may_recognize(false));
     }
 }

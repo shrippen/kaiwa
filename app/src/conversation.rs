@@ -645,7 +645,12 @@ impl qobject::Conversation {
             }
             // Speak the opening of the new scenario.
             if let Some(o) = opening {
-                self.as_mut().rust_mut().debt.opening_said();
+                let voice = if self.speaker.is_some() && *self.voice_on() {
+                    kaiwa_backend::talk::Voice::Ready
+                } else {
+                    kaiwa_backend::talk::Voice::Off
+                };
+                self.as_mut().rust_mut().debt.opening_said(voice);
                 self.as_mut().speak(&o);
             }
             return;
@@ -1385,6 +1390,9 @@ impl qobject::Conversation {
             self.as_mut().set_talk_state(ERROR);
             return;
         };
+        if !kaiwa_backend::talk::may_recognize(*self.busy()) {
+            return;
+        }
         // No voice in it (no microphone, muted, wrong input): say so instead of letting the
         // recognition invent sounds from the silence (/LF104/). A tap too short to measure
         // goes on as before.
@@ -1507,10 +1515,9 @@ impl qobject::Conversation {
             // Only spoken turns have a response time.
             self.as_mut().rust_mut().speech_end = None;
             self.as_mut().rust_mut().empty_turns.reset();
-            // Typed instead of spoken: hands-free stops listening until the reply is through.
-            if *self.hands_free() {
-                self.as_mut().close_mic();
-            }
+            // Typed instead of spoken: the microphone closes, hands-free or not; a recording
+            // finishing during this turn would run a second one beside it.
+            self.as_mut().close_mic();
         }
         self.as_mut().wake();
         let session = self.session.clone()?;
@@ -1665,7 +1672,12 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
             q.as_mut().set_voice(QString::from("Übergangsstimme"));
             q.as_mut().set_voice_note(QString::default());
             let (lines, busy) = (q.log.len(), *q.busy());
-            match q.as_mut().rust_mut().debt.voice_ready(lines, busy) {
+            let voice = if *q.voice_on() {
+                kaiwa_backend::talk::Voice::Ready
+            } else {
+                kaiwa_backend::talk::Voice::Off
+            };
+            match q.as_mut().rust_mut().debt.voice_ready(lines, busy, voice) {
                 // The reply came before the voice did; no listening aid, no response time.
                 kaiwa_backend::talk::Owed::Reply(markup) => q.speak(&markup),
                 kaiwa_backend::talk::Owed::Opening => {
