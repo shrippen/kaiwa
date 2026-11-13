@@ -176,6 +176,37 @@ pub fn path(st: &Backend) -> anyhow::Result<Value> {
 /// The items to review now, at most `limit` (/LF230/, /LF502/: five in the plasmoid).
 pub fn review(st: &Backend, now: Moment, limit: usize) -> anyhow::Result<Value> {
     let due = st.store.due(now, limit)?;
+    review_rows(st, &due)
+}
+
+/// The review of one unit, what its path node opens; all due items when none of it is due.
+pub fn review_unit(st: &Backend, now: Moment, limit: usize, unit: &str) -> anyhow::Result<Value> {
+    let due = st.store.due_in(unit, now, limit)?;
+    if due.is_empty() {
+        return review(st, now, limit);
+    }
+    review_rows(st, &due)
+}
+
+/// The unit a review is narrowed to, {"id", "title", "due"}; null when none of it is due.
+pub fn review_scope(st: &Backend, now: Moment, unit: &str) -> anyhow::Result<Value> {
+    let due = st.store.due_in(unit, now, usize::MAX)?.len();
+    if due == 0 {
+        return Ok(Value::Null);
+    }
+    let p = st.store.profile()?;
+    let course = st.store.learning()?.course;
+    let title = st
+        .curriculum
+        .path(&course, &p.ui_lang)
+        .into_iter()
+        .find(|u| u.id == unit)
+        .map(|u| u.title)
+        .unwrap_or_default();
+    Ok(json!({ "id": unit, "title": title, "due": due }))
+}
+
+fn review_rows(st: &Backend, due: &[kaiwa_core::srs::Item]) -> anyhow::Result<Value> {
     let de = st.store.profile()?.ui_lang == "de";
     Ok(Value::Array(
         due.iter()
@@ -881,6 +912,66 @@ mod tests {
                 .to_string()
                 .contains(&second.scenarios[0])
         );
+    }
+
+    #[test]
+    fn a_review_node_opens_the_review_of_its_unit() {
+        let b = crate::TempBackend::new("review-unit", false).unwrap();
+        let now = crate::now();
+        let (a, other) = (&b.curriculum.units[0], &b.curriculum.units[1]);
+        // The other unit's items are less stable, so they come first in the whole review.
+        let put = |text: &str, unit: &str, added: Moment| {
+            let mut item = kaiwa_core::srs::Item::new(
+                text,
+                kaiwa_core::srs::ItemKind::Phrase,
+                kaiwa_core::srs::Source::NewWord,
+                added,
+            );
+            item.unit = Some(unit.to_string());
+            item.due = now.day();
+            b.store.put_item(&item).unwrap();
+        };
+        put("はじめまして", &a.id, now);
+        put("おはよう", &a.id, now);
+        for (n, text) in ["ありがとう", "すみません", "さようなら"]
+            .iter()
+            .enumerate()
+        {
+            put(text, &other.id, now.plus_secs(-(10 + n as i64) * 86_400));
+        }
+
+        let all = review(&b, now, 10).unwrap();
+        assert_eq!(all[0]["unit"], other.id.as_str());
+
+        let items = review_unit(&b, now, 10, &a.id).unwrap();
+        let items = items.as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        assert!(items.iter().all(|i| i["unit"] == a.id.as_str()));
+
+        let scope = review_scope(&b, now, &a.id).unwrap();
+        assert_eq!(scope["id"], a.id.as_str());
+        assert_eq!(scope["due"], 2);
+        assert!(scope["title"].as_str().is_some_and(|t| !t.is_empty()));
+    }
+
+    #[test]
+    fn a_unit_without_due_items_reviews_everything_due() {
+        let b = crate::TempBackend::new("review-unit-done", false).unwrap();
+        let now = crate::now();
+        let (a, other) = (&b.curriculum.units[0], &b.curriculum.units[1]);
+        let mut item = kaiwa_core::srs::Item::new(
+            "ありがとう",
+            kaiwa_core::srs::ItemKind::Phrase,
+            kaiwa_core::srs::Source::NewWord,
+            now,
+        );
+        item.unit = Some(other.id.clone());
+        item.due = now.day();
+        b.store.put_item(&item).unwrap();
+
+        assert_eq!(review_scope(&b, now, &a.id).unwrap(), Value::Null);
+        let items = review_unit(&b, now, 10, &a.id).unwrap();
+        assert_eq!(items.as_array().unwrap().len(), 1);
     }
 
     #[test]

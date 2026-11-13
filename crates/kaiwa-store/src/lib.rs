@@ -889,6 +889,17 @@ impl Store {
         Ok(srs::due(&items, now, limit).into_iter().cloned().collect())
     }
 
+    /// Like [`Store::due`], but only the items of `unit`.
+    pub fn due_in(&self, unit: &str, now: Moment, limit: usize) -> Result<Vec<Item>> {
+        self.reenter(now)?;
+        let items: Vec<Item> = self
+            .items()?
+            .into_iter()
+            .filter(|i| i.unit.as_deref() == Some(unit))
+            .collect();
+        Ok(srs::due(&items, now, limit).into_iter().cloned().collect())
+    }
+
     /// The review item of `text`, if there is one.
     pub fn item(&self, text: &str) -> Result<Option<Item>> {
         self.get_json(
