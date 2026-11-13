@@ -287,6 +287,13 @@ const MIGRATIONS: &[&str] = &[
      WHERE key = 'profile' AND json_extract(value, '$.tutor.provider') = 'openai';",
 ];
 
+/// A required array of an export; missing is an error, so a cut-off file imports nothing.
+fn array<'a>(v: &'a serde_json::Value, key: &str) -> Result<&'a Vec<serde_json::Value>> {
+    v[key]
+        .as_array()
+        .ok_or_else(|| StoreError::WrongFormat(key.into()))
+}
+
 /// Migration 3 for a profile outside the database (an export of format 1): "openai" was any
 /// OpenAI-compatible server, Ollama on this computer without a server.
 fn tutor_ids_3(profile: &mut serde_json::Value) {
@@ -1099,7 +1106,7 @@ impl Store {
         let tx = self.db.unchecked_transaction()?;
         self.set_profile(&serde_json::from_value(profile)?)?;
         self.set_learning(&serde_json::from_value(v["learning"].clone())?)?;
-        for s in v["sessions"].as_array().into_iter().flatten() {
+        for s in array(v, "sessions")? {
             let row: SessionRow = serde_json::from_value(s["row"].clone())?;
             let state: SessionState = serde_json::from_value(s["state"].clone())?;
             self.db.execute(
@@ -1119,19 +1126,26 @@ impl Store {
                 ],
             )?;
         }
-        for i in v["items"].as_array().into_iter().flatten() {
-            self.put_item(&serde_json::from_value(i.clone())?)?;
+        let mut reviewed: Option<Moment> = None;
+        for i in array(v, "items")? {
+            let item: Item = serde_json::from_value(i.clone())?;
+            reviewed = reviewed.max(item.last_review);
+            self.put_item(&item)?;
         }
-        for d in v["days"].as_array().into_iter().flatten() {
+        // `state` is not exported; without this, reviewing since the last talk reads as a break.
+        if let Some(at) = reviewed {
+            self.set_state_value("reviewed", &at)?;
+        }
+        for d in array(v, "days")? {
             let n = d["n"]
                 .as_i64()
                 .ok_or_else(|| StoreError::WrongFormat("day".into()))?;
             self.put_day(Day(n), &serde_json::from_value(d["record"].clone())?)?;
         }
-        for p in v["pauses"].as_array().into_iter().flatten() {
+        for p in array(v, "pauses")? {
             self.add_pause(serde_json::from_value(p.clone())?)?;
         }
-        for d in v["disputes"].as_array().into_iter().flatten() {
+        for d in array(v, "disputes")? {
             self.add_dispute(&serde_json::from_value(d.clone())?)?;
         }
         tx.commit()?;
