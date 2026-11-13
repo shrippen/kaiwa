@@ -677,8 +677,9 @@ impl qobject::Conversation {
         };
         if let Some(session) = &self.session
             && let Ok(mut s) = session.lock()
+            && !s.mark_misrecognized(turn)
         {
-            s.mark_misrecognized(turn);
+            return;
         }
         if let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize) {
             e["corrections"] = json!([]);

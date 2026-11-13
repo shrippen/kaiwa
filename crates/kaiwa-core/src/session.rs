@@ -660,8 +660,12 @@ impl Session {
     }
 
     /// The learner marks a turn's transcript as misrecognised (/LF113/): its corrections no longer
-    /// count as mistakes and do not go into the review.
+    /// count as mistakes and do not go into the review. Refused once the talk is done: it is
+    /// recorded by then, a mark would only change what the page shows.
     pub fn mark_misrecognized(&mut self, turn: usize) -> bool {
+        if self.done() {
+            return false;
+        }
         match self.turns.get_mut(turn) {
             Some(t) => {
                 t.misrecognized = true;
@@ -672,8 +676,12 @@ impl Session {
     }
 
     /// The learner disputes a correction (/LF307/). It stays visible, marked as disputed, and
-    /// is kept for the QA (/LD060/), but it no longer counts as a mistake.
+    /// is kept for the QA (/LD060/), but it no longer counts as a mistake. Refused once the
+    /// talk is done, as for a misrecognition mark.
     pub fn dispute(&mut self, turn: usize, better: &str) -> Option<Correction> {
+        if self.done() {
+            return None;
+        }
         let t = self.turns.get_mut(turn)?;
         let c = t
             .corrections
@@ -1223,6 +1231,29 @@ mod tests {
         assert!((st.success() - 0.5).abs() < 1e-9);
         assert_eq!((st.helps, st.aids), (1, 1));
         assert!(st.speaking_secs > 0);
+    }
+
+    #[test]
+    fn nothing_is_marked_once_the_talk_is_done() {
+        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        s.turn("マラです。よろしくおねがいします。", Input::Spoken)
+            .unwrap();
+        s.turn("ドイツのハンブルクから来ました。", Input::Spoken)
+            .unwrap();
+        s.turn("仕事はプロデューサーです。", Input::Typed).unwrap();
+        s.turn("コーヒーを好きです。", Input::Spoken).unwrap();
+        assert!(s.done());
+
+        // The talk is recorded: a mark would change the page, not the record.
+        assert!(!s.mark_misrecognized(3));
+        assert!(!s.turns()[3].misrecognized);
+        assert!(s.dispute(3, "コーヒーが好きです").is_none());
+        assert!(s.turns()[3].disputed.is_empty());
+        assert!(
+            s.summary()
+                .review
+                .contains(&"コーヒーが好きです".to_string())
+        );
     }
 
     #[test]
