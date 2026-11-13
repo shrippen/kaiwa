@@ -21,6 +21,8 @@ QQC2.ScrollView {
     readonly property var models: kaiwa.models.length > 0 ? JSON.parse(kaiwa.models) : []
     readonly property var download: kaiwa.download.length > 0 ? JSON.parse(kaiwa.download) : ({})
     readonly property real titleWidth: KanteStyle.unit(210)
+    // The placement level the feedback amount follows (V-02, /LF304/).
+    readonly property var feedbackLevel: ({ "little": t("bis N5", "up to N5"), "normal": "N4", "much": t("ab N3", "N3 and up") })
     contentWidth: availableWidth
 
     ColumnLayout {
@@ -85,7 +87,11 @@ QQC2.ScrollView {
         }
         Row {
             title: page.t("Verbesserungen", "Corrections")
-            hint: page.t("Wenig: nur Fehler. Viel: auch Stil", "Little: mistakes only. Much: style too")
+            hint: (page.p.feedbackBand
+                   ? page.t("Nach Einstufung (" + page.feedbackLevel[page.p.feedbackBand] + "). ",
+                            "By placement (" + page.feedbackLevel[page.p.feedbackBand] + "). ")
+                   : "")
+                  + page.t("Wenig: nur Fehler. Viel: auch Stil", "Little: mistakes only. Much: style too")
             Choice {
                 readonly property var values: ["little", "normal", "much"]
                 model: [page.t("Wenig", "Little"), page.t("Normal", "Normal"), page.t("Viel", "Much")]

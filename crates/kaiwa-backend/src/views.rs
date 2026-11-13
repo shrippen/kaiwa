@@ -8,7 +8,7 @@ use kaiwa_core::curriculum::NodeState;
 use kaiwa_core::difficulty::KNOBS;
 use kaiwa_core::learner::SKILLS;
 use kaiwa_core::progress::{DailyGoal, streak_note};
-use kaiwa_store::Script;
+use kaiwa_store::{FeedbackSource, Script};
 use serde_json::{Value, json};
 
 use crate::Backend;
@@ -642,6 +642,9 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "goal": goal,
         "gamification": p.gamification,
         "feedback": p.feedback,
+        // Set by a placement's speaking level (V-02): the amount it gave names the band; the
+        // model moves on with practice, the placement's band does not.
+        "feedbackBand": (p.feedback_source == FeedbackSource::Level).then_some(p.feedback),
         "script": match p.script { Script::Furigana => 0, Script::Kana => 1, Script::Hidden => 2 },
         "endPause": p.end_pause_secs,
         "keepRecordings": p.keep_recordings_days,
@@ -1439,6 +1442,30 @@ mod tests {
 
         assert_eq!(v["heatEnd"], held.day().iso());
         assert_eq!(v["heatEnd"], last);
+    }
+
+    #[test]
+    fn the_settings_name_the_band_only_when_a_placement_set_it() {
+        let b = crate::TempBackend::new("feedback-band", false).unwrap();
+        assert!(profile(&b).unwrap()["feedbackBand"].is_null());
+
+        // A skipped placement sets nothing.
+        b.store.update_profile(|p| p.placed = true).unwrap();
+        assert!(profile(&b).unwrap()["feedbackBand"].is_null());
+
+        let n3 = kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, "n3")]);
+        b.store.set_placement(n3).unwrap();
+        assert_eq!(profile(&b).unwrap()["feedbackBand"], "much");
+
+        // Practice moves the model on; the band stays the placement's.
+        let mut l = b.store.learning().unwrap();
+        l.model.set(kaiwa_core::learner::Skill::Speaking, 3.0);
+        b.store.set_learning(&l).unwrap();
+        assert_eq!(profile(&b).unwrap()["feedbackBand"], "much");
+
+        // Her own pick: no band.
+        b.store.set_feedback(kaiwa_core::Amount::Little).unwrap();
+        assert!(profile(&b).unwrap()["feedbackBand"].is_null());
     }
 
     #[test]

@@ -4,28 +4,16 @@
 
 use kaiwa_ai::cost::{Spent, meter};
 use kaiwa_core::clock::Moment;
-use kaiwa_store::StoreError;
-use serde::{Deserialize, Serialize};
+use kaiwa_store::{COST_STATE_PREFIX, StoreError};
 use serde_json::{Value, json};
 
 use crate::Backend;
 
-/// What a month cost so far.
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Month {
-    pub cents: f64,
-    pub calls: u32,
-    pub unknown_calls: u32,
-    /// Sessions that cost something (a talk with a local tutor is not one of them).
-    pub sessions: u32,
-    /// The talk going on has cost something; it counts as a session when it ends.
-    #[serde(default)]
-    pub paid: bool,
-}
+pub use kaiwa_store::CostMonth as Month;
 
 fn key(now: Moment) -> String {
     let (y, m) = now.day().month();
-    format!("cost.{y:04}-{m:02}")
+    format!("{COST_STATE_PREFIX}{y:04}-{m:02}")
 }
 
 impl Backend {
@@ -192,5 +180,36 @@ pub(crate) mod tests {
         assert!(!b.over_budget(next).unwrap());
         b.arm_brake(next).unwrap();
         assert!(!meter().exhausted());
+    }
+
+    #[test]
+    fn an_import_keeps_the_months_costs_and_the_brake() {
+        let _turn = METER.lock().unwrap_or_else(|e| e.into_inner());
+        let a = backend("cost-export");
+        let now = Moment::new(1_791_100_000, 120);
+        a.set_cost_limit(Some(100), now).unwrap();
+        let spent = Spent {
+            cents: 60.0,
+            calls: 8,
+            unknown_calls: 0,
+        };
+        a.book(spent, now, true).unwrap();
+        let json = a.store.export(now).unwrap();
+
+        // V-04: a new profile starts with the costs of the month, not with the full limit.
+        let b = backend("cost-import");
+        b.store.import(&json).unwrap();
+        assert_eq!(b.month_cost(now).unwrap(), a.month_cost(now).unwrap());
+        let book = Spent {
+            cents: 40.0,
+            calls: 1,
+            unknown_calls: 0,
+        };
+        b.book(book, now, false).unwrap();
+        assert!(
+            b.over_budget(now).unwrap(),
+            "60 imported + 40 booked reach 100"
+        );
+        assert!(meter().exhausted());
     }
 }

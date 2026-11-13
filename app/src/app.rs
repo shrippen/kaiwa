@@ -383,6 +383,18 @@ impl qobject::KaiwaApp {
             self.as_mut().refresh();
             return;
         }
+        // The pick is the learner's: a placement leaves it (V-02).
+        if key == "feedback" {
+            let Ok(a) = serde_json::from_value(json!(value)) else {
+                return;
+            };
+            if let Err(e) = state().store.set_feedback(a) {
+                self.as_mut().say_unreadable(&e);
+                return;
+            }
+            self.as_mut().refresh();
+            return;
+        }
         {
             let st = state();
             // A profile that cannot be read stays as it is; the learner is told.
@@ -394,11 +406,6 @@ impl qobject::KaiwaApp {
                         }
                     }
                     "gamification" => p.gamification = value == "true",
-                    "feedback" => {
-                        if let Ok(a) = serde_json::from_value(json!(value)) {
-                            p.feedback = a;
-                        }
-                    }
                     "script" => {
                         p.script = match value.as_str() {
                             "1" => Script::Kana,
