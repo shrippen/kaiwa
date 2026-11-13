@@ -70,8 +70,10 @@ pub enum Script {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum FeedbackSource {
-    /// The speaking level of the placement sets it.
+    /// Neither a placement nor the learner set it.
     #[default]
+    Default,
+    /// The speaking level of a placement set it.
     Level,
     /// The learner picked it in the settings; a placement leaves it.
     Chosen,
@@ -131,18 +133,27 @@ pub struct Profile {
     pub microphone: Option<String>,
 }
 
-/// A profile from before `feedback_source`: "little" was the fixed default, so it was never a
-/// pick; any other amount was.
-fn migrate_feedback_source(profile: &mut serde_json::Value) {
+/// A profile from before `feedback_source` (in the database or an export). Any amount but
+/// "little" was a pick. "little" was the fixed default: after a placement the level would have
+/// set it (from `speaking`, the model's speaking level), before one nobody set it.
+fn migrate_feedback_source(profile: &mut serde_json::Value, speaking: Option<f64>) {
     let Some(o) = profile.as_object_mut() else {
         return;
     };
     if o.contains_key("feedback_source") {
         return;
     }
-    let source = match o.get("feedback").and_then(|f| f.as_str()) {
-        Some("normal" | "much") => FeedbackSource::Chosen,
-        _ => FeedbackSource::Level,
+    let placed = o.get("placed").and_then(|p| p.as_bool()) == Some(true);
+    let source = match (o.get("feedback").and_then(|f| f.as_str()), speaking) {
+        (Some("normal" | "much"), _) => FeedbackSource::Chosen,
+        (_, Some(level)) if placed => {
+            o.insert(
+                "feedback".into(),
+                serde_json::json!(Amount::for_level(level)),
+            );
+            FeedbackSource::Level
+        }
+        _ => FeedbackSource::Default,
     };
     o.insert("feedback_source".into(), serde_json::json!(source));
 }
@@ -167,7 +178,7 @@ impl Default for Profile {
             daily_goal: DailyGoal::default(),
             gamification: true,
             feedback: Amount::Little,
-            feedback_source: FeedbackSource::Level,
+            feedback_source: FeedbackSource::Default,
             script: Script::Furigana,
             end_pause_secs: 1.2,
             keep_recordings_days: None,
@@ -490,7 +501,11 @@ impl Store {
         let Some(mut v) = raw else {
             return Ok(Profile::default());
         };
-        migrate_feedback_source(&mut v);
+        // The model is read only for a profile that still needs the migration.
+        if v.get("feedback_source").is_none() {
+            let speaking = self.learning()?.model.level(Skill::Speaking);
+            migrate_feedback_source(&mut v, Some(speaking));
+        }
         Ok(serde_json::from_value(v)?)
     }
 
@@ -583,8 +598,9 @@ impl Store {
         }
         let mut p = self.profile()?;
         p.placed = true;
-        if p.feedback_source == FeedbackSource::Level {
+        if p.feedback_source != FeedbackSource::Chosen {
             p.feedback = Amount::for_level(l.model.level(Skill::Speaking));
+            p.feedback_source = FeedbackSource::Level;
         }
         self.set_profile(&p)
     }
@@ -1167,6 +1183,8 @@ impl Store {
             Some("kaiwa-export/1") => tutor_ids_3(&mut profile),
             _ => return Err(StoreError::WrongFormat(v["schema"].to_string())),
         }
+        let speaking = v["learning"]["model"]["skills"]["speaking"].as_f64();
+        migrate_feedback_source(&mut profile, speaking);
         let empty: i64 = self
             .db
             .query_row("SELECT COUNT(*) FROM sessions", [], |r| r.get(0))?;

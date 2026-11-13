@@ -87,9 +87,9 @@ QQC2.ScrollView {
         }
         Row {
             title: page.t("Verbesserungen", "Corrections")
-            hint: (page.p.feedbackByLevel
-                   ? page.t("Nach Einstufung (" + page.feedbackLevel[page.p.feedback] + "). ",
-                            "By placement (" + page.feedbackLevel[page.p.feedback] + "). ")
+            hint: (page.p.feedbackBand
+                   ? page.t("Nach Einstufung (" + page.feedbackLevel[page.p.feedbackBand] + "). ",
+                            "By placement (" + page.feedbackLevel[page.p.feedbackBand] + "). ")
                    : "")
                   + page.t("Wenig: nur Fehler. Viel: auch Stil", "Little: mistakes only. Much: style too")
             Choice {

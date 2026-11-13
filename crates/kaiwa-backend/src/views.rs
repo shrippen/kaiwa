@@ -3,10 +3,11 @@
 
 use std::collections::BTreeMap;
 
+use kaiwa_core::Amount;
 use kaiwa_core::clock::Moment;
 use kaiwa_core::curriculum::NodeState;
 use kaiwa_core::difficulty::KNOBS;
-use kaiwa_core::learner::SKILLS;
+use kaiwa_core::learner::{SKILLS, Skill};
 use kaiwa_core::progress::{DailyGoal, streak_note};
 use kaiwa_store::{FeedbackSource, Script};
 use serde_json::{Value, json};
@@ -650,8 +651,9 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "goal": goal,
         "gamification": p.gamification,
         "feedback": p.feedback,
-        // The amount follows the placement's speaking level until the learner picks one (V-02).
-        "feedbackByLevel": p.placed && p.feedback_source == FeedbackSource::Level,
+        // Set by a placement's speaking level (V-02): the band it gave, else none.
+        "feedbackBand": (p.feedback_source == FeedbackSource::Level)
+            .then(|| Amount::for_level(st.store.learning().map(|l| l.model.level(Skill::Speaking)).unwrap_or_default())),
         "script": match p.script { Script::Furigana => 0, Script::Kana => 1, Script::Hidden => 2 },
         "endPause": p.end_pause_secs,
         "keepRecordings": p.keep_recordings_days,
@@ -1393,6 +1395,24 @@ mod tests {
 
         assert_eq!(v["heatEnd"], held.day().iso());
         assert_eq!(v["heatEnd"], last);
+    }
+
+    #[test]
+    fn the_settings_name_the_band_only_when_a_placement_set_it() {
+        let b = crate::TempBackend::new("feedback-band", false).unwrap();
+        assert!(profile(&b).unwrap()["feedbackBand"].is_null());
+
+        // A skipped placement sets nothing.
+        b.store.update_profile(|p| p.placed = true).unwrap();
+        assert!(profile(&b).unwrap()["feedbackBand"].is_null());
+
+        let n3 = kaiwa_core::LearnerModel::placed(&[(Skill::Speaking, "n3")]);
+        b.store.set_placement(n3).unwrap();
+        assert_eq!(profile(&b).unwrap()["feedbackBand"], "much");
+
+        // Her own pick: no band.
+        b.store.set_feedback(Amount::Little).unwrap();
+        assert!(profile(&b).unwrap()["feedbackBand"].is_null());
     }
 
     #[test]
