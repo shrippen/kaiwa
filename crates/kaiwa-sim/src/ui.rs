@@ -325,7 +325,10 @@ fn gamification_off(root: &Path) -> Result<Option<String>> {
                 let shows = l.contains("label: \"XP\"")
                     || l.contains("KanteGoalMeter {")
                     || (l.contains("streakDays") && !l.trim_start().starts_with("//"))
-                    || l.contains(" XP");
+                    || l.contains(" XP")
+                    // A text about the streak (the pause's hint, T-08).
+                    || l.contains("die Serie")
+                    || l.contains("the streak");
                 if !shows {
                     continue;
                 }
