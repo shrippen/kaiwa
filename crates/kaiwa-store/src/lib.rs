@@ -181,6 +181,10 @@ pub struct Profile {
 /// A profile from before `feedback_source` (in the database or an export). Any amount but
 /// "little" was a pick. "little" was the fixed default: after a placement the level would have
 /// set it (from `speaking`, the model's speaking level), before one nobody set it.
+///
+/// Skipping the placement only set `placed`; the model stayed the starting model. A speaking
+/// level still at the start is therefore no placement. Safe: a real placement that ends at
+/// exactly the start level gives "little" anyway; only the hint "after the placement" differs.
 fn migrate_feedback_source(profile: &mut serde_json::Value, speaking: Option<f64>) {
     let Some(o) = profile.as_object_mut() else {
         return;
@@ -188,7 +192,9 @@ fn migrate_feedback_source(profile: &mut serde_json::Value, speaking: Option<f64
     if o.contains_key("feedback_source") {
         return;
     }
-    let placed = o.get("placed").and_then(|p| p.as_bool()) == Some(true);
+    let start = LearnerModel::default().level(Skill::Speaking);
+    let placed = o.get("placed").and_then(|p| p.as_bool()) == Some(true)
+        && speaking.is_some_and(|level| level != start);
     let source = match (o.get("feedback").and_then(|f| f.as_str()), speaking) {
         (Some("normal" | "much"), _) => FeedbackSource::Chosen,
         (_, Some(level)) if placed => {

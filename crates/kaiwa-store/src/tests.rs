@@ -136,6 +136,22 @@ fn a_profile_from_before_the_feedback_source_reads() {
 }
 
 #[test]
+fn an_old_skipped_placement_is_not_a_placement() {
+    // Skipping sets `placed` only; the model stays the starting model.
+    let s = Store::in_memory().unwrap();
+    s.db.execute(
+        "INSERT INTO settings (key, value) VALUES ('profile', ?1)",
+        [old_profile("little", true).to_string()],
+    )
+    .unwrap();
+    let p = s.profile().unwrap();
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Little, FeedbackSource::Default)
+    );
+}
+
+#[test]
 fn an_old_export_imports_with_the_same_rule() {
     let import = |amount: &str| {
         let src = with_row(&old_profile(amount, true), "n3");
