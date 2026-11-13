@@ -74,7 +74,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF521/ | S | Globales Tastenkürzel für Push-to-Talk und „Kurzsitzung starten“ … | – | offen | 0 von 1 automatisch grün: `mara_ptt_shortcut` |
 | /LF522/ | K | KRunner-Plugin: Wort nachschlagen, vorsprechen lassen, in die … | – | offen | – |
 | /LF600/ | M | Lernpfad mit Einheiten, Szenarien und Wiederholungsknoten. | app, backend, core | geprüft | 1 von 1 automatisch grün: `mara_path` |
-| /LF601/ | M | Tagesziel in Minuten Sprechzeit oder Szenarien, selbst wählbar … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_daily_goal` |
+| /LF601/ | M | Tagesziel in Minuten Sprechzeit, selbst wählbar (Standard 5 min). | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_daily_goal` |
 | /LF602/ | M | Serie (Tage mit erreichtem Tagesziel), mit Freeze (zwei pro Monat … | app, backend, core, store | geprüft | 5 von 5 automatisch grün: `jonas_freeze`, `jonas_midnight`, `jonas_sick_pause`, `jonas_timezone`, `mara_comeback` |
 | /LF603/ | S | XP für Sprechzeit, erreichte Ziele und Wiederholungen. | app, core | geprüft | 1 von 1 automatisch grün: `jonas_xp_fair` |
 | /LF604/ | S | Wochenrückblick: Sprechzeit, neue Wörter, Fortschritt pro Fähigkeit. | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_progress` |

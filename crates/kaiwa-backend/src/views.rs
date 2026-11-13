@@ -61,23 +61,17 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         .open_session
         .as_ref()
         .map(|r| json!({ "id": r.id, "title": scenario_title(st, &r.scenario, lang) }));
-    let (goal_text, goal_value) = match p.daily_goal {
-        DailyGoal::Minutes(m) => (
-            if de {
-                format!("{} von {m} Minuten gesprochen", t.record.speaking_secs / 60)
-            } else {
-                format!("{} of {m} minutes spoken", t.record.speaking_secs / 60)
-            },
-            m,
-        ),
-        DailyGoal::Scenarios(n) => (
-            if de {
-                format!("{} von {n} Gesprächen", t.record.scenarios_done)
-            } else {
-                format!("{} of {n} talks", t.record.scenarios_done)
-            },
-            n,
-        ),
+    let DailyGoal::Minutes(goal_value) = p.daily_goal;
+    let goal_text = if de {
+        format!(
+            "{} von {goal_value} Minuten gesprochen",
+            t.record.speaking_secs / 60
+        )
+    } else {
+        format!(
+            "{} of {goal_value} minutes spoken",
+            t.record.speaking_secs / 60
+        )
     };
     // Free talk (/LF116/): the topic scenarios outside the path, at the learner's difficulty.
     let free: Vec<Value> = st
@@ -640,10 +634,8 @@ pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
 /// The settings page.
 pub fn profile(st: &Backend) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
-    let goal = match p.daily_goal {
-        DailyGoal::Minutes(m) => json!({ "kind": "minutes", "value": m }),
-        DailyGoal::Scenarios(n) => json!({ "kind": "scenarios", "value": n }),
-    };
+    let DailyGoal::Minutes(m) = p.daily_goal;
+    let goal = json!({ "kind": "minutes", "value": m });
     Ok(json!({
         "name": p.name,
         "uiLang": p.ui_lang,

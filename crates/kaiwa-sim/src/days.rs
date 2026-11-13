@@ -731,10 +731,8 @@ pub fn check(id: &str, run: &DaysRun) -> Option<Outcome> {
                 }
             }
             let met = run.records.values().filter(|r| r.met(run.goal)).count();
-            let goal_secs = match run.goal {
-                DailyGoal::Minutes(m) => m * 60,
-                DailyGoal::Scenarios(_) => 0,
-            };
+            let DailyGoal::Minutes(goal_minutes) = run.goal;
+            let goal_secs = goal_minutes * 60;
             if run
                 .records
                 .values()

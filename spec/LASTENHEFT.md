@@ -191,7 +191,7 @@ Oberflächen:
 | ID | Prio | Anforderung | Begründung |
 |---|---|---|---|
 | /LF600/ | M | **Lernpfad** mit Einheiten, Szenarien und Wiederholungsknoten. Erledigtes, Aktuelles und Gesperrtes ist erkennbar, und zwar nie nur über die Farbe. | Orientierung wie bei Duolingo. |
-| /LF601/ | M | **Tagesziel** in Minuten Sprechzeit oder Szenarien, selbst wählbar (Standard 5 min). | Kleine, machbare Ziele. |
+| /LF601/ | M | **Tagesziel** in Minuten Sprechzeit, selbst wählbar (Standard 5 min). | Kleine, machbare Ziele. Entscheidung V-03, 13.11.2026: nur Minuten; ein Ziel in Szenarien belohnt kurze Gespräche. |
 | /LF602/ | M | **Serie** (Tage mit erreichtem Tagesziel), mit Freeze (zwei pro Monat, automatisch) und Pausenmodus (Urlaub, Krankheit). | Motivation ohne Erpressung. |
 | /LF603/ | S | **XP** für Sprechzeit, erreichte Ziele und Wiederholungen. Getippte Züge zählen weniger, Einwort-Antworten und wiederholte Floskeln zählen nicht voll. | Anreize, die Sprechen belohnen und nicht das Ausnutzen (Jonas). |
 | /LF604/ | S | **Wochenrückblick**: Sprechzeit, neue Wörter, Fortschritt pro Fähigkeit. | Fortschritt sichtbar machen. |
