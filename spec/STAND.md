@@ -71,6 +71,18 @@ Lokale App-Prüfungen: Den Screenshot-Modus gibt es nur im Demo-Build (`cargo bu
 
 [Nachtbericht mit Fragenpaket 13](https://claude.ai/artifact/Y3ak5E9vXKRKJSfY5i6bfo) (U-01 bis U-04, beantwortet am 2026-11-11, siehe unten). Gemergt: #90 (Mindestbreite 533 px, S-01 bis S-07; Kante 1.78 aus Kante #139; die Wochenkarte endet am Tag des Backends, `heatEnd`), #91 (eine gescheiterte Ansicht lässt der Seite ihre Vorgaben, `views::text`), #92 (Zeitlimit für Anfrage und Antwortkopf des Modell-Downloads), #93 (Pausenmodus über das Backend, `jonas_sick_pause`). Gemessen: Kaiwa im Leerlauf 178 MB RSS, 120 MB PSS (Release, offscreen, frisches Profil); /LL012/ nennt 150 MB, ob RSS oder PSS, entscheidet U-01.
 
+## Entscheidungen aus Fragenpaket 14 (2026-11-13)
+
+[Nachtbericht mit Fragenpaket 14](https://claude.ai/artifact/RcXkBTsUqC3LX1gUjoVcMn), Antworten des Eigentümers am 2026-11-13.
+
+| Nr. | Entscheidung | Stand |
+|---|---|---|
+| V-01 | API-Schlüssel je Profil; Löschen nimmt ihn mit | umgesetzt (#125): Eintrag `<Anbieter>/<Profil>` nur für Profile im Profilordner, sonst nur aus der Umgebung (`KeyHome`); ein alter Eintrag geht einmal an das aktuelle Profil (`keys-migrated`); `wipe` entfernt die Schlüssel; /LF713/ |
+| V-02 | Verbesserungen nach der Einstufung setzen, solange nicht selbst gewählt | umgesetzt (#124): bis N5 „Wenig“, N4 „Normal“, ab N3 „Viel“; `FeedbackSource {Default, Level, Chosen}`; die Einstellungen nennen die Stufe der Einstufung; /LF304/ |
+| V-03 | Tagesziel nur in Minuten, Lastenheft anpassen | umgesetzt (#122): `DailyGoal::Scenarios` entfernt; /LF601/ |
+| V-04 | Kostenstand im Export | umgesetzt (#123): Format `kaiwa-export/3` mit `costs` je Monat, geprüft beim Import und zu den Kosten der Einstufung gezählt; ein zweiter Import wird abgelehnt; /LF714/ |
+| V-05 | Markieren nach dem Ende korrigiert die Aufzeichnung | umgesetzt (#126): Migration 4 (`sessions.recording`); `Store::correct` rechnet Lernermodell, Regler, Kurs und Karten aus dem Stand vor dem Gespräch neu, nur für das zuletzt aufgezeichnete Gespräch; /LF113/, /LF307/ |
+
 ## Entscheidungen aus Fragenpaket 13 (2026-11-11)
 
 [Nachtbericht mit Fragenpaket 13](https://claude.ai/artifact/Y3ak5E9vXKRKJSfY5i6bfo), Antworten des Eigentümers am 2026-11-11.
@@ -198,6 +210,10 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
     - Erinnerung: „Später“ über Mitternacht verschiebt die Erinnerung auf den nächsten Tag (wirkt erst mit M4).
     - Nachschlagen: IPADIC liefert für かって/よんだ die Grundform かつ/よぶ; ohne Beugungsform im `LineWord` nicht zu lösen. Noch Zwillinge (auch vor #114): こと → 琴, そう/よう, と als „if“ statt „with“. IPADIC trennt こうちゃ in こう + ちゃ; ちゃ zeigt dann ては. じゃ für das Orts-では (ここじゃ) zeigt die Kopula „be; is“.
     - Export: Exporte im Format 1 vom 9. bis 14.10.2026 tragen alte Einheiten-Ids (nur Testdaten).
+14. **Kleinigkeiten aus den Reviews zu Fragenpaket 14, noch offen:**
+    - Schlüssel (#125): Mit `KAIWA_DATA` sagen die Einstellungen „außerhalb des Profilordners“, obwohl der Ordner dann `$KAIWA_DATA` ist; README und `start.sh` nennen den Fall nicht.
+    - Verbesserungen (#124): Ein Profil von vor #124 mit übersprungener Einstufung und „Wenig“ gilt als „nach Einstufung“.
+    - Markieren (#126): Scheitert schon das Aufzeichnen (DB-Fehler), meldet die Bilanz nach einer Markierung „Seitdem wurde ein anderes Gespräch aufgezeichnet“ und zeigt „undefined“ in der Kennzahlenzeile.
 
 ## Lessons learned
 
