@@ -180,7 +180,7 @@ pub struct Profile {
 
 /// A profile from before `feedback_source` (in the database or an export). Any amount but
 /// "little" was a pick. "little" was the fixed default, and nothing tells a real placement from
-/// a skipped one: both only set `placed` and the model, and every talk moves the model on. So
+/// a skipped one reliably: a skip sets only `placed`, and every talk moves the model on. So
 /// "little" stays the default; a new placement sets it by level, as for every profile.
 fn migrate_feedback_source(profile: &mut serde_json::Value) {
     let Some(o) = profile.as_object_mut() else {
