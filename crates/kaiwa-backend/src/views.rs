@@ -91,8 +91,8 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         })
         .collect();
     // No tutor and no recordings (a package without a tutor set up): say so first (Q-15).
-    let needs_tutor =
-        !crate::DEMO && !kaiwa_ai::provider_from(st.tutor_env()).is_ok_and(|p| p.is_some());
+    let needs_tutor = !crate::DEMO
+        && !kaiwa_ai::provider_from(&st.profile_id(), st.tutor_env()).is_ok_and(|p| p.is_some());
     Ok(json!({
         "free": free,
         "needsTutor": needs_tutor,
@@ -718,11 +718,12 @@ pub fn tutor_view(st: &Backend, lang: &str) -> Value {
     let env = st.tutor_env();
     let provider = env("KAIWA_PROVIDER").unwrap_or_default();
     let overridden = std::env::var("KAIWA_PROVIDER").is_ok_and(|v| !v.is_empty());
-    let ready = kaiwa_ai::provider_from(st.tutor_env()).is_ok_and(|p| p.is_some());
+    let ready =
+        kaiwa_ai::provider_from(&st.profile_id(), st.tutor_env()).is_ok_and(|p| p.is_some());
     let de = lang != "en";
     let p = preset(&provider);
-    let missing_key =
-        p.is_some_and(|p| p.needs_key()) && kaiwa_ai::secrets::key(&provider, &env).is_none();
+    let missing_key = p.is_some_and(|p| p.needs_key())
+        && kaiwa_ai::secrets::key(&provider, &st.profile_id(), &env).is_none();
     let missing_server = p.is_some_and(|p| p.base_url(&env).is_none());
     let status = match (provider.as_str(), p, de) {
         ("", _, true) => "Kein Tutor eingerichtet. Ohne Tutor gibt es keine Gespräche.",
@@ -778,25 +779,25 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
     };
     let provider = p.id.to_string();
     let de = lang != "en";
-    let s = state(&provider, env);
+    let s = state(&provider, &st.profile_id(), env);
     let text = match (&s, de) {
         (KeyState::Environment, true) => "Aus der Umgebung (lokaler Test).".to_string(),
         (KeyState::Environment, false) => "From the environment (local test).".to_string(),
-        (KeyState::Keyring, true) => "Im Schlüsselbund des Systems gespeichert.".to_string(),
-        (KeyState::Keyring, false) => "Kept in the system keyring.".to_string(),
+        (KeyState::Keyring, true) => "Im Schlüsselbund gespeichert, für dieses Profil.".to_string(),
+        (KeyState::Keyring, false) => "Kept in the keyring, for this profile.".to_string(),
         (KeyState::Missing, true) if p.needs_key() => format!(
-            "Fehlt. Du bekommst ihn unter {}. Er wird im Schlüsselbund gespeichert, nie in einer Datei.",
+            "Fehlt. Du bekommst ihn unter {}. Er wird für dieses Profil im Schlüsselbund gespeichert, nie in einer Datei.",
             p.keys_at
         ),
         (KeyState::Missing, false) if p.needs_key() => format!(
-            "Missing. You get it at {}. It is kept in the keyring, never in a file.",
+            "Missing. You get it at {}. It is kept in the keyring for this profile, never in a file.",
             p.keys_at
         ),
         (KeyState::Missing, true) => {
-            "Nur nötig, wenn der Server einen verlangt. Er wird im Schlüsselbund gespeichert, nie in einer Datei.".to_string()
+            "Nur nötig, wenn der Server einen verlangt. Er wird für dieses Profil im Schlüsselbund gespeichert, nie in einer Datei.".to_string()
         }
         (KeyState::Missing, false) => {
-            "Only needed when the server asks for one. It is kept in the keyring, never in a file.".to_string()
+            "Only needed when the server asks for one. It is kept in the keyring for this profile, never in a file.".to_string()
         }
         (KeyState::Unavailable(e), true) => format!("Kein Schlüsselbund erreichbar ({e})."),
         (KeyState::Unavailable(e), false) => format!("No keyring reachable ({e})."),

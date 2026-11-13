@@ -285,7 +285,14 @@ impl Backend {
         } else {
             profiles::current_in(&kaiwa_store::profiles_dir())
         };
-        Self::open_at(path, demo_data)
+        let st = Self::open_at(path, demo_data)?;
+
+        // The keys of before V-01 go to the profile open at the first start. Never in the
+        // demo, which stays off the keyring.
+        if !demo_data {
+            st.migrate_keys();
+        }
+        Ok(st)
     }
 
     /// Removes the demo profile [`Backend::open`] made in the temp directory, when the app
@@ -302,6 +309,9 @@ impl Backend {
 
     /// Opens the profile at `path`; `demo` fills a new one with two weeks of history.
     pub fn open_at(path: PathBuf, demo: bool) -> anyhow::Result<Self> {
+        // Tests never touch the real keyring.
+        #[cfg(test)]
+        kaiwa_ai::secrets::use_memory();
         #[cfg_attr(not(any(test, feature = "demo")), allow(unused_variables))]
         let fresh = !path.exists();
         let store = Store::open(&path)?;
@@ -413,7 +423,7 @@ impl Backend {
     /// environment). Without one, a demo build replays the recorded answers (`true`); any other
     /// build says that no tutor is set up.
     pub fn provider(&self, scenario: &str) -> (Arc<dyn ChatProvider>, bool) {
-        match kaiwa_ai::provider_from(self.tutor_env()) {
+        match kaiwa_ai::provider_from(&self.profile_id(), self.tutor_env()) {
             Ok(Some(p)) => return (p, false),
             Ok(None) => {}
             Err(e) => eprintln!("kaiwa: {e}"),

@@ -226,9 +226,10 @@
         {
           "id": "hinnerk_own_profile",
           "requirements": [
-            "/LF720/"
+            "/LF720/",
+            "/LF713/"
           ],
-          "assert": "Das Profil des Enkels beginnt bei null und in der Sprache der Oberfläche. Hinnerks Profil ist danach wie zuvor: Einstellungen (Schriftgröße, keine Gamification, Kostenlimit), Stand, Lernpfad, Wiederholung, Tage und Kosten des Monats. Die Liste nennt beide Profile, genau eines als benutzt; beim nächsten Start öffnet die App das zuletzt gewählte. Ein Profilname kann den Profilordner nicht verlassen."
+          "assert": "Das Profil des Enkels beginnt bei null und in der Sprache der Oberfläche. Hinnerks Profil ist danach wie zuvor: Einstellungen (Schriftgröße, keine Gamification, Kostenlimit), Stand, Lernpfad, Wiederholung, Tage und Kosten des Monats. Die Liste nennt beide Profile, genau eines als benutzt; beim nächsten Start öffnet die App das zuletzt gewählte. Ein Profilname kann den Profilordner nicht verlassen. Jedes Profil hat seinen eigenen API-Schlüssel: der Enkel sieht Hinnerks Schlüssel nicht, und das Löschen seines Profils nimmt seinen Schlüssel mit, nicht Hinnerks (V-01, /LF713/)."
         }
       ]
     },

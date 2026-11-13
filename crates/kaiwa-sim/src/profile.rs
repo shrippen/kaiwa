@@ -220,6 +220,11 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     };
     let mut found = Vec::new();
 
+    // The keys of the profiles (V-01) never go to the real keyring here.
+    kaiwa_ai::secrets::use_memory();
+    let no_env = |_: &str| None;
+    let key_of = |b: &Backend| kaiwa_ai::secrets::key("anthropic", &b.profile_id(), no_env);
+
     // Hinnerk: his settings, two talks, a month's cost.
     let hinnerk = Backend::open_at(profiles::current_in(&dir), false)?;
     let mut p = hinnerk.store.profile()?;
@@ -227,7 +232,11 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     p.text_scale = 1.6;
     p.gamification = false;
     p.cost_limit_cents = Some(500);
+    p.tutor.provider = "anthropic".into();
     hinnerk.store.set_profile(&p)?;
+    if hinnerk.store_key("sk-hinnerk") != Some(Ok(())) {
+        found.push("Hinnerk's key was not stored".into());
+    }
     talk(&hinnerk, 0)?;
     talk(&hinnerk, 1)?;
     hinnerk.store.set_state_value(
@@ -285,6 +294,13 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     {
         found.push("not exactly the grandson's profile is marked as in use".into());
     }
+    // The same provider, and his grandfather's key is not his.
+    let mut op = ole.store.profile()?;
+    op.tutor.provider = "anthropic".into();
+    ole.store.set_profile(&op)?;
+    if key_of(&ole).is_some() {
+        found.push("the new profile sees another profile's key".into());
+    }
     // He plays with it: talks, other settings.
     talk(&ole, 2)?;
     talk(&ole, 3)?;
@@ -294,6 +310,9 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     op.gamification = true;
     op.cost_limit_cents = Some(2000);
     ole.store.set_profile(&op)?;
+    if ole.store_key("sk-ole") != Some(Ok(())) || key_of(&ole).as_deref() != Some("sk-ole") {
+        found.push("the grandson's key was not stored".into());
+    }
     drop(ole);
 
     // Back to Hinnerk's: as he left it. And the app opens the profile chosen last.
@@ -317,7 +336,23 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
             .unwrap_or_default();
         found.push(format!("Hinnerk's profile changed: {part}"));
     }
+    if key_of(&hinnerk).as_deref() != Some("sk-hinnerk") {
+        found.push("Hinnerk's key changed".into());
+    }
     drop(hinnerk);
+
+    // Deleting the grandson's profile takes his key and leaves his grandfather's.
+    let mut ole = Backend::open_at(file, false)?;
+    ole.wipe()?;
+    if key_of(&ole).is_some() {
+        found.push("the key outlived the deleted profile".into());
+    }
+    let hinnerk = Backend::open_at(his_file.clone(), false)?;
+    if key_of(&hinnerk).as_deref() != Some("sk-hinnerk") {
+        found.push("deleting a profile took another profile's key".into());
+    }
+    drop((ole, hinnerk));
+
     // A name with a path in it stays a file in the directory.
     let odd = profiles::create(&dir, "../../Ole", "de")?;
     if odd.parent() != Some(&*dir) {

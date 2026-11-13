@@ -94,6 +94,12 @@ impl Backend {
         // error says so.
         self.store = Store::in_memory()?;
         let deleted = kaiwa_store::delete_profile(&self.path);
+
+        // The profile's keys go with it (V-01). A keyring that refuses does not stop the
+        // deletion.
+        if let Err(e) = kaiwa_ai::secrets::remove_all(&self.profile_id()) {
+            eprintln!("kaiwa: the keyring kept keys of this profile: {e}");
+        }
         self.store = Store::open(&self.path)?;
         deleted?;
 
@@ -103,6 +109,42 @@ impl Backend {
             self.store.set_profile(&p)?;
         }
         Ok(())
+    }
+
+    /// The profile's id in the keyring: its file name without `.kaiwa`.
+    pub fn profile_id(&self) -> String {
+        self.path
+            .file_stem()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default()
+    }
+
+    /// The provider whose key the settings show: the tutor's, when it takes a key.
+    fn key_provider(&self) -> Option<&'static str> {
+        let id = self.tutor_env()("KAIWA_PROVIDER")?;
+        kaiwa_ai::presets::preset(&id)
+            .filter(|p| p.key_env.is_some())
+            .map(|p| p.id)
+    }
+
+    /// Stores the key of the tutor's provider for this profile; `None` for a provider
+    /// without a key.
+    pub fn store_key(&self, key: &str) -> Option<Result<(), String>> {
+        let provider = self.key_provider()?;
+        Some(kaiwa_ai::secrets::store(provider, &self.profile_id(), key))
+    }
+
+    /// Removes this profile's key of the tutor's provider; other profiles keep theirs.
+    pub fn remove_key(&self) -> Option<Result<(), String>> {
+        let provider = self.key_provider()?;
+        Some(kaiwa_ai::secrets::remove(provider, &self.profile_id()))
+    }
+
+    /// Moves the keys of before V-01 (one per provider) to this profile, once.
+    pub fn migrate_keys(&self) {
+        if let Err(e) = kaiwa_ai::secrets::migrate(&self.profile_id()) {
+            eprintln!("kaiwa: the keys stay where they are: {e}");
+        }
     }
 
     /// The directory of this profile and its siblings.
@@ -218,6 +260,45 @@ mod tests {
         assert_eq!(current_in(&dir), dir.join(DEFAULT));
         assert!(set_current(&dir, "../x.kaiwa").is_err());
         drop((mara, tom));
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_profile_has_its_own_key_and_takes_it_along() {
+        let dir = std::env::temp_dir().join(format!("kaiwa-keys-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let tutor = |b: &Backend| {
+            let mut p = b.store.profile().unwrap();
+            p.tutor.provider = "anthropic".into();
+            b.store.set_profile(&p).unwrap();
+        };
+        let mut a = Backend::open_at(dir.join("keya.kaiwa"), false).unwrap();
+        let b = Backend::open_at(dir.join("keyb.kaiwa"), false).unwrap();
+        tutor(&a);
+        tutor(&b);
+        let ready = |b: &Backend| crate::views::tutor_view(b, "en")["ready"] == true;
+
+        // The key of A makes A ready, not B.
+        a.store_key("sk-a").unwrap().unwrap();
+        if std::env::var_os("ANTHROPIC_API_KEY").is_none() {
+            assert!(ready(&a));
+            assert!(!ready(&b));
+        }
+
+        // Removing in B leaves A's key.
+        b.remove_key().unwrap().unwrap();
+        let none = |_: &str| None;
+        let key = |p: &str| kaiwa_ai::secrets::key("anthropic", p, none);
+        assert_eq!(key("keya").as_deref(), Some("sk-a"));
+
+        // Deleting the profile deletes its keys, for every provider.
+        kaiwa_ai::secrets::store("openai", "keya", "sk-o").unwrap();
+        a.wipe().unwrap();
+        assert_eq!(key("keya"), None);
+        assert_eq!(kaiwa_ai::secrets::key("openai", "keya", none), None);
+
+        drop((a, b));
         std::fs::remove_dir_all(&dir).unwrap();
     }
 }
