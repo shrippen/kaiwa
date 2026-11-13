@@ -208,15 +208,53 @@ fn a_pronoun_beats_a_rarer_noun() {
     assert!(e.pos.iter().any(|p| p == "pronoun"), "{:?}", e.pos);
 }
 
-/// IPADIC reads かって as かつ and よんだ as よぶ; the entry is still a verb, no noun.
+/// The words of data/dict/lookup-expected.tsv show the entry the sentence means (/LF112/).
+/// Each line gives the sentence, the word as written, the headword and reading shown and a
+/// text one of the meanings contains.
 #[test]
-fn a_misread_verb_still_gets_a_verb() {
-    for text in ["かって", "よん"] {
-        let e = shown("ほんをかって、よんだ", text);
-        assert!(
-            e.pos.iter().any(|p| p.starts_with("verb")),
-            "{text}: {:?}",
-            e.pos
-        );
+fn the_words_of_the_expected_list_show_the_right_entry() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let list = std::fs::read_to_string(root.join("data/dict/lookup-expected.tsv")).unwrap();
+    let (d, words) = (dict(), Words::new().unwrap());
+    let mut wrong = Vec::new();
+    for line in list
+        .lines()
+        .filter(|l| !l.starts_with('#') && !l.is_empty())
+    {
+        let [sentence, surface, word, reading, meaning] = line.split('\t').collect::<Vec<_>>()[..]
+        else {
+            panic!("five columns expected: {line}");
+        };
+        // As the app does for a line: IPADIC's furigana for bare kanji.
+        let (_, ws) = annotate(&words, &kaiwa_lang::complete(&words, sentence));
+        let w = ws
+            .iter()
+            .find(|w| w.text == surface)
+            .unwrap_or_else(|| panic!("{surface} is no word of {sentence}"));
+        let e = d.lookup_word(w, "en").unwrap();
+        let shown = e.as_ref().map_or("-".to_string(), |e| {
+            format!(
+                "{}【{}】{}",
+                e.word,
+                e.reading,
+                e.senses.first().map(|s| s.join("; ")).unwrap_or_default()
+            )
+        });
+        let right = e.is_some_and(|e| {
+            e.word == word
+                && e.reading == reading
+                && e.senses.iter().flatten().any(|g| g.contains(meaning))
+        });
+        if !right {
+            wrong.push(format!(
+                "{sentence} / {surface}: want {word}【{reading}】{meaning}, got {shown}"
+            ));
+        }
     }
+    assert!(
+        wrong.is_empty(),
+        "{} wrong:\n{}",
+        wrong.len(),
+        wrong.join("\n")
+    );
 }

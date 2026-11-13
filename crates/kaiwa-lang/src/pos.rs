@@ -54,13 +54,15 @@ pub fn jmdict_prefix(ipadic: &str) -> Option<&'static str> {
 }
 
 /// Whether the JMdict `code` is of the kind `prefix` (from [`jmdict_prefix`]). A noun is `n`,
-/// `n-suf` …, a pronoun (代名詞, IPADIC's 名詞 too) `pn`; not every code that starts
-/// with an n (`num`).
+/// `n-suf` … or a number `num` (IPADIC's 名詞 holds numbers); not every code that starts
+/// with an n, and not a pronoun (`pn`, see `Dictionary::lookup_with`).
 pub fn fits(prefix: &str, code: &str) -> bool {
-    if prefix != "n" {
-        return code.starts_with(prefix);
+    match prefix {
+        "n" => matches!(code, "n" | "num") || code.starts_with("n-"),
+        // The copula (でございます) is an auxiliary for IPADIC.
+        "aux" => code.starts_with(prefix) || code == "cop",
+        _ => code.starts_with(prefix),
     }
-    code == "n" || code.starts_with("n-") || code == "pn"
 }
 
 /// The label of a JMnedict name kind in `lang` ("de" or "en"): "Name · Familienname".

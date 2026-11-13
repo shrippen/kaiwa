@@ -2,7 +2,7 @@
 
 `kaiwa-dict-excerpt.sqlite` holds the rows of the data package
 [kaiwa-data](https://github.com/shrippen/kaiwa-data) 0.2.0 that the words of the scenarios, the
-recorded answers and the QA scripts look up (1,946 of 218,908 JMdict entries, 828 JMnedict
+recorded answers and the QA scripts look up (2,039 of 218,908 JMdict entries, 878 JMnedict
 names, the tanos levels of the words in it), in the same schema. The demo (`./start.sh demo`, through `KAIWA_DICT`) and the tests read it; the program
 never contains it, and the learner downloads the full package in the settings (M-03).
 
@@ -17,4 +17,13 @@ Rebuild after a change to the scenarios or fixtures (the full package unpacked a
 
 ```sh
 cargo run -p kaiwa-lang --example excerpt -- <path>/kaiwa-dict.sqlite
+```
+
+`lookup-sentences.json` adds the sentences of `lookup-expected.tsv` (the word a click must
+show, checked by `crates/kaiwa-lang/tests/lookup.rs`). To see what a change to the lookup does
+to every word of the scenarios, fixtures, scripts and personas, run the example
+`lookup_corpus` with the full package on two revisions and diff the output:
+
+```sh
+cargo run -q --release -p kaiwa-lang --example lookup_corpus -- <path>/kaiwa-dict.sqlite > out.tsv
 ```
