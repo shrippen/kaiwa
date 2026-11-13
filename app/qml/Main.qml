@@ -128,12 +128,15 @@ Kirigami.ApplicationWindow {
                 // Everything due, as the start page counts it (the review page holds ten at a time).
                 readonly property int reviewCount: kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0
                 currentIndex: Math.max(0, root.views.indexOf(root.arg("--view", "start")))
-                onActivated: function (i) {
-                    if (!Tabs.changes(currentIndex, i)) {
-                        return
+                // The tab shown before the current one changed; set once, not bound, so it still
+                // holds the old tab when the change arrives.
+                property int shown: -1
+                Component.onCompleted: shown = currentIndex
+                onCurrentIndexChanged: {
+                    if (Tabs.leaves(shown, currentIndex, root.views.indexOf("review"))) {
+                        kaiwa.openReview("")
                     }
-                    currentIndex = i
-                    kaiwa.openReview("")
+                    shown = currentIndex
                 }
             }
         }
