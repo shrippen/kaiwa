@@ -18,12 +18,29 @@ use crate::clock::Day;
 use crate::learner::Skill;
 use crate::session::Input;
 
-/// The daily goal (/LF601/), chosen by the learner. Default: five minutes of speaking.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// The daily goal (/LF601/), chosen by the learner: minutes of speaking only (V-03). Default:
+/// five minutes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DailyGoal {
     Minutes(u32),
-    Scenarios(u32),
+}
+
+/// The stored shapes of a goal. `Scenarios` existed before V-03 and loads as the default.
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum StoredGoal {
+    Minutes(u32),
+    Scenarios(serde::de::IgnoredAny),
+}
+
+impl<'de> Deserialize<'de> for DailyGoal {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(match StoredGoal::deserialize(d)? {
+            StoredGoal::Minutes(m) => DailyGoal::Minutes(m),
+            StoredGoal::Scenarios(_) => DailyGoal::default(),
+        })
+    }
 }
 
 impl Default for DailyGoal {
@@ -55,18 +72,14 @@ pub struct DayRecord {
 
 impl DayRecord {
     pub fn met(&self, goal: DailyGoal) -> bool {
-        match goal {
-            DailyGoal::Minutes(m) => self.speaking_secs >= m * 60,
-            DailyGoal::Scenarios(n) => self.scenarios_done >= n,
-        }
+        let DailyGoal::Minutes(m) = goal;
+        self.speaking_secs >= m * 60
     }
 
     /// Progress towards the goal, 0..1 (the ring of the plasmoid and the start page).
     pub fn fraction(&self, goal: DailyGoal) -> f64 {
-        let f = match goal {
-            DailyGoal::Minutes(m) => f64::from(self.speaking_secs) / f64::from((m * 60).max(1)),
-            DailyGoal::Scenarios(n) => f64::from(self.scenarios_done) / f64::from(n.max(1)),
-        };
+        let DailyGoal::Minutes(m) = goal;
+        let f = f64::from(self.speaking_secs) / f64::from((m * 60).max(1));
         f.clamp(0.0, 1.0)
     }
 }
@@ -446,7 +459,7 @@ mod tests {
     }
 
     #[test]
-    fn goals_by_minutes_or_scenarios() {
+    fn goal_by_minutes() {
         let r = DayRecord {
             speaking_secs: 150,
             scenarios_done: 1,
@@ -454,6 +467,18 @@ mod tests {
         };
         assert!(!r.met(DailyGoal::Minutes(5)));
         assert!((r.fraction(DailyGoal::Minutes(5)) - 0.5).abs() < 1e-9);
-        assert!(r.met(DailyGoal::Scenarios(1)));
+    }
+
+    /// V-03: profiles and exports from before hold a goal in scenarios; it becomes the default.
+    #[test]
+    fn an_old_scenarios_goal_loads_as_the_default() {
+        let old: DailyGoal = serde_json::from_str(r#"{"scenarios":3}"#).unwrap();
+        assert_eq!(old, DailyGoal::default());
+
+        let kept: DailyGoal = serde_json::from_str(r#"{"minutes":12}"#).unwrap();
+        assert_eq!(kept, DailyGoal::Minutes(12));
+
+        let day: DayRecord = serde_json::from_str(r#"{"speaking_secs":0,"typed_turns":0,"scenarios_done":0,"reviews_done":0,"xp":0,"goal":{"scenarios":2}}"#).unwrap();
+        assert_eq!(day.goal, Some(DailyGoal::default()));
     }
 }
