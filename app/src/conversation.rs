@@ -73,6 +73,11 @@ pub mod qobject {
         #[cxx_name = "finishPlacement"]
         fn finish_placement(self: Pin<&mut Conversation>, kana: i32, kanji: i32);
 
+        /// Take the skip the placement result offers, up to the unit `last` (/LF215/).
+        #[qinvokable]
+        #[cxx_name = "skipPlacement"]
+        fn skip_placement(self: Pin<&mut Conversation>, last: &QString) -> bool;
+
         /// Continue the session that was interrupted (/LF121/).
         #[qinvokable]
         fn resume(self: Pin<&mut Conversation>);
@@ -207,7 +212,7 @@ use kaiwa_speech::tts::{self, SpeechCache, Voice};
 use kaiwa_speech::{Synthesizer, Transcriber};
 use serde_json::{Value, json};
 
-use crate::state::{now, state};
+use crate::state::{now, state, views};
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -523,10 +528,27 @@ impl qobject::Conversation {
             eprintln!("kaiwa: {e}");
         }
         let minutes = (p.results.len() as u32 * TURNS_PER_STAGE).div_ceil(2);
-        let r = json!({ "placement": words, "stages": p.results.len(), "minutes": minutes });
+        // The skip the result offers (/LF215/); none for a beginner.
+        let offer = views::placement_offer(&state()).unwrap_or_default();
+        let skip = (!offer.units.is_empty())
+            .then(|| json!({ "last": offer.units.last(), "title": offer.title }));
+        let r = json!({
+            "placement": words,
+            "stages": p.results.len(),
+            "minutes": minutes,
+            "skip": skip,
+        });
         self.as_mut().set_recorded(QString::from(&r.to_string()));
         self.as_mut().set_placement_ask(false);
         self.as_mut().set_placing(false);
+    }
+
+    fn skip_placement(self: Pin<&mut Self>, last: &QString) -> bool {
+        // Only the offer that ends at `last`, once (a second click changes nothing).
+        views::take_placement_skip(&state(), &last.to_string()).unwrap_or_else(|e| {
+            eprintln!("kaiwa: {e}");
+            false
+        })
     }
 
     /// Shows a session (new or restored) and loads speech once.

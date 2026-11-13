@@ -61,6 +61,8 @@ Kirigami.ScrollablePage {
     readonly property var goals: conv.goals.length > 0 ? JSON.parse(conv.goals) : []
     readonly property var summary: conv.summary.length > 0 ? JSON.parse(conv.summary) : null
     readonly property var recorded: conv.recorded.length > 0 ? JSON.parse(conv.recorded) : null
+    /** The placement's skip offer was taken (once). */
+    property bool skipTaken: false
     /** The placement's stages are over: the questions or the result take the page. */
     readonly property bool placementOver: conv.placementAsk || (recorded !== null && recorded.placement !== undefined)
     readonly property int currentGoal: {
@@ -411,6 +413,18 @@ Kirigami.ScrollablePage {
                     color: KanteStyle.textColor
                     font: KanteStyle.defaultFont
                     wrapMode: Text.Wrap
+                }
+            }
+            // Skip what the level makes pointless (/LF215/); going on keeps the first unit.
+            KanteButton {
+                visible: !page.skipTaken && !!(page.recorded && page.recorded.skip)
+                text: page.recorded && page.recorded.skip
+                    ? page.t("Bis „" + page.recorded.skip.title + "“ überspringen", "Skip up to “" + page.recorded.skip.title + "”")
+                    : ""
+                // "Los geht's" stays the one primary action.
+                onClicked: {
+                    // Gone only when it took: a failure leaves the offer to try again.
+                    page.skipTaken = conv.skipPlacement(page.recorded.skip.last)
                 }
             }
             KanteButton {
