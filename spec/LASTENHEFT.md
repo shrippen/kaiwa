@@ -160,7 +160,7 @@ Oberflächen:
 | /LF301/ | M | Jeder Vorschlag zeigt: eigene Form → bessere Form (als Diff), eine kurze Erklärung in der UI-Sprache und die bessere Form als Audio. *Das Audio kommt erst mit einer Stimme, die den Akzent trifft (H-02).* | Verständlich und zum Nachsprechen. |
 | /LF302/ | M | Vorschläge haben einen **Schweregrad**: *verhindert Verständnis*, *falsch*, *unnatürlich*, *Stil*. | Gewichtung statt Rotstift. |
 | /LF303/ | M | Bei korrekten Äußerungen gibt es **keinen** Verbesserungsvorschlag. Alternativen, die nur anders wären, erscheinen höchstens als „Auch möglich“. | Fehlalarme zerstören das Vertrauen (/LL110/). |
-| /LF304/ | M | Wie viel Feedback angezeigt wird, ist einstellbar: *wenig* (nur Verständnis und Fehler), *normal*, *viel* (inklusive Stil). Der Standard richtet sich nach dem Niveau. | Anfänger nicht erschlagen, Fortgeschrittene fordern. |
+| /LF304/ | M | Wie viel Feedback angezeigt wird, ist einstellbar: *wenig* (nur Verständnis und Fehler), *normal*, *viel* (inklusive Stil). Der Standard richtet sich nach dem Niveau: Nach der Einstufung (auch einer neuen) gilt je nach Sprechniveau bis N5 *wenig*, N4 *normal*, ab N3 *viel* (V-02, 13.11.2026), solange die Lernende die Menge nicht selbst gewählt hat; danach bleibt ihre Wahl. Die Einstellungen sagen, woher der Wert kommt. | Anfänger nicht erschlagen, Fortgeschrittene fordern. |
 | /LF305/ | M | **Recast**: Die KI greift Fehler im Gespräch natürlich auf, indem sie die richtige Form in ihrer Antwort verwendet, ohne den Gesprächsfluss zu stoppen. | Jumpspeak- und Unterrichtsprinzip, implizites Lernen. |
 | /LF306/ | M | Nur Fehler mit dem Schweregrad *verhindert Verständnis* unterbrechen das Gespräch mit einer Rückfrage. Alle anderen stehen in der Seitenleiste und in der Bilanz. | Flüssigkeit vor Genauigkeit. |
 | /LF307/ | S | Lernende können einem Vorschlag **widersprechen** („Das ist korrekt“). Widersprüche werden gesammelt und fließen in die QA ein. *Ein Widerspruch in der Bilanz nach dem Ende korrigiert die Aufzeichnung wie die Markierung „falsch erkannt“ (V-05, 13.11.2026).* | Fehlkorrekturen finden. |
@@ -209,7 +209,7 @@ Oberflächen:
 | /LF711/ | M | Die Ansicht **„Was verlässt das Gerät?“** zeigt je Baustein (STT, LLM, TTS) den Anbieter, ob er lokal oder in der Cloud läuft, und welche Daten (Audio, Text) übertragen werden. | Transparenz (Lena). |
 | /LF712/ | M | Aufnahmen werden standardmäßig **nicht** gespeichert. Speichern ist ein Opt-in für Vergleich und Fortschritt, mit eigener Aufbewahrungsdauer. | Datensparsamkeit. |
 | /LF713/ | M | API-Schlüssel liegen im System-Schlüsselbund (KWallet, Secret Service, Windows Credential Manager, macOS Keychain), nie im Klartext. | Sicherheit. |
-| /LF714/ | S | **Kostenbremse** für Cloud-Anbieter: geschätzte Kosten pro Sitzung und Monat, mit einem Limit, das man selbst setzt. *Kein Limit voreingestellt (I-06); die Preise prüft Claude zu jedem Release (I-05).* | Keine Überraschungen. |
+| /LF714/ | S | **Kostenbremse** für Cloud-Anbieter: geschätzte Kosten pro Sitzung und Monat, mit einem Limit, das man selbst setzt. *Kein Limit voreingestellt (I-06); die Preise prüft Claude zu jedem Release (I-05). Der Export enthält die Kosten je Monat, der Import übernimmt sie, damit die Bremse im selben Monat nicht wieder das ganze Limit erlaubt (V-04, 13.11.2026).* | Keine Überraschungen. |
 | /LF720/ | S | Mehrere Profile pro Gerät (z. B. Familie), jeweils getrennt. *Ohne Schutz der Profile gegeneinander (I-08).* | Gemeinsamer Rechner. |
 
 ---

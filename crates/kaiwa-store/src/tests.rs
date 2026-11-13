@@ -64,6 +64,107 @@ fn a_profile_from_before_the_mora_hints_reads() {
 }
 
 #[test]
+fn a_placement_sets_the_feedback_until_the_learner_chose() {
+    let n4 = || kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, "n4")]);
+    let n3 = || kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, "n3")]);
+
+    // Not chosen: the level sets it, again on a new placement.
+    let s = Store::in_memory().unwrap();
+    s.set_placement(n4()).unwrap();
+    let p = s.profile().unwrap();
+    assert_eq!(p.feedback, Amount::Normal);
+    assert_eq!(p.feedback_source, FeedbackSource::Level);
+    s.set_placement(n3()).unwrap();
+    assert_eq!(s.profile().unwrap().feedback, Amount::Much);
+
+    // Chosen: it stays, even when the choice is the old default.
+    let s = Store::in_memory().unwrap();
+    s.set_feedback(Amount::Little).unwrap();
+    assert_eq!(s.profile().unwrap().feedback_source, FeedbackSource::Chosen);
+    s.set_placement(n4()).unwrap();
+    assert_eq!(s.profile().unwrap().feedback, Amount::Little);
+}
+
+/// A profile row as an older version wrote it: no `feedback_source`.
+fn old_profile(amount: &str, placed: bool) -> serde_json::Value {
+    let mut old = serde_json::to_value(Profile::default()).unwrap();
+    let o = old.as_object_mut().unwrap();
+    o.remove("feedback_source");
+    o.insert("feedback".into(), amount.into());
+    o.insert("placed".into(), placed.into());
+    old
+}
+
+fn with_row(profile: &serde_json::Value, speaking: &str) -> Store {
+    let s = Store::in_memory().unwrap();
+    s.db.execute(
+        "INSERT INTO settings (key, value) VALUES ('profile', ?1)",
+        [profile.to_string()],
+    )
+    .unwrap();
+    let mut l = s.learning().unwrap();
+    l.model = kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, speaking)]);
+    s.set_learning(&l).unwrap();
+    s
+}
+
+#[test]
+fn a_profile_from_before_the_feedback_source_reads() {
+    // A pick is a pick.
+    for amount in ["normal", "much"] {
+        let p = with_row(&old_profile(amount, true), "n3")
+            .profile()
+            .unwrap();
+        assert_eq!(p.feedback_source, FeedbackSource::Chosen, "{amount}");
+    }
+    // The old default after a placement: the level would have set it.
+    let p = with_row(&old_profile("little", true), "n3")
+        .profile()
+        .unwrap();
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Much, FeedbackSource::Level)
+    );
+    // The old default without a placement: nobody set it.
+    let p = with_row(&old_profile("little", false), "n3")
+        .profile()
+        .unwrap();
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Little, FeedbackSource::Default)
+    );
+}
+
+#[test]
+fn an_old_export_imports_with_the_same_rule() {
+    let import = |amount: &str| {
+        let src = with_row(&old_profile(amount, true), "n3");
+        let mut export = src.export(at(1, 9)).unwrap();
+        export["profile"] = old_profile(amount, true);
+        let dst = Store::in_memory().unwrap();
+        dst.import(&export).unwrap();
+        dst.profile().unwrap()
+    };
+    assert_eq!(import("much").feedback_source, FeedbackSource::Chosen);
+    let p = import("little");
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Much, FeedbackSource::Level)
+    );
+}
+
+#[test]
+fn a_skipped_placement_leaves_the_feedback_default() {
+    let s = Store::in_memory().unwrap();
+    s.update_profile(|p| p.placed = true).unwrap();
+    let p = s.profile().unwrap();
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Little, FeedbackSource::Default)
+    );
+}
+
+#[test]
 fn an_interrupted_session_continues_where_it_stopped() {
     let path = temp("resume");
     {
@@ -941,4 +1042,92 @@ fn a_card_that_stays_comes_from_the_turns_that_stay() {
     };
     assert_eq!(liked(&store), liked(&expected));
     assert_ne!(liked(&expected).cue, None, "a line to answer");
+}
+
+#[test]
+fn export_carries_the_costs_per_month() {
+    let a = Store::in_memory().unwrap();
+    a.set_state_value("cost.2026-10", &month(12.5, 3)).unwrap();
+    a.set_state_value("cost.2026-11", &month(60.0, 8)).unwrap();
+    a.set_state_value("reviewed", &at(0, 9)).unwrap();
+    let json = a.export(at(1, 9)).unwrap();
+    assert_eq!(json["costs"]["2026-11"]["cents"], 60.0);
+    assert!(json["costs"].get("reviewed").is_none(), "only the costs");
+
+    let b = Store::in_memory().unwrap();
+    b.import(&json).unwrap();
+    assert_eq!(b.export(at(1, 9)).unwrap()["costs"], json["costs"]);
+}
+
+#[test]
+fn an_export_of_format_2_has_no_costs() {
+    let a = Store::in_memory().unwrap();
+    let mut old = a.export(at(1, 9)).unwrap();
+    old["schema"] = "kaiwa-export/2".into();
+    old.as_object_mut().unwrap().remove("costs");
+    let b = Store::in_memory().unwrap();
+    b.import(&old).unwrap();
+    assert_eq!(b.export(at(1, 9)).unwrap()["costs"], serde_json::json!({}));
+
+    // From format 3 on the costs are required, like the arrays.
+    let mut cut = a.export(at(1, 9)).unwrap();
+    cut.as_object_mut().unwrap().remove("costs");
+    assert!(Store::in_memory().unwrap().import(&cut).is_err());
+}
+
+fn month(cents: f64, calls: u32) -> serde_json::Value {
+    serde_json::json!({ "cents": cents, "calls": calls, "unknown_calls": 1, "sessions": 2, "paid": false })
+}
+
+#[test]
+fn import_rejects_costs_that_are_no_months() {
+    let a = Store::in_memory().unwrap();
+    let json = a.export(at(1, 9)).unwrap();
+    let bad = [
+        ("2026-10", serde_json::json!({ "cents": 60.0 })),
+        ("2026-1", month(1.0, 1)),
+        ("x", month(1.0, 1)),
+        ("2026-13", month(1.0, 1)),
+    ];
+    for (key, value) in bad {
+        let mut part = json.clone();
+        part["costs"] = serde_json::json!({ key: value });
+        let b = Store::in_memory().unwrap();
+        assert!(
+            matches!(b.import(&part), Err(StoreError::WrongFormat(_))),
+            "{key} was accepted"
+        );
+        assert!(b.state_values(COST_STATE_PREFIX).unwrap().is_empty());
+    }
+}
+
+#[test]
+fn import_adds_to_the_costs_already_booked() {
+    let a = Store::in_memory().unwrap();
+    a.set_state_value("cost.2026-11", &month(60.0, 8)).unwrap();
+    let json = a.export(at(1, 9)).unwrap();
+
+    // A placement with a cloud tutor booked costs before the import.
+    let b = Store::in_memory().unwrap();
+    b.set_state_value("cost.2026-11", &month(5.0, 2)).unwrap();
+    b.import(&json).unwrap();
+    let sum: serde_json::Value = b.state_value("cost.2026-11").unwrap().unwrap();
+    assert_eq!(sum["cents"], 65.0);
+    assert_eq!(sum["calls"], 10);
+    assert_eq!(sum["unknown_calls"], 2);
+    assert_eq!(sum["sessions"], 4);
+}
+
+#[test]
+fn a_second_import_is_refused() {
+    let a = Store::in_memory().unwrap();
+    a.set_state_value("cost.2026-11", &month(60.0, 8)).unwrap();
+    let json = a.export(at(1, 9)).unwrap();
+
+    // The file has no sessions or items, so only a marker tells the profile took an import.
+    let b = Store::in_memory().unwrap();
+    b.import(&json).unwrap();
+    assert!(matches!(b.import(&json), Err(StoreError::NotEmpty)));
+    let sum: serde_json::Value = b.state_value("cost.2026-11").unwrap().unwrap();
+    assert_eq!(sum["cents"], 60.0, "counted once");
 }

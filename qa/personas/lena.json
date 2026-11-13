@@ -309,9 +309,10 @@
         {
           "id": "lena_import",
           "requirements": [
-            "/LF710/"
+            "/LF710/",
+            "/LF714/"
           ],
-          "assert": "Ein Export, in ein neues Profil importiert, ergibt dieselben Daten (Profil, Lernermodell, Sitzungen, Wiederholung, Tage); ein Profil mit Daten nimmt keinen Import an."
+          "assert": "Ein Export, in ein neues Profil importiert, ergibt dieselben Daten (Profil, Lernermodell, Sitzungen, Wiederholung, Tage, Kosten der Monate); ein Profil mit Daten nimmt keinen Import an."
         },
         {
           "id": "lena_delete",

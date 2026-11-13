@@ -84,6 +84,7 @@
         { "id": "emi_ceiling", "requirements": ["/LF200/", "/LF201/"], "assert": "Einstufung: listening und speaking am oberen Ende der Skala, register desu_masu_and_casual, reading_kanji n5; Dauer ≤ 8 min trotz Obergrenze." },
         { "id": "emi_skip", "requirements": ["/LF215/"], "assert": "Nach der Einstufung oder spätestens nach der ersten Sitzung wird das Überspringen bis zum Register-Pfad (敬語) angeboten." },
         { "id": "emi_skip_once", "requirements": ["/LF215/"], "assert": "Das Angebot am Lernpfad gilt der aktuellen Einheit; es anzunehmen überspringt genau diese eine, auch bei zwei Klicks. Ein neues Angebot kommt erst nach drei weiteren fast fehlerfreien Gesprächen, und eine Einheit mit 敬語 wird ohne das Register nicht angeboten." },
+        { "id": "emi_feedback_level", "requirements": ["/LF304/"], "assert": "Die Einstufung setzt die Feedbackmenge nach dem Sprechniveau (bis N5 wenig, N4 normal, ab N3 viel): für Emi 'viel', für eine Anfängerin 'wenig'. Hat die Lernende die Menge selbst gewählt, ändert eine neue Einstufung sie nicht." },
         { "id": "emi_no_baby_talk", "requirements": ["/LF210/"], "assert": "Keine Sitzung mit Erfolgsquote ≥ 98 % zweimal hintereinander (Unterforderung)." }
       ]
     },

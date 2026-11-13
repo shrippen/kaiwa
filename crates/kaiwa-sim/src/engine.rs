@@ -102,6 +102,7 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
         "emi_misrecognition" => misrecognition(root),
         "emi_skip" => skip(root, p),
         "emi_skip_once" => skip_once(p),
+        "emi_feedback_level" => feedback_level(root, p),
         "lena_transparency" => transparency(),
         "selin_win_mixed" => mixed(),
         "selin_profile_split" => profile_split(p),
@@ -869,6 +870,29 @@ fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
     }
     // Once: a second click skips nothing more.
     Ok(take_placement_skip(&b, last)?.then(|| "the offer can be taken twice".into()))
+}
+
+/// /LF304/ (V-02): the placement sets the amount of feedback from the speaking level, Emi's
+/// (native) to much, Mara's (n5) to little, until the learner picks one herself.
+fn feedback_level(root: &Path, p: &Value) -> Result<Option<String>> {
+    let amount_after = |b: &kaiwa_backend::TempBackend, p: &Value| -> Result<Amount> {
+        b.store.set_placement(placed(p))?;
+        Ok(b.store.profile()?.feedback)
+    };
+    let b = kaiwa_backend::TempBackend::new("feedback-level", false)?;
+    let got = amount_after(&b, &persona(root, "mara")?)?;
+    if got != Amount::Little {
+        return Ok(Some(format!("a beginner's placement gives {got:?}")));
+    }
+    // Placed again at a higher level, she has not picked: it follows.
+    let got = amount_after(&b, p)?;
+    if got != Amount::Much {
+        return Ok(Some(format!("a native speaker's placement gives {got:?}")));
+    }
+    // After her pick, a new placement leaves it.
+    b.store.set_feedback(Amount::Normal)?;
+    let got = amount_after(&b, &persona(root, "mara")?)?;
+    Ok((got != Amount::Normal).then(|| format!("a placement changed her pick to {got:?}")))
 }
 
 /// /LF711/: only local parts: nothing leaves the device.

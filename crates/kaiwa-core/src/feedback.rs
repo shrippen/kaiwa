@@ -18,6 +18,19 @@ pub enum Amount {
 }
 
 impl Amount {
+    /// The amount that fits a speaking level on the learner model's scale
+    /// ([`crate::learner::LEVELS`]): up to N5 little, N4 normal, from N3 much (V-02).
+    pub fn for_level(level: f64) -> Self {
+        // Same bands as the level the characters hear (`prompts::jlpt`): below n4_low is N5.
+        if level < 3.5 {
+            return Amount::Little;
+        }
+        if level < 5.5 {
+            return Amount::Normal;
+        }
+        Amount::Much
+    }
+
     /// The mildest severity still shown.
     pub fn threshold(self) -> Severity {
         match self {
@@ -205,7 +218,22 @@ pub fn kind_word(k: kaiwa_ai::CorrectionKind, lang: &str) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::learner::level_index;
     use kaiwa_ai::CorrectionKind;
+
+    #[test]
+    fn the_amount_follows_the_speaking_level() {
+        let of = |l: &str| Amount::for_level(level_index(l).unwrap());
+        for l in ["none", "a0", "n5_low", "n5"] {
+            assert_eq!(of(l), Amount::Little, "{l}");
+        }
+        for l in ["n4_low", "n4"] {
+            assert_eq!(of(l), Amount::Normal, "{l}");
+        }
+        for l in ["n3", "n2", "native_casual"] {
+            assert_eq!(of(l), Amount::Much, "{l}");
+        }
+    }
 
     fn c(severity: Severity, better: &str) -> Correction {
         Correction {
