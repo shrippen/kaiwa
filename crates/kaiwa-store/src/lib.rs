@@ -90,6 +90,10 @@ pub enum StoreError {
     WrongFormat(String),
     #[error("no session {0}")]
     NoSession(i64),
+    #[error("session {0} has no record to correct")]
+    NoRecording(i64),
+    #[error("session {0} is not the newest talk; its record stays")]
+    Superseded(i64),
 }
 
 pub type Result<T> = std::result::Result<T, StoreError>;
@@ -285,6 +289,42 @@ pub struct Recorded {
     pub day: DayRecord,
 }
 
+/// What [`Store::record_on`] stored beyond the result, to redo it with the marks the learner
+/// sets on the summary ([`Store::correct`]).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Recording {
+    /// The learning state before the talk (without its grammar tracking, see `correct`).
+    learning: Learning,
+    /// The day the talk's practice went to.
+    day: Day,
+    /// The keys of the review items this talk added.
+    added: Vec<String>,
+}
+
+/// The corrections a summary puts into the review, with what the review shows for them.
+fn corrected_of(summary: &kaiwa_core::session::Summary) -> Vec<srs::Corrected> {
+    summary
+        .corrected
+        .iter()
+        .map(|sh| srs::Corrected {
+            better: sh.correction.better.clone(),
+            kind: serde_json::to_value(sh.correction.kind)
+                .ok()
+                .and_then(|v| v.as_str().map(str::to_string))
+                .unwrap_or_default(),
+            original: summary
+                .mistakes
+                .get(&kaiwa_core::norm(&sh.correction.better))
+                .cloned()
+                .filter(|o| !o.is_empty()),
+            cue: summary
+                .cues
+                .get(&kaiwa_core::norm(&sh.correction.better))
+                .cloned(),
+        })
+        .collect()
+}
+
 /// The start page in one call (/LL020/).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Today {
@@ -378,6 +418,9 @@ const MIGRATIONS: &[&str] = &[
         CASE WHEN coalesce(json_extract(value, '$.tutor.base_url'), '') = ''
              THEN 'ollama' ELSE 'custom' END)
      WHERE key = 'profile' AND json_extract(value, '$.tutor.provider') = 'openai';",
+    // 4: what the end of a talk stored, to take back when the summary marks a turn (V-05,
+    // 2026-11-13); NULL for talks recorded before.
+    "ALTER TABLE sessions ADD COLUMN recording TEXT;",
 ];
 
 /// A required array of an export; missing is an error, so a cut-off file imports nothing.
@@ -830,6 +873,7 @@ impl Store {
         let success = stats.success();
         let summary = s.summary();
         let mut l = self.learning()?;
+        let learning_before = l.clone();
         // Where the day started from, for the week's progress per skill (/LF604/).
         let levels_before: std::collections::BTreeMap<_, _> = kaiwa_core::learner::SKILLS
             .iter()
@@ -848,26 +892,7 @@ impl Store {
             .map(|u| u.id.clone());
         let mut items = self.items()?;
         let before = items.len();
-        let corrections: Vec<srs::Corrected> = summary
-            .corrected
-            .iter()
-            .map(|sh| srs::Corrected {
-                better: sh.correction.better.clone(),
-                kind: serde_json::to_value(sh.correction.kind)
-                    .ok()
-                    .and_then(|v| v.as_str().map(str::to_string))
-                    .unwrap_or_default(),
-                original: summary
-                    .mistakes
-                    .get(&kaiwa_core::norm(&sh.correction.better))
-                    .cloned()
-                    .filter(|o| !o.is_empty()),
-                cue: summary
-                    .cues
-                    .get(&kaiwa_core::norm(&sh.correction.better))
-                    .cloned(),
-            })
-            .collect();
+        let corrections = corrected_of(&summary);
         srs::add_from_summary(
             &mut items,
             &summary.review,
@@ -878,6 +903,14 @@ impl Store {
         for item in &items[before..] {
             self.put_item(item)?;
         }
+        let recording = Recording {
+            learning: learning_before,
+            day,
+            added: items[before..]
+                .iter()
+                .map(|i| kaiwa_core::norm(&i.text))
+                .collect(),
+        };
 
         // Practice time: the session's wall time, at most an hour, in the share of spoken turns.
         let wall = (ended.unix - started.unix).clamp(0, 3600) as f64;
@@ -907,15 +940,16 @@ impl Store {
         self.put_day(day, &rec)?;
         self.set_learning(&l)?;
         self.db.execute(
-            "UPDATE sessions SET ended = ?2, finished = 1, success = ?3, xp = ?4, speaking_secs = ?5, state = ?6
-             WHERE id = ?1",
+            "UPDATE sessions SET ended = ?2, finished = 1, success = ?3, xp = ?4, speaking_secs = ?5, state = ?6,
+             recording = ?7 WHERE id = ?1",
             params![
                 id,
                 ended.unix,
                 success,
                 xp,
                 speaking,
-                serde_json::to_string(&s.snapshot())?
+                serde_json::to_string(&s.snapshot())?,
+                serde_json::to_string(&recording)?
             ],
         )?;
         Ok(Recorded {
@@ -925,6 +959,129 @@ impl Store {
             new_items: items.len() - before,
             xp,
             day: rec,
+        })
+    }
+
+    /// The learner marked turns of a recorded talk on the summary (V-05): redoes what
+    /// [`Store::record_on`] stored from `s` as it is now. The learner model, the regulator and
+    /// the course are replayed from before the talk, the review items this talk added and the
+    /// marks no longer justify are removed, the stored talk and its success are updated; all
+    /// in one transaction. `retrack` redoes the grammar tracking on the replayed learning
+    /// state, with the moment the talk ended. Only the newest talk can be corrected: a later
+    /// one built on its result (`Superseded`).
+    pub fn correct<F: FnOnce(&mut Learning, Moment)>(
+        &self,
+        id: i64,
+        s: &Session,
+        retrack: F,
+    ) -> Result<Recorded> {
+        self.batch(|st| st.correct_in(id, s, retrack))
+    }
+
+    fn correct_in<F: FnOnce(&mut Learning, Moment)>(
+        &self,
+        id: i64,
+        s: &Session,
+        retrack: F,
+    ) -> Result<Recorded> {
+        let row = self
+            .db
+            .query_row(
+                &format!("{} WHERE id = ?1", Self::ROW),
+                params![id],
+                Self::row,
+            )
+            .optional()?
+            .ok_or(StoreError::NoSession(id))?;
+        let stored: Option<String> = self.db.query_row(
+            "SELECT recording FROM sessions WHERE id = ?1",
+            params![id],
+            |r| r.get(0),
+        )?;
+        let (Some(stored), true, Some(ended)) = (stored, row.finished, row.ended) else {
+            return Err(StoreError::NoRecording(id));
+        };
+        let mut recording: Recording = serde_json::from_str(&stored)?;
+        // The newest is the one recorded last: a talk begun earlier but finished later is.
+        let later: i64 = self.db.query_row(
+            "SELECT COUNT(*) FROM sessions
+             WHERE finished = 1 AND (ended > ?2 OR (ended = ?2 AND id > ?1))",
+            params![id, ended.unix],
+            |r| r.get(0),
+        )?;
+        if later > 0 {
+            return Err(StoreError::Superseded(id));
+        }
+
+        // The learner side as `record_on` made it, from the evidence with the marks.
+        let stats = s.stats();
+        let success = stats.success();
+        let mut l = recording.learning.clone();
+        l.model.update(&s.evidence());
+        let change = if stats.turns > 0 {
+            l.regulator.after_session(success, &l.model)
+        } else {
+            None
+        };
+        let scenario_done = s.done() && l.course.complete(&s.scenario.id, success);
+        retrack(&mut l, ended);
+        self.set_learning(&l)?;
+
+        // The review items: what this talk added stays only if the summary still has it.
+        let summary = s.summary();
+        let review: Vec<String> = summary.review.iter().map(|r| kaiwa_core::norm(r)).collect();
+        let (keep, drop): (Vec<String>, Vec<String>) = recording
+            .added
+            .into_iter()
+            .partition(|key| review.contains(key));
+        for key in &drop {
+            self.db
+                .execute("DELETE FROM items WHERE key = ?1", params![key])?;
+        }
+        // A card that stays is built from the turns that stay, as if the marked turn had
+        // been marked before the end.
+        let corrections = corrected_of(&summary);
+        for key in &keep {
+            let Some(mut item) = self.item(key)? else {
+                continue;
+            };
+            let found = corrections
+                .iter()
+                .find(|c| kaiwa_core::norm(&c.better) == *key);
+            (item.kind, item.source) = match found {
+                Some(c) => (
+                    srs::ItemKind::Pattern,
+                    srs::Source::Correction {
+                        kind: c.kind.clone(),
+                    },
+                ),
+                None if item.text.chars().count() <= 6 => {
+                    (srs::ItemKind::Word, srs::Source::NewWord)
+                }
+                None => (srs::ItemKind::Phrase, srs::Source::NewWord),
+            };
+            item.cue = found.and_then(|c| c.cue.clone());
+            item.original = found.and_then(|c| c.original.clone());
+            self.put_item(&item)?;
+        }
+        recording.added = keep;
+
+        self.db.execute(
+            "UPDATE sessions SET success = ?2, state = ?3, recording = ?4 WHERE id = ?1",
+            params![
+                id,
+                success,
+                serde_json::to_string(&s.snapshot())?,
+                serde_json::to_string(&recording)?
+            ],
+        )?;
+        Ok(Recorded {
+            success,
+            change,
+            scenario_done,
+            new_items: recording.added.len(),
+            xp: row.xp,
+            day: self.day(recording.day)?,
         })
     }
 

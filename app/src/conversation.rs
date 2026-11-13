@@ -404,7 +404,6 @@ impl qobject::Conversation {
                         .record_on(id, &guard, begun, end, day, Some(&st.curriculum))
                     {
                         Ok(r) => {
-                            guard.close();
                             if let Err(e) = st.track_grammar(&guard, end) {
                                 eprintln!("kaiwa: {e:#}");
                             }
@@ -695,7 +694,7 @@ impl qobject::Conversation {
             e["corrections"] = json!([]);
             e["misrecognized"] = json!(true);
         }
-        self.save();
+        self.as_mut().save_marks();
         self.as_mut().publish_turns();
     }
 
@@ -730,8 +729,46 @@ impl qobject::Conversation {
                 x["disputed"] = json!(true);
             }
         }
-        self.save();
+        self.as_mut().save_marks();
         self.as_mut().publish_turns();
+    }
+
+    /// Keeps a mark. On the summary (V-05) the mark corrects the recorded talk: its record,
+    /// the learner model and the review, and the summary shows the corrected result.
+    fn save_marks(mut self: Pin<&mut Self>) {
+        let (Some(session), Some(id)) = (self.session.clone(), self.session_id) else {
+            return;
+        };
+        if !*self.finished() || self.placement.is_some() {
+            self.save();
+            return;
+        }
+        let lang = self.lang.clone();
+        let s = session.lock().expect("session lock");
+        let st = state();
+        let r = match st.correct_talk(id, &s) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("kaiwa: {e:#}");
+                drop(s);
+                self.save();
+                // The record stays (a later talk was recorded, or this one has no record to
+                // redo): the page says so instead of promising a correction.
+                let mut recorded: Value =
+                    serde_json::from_str(&self.recorded().to_string()).unwrap_or(json!({}));
+                recorded["markKept"] = json!(true);
+                self.as_mut()
+                    .set_recorded(QString::from(&recorded.to_string()));
+                return;
+            }
+        };
+        let recorded = recorded_json(&r, &s, st.store.profile().ok(), &lang);
+        let summary = summary_json(&s.summary(), &lang);
+        drop(s);
+        self.as_mut()
+            .set_recorded(QString::from(&recorded.to_string()));
+        self.as_mut()
+            .set_summary(QString::from(&summary.to_string()));
     }
 
     fn resume(mut self: Pin<&mut Self>) {

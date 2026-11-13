@@ -835,6 +835,215 @@ fn a_failing_review_leaves_nothing_behind() {
     assert!(s.state_value::<Moment>("reviewed").unwrap().is_none());
 }
 
+/// The talk of `recording_a_session_...`: it ends on a turn with a particle mistake.
+fn talk_ending_in_a_mistake() -> Session {
+    let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
+    for (t, i) in [
+        ("マラです。よろしくおねがいします。", Input::Spoken),
+        ("ドイツのハンブルクから来ました。", Input::Spoken),
+        ("仕事はプロデューサーです。", Input::Typed),
+        ("コーヒーを好きです。", Input::Spoken),
+    ] {
+        session.turn(t, i).unwrap();
+    }
+    assert!(session.done());
+    session
+}
+
+#[derive(Clone, Copy)]
+enum Mark {
+    Misrecognized,
+    Dispute,
+}
+
+fn mark(session: &mut Session, how: Mark) {
+    match how {
+        Mark::Misrecognized => assert!(session.mark_misrecognized(3)),
+        Mark::Dispute => assert!(session.dispute(3, "コーヒーが好きです").is_some()),
+    }
+}
+
+/// V-05: marking after the end corrects what the end stored: the same profile as if the
+/// talk had been marked before it ended.
+fn marking_after_the_end(how: Mark) {
+    let c = curriculum();
+    let (start, end) = (at(0, 9), at(0, 9).plus_secs(6 * 60));
+    let liked = |s: &Store| {
+        s.items()
+            .unwrap()
+            .iter()
+            .any(|i| i.text == "コーヒーが好きです")
+    };
+
+    let store = Store::in_memory().unwrap();
+    let mut session = talk_ending_in_a_mistake();
+    let id = store.begin_session(&session.snapshot(), start).unwrap();
+    store.record(id, &session, start, end, Some(&c)).unwrap();
+    assert!(liked(&store));
+    assert!(
+        store
+            .learning()
+            .unwrap()
+            .model
+            .errors
+            .contains_key("particle")
+    );
+
+    mark(&mut session, how);
+    let r = store.correct(id, &session, |_, _| {}).unwrap();
+    assert!(!liked(&store), "the review item of that turn is gone");
+    assert!(
+        !store
+            .learning()
+            .unwrap()
+            .model
+            .errors
+            .contains_key("particle"),
+        "the error is no longer in the learner model"
+    );
+
+    // The same as marking before the end.
+    let expected = Store::in_memory().unwrap();
+    let mut marked = talk_ending_in_a_mistake();
+    let id2 = expected.begin_session(&marked.snapshot(), start).unwrap();
+    mark(&mut marked, how);
+    let r2 = expected.record(id2, &marked, start, end, Some(&c)).unwrap();
+    assert_eq!(store.learning().unwrap(), expected.learning().unwrap());
+    assert_eq!(store.items().unwrap(), expected.items().unwrap());
+    assert_eq!(r.new_items, r2.new_items);
+    assert_eq!(r.success, r2.success);
+    assert_eq!(r.day, r2.day);
+    let row = &store.sessions(1).unwrap()[0];
+    assert_eq!(Some(r.success), row.success);
+    assert_eq!(
+        store.session_state(id).unwrap().turns[3].misrecognized,
+        matches!(how, Mark::Misrecognized),
+        "the stored talk has the mark"
+    );
+}
+
+#[test]
+fn a_turn_marked_misrecognised_after_the_end_leaves_the_record() {
+    marking_after_the_end(Mark::Misrecognized);
+}
+
+#[test]
+fn a_turn_disputed_after_the_end_leaves_the_record() {
+    marking_after_the_end(Mark::Dispute);
+}
+
+#[test]
+fn a_correction_keeps_the_items_the_profile_had_before_the_talk() {
+    let c = curriculum();
+    let store = Store::in_memory().unwrap();
+    let mut earlier = Item::new(
+        "コーヒーが好きです",
+        srs::ItemKind::Pattern,
+        srs::Source::NewWord,
+        at(0, 8),
+    );
+    earlier.unit = Some("n5-01".into());
+    store.put_item(&earlier).unwrap();
+
+    let mut session = talk_ending_in_a_mistake();
+    let id = store.begin_session(&session.snapshot(), at(0, 9)).unwrap();
+    store
+        .record(id, &session, at(0, 9), at(0, 10), Some(&c))
+        .unwrap();
+    session.mark_misrecognized(3);
+    store.correct(id, &session, |_, _| {}).unwrap();
+    assert!(
+        store.items().unwrap().contains(&earlier),
+        "not made by this talk, so not taken back"
+    );
+}
+
+#[test]
+fn only_the_newest_talk_can_be_corrected() {
+    let c = curriculum();
+    let store = Store::in_memory().unwrap();
+    let mut first = talk_ending_in_a_mistake();
+    let id = store.begin_session(&first.snapshot(), at(0, 9)).unwrap();
+    store
+        .record(id, &first, at(0, 9), at(0, 10), Some(&c))
+        .unwrap();
+    let later = Session::new(scenario(), provider(), Amount::Little, "de");
+    let id2 = store.begin_session(&later.snapshot(), at(1, 9)).unwrap();
+    store
+        .record(id2, &later, at(1, 9), at(1, 10), Some(&c))
+        .unwrap();
+
+    first.mark_misrecognized(3);
+    let learning = store.learning().unwrap();
+    assert!(matches!(
+        store.correct(id, &first, |_, _| {}),
+        Err(StoreError::Superseded(_))
+    ));
+    assert_eq!(store.learning().unwrap(), learning, "nothing changed");
+
+    // The newest is the one recorded last, not the one begun last (/LF121/): A is begun,
+    // left, B begun and finished, then A continued and finished.
+    let store = Store::in_memory().unwrap();
+    let mut a = talk_ending_in_a_mistake();
+    let mut b = talk_ending_in_a_mistake();
+    let id_a = store.begin_session(&a.snapshot(), at(0, 9)).unwrap();
+    let id_b = store.begin_session(&b.snapshot(), at(0, 10)).unwrap();
+    store
+        .record(id_b, &b, at(0, 10), at(0, 11), Some(&c))
+        .unwrap();
+    store
+        .record(id_a, &a, at(0, 9), at(0, 12), Some(&c))
+        .unwrap();
+    b.mark_misrecognized(3);
+    assert!(matches!(
+        store.correct(id_b, &b, |_, _| {}),
+        Err(StoreError::Superseded(_))
+    ));
+    a.mark_misrecognized(3);
+    store.correct(id_a, &a, |_, _| {}).unwrap();
+}
+
+/// Marking turn 0 of a talk whose turn 2 has the same correction: the card that stays is the
+/// one of turn 2 (its original, its line), as if turn 0 had been marked before the end.
+#[test]
+fn a_card_that_stays_comes_from_the_turns_that_stay() {
+    let c = curriculum();
+    let (start, end) = (at(0, 9), at(0, 9).plus_secs(6 * 60));
+    let talk = || {
+        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        for t in [
+            "コーヒーを好きです。",
+            "マラです。よろしくおねがいします。",
+            "コーヒーを好きです。",
+            "ドイツのハンブルクから来ました。",
+            "仕事はプロデューサーです。",
+        ] {
+            s.turn(t, Input::Spoken).unwrap();
+        }
+        s
+    };
+
+    let store = Store::in_memory().unwrap();
+    let mut session = talk();
+    let id = store.begin_session(&session.snapshot(), start).unwrap();
+    store.record(id, &session, start, end, Some(&c)).unwrap();
+    session.mark_misrecognized(0);
+    store.correct(id, &session, |_, _| {}).unwrap();
+
+    let expected = Store::in_memory().unwrap();
+    let mut marked = talk();
+    let id2 = expected.begin_session(&marked.snapshot(), start).unwrap();
+    marked.mark_misrecognized(0);
+    expected.record(id2, &marked, start, end, Some(&c)).unwrap();
+    let liked = |s: &Store| {
+        s.item("コーヒーが好きです")
+            .unwrap()
+            .expect("the card stays")
+    };
+    assert_eq!(liked(&store), liked(&expected));
+    assert_ne!(liked(&expected).cue, None, "a line to answer");
+}
+
 #[test]
 fn only_the_default_profiles_dir_has_keyring_homes() {
     // KAIWA_DATA set: no directory has keyring homes (their ids would collide with the real ones).

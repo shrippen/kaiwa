@@ -263,14 +263,6 @@ pub enum Coaching {
     Off,
 }
 
-/// Whether the talk is stored as finished ([`Session::close`]).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-enum Record {
-    #[default]
-    Open,
-    Recorded,
-}
-
 pub struct Session {
     pub scenario: Scenario,
     pub lang: String,
@@ -301,8 +293,6 @@ pub struct Session {
     learner_level: Option<f64>,
     /// Set by the caller, not part of the saved state (a placement stage is not saved).
     coaching: Coaching,
-    /// Not part of the saved state: a recorded talk is not continued.
-    recorded: Record,
 }
 
 impl Session {
@@ -336,7 +326,6 @@ impl Session {
             spent_secs: 0,
             learner_level: None,
             coaching: Coaching::default(),
-            recorded: Record::default(),
         }
     }
 
@@ -419,7 +408,6 @@ impl Session {
             spent_secs: st.spent_secs,
             learner_level: None,
             coaching: Coaching::default(),
-            recorded: Record::default(),
         }
     }
 
@@ -681,20 +669,10 @@ impl Session {
         }
     }
 
-    /// The talk is recorded (the caller stored it): marks would change only what the page shows,
-    /// so they are refused from now on. Not `done()`: a placement stage goes on after its goals
-    /// when a turn was analysed with gaps, and is never recorded.
-    pub fn close(&mut self) {
-        self.recorded = Record::Recorded;
-    }
-
     /// The learner marks a turn's transcript as misrecognised (/LF113/): its corrections no longer
-    /// count as mistakes and do not go into the review. Refused once the talk is recorded
-    /// ([`Session::close`]).
+    /// count as mistakes and do not go into the review. Still possible once the talk is
+    /// recorded (V-05): the caller then corrects the record (`Store::correct`).
     pub fn mark_misrecognized(&mut self, turn: usize) -> bool {
-        if self.recorded == Record::Recorded {
-            return false;
-        }
         match self.turns.get_mut(turn) {
             Some(t) => {
                 t.misrecognized = true;
@@ -705,12 +683,9 @@ impl Session {
     }
 
     /// The learner disputes a correction (/LF307/). It stays visible, marked as disputed, and
-    /// is kept for the QA (/LD060/), but it no longer counts as a mistake. Refused once the
-    /// talk is recorded, as for a misrecognition mark.
+    /// is kept for the QA (/LD060/), but it no longer counts as a mistake. As for a
+    /// misrecognition mark, it is still possible once the talk is recorded.
     pub fn dispute(&mut self, turn: usize, better: &str) -> Option<Correction> {
-        if self.recorded == Record::Recorded {
-            return None;
-        }
         let t = self.turns.get_mut(turn)?;
         let c = t
             .corrections
@@ -1277,27 +1252,33 @@ mod tests {
     }
 
     #[test]
-    fn nothing_is_marked_once_the_talk_is_done() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
-        s.turn("マラです。よろしくおねがいします。", Input::Spoken)
-            .unwrap();
-        s.turn("ドイツのハンブルクから来ました。", Input::Spoken)
-            .unwrap();
-        s.turn("仕事はプロデューサーです。", Input::Typed).unwrap();
-        s.turn("コーヒーを好きです。", Input::Spoken).unwrap();
-        assert!(s.done());
-        s.close();
+    fn marks_after_the_end_still_apply() {
+        // V-05: the summary may still mark a turn; the caller then corrects the record.
+        let talk = || {
+            let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+            s.turn("マラです。よろしくおねがいします。", Input::Spoken)
+                .unwrap();
+            s.turn("ドイツのハンブルクから来ました。", Input::Spoken)
+                .unwrap();
+            s.turn("仕事はプロデューサーです。", Input::Typed).unwrap();
+            s.turn("コーヒーを好きです。", Input::Spoken).unwrap();
+            assert!(s.done());
+            s
+        };
+        let liked = "コーヒーが好きです".to_string();
 
-        // The talk is recorded: a mark would change the page, not the record.
-        assert!(!s.mark_misrecognized(3));
-        assert!(!s.turns()[3].misrecognized);
-        assert!(s.dispute(3, "コーヒーが好きです").is_none());
-        assert!(s.turns()[3].disputed.is_empty());
-        assert!(
-            s.summary()
-                .review
-                .contains(&"コーヒーが好きです".to_string())
-        );
+        let mut s = talk();
+        assert!(s.summary().review.contains(&liked));
+        assert!(s.mark_misrecognized(3));
+        assert!(s.turns()[3].misrecognized);
+        assert!(!s.summary().review.contains(&liked));
+        assert!(s.stats().mistakes.is_empty());
+
+        let mut s = talk();
+        assert!(s.dispute(3, "コーヒーが好きです").is_some());
+        assert_eq!(s.turns()[3].disputed.len(), 1);
+        assert!(!s.summary().review.contains(&liked));
+        assert!(s.stats().mistakes.is_empty());
     }
 
     #[test]
