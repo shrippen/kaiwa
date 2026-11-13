@@ -3,11 +3,10 @@
 
 use std::collections::BTreeMap;
 
-use kaiwa_core::Amount;
 use kaiwa_core::clock::Moment;
 use kaiwa_core::curriculum::NodeState;
 use kaiwa_core::difficulty::KNOBS;
-use kaiwa_core::learner::{SKILLS, Skill};
+use kaiwa_core::learner::SKILLS;
 use kaiwa_core::progress::{DailyGoal, streak_note};
 use kaiwa_store::{FeedbackSource, Script};
 use serde_json::{Value, json};
@@ -651,9 +650,9 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "goal": goal,
         "gamification": p.gamification,
         "feedback": p.feedback,
-        // Set by a placement's speaking level (V-02): the band it gave, else none.
-        "feedbackBand": (p.feedback_source == FeedbackSource::Level)
-            .then(|| Amount::for_level(st.store.learning().map(|l| l.model.level(Skill::Speaking)).unwrap_or_default())),
+        // Set by a placement's speaking level (V-02): the amount it gave names the band; the
+        // model moves on with practice, the placement's band does not.
+        "feedbackBand": (p.feedback_source == FeedbackSource::Level).then_some(p.feedback),
         "script": match p.script { Script::Furigana => 0, Script::Kana => 1, Script::Hidden => 2 },
         "endPause": p.end_pause_secs,
         "keepRecordings": p.keep_recordings_days,
@@ -1406,12 +1405,18 @@ mod tests {
         b.store.update_profile(|p| p.placed = true).unwrap();
         assert!(profile(&b).unwrap()["feedbackBand"].is_null());
 
-        let n3 = kaiwa_core::LearnerModel::placed(&[(Skill::Speaking, "n3")]);
+        let n3 = kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, "n3")]);
         b.store.set_placement(n3).unwrap();
         assert_eq!(profile(&b).unwrap()["feedbackBand"], "much");
 
+        // Practice moves the model on; the band stays the placement's.
+        let mut l = b.store.learning().unwrap();
+        l.model.set(kaiwa_core::learner::Skill::Speaking, 3.0);
+        b.store.set_learning(&l).unwrap();
+        assert_eq!(profile(&b).unwrap()["feedbackBand"], "much");
+
         // Her own pick: no band.
-        b.store.set_feedback(Amount::Little).unwrap();
+        b.store.set_feedback(kaiwa_core::Amount::Little).unwrap();
         assert!(profile(&b).unwrap()["feedbackBand"].is_null());
     }
 

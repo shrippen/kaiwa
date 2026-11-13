@@ -503,8 +503,8 @@ impl Store {
         };
         // The model is read only for a profile that still needs the migration.
         if v.get("feedback_source").is_none() {
-            let speaking = self.learning()?.model.level(Skill::Speaking);
-            migrate_feedback_source(&mut v, Some(speaking));
+            let speaking = self.learning().ok().map(|l| l.model.level(Skill::Speaking));
+            migrate_feedback_source(&mut v, speaking);
         }
         Ok(serde_json::from_value(v)?)
     }
