@@ -1,63 +1,60 @@
 import QtQuick
 import QtTest
-import Kante
-import "../tabs.js" as Tabs
+import ".."
 
-// The main tab bar (tabs.js): the review forgets its unit when the learner leaves it, not when
-// a key activates the tab already shown. A real KanteTabBar, wired as in Main.qml.
+// The main tab bar (MainTabs.qml), as Main.qml uses it: every change of tab is said, so the
+// views reload; leaving the review tab is said apart, so the review forgets a unit opened from
+// the path. Enter or Space on the tab already shown changes nothing.
 // Run: tools/qml-tests.sh.
 TestCase {
     name: "Tabs"
     when: windowShown
 
     readonly property int review: 2
+    // The tab the app starts on (--view), bound as in Main.qml.
+    property int view: review
 
-    KanteTabBar {
+    MainTabs {
         id: bar
         model: ["Heute", "Lernpfad", "Wiederholen", "Profil", "Einstellungen"]
-        property int shown: -1
-        Component.onCompleted: shown = currentIndex
-        property int resets: 0
-        onCurrentIndexChanged: {
-            if (Tabs.leaves(shown, currentIndex, review)) {
-                resets += 1
-            }
-            shown = currentIndex
-        }
+        review: 2
+        currentIndex: view
+    }
+
+    SignalSpy {
+        id: spy
+        target: bar
+        signalName: "switched"
     }
 
     function init() {
-        bar.currentIndex = 0
-        bar.resets = 0
+        bar.currentIndex = review
+        spy.clear()
     }
 
-    // The tab before a change is the old one, not already the new one (no binding).
-    function test_the_first_change_knows_the_tab_before() {
-        compare(bar.shown, 0)
-        bar.currentIndex = review
-        bar.currentIndex = 1
-        compare(bar.resets, 1)
-    }
-
-    // The path opens the review of one unit (no activation); Enter or Space on it keeps it.
-    function test_a_key_on_the_shown_review_keeps_its_unit() {
-        bar.currentIndex = review
-        bar.activate(review)
-        compare(bar.resets, 0)
-    }
-
-    // Leaving the review and coming back shows everything due again.
-    function test_leaving_the_review_forgets_its_unit() {
-        bar.currentIndex = review
+    // Started on the review (--view review): the first change already knows it left the review.
+    function test_the_start_tab_counts() {
+        compare(bar.currentIndex, review)
         bar.select(0)
-        compare(bar.resets, 1)
-        bar.select(review)
-        compare(bar.resets, 1, "arriving keeps what the path set")
+        compare(spy.count, 1)
+        compare(spy.signalArguments[0][0], MainTabs.FromReview)
     }
 
-    function test_other_tabs_reset_nothing() {
+    // The path opens the review of one unit; Enter or Space on it keeps it.
+    function test_a_key_on_the_shown_tab_changes_nothing() {
+        bar.activate(review)
+        bar.activate(review)
+        compare(spy.count, 0)
+    }
+
+    // Any other change reloads the views but keeps what the path set for the review.
+    function test_other_changes_reload() {
+        bar.select(0)
+        spy.clear()
         bar.select(1)
-        bar.select(3)
-        compare(bar.resets, 0)
+        bar.select(review)
+        compare(spy.count, 2)
+        compare(spy.signalArguments[0][0], MainTabs.ToTab)
+        compare(spy.signalArguments[1][0], MainTabs.ToTab)
     }
 }

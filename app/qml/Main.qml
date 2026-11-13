@@ -4,7 +4,6 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import Kante
 import org.shrippen.kaiwa
-import "tabs.js" as Tabs
 
 // Kaiwa's window (Lastenheft Kap. 7): tabs for today, the learning path, review, profile and
 // settings; a conversation opens as its own page on top. The GUI comes from Kante (/LL301/;
@@ -119,7 +118,7 @@ Kirigami.ApplicationWindow {
         header: Rectangle {
             color: KanteStyle.backgroundColor
             implicitHeight: tabs.implicitHeight + KanteStyle.unit(16)
-            KanteTabBar {
+            MainTabs {
                 id: tabs
                 anchors.fill: parent
                 anchors.margins: KanteStyle.unit(8)
@@ -128,15 +127,14 @@ Kirigami.ApplicationWindow {
                 // Everything due, as the start page counts it (the review page holds ten at a time).
                 readonly property int reviewCount: kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0
                 currentIndex: Math.max(0, root.views.indexOf(root.arg("--view", "start")))
-                // The tab shown before the current one changed; set once, not bound, so it still
-                // holds the old tab when the change arrives.
-                property int shown: -1
-                Component.onCompleted: shown = currentIndex
-                onCurrentIndexChanged: {
-                    if (Tabs.leaves(shown, currentIndex, root.views.indexOf("review"))) {
+                review: root.views.indexOf("review")
+                // Every change reloads the views; leaving the review also forgets its unit.
+                onSwitched: function (kind) {
+                    if (kind === MainTabs.FromReview) {
                         kaiwa.openReview("")
+                        return
                     }
-                    shown = currentIndex
+                    kaiwa.refresh()
                 }
             }
         }
