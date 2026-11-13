@@ -364,11 +364,22 @@ mod tests {
         let mut p = Placement::default();
         let mut steps = Vec::new();
         for i in 0..2 {
-            s.aid(Aid::Translate);
+            s.aid(Aid::Translate, s.line());
             s.turn(&format!("turn {i}"), Input::Typed).unwrap();
             steps.push(p.after_turn(&s));
         }
         assert_eq!(steps, [Step::Go, Step::Over]);
+    }
+
+    #[test]
+    fn a_stage_that_goes_on_takes_marks() {
+        // Goals reached in a turn with gaps: the stage goes on although its goals are done;
+        // a misheard turn after that can still be marked (review of #113).
+        let (mut s, steps) = played_session(&[GAP_GOALS, GOALS_SLIP]);
+        assert_eq!(steps, [Step::Go, Step::Go]);
+        assert!(s.done());
+        assert!(s.mark_misrecognized(1));
+        assert!(s.stats().mistakes.is_empty());
     }
 
     #[test]
