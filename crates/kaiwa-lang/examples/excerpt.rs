@@ -38,7 +38,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|| root.join("data/dict/kaiwa-dict-excerpt.sqlite"));
 
     let mut texts = Vec::new();
-    for dir in ["data/scenarios", "qa/fixtures", "qa/scripts", "qa/personas"] {
+    for dir in [
+        "data/scenarios",
+        "data/dict",
+        "qa/fixtures",
+        "qa/scripts",
+        "qa/personas",
+    ] {
         for e in fs::read_dir(root.join(dir))? {
             let p = e?.path();
             if p.extension().is_some_and(|x| x == "json") {

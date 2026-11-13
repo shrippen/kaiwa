@@ -164,3 +164,97 @@ fn content_words_are_in_the_dictionary() {
     }
     assert!(unknown.is_empty(), "not in the dictionary: {unknown:?}");
 }
+
+/// The entry a click on the word `text` of `line` shows (/LF112/).
+fn shown(line: &str, text: &str) -> kaiwa_lang::Entry {
+    let (_, ws) = annotate(&Words::new().unwrap(), line);
+    let w = ws.iter().find(|w| w.text == text).unwrap();
+    dict().lookup_word(w, "en").unwrap().unwrap()
+}
+
+/// A conjugated verb shows the verb, not a noun spelled like its inflected form.
+#[test]
+fn a_conjugated_verb_shows_the_verb() {
+    for (line, text, word, meaning) in [
+        ("勉強した", "した", "する", "to do"),
+        ("宿題をした", "した", "する", "to do"),
+        ("友だちがきた", "きた", "くる", "to come"),
+        ("{東京|とうきょう}に{来|き}た", "来た", "来る", "to come"),
+        ("ここにいた", "いた", "いる", "to be"),
+        ("あそこにいって", "いって", "いく", "to go"),
+    ] {
+        let e = shown(line, text);
+        assert_eq!(e.word, word, "{line}: {text}");
+        assert!(
+            e.pos.iter().any(|p| p.starts_with("verb")),
+            "{line}: {:?}",
+            e.pos
+        );
+        assert!(
+            e.senses[0].iter().any(|g| g.starts_with(meaning)),
+            "{line}: {:?}",
+            e.senses
+        );
+    }
+}
+
+/// A common pronoun beats a rarer noun spelled alike.
+#[test]
+fn a_pronoun_beats_a_rarer_noun() {
+    let e = shown("ここにいた", "ここ");
+    assert!(e.pos.iter().any(|p| p == "pronoun"), "{:?}", e.pos);
+    let e = shown("これはなんですか", "なん");
+    assert!(e.senses[0].iter().any(|g| g == "what"), "{:?}", e.senses);
+    assert!(e.pos.iter().any(|p| p == "pronoun"), "{:?}", e.pos);
+}
+
+/// The words of data/dict/lookup-expected.tsv show the entry the sentence means (/LF112/).
+/// Each line gives the sentence, the word as written, the headword and reading shown and a
+/// text one of the meanings contains.
+#[test]
+fn the_words_of_the_expected_list_show_the_right_entry() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let list = std::fs::read_to_string(root.join("data/dict/lookup-expected.tsv")).unwrap();
+    let (d, words) = (dict(), Words::new().unwrap());
+    let mut wrong = Vec::new();
+    for line in list
+        .lines()
+        .filter(|l| !l.starts_with('#') && !l.is_empty())
+    {
+        let [sentence, surface, word, reading, meaning] = line.split('\t').collect::<Vec<_>>()[..]
+        else {
+            panic!("five columns expected: {line}");
+        };
+        // As the app does for a line: IPADIC's furigana for bare kanji.
+        let (_, ws) = annotate(&words, &kaiwa_lang::complete(&words, sentence));
+        let w = ws
+            .iter()
+            .find(|w| w.text == surface)
+            .unwrap_or_else(|| panic!("{surface} is no word of {sentence}"));
+        let e = d.lookup_word(w, "en").unwrap();
+        let shown = e.as_ref().map_or("-".to_string(), |e| {
+            format!(
+                "{}【{}】{}",
+                e.word,
+                e.reading,
+                e.senses.first().map(|s| s.join("; ")).unwrap_or_default()
+            )
+        });
+        let right = e.is_some_and(|e| {
+            e.word == word
+                && e.reading == reading
+                && e.senses.iter().flatten().any(|g| g.contains(meaning))
+        });
+        if !right {
+            wrong.push(format!(
+                "{sentence} / {surface}: want {word}【{reading}】{meaning}, got {shown}"
+            ));
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "{} wrong:\n{}",
+        wrong.len(),
+        wrong.join("\n")
+    );
+}

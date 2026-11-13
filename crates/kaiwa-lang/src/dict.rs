@@ -67,6 +67,47 @@ const HONORIFICS: [(&str, &str); 6] = [
     ("先生", "せんせい"),
 ];
 
+/// Added in kana, where the tokenizer says 名詞 for a pronoun or a number: ここ is "here", not
+/// 九 (nine); なん is 何, not 難; いち is 一, not 位置. A pronoun beats a number and any gap
+/// in frequency, not a different part of speech or a matching reading.
+const PRONOUN_BONUS: i64 = 60;
+const NUMBER_BONUS: i64 = 40;
+
+/// For a word in kana, an entry usually written in kana (JMdict's `uk`) with no common kanji
+/// spelling: 居る for いる, not 射る or 要る.
+const KANA_BONUS: i64 = 40;
+
+/// The rank of a common entry without `nf` (it has another priority, as 為る and 何 have), and
+/// of an entry without any priority: both after every `nf` of 1 to 48.
+const COMMON_NF: i64 = 49;
+const RARE_NF: i64 = 50;
+
+/// What an inflected verb ends in when it is complete: し・た, い・て. A form without one
+/// (みず, くち) may be a noun the tokenizer took for a verb stem.
+const VERB_ENDINGS: [&str; 10] = [
+    "た",
+    "だ",
+    "て",
+    "で",
+    "ない",
+    "ます",
+    "ません",
+    "れば",
+    "よう",
+    "ば",
+];
+
+/// Whether an entry must be of the part of speech the tokenizer gave.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Fit {
+    Prefer,
+    Require,
+    /// Only a common expression or interjection (いらっしゃいませ, しまった, not 来た: きた).
+    Phrase,
+    /// Only a common entry, of any part of speech.
+    Common,
+}
+
 /// Kinds a conversation meets first, preferred when a spelling has several entries.
 const COMMON_KINDS: [&str; 7] = [
     "surname", "given", "fem", "masc", "place", "station", "person",
@@ -94,6 +135,10 @@ pub fn full_width(s: &str) -> String {
             _ => c,
         })
         .collect()
+}
+
+fn is_kanji(c: char) -> bool {
+    matches!(c, '\u{4e00}'..='\u{9fff}')
 }
 
 fn json_list(s: Option<String>) -> Option<Vec<String>> {
@@ -214,28 +259,73 @@ impl Dictionary {
     }
 
     /// Looks up a word of a line: as written first (いらっしゃいませ is an expression of its
-    /// own), then in its dictionary form (食べました → 食べる).
+    /// own), then in its dictionary form (食べました → 食べる). A verb, adjective or auxiliary in
+    /// an inflected form is its dictionary form (した is する, not 舌), unless it is a common
+    /// noun in kana and has no ending (みず is 水, IPADIC takes it for a stem of みる).
     pub fn lookup_word(&self, w: &crate::LineWord, lang: &str) -> Result<Option<Entry>, LangError> {
         let pos = pos::jmdict_prefix(&w.pos);
-        if w.text != w.key
-            && let Some(e) = self.lookup_with(&w.text, None, pos, lang)?
-        {
+        let inflected = w.text != w.key;
+        let reading = w.reading.as_deref();
+        let verbal = inflected && matches!(w.pos.as_str(), "動詞" | "形容詞" | "助動詞");
+        if verbal && let Some(e) = self.lookup_form(w, pos, lang)? {
             return Ok(Some(e));
         }
-        if let Some(e) = self.lookup_with(&w.key, w.reading.as_deref(), pos, lang)? {
+        if inflected && let Some(e) = self.lookup_with(&w.text, None, pos, Fit::Prefer, lang)? {
+            return Ok(Some(e));
+        }
+        if let Some(e) = self.lookup_with(&w.key, reading, pos, Fit::Prefer, lang)? {
             return Ok(Some(e));
         }
         if let Some(f) = &w.fallback
-            && let Some(e) = self.lookup_with(f, None, pos, lang)?
+            && let Some(e) = self.lookup_with(f, None, pos, Fit::Prefer, lang)?
         {
             return Ok(Some(e));
         }
         // JMdict writes latin letters in a word full width (Ｔシャツ).
         let wide = full_width(&w.key);
         if wide != w.key {
-            return self.lookup_with(&wide, None, pos, lang);
+            return self.lookup_with(&wide, None, pos, Fit::Prefer, lang);
         }
         Ok(None)
+    }
+
+    /// An inflected verb, adjective or auxiliary as the entry of its own (貸してあげる,
+    /// いらっしゃいませ) or in its dictionary form. One character is a particle or an ending,
+    /// never an entry of its own: な is だ, not "don't".
+    fn lookup_form(
+        &self,
+        w: &crate::LineWord,
+        pos: Option<&str>,
+        lang: &str,
+    ) -> Result<Option<Entry>, LangError> {
+        let long = w.text.chars().count() > 1;
+        let kana = long && !w.text.chars().any(is_kanji);
+        let ended = VERB_ENDINGS.iter().any(|e| w.text.ends_with(e));
+        // An auxiliary is never a noun's stem: なら is not 奈良. A conditional that is an
+        // entry of its own wins over the base form: a particle (たら) or a conjunction
+        // (だったら, でしたら), not だ or です. なら is an auxiliary entry, found below.
+        let auxiliary = w.pos == "助動詞";
+        for tag in ["prt", "conj"] {
+            if kana
+                && auxiliary
+                && let Some(e) = self.lookup_with(&w.text, None, Some(tag), Fit::Require, lang)?
+            {
+                return Ok(Some(e));
+            }
+        }
+        if kana
+            && !auxiliary
+            && !ended
+            && let Some(e) = self.lookup_with(&w.text, None, Some("n"), Fit::Common, lang)?
+        {
+            return Ok(Some(e));
+        }
+        for fit in [Fit::Phrase, Fit::Require] {
+            if long && let Some(e) = self.lookup_with(&w.text, None, pos, fit, lang)? {
+                return Ok(Some(e));
+            }
+        }
+        self.lookup_with(&w.key, w.reading.as_deref(), pos, Fit::Require, lang)
     }
 
     /// Looks a word up: `key` as written or in its dictionary form, `reading` (kana) to choose
@@ -246,16 +336,18 @@ impl Dictionary {
         reading: Option<&str>,
         lang: &str,
     ) -> Result<Option<Entry>, LangError> {
-        self.lookup_with(key, reading, None, lang)
+        self.lookup_with(key, reading, None, Fit::Prefer, lang)
     }
 
     /// `pos`: the start of the JMdict code the word's part of speech has (`prt` for a
-    /// particle), to choose は the particle over 葉.
+    /// particle), to choose は the particle over 葉; with [`Fit::Require`] an entry of another
+    /// kind does not count.
     fn lookup_with(
         &self,
         key: &str,
         reading: Option<&str>,
         pos: Option<&str>,
+        fit: Fit,
         lang: &str,
     ) -> Result<Option<Entry>, LangError> {
         let mut st = self.db.prepare(
@@ -269,10 +361,37 @@ impl Dictionary {
         for (id, common, nf) in candidates {
             let forms = self.forms(id)?;
             let reads = reading.is_some_and(|r| forms.iter().any(|f| f.kind == "r" && f.text == r));
-            let fits = pos.is_some_and(|p| self.has_pos(id, p).unwrap_or(false));
+            let kana_key = !key.chars().any(is_kanji);
+            let noun = pos == Some("n");
+            // A pronoun or a number in kana is a noun for the tokenizer (ここ, なん, さん); in
+            // kanji the tokenizer's 何時 would take a pronoun (いつ) from the noun (なんじ).
+            let kana_noun = noun && kana_key;
+            let pronoun = kana_noun && self.has_pos(id, "pn").unwrap_or(false);
+            // A number first of all (三 さん), not a word with a number among its senses
+            // (京 きょう, the capital and 10¹⁶, would take 今日 from きょう).
+            let number = kana_noun && self.first_pos(id, "num").unwrap_or(false);
+            // An expression is as good as an interjection (やった, いってらっしゃい).
+            let fits = pronoun
+                || pos.is_some_and(|p| self.has_pos(id, p).unwrap_or(false))
+                || pos == Some("int") && self.has_pos(id, "exp").unwrap_or(false);
+            if fit == Fit::Phrase && !(common && self.is_phrase(id)) {
+                continue;
+            }
+            if fit == Fit::Common && !common {
+                continue;
+            }
+            if fit == Fit::Require && pos.is_some() && !fits {
+                continue;
+            }
+            let kana = kana_key && self.usually_kana(id).unwrap_or(false);
             // A matching reading first, then the part of speech, then common and frequent words.
-            let score = i64::from(reads) * 1000 + i64::from(fits) * 500 + i64::from(common) * 100
-                - nf.unwrap_or(50);
+            let score = i64::from(reads) * 1000
+                + i64::from(fits) * 500
+                + i64::from(common) * 100
+                + i64::from(pronoun) * PRONOUN_BONUS
+                + i64::from(number) * NUMBER_BONUS
+                + i64::from(kana) * KANA_BONUS
+                - nf.unwrap_or(if common { COMMON_NF } else { RARE_NF });
             if best.as_ref().is_none_or(|b| score > b.1) {
                 best = Some((id, score, forms, common));
             }
@@ -356,13 +475,37 @@ impl Dictionary {
         }))
     }
 
-    /// Whether one of the entry's English senses has a part of speech starting with `prefix`.
+    /// Whether the entry is usually written in kana (JMdict's `uk`) and has no common kanji spelling.
+    fn usually_kana(&self, id: i64) -> Result<bool, LangError> {
+        Ok(self.db.query_row(
+            "SELECT count(*) FROM sense WHERE entry = ?1 AND lang = 'en' AND misc LIKE '%\"uk\"%'
+                 AND NOT EXISTS (SELECT 1 FROM form WHERE entry = ?1 AND kind = 'k' AND common = 1)",
+            [id],
+            |r| r.get::<_, i64>(0),
+        )? > 0)
+    }
+
+    /// Whether the entry is an expression or an interjection.
+    fn is_phrase(&self, id: i64) -> bool {
+        self.has_pos(id, "exp").unwrap_or(false) || self.has_pos(id, "int").unwrap_or(false)
+    }
+
+    /// Whether one of the entry's English senses has a part of speech of the kind `prefix`.
     fn has_pos(&self, id: i64, prefix: &str) -> Result<bool, LangError> {
         Ok(self
             .senses(id)?
             .iter()
             .filter(|s| s.lang == "en")
-            .any(|s| s.pos.iter().any(|p| p.starts_with(prefix))))
+            .any(|s| s.pos.iter().any(|p| pos::fits(prefix, p))))
+    }
+
+    /// Whether the entry's first English sense has a part of speech of the kind `prefix`.
+    fn first_pos(&self, id: i64, prefix: &str) -> Result<bool, LangError> {
+        Ok(self
+            .senses(id)?
+            .iter()
+            .find(|s| s.lang == "en")
+            .is_some_and(|s| s.pos.iter().any(|p| pos::fits(prefix, p))))
     }
 
     fn forms(&self, id: i64) -> Result<Vec<Form>, LangError> {
