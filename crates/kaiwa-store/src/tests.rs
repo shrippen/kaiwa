@@ -679,3 +679,57 @@ fn a_new_placement_keeps_the_history() {
     assert_eq!(m.corrections_by_learner, 3);
     assert_eq!(m.level(Skill::Pronunciation), 3.5);
 }
+
+/// A profile row that does not parse (a bad import, a hand edit).
+fn break_profile(s: &Store) {
+    s.db.execute(
+        "INSERT INTO settings (key, value) VALUES ('profile', '{\"gamification\": 3}')
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        [],
+    )
+    .unwrap();
+}
+
+fn profile_row(s: &Store) -> String {
+    s.db.query_row(
+        "SELECT value FROM settings WHERE key = 'profile'",
+        [],
+        |r| r.get(0),
+    )
+    .unwrap()
+}
+
+#[test]
+fn an_unreadable_profile_is_not_written_over() {
+    let s = Store::in_memory().unwrap();
+    break_profile(&s);
+    let before = profile_row(&s);
+
+    let r = s.update_profile(|p| p.name = "Mara".into());
+
+    assert!(r.is_err(), "the read error comes back");
+    assert_eq!(profile_row(&s), before, "the row stays as it was");
+}
+
+#[test]
+fn update_profile_changes_a_readable_profile() {
+    let s = Store::in_memory().unwrap();
+    s.update_profile(|p| p.name = "Mara".into()).unwrap();
+    assert_eq!(s.profile().unwrap().name, "Mara");
+}
+
+#[test]
+fn a_failing_review_leaves_nothing_behind() {
+    let s = Store::in_memory().unwrap();
+    let text = "コーヒーが好きです";
+    let item = Item::new(text, srs::ItemKind::Word, srs::Source::NewWord, at(0, 9));
+    s.put_item(&item).unwrap();
+    // The profile is read last: the writes before it must not stay.
+    break_profile(&s);
+
+    let r = s.review(text, Grade::Good, at(1, 9));
+
+    assert!(r.is_err());
+    assert_eq!(s.item(text).unwrap().unwrap(), item, "item unchanged");
+    assert!(s.state_value::<Moment>("reviewed").unwrap().is_none());
+}
