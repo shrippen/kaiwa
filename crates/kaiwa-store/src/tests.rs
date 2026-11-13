@@ -117,16 +117,41 @@ fn a_profile_from_before_the_feedback_source_reads() {
             .unwrap();
         assert_eq!(p.feedback_source, FeedbackSource::Chosen, "{amount}");
     }
-    // The old default after a placement: the level would have set it.
+    // The old default after a placement or a skip: no telling them apart, so the default.
     let p = with_row(&old_profile("little", true), "n3")
         .profile()
         .unwrap();
     assert_eq!(
         (p.feedback, p.feedback_source),
-        (Amount::Much, FeedbackSource::Level)
+        (Amount::Little, FeedbackSource::Default)
     );
     // The old default without a placement: nobody set it.
     let p = with_row(&old_profile("little", false), "n3")
+        .profile()
+        .unwrap();
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Little, FeedbackSource::Default)
+    );
+}
+
+#[test]
+fn an_old_skipped_placement_is_not_a_placement() {
+    // Skipping sets `placed` only.
+    let s = Store::in_memory().unwrap();
+    s.db.execute(
+        "INSERT INTO settings (key, value) VALUES ('profile', ?1)",
+        [old_profile("little", true).to_string()],
+    )
+    .unwrap();
+    let p = s.profile().unwrap();
+    assert_eq!(
+        (p.feedback, p.feedback_source),
+        (Amount::Little, FeedbackSource::Default)
+    );
+
+    // Skipped, then talked: every talk moves the speaking level off the start.
+    let p = with_row(&old_profile("little", true), "n4")
         .profile()
         .unwrap();
     assert_eq!(
@@ -149,7 +174,7 @@ fn an_old_export_imports_with_the_same_rule() {
     let p = import("little");
     assert_eq!(
         (p.feedback, p.feedback_source),
-        (Amount::Much, FeedbackSource::Level)
+        (Amount::Little, FeedbackSource::Default)
     );
 }
 

@@ -118,7 +118,7 @@ Kirigami.ApplicationWindow {
         header: Rectangle {
             color: KanteStyle.backgroundColor
             implicitHeight: tabs.implicitHeight + KanteStyle.unit(16)
-            KanteTabBar {
+            MainTabs {
                 id: tabs
                 anchors.fill: parent
                 anchors.margins: KanteStyle.unit(8)
@@ -127,7 +127,15 @@ Kirigami.ApplicationWindow {
                 // Everything due, as the start page counts it (the review page holds ten at a time).
                 readonly property int reviewCount: kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0
                 currentIndex: Math.max(0, root.views.indexOf(root.arg("--view", "start")))
-                onActivated: function (i) { currentIndex = i; kaiwa.openReview("") }
+                review: root.views.indexOf("review")
+                // Every change reloads the views; leaving the review also forgets its unit.
+                onSwitched: function (kind) {
+                    if (kind === MainTabs.FromReview) {
+                        kaiwa.openReview("")
+                        return
+                    }
+                    kaiwa.refresh()
+                }
             }
         }
 

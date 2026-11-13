@@ -5,6 +5,7 @@ import org.kde.kirigami as Kirigami
 import Kante
 import org.shrippen.kaiwa
 import "leave.js" as Leave
+import "record.js" as Record
 
 // One scenario as a conversation (M1): the character speaks with furigana, the learner
 // types (speech follows with spike 0.3), help comes in three steps, corrections sit under
@@ -449,8 +450,9 @@ Kirigami.ScrollablePage {
             // V-05: the marks of the talk above stay possible and correct the saved talk.
             Text {
                 Layout.fillWidth: true
-                text: page.recorded && page.recorded.markKept === true
-                    ? page.t("Markiert, aber die Aufzeichnung bleibt: Seitdem wurde ein anderes Gespräch aufgezeichnet.", "Marked, but the record stays: another talk was recorded since.")
+                visible: Record.hint(page.recorded) !== "none"
+                text: Record.hint(page.recorded) === "kept"
+                    ? page.t("Markiert, die Aufzeichnung bleibt.", "Marked; the record stays.")
                     : page.t("„Falsch erkannt“ und „Widersprechen“ oben korrigieren das gespeicherte Gespräch.", "“Misheard” and “Dispute” above correct the saved talk.")
                 color: KanteStyle.mutedTextColor
                 font: KanteStyle.smallFont
@@ -493,9 +495,9 @@ Kirigami.ScrollablePage {
                 KanteKpi { label: page.t("Minuten", "Minutes"); value: page.recorded ? String(page.recorded.minutes) : "" }
                 KanteKpi { label: page.t("Neu zum Wiederholen", "New to review"); value: page.recorded ? String(page.recorded.newItems) : "" }
                 KanteKpi {
-                    visible: page.recorded !== null && page.recorded.xp !== null
+                    visible: Record.hasXp(page.recorded)
                     label: "XP"
-                    value: page.recorded && page.recorded.xp !== null ? String(page.recorded.xp) : ""
+                    value: Record.hasXp(page.recorded) ? String(page.recorded.xp) : ""
                 }
             }
             Repeater {
