@@ -352,6 +352,21 @@ impl Backend {
         Ok(())
     }
 
+    /// The learner marked turns of the recorded talk `id` on the summary (V-05): its record,
+    /// the learner model with the grammar points, and the review items are redone from the
+    /// session as it is now, in one transaction. The newest talk only.
+    pub fn correct_talk(
+        &self,
+        id: i64,
+        session: &kaiwa_core::Session,
+    ) -> anyhow::Result<kaiwa_store::Recorded> {
+        let recorded = self.store.correct(id, session, |learning, ended| {
+            self.grammar_matcher
+                .track(&mut learning.grammar, session.turns(), ended.day());
+        })?;
+        Ok(recorded)
+    }
+
     /// A new talk on `scenario` as this profile has it: its tutor, its amount of feedback, the
     /// difficulty the regulator set, the unit's grammar and the learner's own speaking level,
     /// which a free talk names to the character (/LF116/). With it: whether the answers are
@@ -487,4 +502,59 @@ pub fn now() -> Moment {
     }
     let local = chrono::Local::now();
     Moment::new(local.timestamp(), local.offset().local_minus_utc() / 60)
+}
+
+#[cfg(test)]
+mod tests {
+    use kaiwa_core::{Amount, Input};
+
+    use super::*;
+
+    /// V-05: the last turn ends the talk with a mistake; marking it afterwards takes the
+    /// mistake out of the learner model, the grammar points and the review.
+    #[test]
+    fn marking_the_last_turn_after_the_end_corrects_the_record() {
+        let b = TempBackend::new("correct-talk", false).unwrap();
+        let scenario = b.scenarios.get("n5-02-jikoshoukai").cloned().unwrap();
+        let (provider, _) = b.provider(&scenario.id);
+        let mut s = kaiwa_core::Session::new(scenario, provider, Amount::Little, "de");
+        let begun = now();
+        let id = b.store.begin_session(&s.snapshot(), begun).unwrap();
+        for line in [
+            "マラです。よろしくおねがいします。",
+            "ドイツのハンブルクから来ました。",
+            "仕事はプロデューサーです。",
+            "コーヒーを好きです。",
+        ] {
+            s.turn(line, Input::Spoken).unwrap();
+        }
+        assert!(s.done());
+        let end = begun.plus_secs(300);
+        b.store
+            .record(id, &s, begun, end, Some(&b.curriculum))
+            .unwrap();
+        b.track_grammar(&s, end).unwrap();
+        let wrong = |b: &Backend| {
+            b.store
+                .learning()
+                .unwrap()
+                .grammar
+                .get("ga-suki")
+                .map(|p| p.wrong)
+        };
+        assert_eq!(wrong(&b), Some(1));
+        assert!(b.store.item("コーヒーが好きです").unwrap().is_some());
+
+        assert!(s.mark_misrecognized(3));
+        let r = b.correct_talk(id, &s).unwrap();
+
+        let learning = b.store.learning().unwrap();
+        assert!(!learning.model.errors.contains_key("particle"));
+        assert!(
+            wrong(&b).is_none_or(|w| w == 0),
+            "no mistake on 〜が好きです"
+        );
+        assert!(b.store.item("コーヒーが好きです").unwrap().is_none());
+        assert_eq!(r.new_items, b.store.items().unwrap().len());
+    }
 }

@@ -255,8 +255,10 @@ Kirigami.ScrollablePage {
                                 size: KanteButton.Size.Small
                                 emphasis: KanteButton.Emphasis.Quiet
                                 text: modelData.disputed ? page.t("Widersprochen", "Disputed") : page.t("Widersprechen", "Dispute")
-                                enabled: !modelData.disputed && !conv.finished
-                                Accessible.description: page.t("Der Satz war richtig: Kaiwa merkt sich den Widerspruch und zählt es nicht als Fehler.", "The sentence was right: Kaiwa keeps the dispute and does not count it as a mistake.")
+                                enabled: !modelData.disputed
+                                Accessible.description: conv.finished
+                                    ? page.t("Der Satz war richtig: Kaiwa korrigiert das gespeicherte Gespräch und zählt es nicht als Fehler.", "The sentence was right: Kaiwa corrects the saved talk and does not count it as a mistake.")
+                                    : page.t("Der Satz war richtig: Kaiwa merkt sich den Widerspruch und zählt es nicht als Fehler.", "The sentence was right: Kaiwa keeps the dispute and does not count it as a mistake.")
                                 onClicked: conv.dispute(msg.index, modelData.better)
                             }
                         }
@@ -286,11 +288,13 @@ Kirigami.ScrollablePage {
                 }
                 // /LF113/: what Kaiwa heard; a misrecognition is no learning mistake.
                 KanteButton {
-                    visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized && !msg.modelData.failed && !conv.finished
+                    visible: msg.modelData.who === "learner" && !msg.modelData.typed && !msg.modelData.pending && !msg.modelData.misrecognized && !msg.modelData.failed
                     size: KanteButton.Size.Small
                     emphasis: KanteButton.Emphasis.Quiet
                     text: page.t("Falsch erkannt", "Misheard")
-                    Accessible.description: page.t("So habe ich das nicht gesagt: Die Korrekturen zu diesem Zug zählen nicht.", "That is not what I said: the corrections of this turn do not count.")
+                    Accessible.description: conv.finished
+                        ? page.t("So habe ich das nicht gesagt: Kaiwa korrigiert das gespeicherte Gespräch, die Korrekturen zu diesem Zug zählen nicht.", "That is not what I said: Kaiwa corrects the saved talk, the corrections of this turn do not count.")
+                        : page.t("So habe ich das nicht gesagt: Die Korrekturen zu diesem Zug zählen nicht.", "That is not what I said: the corrections of this turn do not count.")
                     onClicked: conv.markMisrecognized(msg.index)
                 }
                 Text {
@@ -440,6 +444,14 @@ Kirigami.ScrollablePage {
             Layout.fillWidth: true
             spacing: KanteStyle.unit(10)
             KanteHeading { text: page.t("Bilanz", "Summary"); level: 2 }
+            // V-05: the marks of the talk above stay possible and correct the saved talk.
+            Text {
+                Layout.fillWidth: true
+                text: page.t("„Falsch erkannt“ und „Widersprechen“ oben korrigieren das gespeicherte Gespräch.", "“Misheard” and “Dispute” above correct the saved talk.")
+                color: KanteStyle.mutedTextColor
+                font: KanteStyle.smallFont
+                wrapMode: Text.Wrap
+            }
             RowLayout {
                 spacing: KanteStyle.unit(28)
                 KanteKpi { label: page.t("Ziele", "Goals"); value: page.summary ? page.summary.goalsMet + " / " + page.summary.goalsTotal : "" }

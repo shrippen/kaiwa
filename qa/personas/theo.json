@@ -216,7 +216,7 @@
           "requirements": [
             "/LF307/"
           ],
-          "assert": "Der Widerspruch wird gespeichert (/LD060/) und der Vorschlag als 'umstritten' markiert, nicht still gelöscht."
+          "assert": "Der Widerspruch wird gespeichert (/LD060/) und der Vorschlag als 'umstritten' markiert, nicht still gelöscht. Auch in der Bilanz nach dem Ende (V-05) nimmt der Widerspruch Fehler und Wiederholungskarte des Zugs zurück."
         },
         {
           "id": "theo_keyboard",

@@ -690,7 +690,55 @@ fn dispute(root: &Path) -> Result<Option<String>> {
     if t.corrections.is_empty() || t.disputed.is_empty() {
         return Ok(Some("deleted instead of marked".into()));
     }
-    Ok((!s.stats().mistakes.is_empty()).then(|| "still counted as a mistake".into()))
+    if !s.stats().mistakes.is_empty() {
+        return Ok(Some("still counted as a mistake".into()));
+    }
+    marked_after_the_end(root, Mark::Dispute)
+}
+
+/// How the last turn is marked on the summary.
+#[derive(Clone, Copy)]
+enum Mark {
+    Misrecognized,
+    Dispute,
+}
+
+/// V-05, /LF113/, /LF307/: the talk ends on a turn with a mistake and is recorded; marking
+/// that turn on the summary takes its mistake out of the learner model and the review.
+fn marked_after_the_end(root: &Path, how: Mark) -> Result<Option<String>> {
+    let b = kaiwa_backend::TempBackend::new("marked-after-the-end", false)?;
+    let mut s = session(root, "n5-02-jikoshoukai")?;
+    let begun = kaiwa_backend::now();
+    let id = b.store.begin_session(&s.snapshot(), begun)?;
+    for (text, input) in [
+        ("マラです。よろしくおねがいします。", Input::Spoken),
+        ("ドイツのハンブルクから来ました。", Input::Spoken),
+        ("仕事はプロデューサーです。", Input::Typed),
+        ("コーヒーを好きです。", Input::Spoken),
+    ] {
+        s.turn(text, input)?;
+    }
+    let end = begun.plus_secs(300);
+    b.store.record(id, &s, begun, end, Some(&b.curriculum))?;
+    b.track_grammar(&s, end)?;
+    if !b.store.learning()?.model.errors.contains_key("particle") {
+        return Ok(Some("the mistake was never recorded".into()));
+    }
+
+    let marked = match how {
+        Mark::Misrecognized => s.mark_misrecognized(3),
+        Mark::Dispute => s.dispute(3, "コーヒーが好きです").is_some(),
+    };
+    if !marked {
+        return Ok(Some("the mark after the end is refused".into()));
+    }
+    b.correct_talk(id, &s)?;
+    if b.store.learning()?.model.errors.contains_key("particle") {
+        return Ok(Some("the mistake stays in the learner model".into()));
+    }
+    Ok(b.store
+        .item("コーヒーが好きです")?
+        .map(|_| "the review item stays".into()))
 }
 
 /// /LF113/: a turn marked as misrecognised adds no mistake to the learner model.
@@ -702,11 +750,10 @@ fn misrecognition(root: &Path) -> Result<Option<String>> {
     if !e.mistakes.is_empty() {
         return Ok(Some(format!("mistakes {:?}", e.mistakes)));
     }
-    Ok(s.summary()
-        .review
-        .iter()
-        .any(|r| r.contains("が好き"))
-        .then(|| "the correction still goes into the review".into()))
+    if s.summary().review.iter().any(|r| r.contains("が好き")) {
+        return Ok(Some("the correction still goes into the review".into()));
+    }
+    marked_after_the_end(root, Mark::Misrecognized)
 }
 
 /// /LF215/, T-08: the offer on the path is about the unit Emi is in, taking it skips that one

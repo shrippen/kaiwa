@@ -112,7 +112,7 @@
       "surface": "android",
       "steps": ["Kurzsitzung 'Telefonat annehmen' mit Bluetooth-Ohrhörern, SNR 8–12 dB", "Ein falsch erkannter Zug wird als 'falsch erkannt' markiert"],
       "checks": [
-        { "id": "emi_misrecognition", "requirements": ["/LF113/", "/LL100/"], "assert": "Markierte Erkennungsfehler fließen nicht ins Lernermodell; bei niedriger Konfidenz fragt die App nach, statt zu korrigieren." }
+        { "id": "emi_misrecognition", "requirements": ["/LF113/", "/LL100/"], "assert": "Markierte Erkennungsfehler fließen nicht ins Lernermodell, auch nicht, wenn der letzte Zug erst in der Bilanz markiert wird (V-05: Fehler und Wiederholungskarte verschwinden); bei niedriger Konfidenz fragt die App nach, statt zu korrigieren." }
       ]
     }
   ],
