@@ -141,7 +141,7 @@ use cxx_qt::Threading;
 use cxx_qt_lib::QString;
 use kaiwa_core::learner::Skill;
 use kaiwa_core::progress::DailyGoal;
-use kaiwa_store::{Script, Store};
+use kaiwa_store::Script;
 use serde_json::json;
 
 use crate::state::views;
@@ -518,33 +518,7 @@ impl qobject::KaiwaApp {
 
     fn delete_profile(mut self: Pin<&mut Self>) {
         self.as_mut().set_answer(QString::default());
-        let result = {
-            let mut st = state();
-            let path = st.path.clone();
-            // The emptied profile keeps the language the page is in.
-            let lang = st.store.profile().map(|p| p.ui_lang).ok();
-            if let Err(e) = st.delete_recordings() {
-                eprintln!("kaiwa: {e:#}");
-            }
-            match Store::in_memory() {
-                Ok(mem) => {
-                    // Close the file before removing it.
-                    st.store = mem;
-                    kaiwa_store::delete_profile(&path)
-                        .map_err(anyhow::Error::from)
-                        .and_then(|_| {
-                            st.store = Store::open(&path)?;
-                            if let Some(lang) = lang {
-                                let mut p = st.store.profile()?;
-                                p.ui_lang = lang;
-                                st.store.set_profile(&p)?;
-                            }
-                            Ok(())
-                        })
-                }
-                Err(e) => Err(e.into()),
-            }
-        };
+        let result = state().wipe();
         let de = self.lang().to_string() == "de";
         self.as_mut().set_notice(QString::from(match (result, de) {
             (Ok(()), true) => "Alle Daten dieses Profils sind gelöscht.".to_string(),
