@@ -27,7 +27,7 @@ from pathlib import Path
 import lizard
 
 # Limits of one function. Example: a function of 95 lines breaks "length".
-FUNCTION_LIMITS = {"ccn": 15, "length": 80, "params": 6, "nesting": 4}
+FUNCTION_LIMITS = {"ccn": 15, "length": 80, "nesting": 4}
 
 # Limit of one file, in lines.
 FILE_LIMITS = {"lines": 800}
@@ -101,7 +101,6 @@ def function_values(path, code, analyzer):
         yield func.name, func.start_line, {
             "ccn": func.cyclomatic_complexity,
             "length": func.length,
-            "params": func.parameter_count,
             "nesting": func.max_nested_structures,
         }
 

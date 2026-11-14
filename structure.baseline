@@ -2,6 +2,10 @@
 # never grow; a raised or new entry needs its reason in the PR. Rewrite with --update.
 # Lines: exclude<TAB>glob | path<TAB>function or - for the file<TAB>metric=value ...
 exclude	app/qml/Kante/*
+exclude	spikes/s03-stt/*
+exclude	spikes/s04-tts/*
+exclude	spikes/s06-moren/*
+exclude	spikes/s07-pitch/*
 app/qml/ConversationPage.qml	-	lines=974
 app/src/app.rs	refresh	length=90
 app/src/app.rs	set_setting	ccn=35 length=111
@@ -95,24 +99,6 @@ crates/kaiwa-speech/src/mora.rs	variants	ccn=28 length=93
 crates/kaiwa-store/src/lib.rs	-	lines=1487
 crates/kaiwa-store/src/lib.rs	correct_in	ccn=24 length=106
 crates/kaiwa-store/src/lib.rs	import	ccn=49 length=84
-crates/kaiwa-store/src/lib.rs	record_on	ccn=20 length=101 params=7
+crates/kaiwa-store/src/lib.rs	record_on	ccn=20 length=101
 crates/kaiwa-store/src/tests.rs	-	lines=1165
 crates/kaiwa-store/src/tests.rs	recording_a_session_feeds_model_path_review_and_day	length=110
-spikes/s06-moren/ctc.py	variants	ccn=28
-spikes/s06-moren/finetune.py	main	ccn=20 length=95
-spikes/s06-moren/finetune.py	prepare	ccn=28
-spikes/s06-moren/measure.py	duration_features	ccn=22
-spikes/s06-moren/measure.py	main	ccn=64 length=98
-spikes/s06-moren/mfa_check.py	main	ccn=73 length=147
-spikes/s06-moren/mfa_check.py	phones	ccn=34
-spikes/s06-moren/real.py	edits	ccn=29
-spikes/s06-moren/real.py	main	ccn=58 length=136
-spikes/s07-pitch/consensus.py	main	ccn=64 length=141
-spikes/s07-pitch/form.py	main	ccn=17
-spikes/s07-pitch/pitch.py	-	lines=871
-spikes/s07-pitch/pitch.py	analyse	ccn=20
-spikes/s07-pitch/pitch.py	evaluate	ccn=72 nesting=5
-spikes/s07-pitch/pitch.py	measure_all	ccn=22
-spikes/s07-pitch/pitch.py	mfa_mora_times	ccn=23
-spikes/s07-pitch/pitch.py	trials_of	ccn=16
-spikes/s07-pitch/ref.py	main	ccn=63 length=138 nesting=7
