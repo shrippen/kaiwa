@@ -1,0 +1,104 @@
+# What is over a structure limit today (tools/structure-check.py). An entry may shrink,
+# never grow; a raised or new entry needs its reason in the PR. Rewrite with --update.
+# Lines: exclude<TAB>glob | path<TAB>function or - for the file<TAB>metric=value ...
+exclude	app/qml/Kante/*
+exclude	spikes/s03-stt/*
+exclude	spikes/s04-tts/*
+exclude	spikes/s06-moren/*
+exclude	spikes/s07-pitch/*
+app/qml/ConversationPage.qml	-	lines=974
+app/src/app.rs	refresh	length=90
+app/src/app.rs	set_setting	ccn=35 length=111
+app/src/conversation.rs	-	lines=1929
+app/src/conversation.rs	begin	length=111
+app/src/conversation.rs	listen	ccn=24 length=99
+app/src/conversation.rs	speak_at	ccn=18
+app/src/conversation.rs	start	length=127
+app/src/conversation.rs	submit	ccn=21 length=110
+crates/kaiwa-ai/src/privacy.rs	flows	length=84
+crates/kaiwa-backend/src/demo.rs	seed	ccn=29 length=200
+crates/kaiwa-backend/src/reminder.rs	reminder	ccn=21
+crates/kaiwa-backend/src/views.rs	-	lines=1520
+crates/kaiwa-backend/src/views.rs	key_view	ccn=17
+crates/kaiwa-backend/src/views.rs	kind_word	ccn=16
+crates/kaiwa-backend/src/views.rs	path	ccn=17
+crates/kaiwa-backend/src/views.rs	stats	length=92
+crates/kaiwa-backend/src/views.rs	tutor_view	ccn=24 nesting=6
+crates/kaiwa-backend/src/views.rs	week	ccn=19 length=82
+crates/kaiwa-core/src/curriculum.rs	-	lines=854
+crates/kaiwa-core/src/difficulty.rs	target	ccn=24
+crates/kaiwa-core/src/difficulty.rs	word	ccn=16
+crates/kaiwa-core/src/difficulty.rs	words	ccn=32
+crates/kaiwa-core/src/feedback.rs	kind_word	ccn=19
+crates/kaiwa-core/src/learner.rs	describe_level	ccn=36 nesting=6
+crates/kaiwa-core/src/progress.rs	streak	nesting=5
+crates/kaiwa-core/src/romaji.rs	word_to_kana	ccn=18
+crates/kaiwa-core/src/session.rs	-	lines=1326
+crates/kaiwa-core/src/session.rs	take	length=90
+crates/kaiwa-lang/examples/excerpt.rs	main	ccn=34 length=102
+crates/kaiwa-lang/examples/levels.rs	main	ccn=38 length=136
+crates/kaiwa-lang/examples/lookup_corpus.rs	main	ccn=16
+crates/kaiwa-lang/examples/unknown.rs	main	ccn=20 nesting=7
+crates/kaiwa-lang/src/dict.rs	lookup_form	ccn=16
+crates/kaiwa-lang/src/dict.rs	lookup_with	ccn=42 length=132
+crates/kaiwa-lang/src/dict.rs	lookup_word	ccn=20
+crates/kaiwa-lang/src/lib.rs	annotate	length=82
+crates/kaiwa-lang/src/lib.rs	with_unidic	ccn=26
+crates/kaiwa-lang/src/pos.rs	label	ccn=30
+crates/kaiwa-lang/src/unidic.rs	build	ccn=17
+crates/kaiwa-lang/src/unidic.rs	reading	ccn=18
+crates/kaiwa-lang/src/words.rs	joins	ccn=16
+crates/kaiwa-lang/src/words.rs	words	ccn=21 length=83
+crates/kaiwa-lang/tests/levels.rs	help_sentences_stay_at_their_units_level	ccn=19 length=96 nesting=7
+crates/kaiwa-lang/tests/lookup.rs	content_words_are_in_the_dictionary	nesting=5
+crates/kaiwa-sim/src/days.rs	-	lines=1167
+crates/kaiwa-sim/src/days.rs	check	ccn=66 length=213
+crates/kaiwa-sim/src/days.rs	progress_views	ccn=54 length=210
+crates/kaiwa-sim/src/days.rs	simulate	ccn=55 length=407 nesting=5
+crates/kaiwa-sim/src/engine.rs	-	lines=982
+crates/kaiwa-sim/src/engine.rs	analysis_gaps	ccn=40 length=103
+crates/kaiwa-sim/src/engine.rs	check	ccn=24
+crates/kaiwa-sim/src/engine.rs	cost_limit	ccn=45 length=100
+crates/kaiwa-sim/src/engine.rs	free_talk	ccn=37 length=112
+crates/kaiwa-sim/src/engine.rs	marked_after_the_end	ccn=16
+crates/kaiwa-sim/src/engine.rs	skip	ccn=20
+crates/kaiwa-sim/src/engine.rs	skip_once	ccn=28
+crates/kaiwa-sim/src/hands_free.rs	hands_free	ccn=25 length=110
+crates/kaiwa-sim/src/main.rs	main	ccn=22 length=108
+crates/kaiwa-sim/src/main.rs	run_all	ccn=18
+crates/kaiwa-sim/src/profile.rs	fast	ccn=16
+crates/kaiwa-sim/src/profile.rs	local_switch	ccn=30
+crates/kaiwa-sim/src/profile.rs	own_profile	ccn=79 length=201
+crates/kaiwa-sim/src/profile.rs	sick_pause	ccn=22
+crates/kaiwa-sim/src/profile.rs	srs_keigo	ccn=17
+crates/kaiwa-sim/src/review.rs	sheet	ccn=43 length=126
+crates/kaiwa-sim/src/run.rs	-	lines=1170
+crates/kaiwa-sim/src/run.rs	check	ccn=56 length=216
+crates/kaiwa-sim/src/run.rs	live_check	ccn=29 length=133
+crates/kaiwa-sim/src/run.rs	play_with	length=89
+crates/kaiwa-sim/src/run.rs	run_persona_with	ccn=25 length=100
+crates/kaiwa-sim/src/trace.rs	table	ccn=23 length=115 nesting=5
+crates/kaiwa-sim/src/ui.rs	-	lines=849
+crates/kaiwa-sim/src/ui.rs	gamification_off	ccn=26
+crates/kaiwa-sim/src/ui.rs	keyboard	ccn=16
+crates/kaiwa-sim/src/ui.rs	plain_words	ccn=19
+crates/kaiwa-sim/src/ui.rs	push_to_talk	ccn=18
+crates/kaiwa-sim/src/ui.rs	qml_texts_all	ccn=33
+crates/kaiwa-sim/src/ui.rs	word_lookup	ccn=28 length=104
+crates/kaiwa-sim/src/validate.rs	validate	ccn=22 length=91 nesting=5
+crates/kaiwa-speech/examples/mora_hints.rs	main	length=87
+crates/kaiwa-speech/src/download.rs	-	lines=836
+crates/kaiwa-speech/src/download.rs	unpack	ccn=18
+crates/kaiwa-speech/src/g2p/mod.rs	kana	ccn=18
+crates/kaiwa-speech/src/g2p/mod.rs	normalize	ccn=18
+crates/kaiwa-speech/src/g2p/mod.rs	words	ccn=17
+crates/kaiwa-speech/src/g2p/numbers.rs	below_10000	ccn=20
+crates/kaiwa-speech/src/mora.rs	-	lines=875
+crates/kaiwa-speech/src/mora.rs	from_dir	ccn=17
+crates/kaiwa-speech/src/mora.rs	variants	ccn=28 length=93
+crates/kaiwa-store/src/lib.rs	-	lines=1487
+crates/kaiwa-store/src/lib.rs	correct_in	ccn=24 length=106
+crates/kaiwa-store/src/lib.rs	import	ccn=49 length=84
+crates/kaiwa-store/src/lib.rs	record_on	ccn=20 length=101
+crates/kaiwa-store/src/tests.rs	-	lines=1165
+crates/kaiwa-store/src/tests.rs	recording_a_session_feeds_model_path_review_and_day	length=110

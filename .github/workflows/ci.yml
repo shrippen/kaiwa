@@ -1,4 +1,4 @@
-# CI: format, lint, tests, persona validation, the Qt side.
+# CI: structure limits, format, lint, tests, persona validation, the Qt side.
 #
 # Public mirror: Gitea pushes every branch and tag here on each commit. This runs the checks and
 # reports them back to the commit on Gitea as the status "github / test", where the pull
@@ -45,6 +45,8 @@ jobs:
         env:
           GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
       - uses: actions/checkout@v4
+      - name: Structure limits
+        run: pipx run tools/structure-check.py
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
