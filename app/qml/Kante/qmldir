@@ -22,6 +22,7 @@ KanteChip 1.0 KanteChip.qml
 KanteClock 1.0 KanteClock.qml
 KanteComboBox 1.0 KanteComboBox.qml
 KanteCommandBox 1.0 KanteCommandBox.qml
+KanteCommandPalette 1.0 KanteCommandPalette.qml
 KanteCounter 1.0 KanteCounter.qml
 KanteCurveEditor 1.0 KanteCurveEditor.qml
 KanteDateField 1.0 KanteDateField.qml
@@ -33,6 +34,7 @@ KanteDropZone 1.0 KanteDropZone.qml
 KanteEmptyState 1.0 KanteEmptyState.qml
 KanteFieldSkin 1.0 KanteFieldSkin.qml
 KanteFileDrop 1.0 KanteFileDrop.qml
+KanteFloatingPanel 1.0 KanteFloatingPanel.qml
 KanteFocusFollow 1.0 KanteFocusFollow.qml
 KanteFocusTrap 1.0 KanteFocusTrap.qml
 KanteFretboard 1.0 KanteFretboard.qml
@@ -92,6 +94,7 @@ KanteSegmented 1.0 KanteSegmented.qml
 KanteSettingGroup 1.0 KanteSettingGroup.qml
 KanteSettingRow 1.0 KanteSettingRow.qml
 KanteSettle 1.0 KanteSettle.qml
+KanteShapeCanvas 1.0 KanteShapeCanvas.qml
 KanteSheetSkin 1.0 KanteSheetSkin.qml
 KanteSkeleton 1.0 KanteSkeleton.qml
 KanteSliderSkin 1.0 KanteSliderSkin.qml
@@ -120,6 +123,7 @@ KanteTimeField 1.0 KanteTimeField.qml
 KanteTimingHistogram 1.0 KanteTimingHistogram.qml
 KanteToast 1.0 KanteToast.qml
 KanteToolButton 1.0 KanteToolButton.qml
+KanteTrackTimeline 1.0 KanteTrackTimeline.qml
 KanteTransportBar 1.0 KanteTransportBar.qml
 KanteTube 1.0 KanteTube.qml
 KanteTunerGauge 1.0 KanteTunerGauge.qml

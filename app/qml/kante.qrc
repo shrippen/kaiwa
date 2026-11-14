@@ -21,6 +21,7 @@
   <file>Kante/KanteClock.qml</file>
   <file>Kante/KanteComboBox.qml</file>
   <file>Kante/KanteCommandBox.qml</file>
+  <file>Kante/KanteCommandPalette.qml</file>
   <file>Kante/KanteCounter.qml</file>
   <file>Kante/KanteCurveEditor.qml</file>
   <file>Kante/KanteDateField.qml</file>
@@ -32,6 +33,7 @@
   <file>Kante/KanteEmptyState.qml</file>
   <file>Kante/KanteFieldSkin.qml</file>
   <file>Kante/KanteFileDrop.qml</file>
+  <file>Kante/KanteFloatingPanel.qml</file>
   <file>Kante/KanteFocusFollow.qml</file>
   <file>Kante/KanteFocusTrap.qml</file>
   <file>Kante/KanteFretboard.qml</file>
@@ -92,6 +94,7 @@
   <file>Kante/KanteSettingGroup.qml</file>
   <file>Kante/KanteSettingRow.qml</file>
   <file>Kante/KanteSettle.qml</file>
+  <file>Kante/KanteShapeCanvas.qml</file>
   <file>Kante/KanteSheetSkin.qml</file>
   <file>Kante/KanteSkeleton.qml</file>
   <file>Kante/KanteSliderSkin.qml</file>
@@ -121,6 +124,7 @@
   <file>Kante/KanteTimingHistogram.qml</file>
   <file>Kante/KanteToast.qml</file>
   <file>Kante/KanteToolButton.qml</file>
+  <file>Kante/KanteTrackTimeline.qml</file>
   <file>Kante/KanteTransportBar.qml</file>
   <file>Kante/KanteTube.qml</file>
   <file>Kante/KanteTunerGauge.qml</file>
