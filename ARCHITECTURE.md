@@ -22,7 +22,7 @@ Qt app today and, from M4, the service `kaiwad` with the Plasma widget.
 | `crates/kaiwa-backend` | The one interface a front end uses (ADR-008): the commands (start a talk, take a turn, finish, change a setting, listen, speak) and the content of every view as JSON. |
 | `app/src` | The Qt objects of the app: they pass what the learner does to the backend and show what it answers. |
 | `app/qml` | The pages. `Kante/` is the vendored Kante copy (`tools/sync-kante.sh`), never edited here. |
-| `kaiwad`, plasmoid | From M4 (branch `later/plasmoid`): the D-Bus service that hosts the backend under Plasma, and the widget as its thin client. |
+| `crates/kaiwad`, `plasmoid/` | From M4 (branch `later/plasmoid`): the D-Bus service that hosts the backend under Plasma, and the widget as its thin client. |
 | `crates/kaiwa-sim` | The QA driver: plays the personas in `qa/personas` against the same code the app uses. |
 | `data/` | Content without code: curriculum, scenarios, grammar, dictionary excerpt. |
 | `qa/` | Personas, recorded tutor answers, the speech corpus. |
@@ -94,7 +94,8 @@ A change that needs more places than its row lists is a finding for the next aud
   finding 7.
 - The app drives microphone and voice itself: `app/src` uses `kaiwa-speech` directly
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
-  command yet. Not in `AUDIT.md` so far.
+  command yet. Not in `AUDIT.md` so far; finding 6 proposes to leave microphone and
+  voice in the app, this file replaces that part.
 - The conversation flow exists twice, in `app/src/conversation.rs` and in the backend's
   short talk, and the two differ. Finding 6.
 - What a finished talk changes is written twice in the store and a third time in
@@ -104,4 +105,6 @@ A change that needs more places than its row lists is a finding for the next aud
 - A failed save in a conversation is only logged. Finding 5.
 - Some persona checks search for text in source files. Finding 8.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
-  then the app is the only front end and runs the backend in its own process.
+  then the app is the only front end and runs the backend in its own process. On that
+  branch `kaiwad` drives microphone and recognition itself; M4 moves that into the
+  backend.
