@@ -10,7 +10,7 @@
 ./start.sh                # App mit dem eigenen Profil
 ./start.sh demo [de|en]   # App mit frischem Demo-Profil (temporär)
 ./start.sh sim            # QA-Personas im Textmodus (kaiwa-sim run)
-./start.sh check          # fmt, clippy, Tests, Personas wie in der CI
+./start.sh check          # Strukturgrenzen, fmt, clippy, Tests, Personas wie in der CI
 ```
 
 Voraussetzungen und Sprachmodell: [app/README.md](app/README.md).

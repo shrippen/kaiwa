@@ -6,7 +6,8 @@
 #   ./start.sh demo [de|en]    the app built with the demo: a fresh demo profile (temporary, two
 #                              weeks of history), recorded tutor answers, the screenshot switches
 #   ./start.sh sim [args…]     kaiwa-sim, default `run` (the persona journeys in text mode)
-#   ./start.sh check           what CI runs on the Rust side: fmt, clippy, tests, personas
+#   ./start.sh check           what CI runs on the Rust side: structure limits, fmt, clippy, tests,
+#                              personas (needs pipx)
 #
 # The tutor is set up in the settings (Tutor); KAIWA_PROVIDER (a preset id: ollama,
 # openrouter, …, see app/README.md) with KAIWA_MODEL and the key variable overrides it. Recorded answers (qa/fixtures) only in the demo build.
@@ -33,6 +34,7 @@ case "$mode" in
     exec cargo run -q -p kaiwa-sim -- "$@"
     ;;
   check)
+    pipx run tools/structure-check.py
     cargo fmt --all --check
     cargo clippy --all-targets -- -D warnings
     cargo test
@@ -40,7 +42,7 @@ case "$mode" in
     cargo run -q -p kaiwa-sim -- run
     ;;
   -h|--help|help)
-    sed -n '2,12s/^# \{0,1\}//p' "$0"
+    sed -n '2,13s/^# \{0,1\}//p' "$0"
     ;;
   *)
     echo "Unknown mode: $mode (app, demo, sim, check, help)" >&2
