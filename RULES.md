@@ -32,6 +32,12 @@ is in `agent.md`.
 
 - Always use {}, even on a one-line "if" statement.
 
+- Before writing, search the repository for a function or pattern that already does the job, and use it. Do not build what exists.
+
+- Build the simplest thing that solves the task. No abstraction, option or error handling for a case that does not exist.
+
+- Keep the structure limits that `tools/structure-check.py` checks in CI: a function has at most 80 lines, complexity 15, 6 parameters and nesting 4; a file has at most 800 lines. Over a limit, split the code. A new or raised entry in `structure.baseline` needs its reason in the PR.
+
 ## Commit messages
 
 When you write a commit message, follow these 7 rules:
@@ -61,6 +67,7 @@ Rule 7: Use the body to explain what and why vs. how. Assume the code explains t
 - Never merge a PR, push to `main` (or any default branch), push tags or publish releases on GitHub. A merge there is overwritten by the next Gitea push.
 - Never force-push a branch that someone else's PR depends on.
 - Every PR is reviewed before it is merged (all shrippen repositories, owner 18.10. and 22.10.2026). The owner does not read code, so the review is the second reader. Findings are labelled **Wichtig**, **Kleinigkeit** or **Bestand**; each **Wichtig** is fixed, or answered in the PR with a reason. Merge only when the last round covers the PR's latest commit, leaves no **Wichtig** open and CI is green.
+- The review also reads for structure, in every repository and whatever `REVIEW.md` skips. A finding is **Wichtig** when the change duplicates code the repository already has instead of using it; gives a function, type or file a second task; adds an abstraction, option or compatibility path that nothing uses, or leaves dead code; goes around the layers or module boundaries (`ARCHITECTURE.md`, where there is one); or adds or raises an entry in `structure.baseline` without a reason in the PR. The same in code the PR does not touch is **Bestand**.
 - `REVIEW.md` in the repository root says what failure looks like here, what to check in particular, what to skip and how to report. A repository without one gets it in its next PR.
 - Before the merge, the owner confirms in words, not by reading code, a PR that changes CI or release workflows (`.gitea/`, `.github/`), the rules (`agent.md`, `RULES.md`, `REVIEW.md`), secrets or what is published (a release, a tag, a new public page, site or package; rebuilding what is already published does not count), and whatever `agent.md` names in addition.
 - `agent.md` holds what is particular to this repository: its CI check, what the merge waits for, further paths the owner confirms, project knowledge. The procedure of a review (rounds, who reviews, how to post) is the skill `pr-review` in the rules repository (`shrippen/regeln`).
