@@ -1,2 +1,12 @@
 # Voice recordings for the speech corpus live in Git LFS (decision G-03).
 qa/corpus/audio/** filter=lfs diff=lfs merge=lfs -text
+# Rule files and tooling for agents, not part of source archives (git archive).
+/CLAUDE.md export-ignore
+/agent.md export-ignore
+/RULES.md export-ignore
+/REVIEW.md export-ignore
+/RELEASE.md export-ignore
+/ARCHITECTURE.md export-ignore
+/AUDIT.md export-ignore
+/structure.baseline export-ignore
+/tools/structure-check.py export-ignore
