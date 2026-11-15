@@ -175,7 +175,7 @@ Item {
         const perPx = Math.max((xs.hi - xs.lo) / w, (ys.hi - ys.lo) / h)
         const xc = (xs.lo + xs.hi) / 2
         const yc = (ys.lo + ys.hi) / 2
-        const step = Math.max(niceStep(perPx * w / tx), niceStep(perPx * h / ty))
+        const step = Math.max(KanteStyle.niceStep(perPx * w / tx), KanteStyle.niceStep(perPx * h / ty))
         return {
             x0: xc - perPx * w / 2, x1: xc + perPx * w / 2,
             y0: yc - perPx * h / 2, y1: yc + perPx * h / 2,
@@ -207,13 +207,13 @@ Item {
         // Integers from low to high; fewer than `levels` of them: one level each.
         const count = whole ? Math.max(1, Math.min(levels, high - low + 1)) : levels
         const wholeStep = st => whole ? Math.max(1, Math.ceil(st)) : st
-        let step = wholeStep(niceStep(whole ? (high - low + 1) / count : (high - low) / levels))
+        let step = wholeStep(KanteStyle.niceStep(whole ? (high - low + 1) / count : (high - low) / levels))
         const startOf = st => exactLevelStart ? low : Math.floor(low / st) * st
         let start = startOf(step)
         // Whole numbers: the highest value is itself in the top level, so its bound lies above.
         const short = () => whole ? start + count * step <= high : start + count * step < high
         while (short()) {
-            step = wholeStep(niceStep(step * 1.01))
+            step = wholeStep(KanteStyle.niceStep(step * 1.01))
             start = startOf(step)
         }
         // An open top level starts at or below the highest value: it is never an empty "≥ n".
@@ -278,15 +278,6 @@ Item {
         }
         return title === "" ? u : title + " (" + u + ")"
     }
-    /** 1-2-2.5-5 step at least `raw`. */
-    function niceStep(raw) {
-        if (!(raw > 0)) {
-            return 1
-        }
-        const p10 = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10))
-        const f = raw / p10
-        return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p10
-    }
     /** 1-2-2.5-5 step at most `raw`. */
     function niceStepBelow(raw) {
         const p10 = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10))
@@ -308,7 +299,7 @@ Item {
                 hi += 0.5
             }
         }
-        const step = niceStep((hi - lo) / ticks)
+        const step = KanteStyle.niceStep((hi - lo) / ticks)
         return {
             lo: fixedLo ? lo : Math.floor(lo / step + 1e-9) * step,
             hi: fixedHi ? hi : Math.ceil(hi / step - 1e-9) * step,

@@ -68,6 +68,7 @@
   <file>Kante/KanteMessage.qml</file>
   <file>Kante/KanteMessageSkin.qml</file>
   <file>Kante/KanteNoteMark.qml</file>
+  <file>Kante/KanteNoteState.qml</file>
   <file>Kante/KanteOdometer.qml</file>
   <file>Kante/KanteOptionTile.qml</file>
   <file>Kante/KantePageBar.qml</file>
@@ -102,6 +103,7 @@
   <file>Kante/KanteSparkline.qml</file>
   <file>Kante/KanteSpinBox.qml</file>
   <file>Kante/KanteSplitHandle.qml</file>
+  <file>Kante/KanteStaffFrame.qml</file>
   <file>Kante/KanteStatusLight.qml</file>
   <file>Kante/KanteSteps.qml</file>
   <file>Kante/KanteSticker.qml</file>

@@ -66,11 +66,32 @@ Item {
     property string accessibleName: "Notenspur"
     property int marks: KanteKeyLane.Marks.Full
     property bool showCents: true
-    readonly property int stateRevision: revision
-    property int revision: 0
-    property var changedStates: ({})
-    property var changedCents: ({})
-    property var stateCounts: ({})
+    readonly property int stateRevision: noteState.revision
+
+    // The states of the notes, apart from `notes` (see KanteNoteState).
+    KanteNoteState {
+        id: noteState
+        onStateSet: function (index, state, cents) {
+            const it = noteRepeater.itemAt(index)
+            if (!it) {
+                return
+            }
+            it.override = state
+            if (!isNaN(cents)) {
+                it.overrideCents = cents
+            }
+        }
+        onReset: {
+            for (let i = 0; i < noteRepeater.count; i++) {
+                const it = noteRepeater.itemAt(i)
+                if (it) {
+                    it.override = ""
+                    it.overrideCents = NaN
+                }
+            }
+        }
+    }
+    onNotesChanged: noteState.notes = notes
 
     /** The key geometry (KanteKeyLayout), e.g. to align own items with the keys. */
     readonly property KanteKeyLayout keyLayout: KanteKeyLayout {
@@ -82,57 +103,18 @@ Item {
 
     /** Sets the state of one note without reassigning `notes` (as KanteTabLane). */
     function setNoteState(index, state, cents) {
-        if (!notes || index < 0 || index >= notes.length) {
-            return
-        }
-        var old = stateOf(index)
-        stateCounts[old] = (stateCounts[old] || 1) - 1
-        stateCounts[String(state)] = (stateCounts[String(state)] || 0) + 1
-        changedStates[index] = String(state)
-        if (cents !== undefined) {
-            changedCents[index] = Number(cents)
-        }
-        var it = noteRepeater.itemAt(index)
-        if (it) {
-            it.override = String(state)
-            if (cents !== undefined) {
-                it.overrideCents = Number(cents)
-            }
-        }
-        revision++
+        noteState.setNoteState(index, state, cents)
     }
     /** Back to the states in `notes`. */
     function resetStates() {
-        changedStates = {}
-        changedCents = {}
-        var c = {}
-        for (var k = 0; notes && k < notes.length; k++) {
-            var st = notes[k].state ? String(notes[k].state) : "pending"
-            c[st] = (c[st] || 0) + 1
-        }
-        stateCounts = c
-        for (var i = 0; i < noteRepeater.count; i++) {
-            var it = noteRepeater.itemAt(i)
-            if (it) {
-                it.override = ""
-                it.overrideCents = NaN
-            }
-        }
-        revision++
+        noteState.resetStates()
     }
     function stateOf(i) {
-        var s = changedStates[i]
-        return s !== undefined ? s : (notes[i] && notes[i].state ? String(notes[i].state) : "pending")
+        return noteState.stateOf(i)
     }
     function centsOf(i) {
-        var c = changedCents[i]
-        if (c !== undefined) {
-            return c
-        }
-        var n = notes && notes[i]
-        return n && n.cents !== undefined && n.cents !== null ? Number(n.cents) : NaN
+        return noteState.centsOf(i)
     }
-    onNotesChanged: resetStates()
 
     /** Index of the next note to play (first with time ≥ position), -1 after the last. */
     readonly property int nextIndex: firstAtOrAfter(position)
@@ -182,7 +164,7 @@ Item {
     }
     /** Next note and the count per state, for screen readers. */
     function summary(next, list, revision) {
-        var counts = stateCounts
+        var counts = noteState.stateCounts
         var parts = []
         if (next >= 0) {
             parts.push(KanteStyle.noteStateName("pending") + ": " + nameOf(Number(list[next].midi)))

@@ -81,15 +81,17 @@ FocusScope {
     readonly property int speedPercent: Math.round(speed * 100)
 
     function time(s) {
-        const whole = Math.floor(Math.max(0, s))
-        const minutes = Math.floor(whole / 60)
-        const seconds = String(whole % 60).padStart(2, "0")
         if (timeFormat !== "mm:ss,d") {
-            return minutes + ":" + seconds
+            const whole = Math.floor(Math.max(0, s))
+            return Math.floor(whole / 60) + ":" + String(whole % 60).padStart(2, "0")
         }
-        // Whole tenths, cut off: 59.99 s is 00:59,9, never 01:00,0 early.
-        const tenth = Math.min(9, Math.floor((Math.max(0, s) - whole) * 10))
-        return String(minutes).padStart(2, "0") + ":" + seconds + "," + tenth
+        // Minutes, seconds and tenths all come from one count of whole tenths, cut off:
+        // 59.99 s is 00:59,9, never 01:00,0 early; 0.9999999999999999 s is 00:01,0.
+        // The epsilon keeps 0.7 + 0.1 s at 8 tenths (0.7999999999999999 in floating point).
+        const tenths = KanteStyle.wholeTenths(s)
+        const whole = Math.floor(tenths / KanteStyle.tenthsPerSecond)
+        const seconds = String(whole % 60).padStart(2, "0")
+        return String(Math.floor(whole / 60)).padStart(2, "0") + ":" + seconds + "," + tenths % KanteStyle.tenthsPerSecond
     }
     /** The words of a fixed tempo: "25 %" for 0.25. */
     function speedLabel(step) {

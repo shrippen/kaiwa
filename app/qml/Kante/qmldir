@@ -69,6 +69,7 @@ KanteMenuSection 1.0 KanteMenuSection.qml
 KanteMessage 1.0 KanteMessage.qml
 KanteMessageSkin 1.0 KanteMessageSkin.qml
 KanteNoteMark 1.0 KanteNoteMark.qml
+KanteNoteState 1.0 KanteNoteState.qml
 KanteOdometer 1.0 KanteOdometer.qml
 KanteOptionTile 1.0 KanteOptionTile.qml
 KantePageBar 1.0 KantePageBar.qml
@@ -102,6 +103,7 @@ KanteSongMap 1.0 KanteSongMap.qml
 KanteSparkline 1.0 KanteSparkline.qml
 KanteSpinBox 1.0 KanteSpinBox.qml
 KanteSplitHandle 1.0 KanteSplitHandle.qml
+KanteStaffFrame 1.0 KanteStaffFrame.qml
 KanteStatusLight 1.0 KanteStatusLight.qml
 KanteSteps 1.0 KanteSteps.qml
 KanteSticker 1.0 KanteSticker.qml
