@@ -167,6 +167,21 @@ QtObject {
         }
         return "transparent"
     }
+    /**
+     * Colour of a name in data (a shape or a track label): a role ("muted", "accent",
+     * "focus", "warning", "ground") or a label colour ("blue"); any other name gives the text colour.
+     */
+    function namedColor(name) {
+        switch (name) {
+        case "muted": return mutedTextColor
+        case "accent": return accentColor
+        case "focus": return focusColor
+        case "warning": return warningColor
+        case "ground": return backgroundColor
+        }
+        const c = labelColor(name)
+        return c.a > 0 ? c : textColor
+    }
     // Warnings below "neutral" (e.g. stale dates, dead links); the platform has no own role, so neutral.
     readonly property color warningColor: themed ? palette.warning : Kirigami.Theme.neutralTextColor
     /** Focus ring, brackets, data lines (cyan; the platform's focus color otherwise). */
@@ -401,6 +416,16 @@ QtObject {
     readonly property int chamfer: active ? Math.round(KantePalette.chamfer * Kirigami.Units.gridUnit / 18) : 0
     readonly property int chamferSmall: active ? Math.round(KantePalette.chamferSmall * Kirigami.Units.gridUnit / 18) : 0
 
+    readonly property int tenthsPerSecond: 10
+    readonly property real _tenthEpsilon: 1e-6
+    /**
+     * Seconds as whole tenths, cut off like a timecode (59.99 -> 599). The epsilon keeps
+     * 0.7 + 0.1 s at 8 tenths (0.7999999999999999 in floating point); negative counts as 0.
+     */
+    function wholeTenths(s) {
+        return Math.floor(Math.max(0, s) * tenthsPerSecond + _tenthEpsilon)
+    }
+
     /** A size in px of the web tokens (--h-*, --cut-*), scaled with the grid unit. */
     function unit(px) {
         return Math.round(px * Kirigami.Units.gridUnit / 18)
@@ -489,6 +514,19 @@ QtObject {
     readonly property int durationSlow: animate ? 450 : 0
     /** Overshoot of the snap easing (Easing.OutBack), a small mechanical settle. */
     readonly property real snapOvershoot: 1.5
+
+    /**
+     * Axis step of the charts: 1, 2, 2.5, 5 or 10 times a power of ten, at least `raw`
+     * (0.7 -> 1, 2.2 -> 2.5, 31 -> 50). 1 when `raw` is not above 0.
+     */
+    function niceStep(raw) {
+        if (!(raw > 0)) {
+            return 1
+        }
+        const p10 = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10))
+        const f = raw / p10
+        return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p10
+    }
 
     function relLum(c) {
         function f(v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
