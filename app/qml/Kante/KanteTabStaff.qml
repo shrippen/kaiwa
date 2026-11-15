@@ -109,44 +109,27 @@ Item {
      */
     property int marks: KanteTabStaff.Marks.Full
     /** Counts state changes made with setNoteState / resetStates (and new note lists). */
-    readonly property int stateRevision: revision
-    property int revision: 0
-    // States set with setNoteState, by note index (plain object, read through stateRevision).
-    property var changedStates: ({})
-    // Cents given to setNoteState, by note index.
-    property var changedCents: ({})
+    readonly property int stateRevision: noteState.revision
     /** Cents beside the sign of an offpitch note (Kante 1.27), in Full marks. */
     property bool showCents: true
-    // Technique results set with setTechniqueResult, by note index (1.31).
-    property var changedTechniques: ({})
+
+    // The states of the notes, apart from `notes` (see KanteNoteState).
+    KanteNoteState {
+        id: noteState
+        hidden: staff.marks === KanteTabStaff.Marks.Off
+    }
 
     /** Sets how the technique of one note was played (Kante 1.31): "", "played", "other", "unheard". */
     function setTechniqueResult(index, result) {
-        if (!notes || index < 0 || index >= notes.length) {
-            return
-        }
-        changedTechniques[index] = String(result || "")
-        revision++
+        noteState.setTechniqueResult(index, result)
     }
     /** The technique result of note i: as set with setTechniqueResult, else from `notes`. */
     function techniqueResultOf(i) {
-        var r = changedTechniques[i]
-        return r !== undefined ? r : (notes && notes[i] && notes[i].techniqueResult ? String(notes[i].techniqueResult) : "")
-    }
-    /** The result as shown: "" when marks are Off. Depends on stateRevision. */
-    function shownTechniqueResult(i, revision) {
-        return marks === KanteTabStaff.Marks.Off ? "" : techniqueResultOf(i)
+        return noteState.techniqueResultOf(i)
     }
     /** "Technik gespielt 3, Andere Technik 1" over all notes (screen readers). Depends on stateRevision. */
     function techniqueSummary(revision) {
-        var counts = {}
-        for (var i = 0; notes && i < notes.length; i++) {
-            var r = shownTechniqueResult(i, revision)
-            if (r !== "") {
-                counts[r] = (counts[r] || 0) + 1
-            }
-        }
-        return KanteStyle.techniqueCountsText(counts)
+        return noteState.techniqueSummary(revision)
     }
 
     /**
@@ -155,47 +138,26 @@ Item {
      * note's `cents` in `notes` holds.
      */
     function setNoteState(index, state, cents) {
-        if (!notes || index < 0 || index >= notes.length) {
-            return
-        }
-        changedStates[index] = String(state)
-        if (cents !== undefined) {
-            changedCents[index] = Number(cents)
-        }
-        revision++
+        noteState.setNoteState(index, state, cents)
     }
     /** Back to the states in `notes`. */
     function resetStates() {
-        changedStates = {}
-        changedCents = {}
-        changedTechniques = {}
-        revision++
+        noteState.resetStates()
     }
     /** The cents of note i (offpitch): as set with setNoteState, else from `notes`; NaN for none. */
     function centsOf(i) {
-        var c = changedCents[i]
-        if (c !== undefined) {
-            return c
-        }
-        var n = notes && notes[i]
-        return n && n.cents !== undefined && n.cents !== null ? Number(n.cents) : NaN
-    }
-    /** ", +32 ct" for an offpitch note with cents (screen readers), else "". Depends on stateRevision. */
-    function centsSuffix(i, revision) {
-        var t = shownState(i, revision) === "offpitch" ? KanteStyle.centsText(centsOf(i)) : ""
-        return t !== "" ? ", " + t : ""
+        return noteState.centsOf(i)
     }
     /** The state of note i: as set with setNoteState, else from `notes`. */
     function stateOf(i) {
-        var s = changedStates[i]
-        return s !== undefined ? s : (notes && notes[i] && notes[i].state ? String(notes[i].state) : "pending")
+        return noteState.stateOf(i)
     }
     /** The state as shown: "pending" when marks are Off. Depends on stateRevision. */
     function shownState(i, revision) {
-        return marks === KanteTabStaff.Marks.Off || i === undefined ? "pending" : stateOf(i)
+        return noteState.shownState(i, revision)
     }
     onNotesChanged: {
-        resetStates()
+        noteState.notes = notes
         calm = true
         calmTimer.restart()
     }
@@ -205,9 +167,9 @@ Item {
     Timer { id: calmTimer; interval: 500; onTriggered: staff.calm = false }
 
     /** Last note with time ≤ position, -1 before the first. */
-    readonly property int currentIndex: lastAtOrBefore(position)
+    readonly property int currentIndex: frame.lastAtOrBefore(notes, position)
     readonly property var barList: normalizeBars(bars, notes)
-    readonly property int currentBar: barAt(position)
+    readonly property int currentBar: frame.barAt(barList, position)
     // The wanted spacing; `ls` is the one drawn (grown or shrunk in fill mode, 1.81).
     readonly property real baseLs: Math.max(6, layoutSpacing)
     // A line's height per unit of spacing: every row scales with it, the rehearsal mark too.
@@ -258,90 +220,51 @@ Item {
      */
     property int settleMs: 0
     /** The size the layout uses: the item's, taken over at once or `settleMs` after it changed. */
-    property size layoutSize: Qt.size(0, 0)
+    readonly property size layoutSize: frame.layoutSize
     /** The spacing the layout uses: `lineSpacing`, taken over with the size (a new spacing that
      *  comes with a resize, e.g. a presentation going full screen, lays out once). */
-    property real layoutSpacing: lineSpacing
+    readonly property real layoutSpacing: frame.layoutSpacing
     /** The bar width the layout uses: `minBarWidth`, taken over with the size too (it may
      *  follow the spacing, e.g. `staffSpace * 18`). */
-    property real layoutMinBarWidth: minBarWidth
-    function takeSize() {
-        layoutSize = Qt.size(width, height)
-        layoutSpacing = lineSpacing
-        layoutMinBarWidth = minBarWidth
-    }
-    function sizeChanged() {
-        if (settleMs <= 0 || layoutSize.width <= 0) {
-            takeSize()
-            return
-        }
-        settle.restart()
-    }
-    onWidthChanged: sizeChanged()
-    onHeightChanged: sizeChanged()
-    onLineSpacingChanged: sizeChanged()
-    onMinBarWidthChanged: sizeChanged()
-    // The first lines at once: a staff shows its notes from the first frame.
-    Component.onCompleted: {
-        takeSize()
-        syncLines()
-        lineView.forceLayout()
-    }
-    Timer { id: settle; interval: staff.settleMs; onTriggered: staff.takeSize() }
+    readonly property real layoutMinBarWidth: frame.layoutMinBarWidth
     /** Shown long enough that its room has settled: before, a change of the room (a page still
      *  laying out) lands at once instead of growing in (Kontra 12.11.). */
-    property bool grown: false
-    Timer { running: staff.layoutSize.width > 0; interval: KanteStyle.durationSlow; onTriggered: staff.grown = true }
+    readonly property bool grown: frame.grown
 
-    // Line layouts by line index (1.82). A line keeps its layout while it stays in view, so a
-    // page turn lays out only the line that comes in; any input below lays them all out
-    // again, once per turn of the event loop however many inputs changed (a resize changed
-    // width, bars per line, spacing and header one after the other: up to 550 ms each).
-    property var lineCache: ({})
-    property bool lineCacheStale: false
-    property int lineRevision: 0
+    // Line layouts by line index (1.82), kept by the frame: a line keeps its layout while it
+    // stays in view, so a page turn lays out only the line that comes in.
+    readonly property var lineCache: frame.lineCache
+    readonly property int lineRevision: frame.lineRevision
     readonly property var emptyLayout: ({ lines: [], frets: [], marks: [], rects: [], flags: [], heads: [],
                                           endings: [], sections: [], boxes: ({}) })
     readonly property var lineInputs: [layoutSize, perSystem, ls, systemHeight, headerWidth, barWidth, staffTop,
                                        notes, barList, strings, lowStringOnTop, rhythm]
-    onLineInputsChanged: {
-        lineCacheStale = true
-        Qt.callLater(syncLines)
+
+    KanteStaffFrame {
+        id: frame
+        width: staff.width
+        height: staff.height
+        spacing: staff.lineSpacing
+        minBarWidth: staff.minBarWidth
+        settleMs: staff.settleMs
+        perSystem: staff.perSystem
+        firstBar: staff.firstBar
+        headerWidth: staff.headerWidth
+        barWidth: staff.barWidth
+        systems: staff.shownSystems
+        barCount: staff.barList.length
+        inputs: staff.lineInputs
+        layoutLine: staff.layoutLine
     }
-    onFirstBarChanged: Qt.callLater(syncLines)
-    onShownSystemsChanged: Qt.callLater(syncLines)
-    function syncLines() {
-        const per = perSystem
-        const top = Math.floor(firstBar / per)
-        const want = []
-        for (let k = 0; k < shownSystems; k++) {
-            if ((top + k) * per < barList.length) {
-                want.push(top + k)
-            }
-        }
-        const cache = lineCacheStale ? ({}) : lineCache
-        for (const n of want) {
-            if (!cache[n]) {
-                cache[n] = computeLayout(n * per, per, 1, layoutSize.width, ls, notes, barList, strings,
-                                         lowStringOnTop, rhythm)
-            }
-        }
-        lineCache = cache
-        lineCacheStale = false
-        lineRevision++
-        // The model keeps the lines that stay (their delegates live on) and adds or drops
-        // the others: the view moves and fades them (A1, A2).
-        for (let i = lineModel.count - 1; i >= 0; i--) {
-            if (want.indexOf(lineModel.get(i).lineIndex) < 0) {
-                lineModel.remove(i)
-            }
-        }
-        for (let k = 0; k < want.length; k++) {
-            if (k < lineModel.count && lineModel.get(k).lineIndex === want[k]) {
-                continue
-            }
-            lineModel.insert(k, { lineIndex: want[k] })
-        }
+    function layoutLine(first, per) {
+        return computeLayout(first, per, 1, layoutSize.width, ls, notes, barList, strings,
+                             lowStringOnTop, rhythm)
+    }
+    // The first lines at once: a staff shows its notes from the first frame.
+    Component.onCompleted: {
+        frame.takeSize()
+        frame.syncLines()
+        lineView.forceLayout()
     }
     /** SVG path of the bar lines, stems and beams of a layout: one shape instead of hundreds of rectangles. */
     function inkPath(L) {
@@ -370,7 +293,7 @@ Item {
         // notes can change before currentIndex follows (e.g. emptied while playing)
         const n = currentIndex >= 0 ? notes[currentIndex] : undefined
         if (n) {
-            d += ", " + nameOf(Number(n.string) || 0) + " " + n.fret + " (" + KanteStyle.noteStateName(shownState(currentIndex, stateRevision)) + centsSuffix(currentIndex, stateRevision) + ")"
+            d += ", " + nameOf(Number(n.string) || 0) + " " + n.fret + " (" + KanteStyle.noteStateName(shownState(currentIndex, stateRevision)) + noteState.centsSuffix(currentIndex, stateRevision) + ")"
         }
         const t = techniqueSummary(stateRevision)
         if (t !== "") {
@@ -403,18 +326,6 @@ Item {
     function nameOf(s) {
         return stringNames && s < stringNames.length ? String(stringNames[s]) : String(s + 1)
     }
-    function lastAtOrBefore(t) {
-        var a = 0, b = notes ? notes.length : 0
-        while (a < b) {
-            var m = (a + b) >> 1
-            if (Number(notes[m].time) <= t + 1e-6) {
-                a = m + 1
-            } else {
-                b = m
-            }
-        }
-        return a - 1
-    }
     /** Bars as [{time, end, repeatStart, repeatEnd, endings}]; one bar over all notes when none are given. */
     function normalizeBars(list, ns) {
         var out = []
@@ -422,7 +333,7 @@ Item {
             var b = list[i]
             var o = typeof b === "object" && b !== null ? b : { time: b }
             out.push({ time: Number(o.time) || 0, repeatStart: !!o.repeatStart, repeatEnd: !!o.repeatEnd,
-                       endings: endingsOf(o.endings), number: barLabel(o, i),
+                       endings: endingsOf(o.endings), number: frame.barLabel(o, i),
                        section: KanteStyle.rehearsalText(o.section), part: "" })
         }
         var lastEnd = 0
@@ -447,11 +358,6 @@ Item {
         }
         return out
     }
-    /** Label of a bar (1.28): its `number` as sent (written bar number), else index + 1. */
-    function barLabel(o, i) {
-        var n = typeof o === "object" && o !== null ? o.number : undefined
-        return n === undefined || n === null || String(n) === "" ? String(i + 1) : String(n)
-    }
     /** Endings of a bar as a sorted list of numbers ≥ 1: [1, 2] stays, 2 becomes [2], none []. */
     function endingsOf(e) {
         // A list from QML or C++ is not always a JS Array: test for a length.
@@ -465,18 +371,6 @@ Item {
         }
         return out.sort(function (a, b) { return a - b })
     }
-    function barAt(t) {
-        var a = 0, b = barList.length
-        while (a < b) {
-            var m = (a + b) >> 1
-            if (barList[m].time <= t + 1e-6) {
-                a = m + 1
-            } else {
-                b = m
-            }
-        }
-        return Math.max(0, a - 1)
-    }
     function rowOf(s) {
         return lowStringOnTop ? s : strings - 1 - s
     }
@@ -488,53 +382,16 @@ Item {
         var f = (t - bar.time) / Math.max(1e-6, bar.end - bar.time)
         return headerWidth + col * barWidth + padL + Math.max(0, Math.min(1, f)) * (barWidth - padL - padR)
     }
-    function sysOf(b) {
-        return Math.floor((b - firstBar) / perSystem)
-    }
     /** True when time t lies in the loop range (1.35). */
     function inLoop(t) {
         return loopStart >= 0 && loopEnd > loopStart && t >= loopStart - 1e-6 && t < loopEnd - 1e-6
-    }
-    /** x of a loop edge at time t in bar b: on the bar line at a bar start or end, else xOf. */
-    function loopX(t, b) {
-        var bar = barList[b]
-        var left = headerWidth + ((b - firstBar) % perSystem) * barWidth
-        if (Math.abs(t - bar.time) < 1e-3) {
-            return left
-        }
-        if (Math.abs(t - bar.end) < 1e-3) {
-            return left + barWidth
-        }
-        return xOf(t, b)
     }
     /**
      * The loop cut into lines: per line the part of [from, to] it shows. left / right: the
      * loop starts / ends on this line (bracket edge), else it runs on (open edge).
      */
     function loopLayout(first, per, nsys, w, bl, from, to) {
-        var out = []
-        if (w <= 0 || bl.length === 0 || from < 0 || to <= from) {
-            return out
-        }
-        var last = Math.min(bl.length - 1, first + per * nsys - 1)
-        for (var s = 0; s < nsys; s++) {
-            let b0 = first + s * per
-            let b1 = Math.min(last, b0 + per - 1)
-            if (b1 < b0) {
-                break
-            }
-            let t0 = Math.max(from, bl[b0].time)
-            let t1 = Math.min(to, bl[b1].end)
-            if (t1 <= t0 + 1e-6) {
-                continue
-            }
-            // The bar of each edge, kept on this line; the end belongs to the bar before it.
-            let x0 = loopX(t0, Math.max(b0, Math.min(b1, barAt(t0))))
-            let x1 = loopX(t1, Math.max(b0, Math.min(b1, barAt(t1 - 1e-3))))
-            out.push({ x: x0, w: Math.max(1, x1 - x0), sys: s, left: from >= bl[b0].time - 1e-6,
-                       right: to <= bl[b1].end + 1e-6 })
-        }
-        return out
+        return frame.cutLoop(first, per, nsys, w, bl, from, to, xOf)
     }
     /** Rhythm of a duration in quarters: {level: beams/flags (0 none), stem: 0 none / 1 short / 2 full, dot}. */
     function rhythmOf(beats) {
@@ -561,6 +418,25 @@ Item {
             return L
         }
         var last = Math.min(bl.length - 1, first + per * nsys - 1)
+        var stemW = Math.max(1, Math.round(ls * 0.1))
+        var beamH = Math.max(2, Math.round(ls * 0.28))
+        var c = { first: first, per: per, nsys: nsys, w: w, ls: ls, ns: ns, bl: bl, nstr: nstr, lowTop: lowTop, L: L, last: last,
+                  lineOf: lineOf, stemW: stemW, beamH: beamH, from: bl[first].time, to: bl[last].end }
+        layoutStaff(c)
+        layoutSections(c)
+        layoutEndings(c)
+        const onsets = layoutFrets(c)
+        layoutMarks(c, onsets)
+        if (!withRhythm) {
+            return L
+        }
+        layoutStems(c, onsets)
+        layoutBeams(c, onsets)
+        return L
+    }
+    /** Staff lines, bar lines and repeat dots of each line. */
+    function layoutStaff(c) {
+        const first = c.first, per = c.per, nsys = c.nsys, ls = c.ls, bl = c.bl, nstr = c.nstr, lowTop = c.lowTop, L = c.L, last = c.last
         for (var s = 0; s < nsys; s++) {
             var sy = s * systemHeight
             var top = sy + staffTop
@@ -591,6 +467,10 @@ Item {
                 }
             }
         }
+    }
+    /** Rehearsal marks. */
+    function layoutSections(c) {
+        const first = c.first, per = c.per, nsys = c.nsys, ls = c.ls, bl = c.bl, L = c.L, last = c.last
         // Rehearsal marks (1.50): over the first bar of a part, as wide as the room up to the
         // next mark on the line (or the line's end).
         for (let ms = 0; ms < nsys; ms++) {
@@ -606,6 +486,10 @@ Item {
             }
         }
         L.sections.reverse()
+    }
+    /** Volta brackets. */
+    function layoutEndings(c) {
+        const first = c.first, per = c.per, nsys = c.nsys, ls = c.ls, bl = c.bl, L = c.L, last = c.last
         // Volta brackets: one per run of bars with the same endings, cut at the end of a line.
         for (var es = 0; es < nsys; es++) {
             var eFirst = first + es * per
@@ -632,8 +516,10 @@ Item {
                 eb = runEnd
             }
         }
-        // Notes of the page.
-        var from = bl[first].time, to = bl[last].end
+    }
+    /** Fret numbers of the notes on show; returns the onsets (notes at one time) for marks and rhythm. */
+    function layoutFrets(c) {
+        const ls = c.ls, ns = c.ns, bl = c.bl, nstr = c.nstr, L = c.L, from = c.from, to = c.to, lineOf = c.lineOf
         var onsets = []
         for (var i = 0; ns && i < ns.length; i++) {
             var n = ns[i]
@@ -641,21 +527,13 @@ Item {
             if (t < from - 1e-6 || t >= to - 1e-6) {
                 continue
             }
-            var b = barAt(t)
+            var b = frame.barAt(barList, t)
             var x = xOf(t, b)
             var sys = lineOf(b)
             var str = Math.max(0, Math.min(nstr - 1, Number(n.string) || 0))
             var y = sys * systemHeight + staffTop + rowOf(str) * ls
-            var fretText = n.fret !== undefined ? String(n.fret) : ""
             var technique = n.technique ? String(n.technique) : ""
-            // A ghost note's fret in parentheses, as written in tab (1.31).
-            if (technique === "ghost" && fretText !== "") {
-                fretText = "(" + fretText + ")"
-            }
-            // A dead note reads x instead of its fret (1.32).
-            if (technique === "dead") {
-                fretText = "x"
-            }
+            var fretText = fretTextOf(n, technique)
             L.frets.push({ x: x, y: y, text: fretText, index: i, label: n.label || "", str: str, technique: technique, time: t })
             L.boxes[i] = { x: x, sys: sys }
             var prev = onsets.length ? onsets[onsets.length - 1] : null
@@ -663,23 +541,39 @@ Item {
                 prev.indices.push(i)
                 continue
             }
-            var dur = Math.max(0, Number(n.duration) || 0)
-            var beats = Number(n.beats) || 0
-            var spq = dur > 0 && beats > 0 ? dur / beats : (bl[b].end - bl[b].time) / 4
-            onsets.push({ t: t, x: x, sys: sys, bar: b, beat: Math.floor((t - bl[b].time) / spq + 1e-3),
-                          r: rhythmOf(beats > 0 ? beats : dur / spq), indices: [i] })
+            onsets.push(onsetOf(c, n, i, t, x, sys, b))
         }
+        return onsets
+    }
+    /** A note's rhythm, with its x and bar: one onset (more notes at the same time join it). */
+    function onsetOf(c, n, i, t, x, sys, b) {
+        const bl = c.bl
+        const dur = Math.max(0, Number(n.duration) || 0)
+        const beats = Number(n.beats) || 0
+        const spq = dur > 0 && beats > 0 ? dur / beats : (bl[b].end - bl[b].time) / 4
+        return { t: t, x: x, sys: sys, bar: b, beat: Math.floor((t - bl[b].time) / spq + 1e-3),
+                 r: rhythmOf(beats > 0 ? beats : dur / spq), indices: [i] }
+    }
+    /** The fret as written: a ghost note's in parentheses (1.31), a dead note's as x (1.32). */
+    function fretTextOf(n, technique) {
+        if (technique === "dead") {
+            return "x"
+        }
+        const fretText = n.fret !== undefined ? String(n.fret) : ""
+        return technique === "ghost" && fretText !== "" ? "(" + fretText + ")" : fretText
+    }
+    /** One state sign per onset. */
+    function layoutMarks(c, onsets) {
+        const L = c.L
         for (var o = 0; o < onsets.length; o++) {
             var on = onsets[o]
             // One sign per onset (a chord shows its first non-pending state); hidden while pending.
             L.marks.push({ x: on.x, y: on.sys * systemHeight + sectionRow + endingRow + markRow / 2, indices: on.indices })
         }
-        if (!withRhythm) {
-            return L
-        }
-        // Stems, dots, beams within a beat, flags for single short notes.
-        var stemW = Math.max(1, Math.round(ls * 0.1))
-        var beamH = Math.max(2, Math.round(ls * 0.28))
+    }
+    /** Stems and dots under the staff. */
+    function layoutStems(c, onsets) {
+        const ls = c.ls, L = c.L, stemW = c.stemW
         for (var k = 0; k < onsets.length; k++) {
             var e = onsets[k]
             var y0 = e.sys * systemHeight + staffTop + staffHeight + ls * 0.6
@@ -692,6 +586,34 @@ Item {
                 L.lines.push({ x: e.x + ls * 0.35, y: y1 - ls * 0.45, w: Math.max(2, ls * 0.24), h: Math.max(2, ls * 0.24), kind: "stem" })
             }
         }
+    }
+    /** The second and third beam of a group, over the notes that have them. */
+    function layoutSubBeams(c, onsets, g, h) {
+        const ls = c.ls, L = c.L, stemW = c.stemW, beamH = c.beamH
+        for (var lv = 2; lv <= 3; lv++) {
+            var off = (lv - 1) * (beamH + Math.max(2, ls * 0.18))
+            for (var q = g; q <= h; q++) {
+                if (onsets[q].r.level < lv) {
+                    continue
+                }
+                var r = q
+                while (r + 1 <= h && onsets[r + 1].r.level >= lv) {
+                    r++
+                }
+                if (r > q) {
+                    L.lines.push({ x: onsets[q].x - stemW / 2, y: onsets[q].y1 - beamH - off, w: onsets[r].x - onsets[q].x + stemW, h: beamH, kind: "beam" })
+                } else {
+                    var stub = ls * 0.8
+                    var left = q === h
+                    L.lines.push({ x: left ? onsets[q].x - stub : onsets[q].x - stemW / 2, y: onsets[q].y1 - beamH - off, w: stub + stemW / 2, h: beamH, kind: "beam" })
+                }
+                q = r
+            }
+        }
+    }
+    /** Beams within a beat, flags for single short notes. */
+    function layoutBeams(c, onsets) {
+        const ls = c.ls, L = c.L, stemW = c.stemW, beamH = c.beamH
         var g = 0
         while (g < onsets.length) {
             var h = g
@@ -704,32 +626,12 @@ Item {
             if (h > g) {
                 var gx0 = onsets[g].x - stemW / 2, gx1 = onsets[h].x + stemW / 2
                 L.lines.push({ x: gx0, y: onsets[g].y1 - beamH, w: gx1 - gx0, h: beamH, kind: "beam" })
-                for (var lv = 2; lv <= 3; lv++) {
-                    var off = (lv - 1) * (beamH + Math.max(2, ls * 0.18))
-                    for (var q = g; q <= h; q++) {
-                        if (onsets[q].r.level < lv) {
-                            continue
-                        }
-                        var r = q
-                        while (r + 1 <= h && onsets[r + 1].r.level >= lv) {
-                            r++
-                        }
-                        if (r > q) {
-                            L.lines.push({ x: onsets[q].x - stemW / 2, y: onsets[q].y1 - beamH - off, w: onsets[r].x - onsets[q].x + stemW, h: beamH, kind: "beam" })
-                        } else {
-                            var stub = ls * 0.8
-                            var left = q === h
-                            L.lines.push({ x: left ? onsets[q].x - stub : onsets[q].x - stemW / 2, y: onsets[q].y1 - beamH - off, w: stub + stemW / 2, h: beamH, kind: "beam" })
-                        }
-                        q = r
-                    }
-                }
+                layoutSubBeams(c, onsets, g, h)
             } else if (onsets[g].r.level > 0) {
                 L.flags.push({ x: onsets[g].x - stemW / 2, y: onsets[g].y1, glyph: ["", "", "", ""][onsets[g].r.level] })
             }
             g = h + 1
         }
-        return L
     }
 
     KanteRehearsalMark { id: markProbe; visible: false; text: "A"; pixelSize: staff.baseLs; Accessible.ignored: true }
@@ -737,14 +639,13 @@ Item {
     // The lines shown, one delegate each, kept while they stay in view. A page turn builds only
     // the line that comes in; the others move up, the top one fades out (A2). Lines that come
     // or go when the room changes fade in or out, the rest move to their place (A1).
-    ListModel { id: lineModel }
     ListView {
         id: lineView
         objectName: "staffLines"
         anchors.fill: parent
         interactive: false
         currentIndex: -1
-        model: lineModel
+        model: frame.lineModel
         add: Transition {
             enabled: KanteStyle.animate && staff.grown
             NumberAnimation { property: "opacity"; from: 0; to: 1; duration: KanteStyle.duration }
@@ -1009,7 +910,7 @@ Item {
                         sourceComponent: KanteTechniqueMark {
                             technique: fretBox.modelData.technique || ""
                             signVisible: !techniqueSlot.ghost
-                            result: staff.shownTechniqueResult(fretBox.modelData.index, staff.stateRevision)
+                            result: noteState.shownTechniqueResult(fretBox.modelData.index, staff.stateRevision)
                             color: staff.marks === KanteTabStaff.Marks.Quiet ? KanteStyle.mutedTextColor : resultColor
                         }
                     }

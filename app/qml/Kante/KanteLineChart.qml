@@ -67,14 +67,11 @@ Item {
         for (let t = 0; t < thresholds.length; t++) {
             m = Math.max(m, thresholds[t].value)
         }
-        if (!axis) {
+        // A gap (NaN) in the values leaves the scale undefined.
+        if (!axis || isNaN(m)) {
             return m
         }
-        const raw = (m - minValue) / 4
-        const p10 = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10))
-        const f = raw / p10
-        const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p10
-        return minValue + 4 * step
+        return minValue + 4 * KanteStyle.niceStep((m - minValue) / 4)
     }
     readonly property real mark: KanteStyle.unit(compact ? 5 : 6)
     /** Room for the axis labels on the left. */

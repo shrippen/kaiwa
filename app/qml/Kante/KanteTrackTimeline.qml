@@ -11,8 +11,9 @@ import "."
  *   position    the playhead in seconds
  *   tracks      [{ name, label, shown, segments: [{ from, to, text, selected }],
  *               markers: [{ at, text }] }]; seconds. label: a colour name of
- *               KanteStyle.labels, or "text", "muted", "accent", "focus", "warning";
- *               "" or an unknown name gives the text colour. shown false: the row is dimmed
+ *               KanteStyle.labels, or "text", "muted", "accent", "focus", "warning",
+ *               "ground" (the app's background: a sign on a filled bar reads in every label
+ *               colour); "" or an unknown name gives the text colour. shown false: the row is dimmed
  *   trackHeight height of a row, labelWidth width of the name column (KanteStyle units)
  *   hideText, showText   the app's words for the toggle: "<hideText>: <name>" while shown,
  *               "<showText>: <name>" while hidden (tooltip and name for screen readers)
@@ -21,12 +22,30 @@ import "."
  *   toggleShown(track)          the eye button of a row
  *   segmentClicked(track, segment)
  *
+ * Dragging (opt-in, `draggable: true`): a marker moves in time, so does the start or end of a
+ * segment. A press that does not move more than `dragStart` stays a click (seek, and
+ * `segmentClicked` on a segment); only a longer move drags. While dragging a line with its
+ * time follows the pointer and the pointer is a horizontal resize arrow over what can be
+ * grabbed. Kante does not snap: the app answers in the signal and may overwrite `dragSeconds`
+ * there to show a snapped time. Nothing moves on its own: the app changes `tracks` on `done`.
+ *
+ *   draggable   false: nothing can be grabbed
+ *   formatTime  function(seconds) -> text for the drag line; null: "m:ss.d"
+ *   dragSeconds the time of the drag line; dragging says whether one is held
+ *   markDragged(track, marker, seconds, done, shift)
+ *   edgeDragged(track, segment, edge, seconds, done, shift)
+ *               edge is "from" or "to"; done is false while the button is down and true on
+ *               release (with the last shown `dragSeconds`); shift: Shift is held
+ *   Per track, marker or segment `locked: true` takes it out of the dragging (a hidden row
+ *   is never dragged); a locked one still seeks and selects.
+ *
  * Information never by colour alone: a segment carries its text, a selected one is framed
  * wider and in bold, a marker is a diamond with its text as a tooltip, a hidden row shows
  * the crossed eye.
  *
  * Functions for the app and its tests: timeAt(x), xAt(seconds) (in the item's coordinates),
- * segmentAt(x, y) and markerAt(x, y), each {track, index} or null.
+ * segmentAt(x, y) and markerAt(x, y), each {track, index} or null; grabAt(x, y), what a
+ * press there would drag, or null.
  */
 FocusScope {
     id: root
@@ -44,6 +63,23 @@ FocusScope {
     signal seek(real seconds)
     signal toggleShown(int track)
     signal segmentClicked(int track, int segment)
+    signal markDragged(int track, int marker, real seconds, bool done, bool shift)
+    signal edgeDragged(int track, int segment, string edge, real seconds, bool done, bool shift)
+
+    property bool draggable: false
+    property var formatTime: null
+    property real dragSeconds: 0
+    readonly property bool dragging: _grab !== null
+    // The held thing while dragging: { track, index, edge ("" for a marker), seconds }.
+    property var _grab: null
+
+    /// Shortest move (px) that turns a press into a drag, and the reach (px) of an edge.
+    readonly property real dragStart: KanteStyle.unit(4)
+    readonly property real edgeReach: KanteStyle.unit(5)
+    readonly property string edgeFrom: "from"
+    readonly property string edgeTo: "to"
+    readonly property int tenthsPerSecond: KanteStyle.tenthsPerSecond
+    readonly property int tenthsPerMinute: 60 * tenthsPerSecond
 
     readonly property real rulerHeight: KanteStyle.unit(24)
     readonly property real laneWidth: Math.max(1, width - labelWidth)
@@ -127,16 +163,59 @@ FocusScope {
         return null
     }
 
-    // Colour of a label name; the same names as KanteShapeCanvas.
-    function _labelColor(name) {
-        switch (name) {
-        case "muted": return KanteStyle.mutedTextColor
-        case "accent": return KanteStyle.accentColor
-        case "focus": return KanteStyle.focusColor
-        case "warning": return KanteStyle.warningColor
+    /** What a press at (x, y) of this item would hold: {track, index, edge, seconds}, or null. */
+    function grabAt(x, y) {
+        const t = _trackAt(y)
+        if (!draggable || t < 0 || tracks[t].shown === false || tracks[t].locked === true) {
+            return null
         }
-        const c = KanteStyle.labelColor(name)
-        return c.a > 0 ? c : KanteStyle.textColor
+
+        const mark = markerAt(x, y)
+        const marker = mark ? tracks[t].markers[mark.index] : null
+        if (marker && marker.locked !== true) {
+            return { track: t, index: mark.index, edge: "", seconds: marker.at }
+        }
+        return _edgeAt(t, x)
+    }
+
+    // The edge of an unlocked segment of row t nearest to x, within edgeReach; on a tie (two
+    // segments touch) the edge of the segment x is in.
+    function _edgeAt(t, x) {
+        let found = null
+        let nearest = edgeReach
+        const segs = tracks[t].segments || []
+        for (let i = 0; i < segs.length; i++) {
+            if (segs[i].locked === true) {
+                continue
+            }
+
+            const inside = x >= xAt(segs[i].from) && x <= xAt(segs[i].to)
+            const edges = [[edgeFrom, segs[i].from], [edgeTo, segs[i].to]]
+            for (const [edge, seconds] of edges) {
+                const distance = Math.abs(xAt(seconds) - x)
+                if (distance < nearest || (distance === nearest && (found === null || inside))) {
+                    nearest = distance
+                    found = { track: t, index: i, edge: edge, seconds: seconds }
+                }
+            }
+        }
+        return found
+    }
+
+    function _emitDrag(done, shift) {
+        const g = _grab
+        if (g.edge === "") {
+            markDragged(g.track, g.index, dragSeconds, done, shift)
+            return
+        }
+        edgeDragged(g.track, g.index, g.edge, dragSeconds, done, shift)
+    }
+
+    // "m:ss.d", cut off like a timecode (59.96 -> 0:59.9).
+    function _stamp(s) {
+        const tenths = KanteStyle.wholeTenths(s)
+        const sec = (tenths % tenthsPerMinute) / tenthsPerSecond
+        return Math.floor(tenths / tenthsPerMinute) + ":" + (sec < 10 ? "0" : "") + sec.toFixed(1)
     }
 
     function _clock(s) {
@@ -260,7 +339,7 @@ FocusScope {
                     delegate: Rectangle {
                         id: seg
                         required property var modelData
-                        readonly property color fill: root._labelColor(row.modelData.label)
+                        readonly property color fill: KanteStyle.namedColor(row.modelData.label)
                         readonly property bool picked: modelData.selected === true
 
                         x: modelData.from * root.pixelsPerSecond
@@ -301,7 +380,7 @@ FocusScope {
                         rotation: 45
                         color: KanteStyle.backgroundColor
                         border.width: KanteStyle.unit(2)
-                        border.color: root._labelColor(row.modelData.label)
+                        border.color: KanteStyle.namedColor(row.modelData.label)
                     }
                 }
             }
@@ -323,22 +402,79 @@ FocusScope {
         width: root.laneWidth
         height: root.height
         hoverEnabled: true
+        cursorShape: root.dragging || overGrab ? Qt.SizeHorCursor : Qt.ArrowCursor
+
+        // What the press holds, where it was (px) and whether it became a drag.
+        property var held: null
+        property real pressX: 0
+        property bool dragged: false
+        property bool onGrab: false
+        property bool overGrab: false
 
         function _seekTo(mx) {
             root.forceActiveFocus()
             root.seek(root.timeAt(mx + root.labelWidth))
         }
 
-        onPressed: function (mouse) { _seekTo(mouse.x) }
+        function _shift(mouse) {
+            return (mouse.modifiers & Qt.ShiftModifier) !== 0
+        }
+
+        onPressed: function (mouse) {
+            dragged = false
+            pressX = mouse.x
+            held = root.grabAt(mouse.x + root.labelWidth, mouse.y)
+            onGrab = held !== null
+            if (held) {
+                root.forceActiveFocus()
+                return
+            }
+            _seekTo(mouse.x)
+        }
         onPositionChanged: function (mouse) {
-            if (pressed) {
+            if (!pressed) {
+                root.hovered = root.markerAt(mouse.x + root.labelWidth, mouse.y)
+                overGrab = root.grabAt(mouse.x + root.labelWidth, mouse.y) !== null
+                return
+            }
+            if (!held) {
                 _seekTo(mouse.x)
                 return
             }
-            root.hovered = root.markerAt(mouse.x + root.labelWidth, mouse.y)
+            if (!root.dragging && Math.abs(mouse.x - pressX) < root.dragStart) {
+                return
+            }
+
+            root._grab = held
+            dragged = true
+            root.dragSeconds = root.timeAt(mouse.x + root.labelWidth)
+            root._emitDrag(false, _shift(mouse))
         }
-        onExited: root.hovered = null
+        onReleased: function (mouse) {
+            if (root.dragging) {
+                root._emitDrag(true, _shift(mouse))
+                root._grab = null
+            }
+            held = null
+            overGrab = root.grabAt(mouse.x + root.labelWidth, mouse.y) !== null
+        }
+        onCanceled: {
+            root._grab = null
+            held = null
+        }
+        onExited: {
+            root.hovered = null
+            overGrab = false
+        }
         onClicked: function (mouse) {
+            if (dragged) {
+                return
+            }
+
+            // A press on a grabbable thing did not seek yet.
+            if (onGrab) {
+                _seekTo(mouse.x)
+            }
             const hit = root.segmentAt(mouse.x + root.labelWidth, mouse.y)
             if (hit) {
                 root.segmentClicked(hit.track, hit.index)
@@ -346,11 +482,44 @@ FocusScope {
         }
 
         QQC2.ToolTip {
-            visible: root.hovered !== null && area.containsMouse
+            visible: root.hovered !== null && area.containsMouse && !root.dragging
             text: {
                 const track = root.hovered ? root.tracks[root.hovered.track] : null
                 const mark = track && track.markers ? track.markers[root.hovered.index] : null
                 return mark && mark.text ? mark.text : ""
+            }
+        }
+    }
+
+    // Where the drag lands, with its time.
+    Rectangle {
+        id: dragLine
+        objectName: "dragLine"
+        visible: root.dragging
+        x: root.xAt(root.dragSeconds) - width / 2
+        width: KanteStyle.lineWidth
+        height: root.height
+        color: KanteStyle.accentColor
+
+        Rectangle {
+            objectName: "dragTime"
+            readonly property real gap: KanteStyle.unit(4)
+            // Left of the line when there is no room on its right.
+            x: dragLine.x + dragLine.width + gap + width > root.width ? -width - gap : dragLine.width + gap
+            y: root.rulerHeight
+            width: stamp.implicitWidth + 2 * gap
+            height: stamp.implicitHeight + gap
+            color: KanteStyle.backgroundColor
+            border.width: KanteStyle.borderWidth
+            border.color: KanteStyle.accentColor
+
+            QQC2.Label {
+                id: stamp
+                objectName: "dragText"
+                anchors.centerIn: parent
+                text: root.formatTime ? root.formatTime(root.dragSeconds) : root._stamp(root.dragSeconds)
+                font: KanteStyle.smallFont
+                color: KanteStyle.textColor
             }
         }
     }
