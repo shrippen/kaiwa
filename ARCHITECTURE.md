@@ -89,16 +89,15 @@ A change that needs more places than its row lists is a finding for the next aud
 ## Known deviations
 
 - The app no longer uses the store, but still depends on `kaiwa-core`, `kaiwa-ai` and
-  `kaiwa-lang` directly, all in `conversation.rs`: session and turn types for the log,
-  `turn_end` for the microphone, the tutor's error kinds, the lookup's words, unloading
-  UniDic. `AUDIT.md` findings 5 and 7.
+  `kaiwa-lang` directly, all in `conversation.rs`: input and aid kinds, plain and spoken
+  text for the voice, `turn_end` for the microphone, the tutor's error kinds, the lookup's
+  words, unloading UniDic. `AUDIT.md` finding 7.
 - `kaiwa-sim` sets up and reads test state through the backend's `seed` (feature `sim`,
   only the sim turns it on) and still depends on `kaiwa-store`, `kaiwa-core`, `kaiwa-ai`
   and `kaiwa-lang` directly for its own checks. Rest of finding 6.
 - The app drives microphone and voice itself: `app/src` uses `kaiwa-speech` directly
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
   command yet. `AUDIT.md` finding 7.
-- The page's conversation log is built in the app and read back by the backend. Finding 5.
 - Two failures are still only logged: deleting the recordings when all data of a profile
   is wiped (`profiles.rs`, `wipe`), and an unreadable tutor key, which then looks like no
   tutor (`lib.rs`, `provider`). Found in the review of PR 153.

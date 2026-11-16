@@ -201,9 +201,10 @@ use std::time::Duration;
 use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_backend::flow::{self, Length, Talk};
+use kaiwa_backend::log::{Log, MoraKind, MoraNote};
 use kaiwa_backend::placing::{self, Next, Placing, Stage};
-use kaiwa_core::session::{Aid, SessionState};
-use kaiwa_core::{Input, Scenario};
+use kaiwa_core::Input;
+use kaiwa_core::session::Aid;
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
 use kaiwa_speech::g2p::G2p;
@@ -262,7 +263,7 @@ pub struct ConversationRust {
     /// Since when the time in this talk has not been added to the session.
     sitting: Option<std::time::Instant>,
     talk: Option<Arc<Mutex<Talk>>>,
-    log: Vec<Value>,
+    log: Log,
     /// Any engine behind the traits (/LL504/); ReazonSpeech and Kokoro today.
     recognizer: Option<Arc<dyn Transcriber>>,
     capture: Option<Capture>,
@@ -315,31 +316,7 @@ const SPEED: f32 = 0.9;
 
 impl qobject::Conversation {
     fn publish_turns(mut self: Pin<&mut Self>) {
-        // Every line as words to look up (/LF112/, Kante 1.33), once per line: the
-        // character's with the tutor's furigana, the learner's own with the dictionary's until the
-        // tutor's reading comes with its answer (/LF110/, ADR-004).
-        for entry in self.as_mut().rust_mut().log.iter_mut() {
-            if entry.get("segments").is_some() {
-                continue;
-            }
-            let line = match entry["who"].as_str() {
-                Some("character") => {
-                    kaiwa_backend::lookup::line(entry["markup"].as_str().unwrap_or_default())
-                }
-                // With the tutor's reading once its answer is there, before with the
-                // dictionary's (ADR-004).
-                Some("learner") => match entry["markup"].as_str() {
-                    Some(markup) => kaiwa_backend::lookup::line(markup),
-                    None => {
-                        kaiwa_backend::lookup::own_line(entry["text"].as_str().unwrap_or_default())
-                    }
-                },
-                _ => continue,
-            };
-            entry["segments"] = line["segments"].clone();
-            entry["words"] = line["words"].clone();
-        }
-        let text = Value::Array(self.log.clone()).to_string();
+        let text = self.as_mut().rust_mut().log.view();
         self.as_mut().set_turns(QString::from(&text));
     }
 
@@ -399,7 +376,7 @@ impl qobject::Conversation {
     fn begin_stage(mut self: Pin<&mut Self>, stage: Stage) {
         self.as_mut().rust_mut().lang = stage.lang.clone();
         self.as_mut().say_all_failed(&stage.opened.failed);
-        let log = vec![json!({ "who": "character", "markup": stage.opening })];
+        let log = Log::opened(&stage.opening);
         self.as_mut()
             .begin(stage.opened.talk, log, stage.lang.clone());
         let word = if stage.lang == "en" {
@@ -467,7 +444,7 @@ impl qobject::Conversation {
     }
 
     /// Shows a session (new or restored) and loads speech once.
-    fn begin(mut self: Pin<&mut Self>, talk: Talk, log: Vec<Value>, lang: String) {
+    fn begin(mut self: Pin<&mut Self>, talk: Talk, log: Log, lang: String) {
         let demo = talk.demo();
         let session = talk.session();
         let title = session.scenario.title.get(&lang).to_string();
@@ -568,7 +545,7 @@ impl qobject::Conversation {
 
     /// The session's turn index of a log entry; a line the tutor never answered has none.
     fn turn_of(&self, log_index: i32) -> Option<usize> {
-        kaiwa_backend::talk::turn_of(&self.log, usize::try_from(log_index).ok()?)
+        self.log.turn_of(usize::try_from(log_index).ok()?)
     }
 
     /// Tells the learner a save or load failed (it was only logged before). The page shows
@@ -620,10 +597,10 @@ impl qobject::Conversation {
         let Some(marked) = marked else {
             return;
         };
-        if let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize) {
-            e["corrections"] = json!([]);
-            e["misrecognized"] = json!(true);
-        }
+        self.as_mut()
+            .rust_mut()
+            .log
+            .misrecognized(log_index as usize);
         self.as_mut().show_marked(&talk, marked);
         self.as_mut().publish_turns();
     }
@@ -643,13 +620,11 @@ impl qobject::Conversation {
         let Some(marked) = marked else {
             return;
         };
-        if let Some(c) = &marked.correction
-            && let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize)
-            && let Some(list) = e["corrections"].as_array_mut()
-        {
-            for x in list.iter_mut().filter(|x| x["better"] == c.better.as_str()) {
-                x["disputed"] = json!(true);
-            }
+        if let Some(c) = &marked.correction {
+            self.as_mut()
+                .rust_mut()
+                .log
+                .disputed(log_index as usize, &c.better);
         }
         self.as_mut().show_marked(&talk, marked);
         self.as_mut().publish_turns();
@@ -710,7 +685,7 @@ impl qobject::Conversation {
         };
         self.as_mut().say_all_failed(&opened.failed);
         let session = opened.talk.session();
-        let log = log_of(&session.scenario, &session.snapshot(), &lang);
+        let log = Log::restored(&session.scenario.opening, &session.snapshot(), &lang);
         self.begin(opened.talk, log, lang);
     }
 
@@ -745,7 +720,7 @@ impl qobject::Conversation {
             None => return,
         };
         self.as_mut().say_all_failed(&opened.failed);
-        let log = vec![json!({ "who": "character", "markup": opened.talk.session().opening() })];
+        let log = Log::opened(opened.talk.session().opening());
         self.begin(opened.talk, log, lang);
     }
 
@@ -952,15 +927,14 @@ impl qobject::Conversation {
         let Some(i) = usize::try_from(log_index).ok() else {
             return;
         };
-        let Some(entry) = self.log.get(i).filter(|e| e["who"] == "character") else {
+        let Some(markup) = self.log.character_line(i).map(str::to_string) else {
             return;
         };
-        let markup = entry["markup"].as_str().unwrap_or_default().to_string();
         // The aid belongs to the clicked line: the turn that answers it (a line already
         // answered gives a past turn, and the aid counts for nothing).
-        let line = kaiwa_backend::talk::turns(&self.log[..i]);
+        let line = self.log.turns_before(i);
         // Already there, or on its way (a second click asks the tutor no second time).
-        let translated = entry.get("translation").is_some() || entry["translating"] == true;
+        let translated = self.log.is_translated(i);
         let Some(talk) = self.talk.clone() else {
             return;
         };
@@ -989,9 +963,7 @@ impl qobject::Conversation {
             2 if !translated => {
                 let lang = self.lang.clone();
                 let thread = self.qt_thread();
-                if let Some(e) = self.as_mut().rust_mut().log.get_mut(i) {
-                    e["translating"] = json!(true);
-                }
+                self.as_mut().rust_mut().log.translating(i);
                 self.as_mut().publish_turns();
                 // A turn sent meanwhile leaves the clicked line behind: the aid counts for nothing.
                 let asked_at = line;
@@ -1001,11 +973,7 @@ impl qobject::Conversation {
                     let asking = talk.lock().ok().map(|t| t.session().translating(&line));
                     let result = asking.map(|a| a.run());
                     let _ = thread.queue(move |mut q| {
-                        if let Some(e) = q.as_mut().rust_mut().log.get_mut(i)
-                            && let Some(e) = e.as_object_mut()
-                        {
-                            e.remove("translating");
-                        }
+                        q.as_mut().rust_mut().log.translated_not(i);
                         // What the translation cost (/LF714/), not only with the next turn.
                         let booked = state().book_costs(now(), false);
                         if let Err(e) = booked {
@@ -1017,9 +985,7 @@ impl qobject::Conversation {
                                 if let Ok(mut t) = talk.lock() {
                                     t.session_mut().aid(Aid::Translate, asked_at);
                                 }
-                                if let Some(e) = q.as_mut().rust_mut().log.get_mut(i) {
-                                    e["translation"] = json!(text);
-                                }
+                                q.as_mut().rust_mut().log.translation(i, &text);
                                 q.as_mut().save();
                                 q.as_mut().publish_turns();
                             }
@@ -1051,8 +1017,10 @@ impl qobject::Conversation {
 
     /// The word `word` of the line at `log_index` (the character's or the learner's own).
     fn line_word(&self, log_index: i32, word: i32) -> Option<kaiwa_lang::LineWord> {
-        let entry = self.log.get(usize::try_from(log_index).ok()?)?;
-        serde_json::from_value(entry["words"].get(usize::try_from(word).ok()?)?.clone()).ok()
+        self.log.word(
+            usize::try_from(log_index).ok()?,
+            usize::try_from(word).ok()?,
+        )
     }
 
     fn lookup(self: Pin<&mut Self>, log_index: i32, word: i32) -> QString {
@@ -1363,7 +1331,7 @@ impl qobject::Conversation {
         }
         // Kept only with the opt-in, for the chosen days (/LF712/).
         if let Some(id) = self.talk.as_ref().and_then(|t| t.lock().ok()?.id()) {
-            let turn = kaiwa_backend::talk::turns(&self.log);
+            let turn = self.log.turns();
             let kept = state().keep_recording(id, turn, &rec.samples, rec.sample_rate, now());
             if let Err(e) = kept {
                 self.as_mut().say_unsaved(&format!("{e:#}"));
@@ -1433,12 +1401,11 @@ impl qobject::Conversation {
                 return;
             }
             let _ = thread.queue(move |mut q| {
-                if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index)
-                    && turn["text"] == text.trim()
-                {
-                    turn["mora"] =
-                        Value::Array(hints.iter().map(|h| hint_json(h, &lang)).collect());
-                }
+                let notes: Vec<MoraNote> = hints.iter().map(mora_note).collect();
+                q.as_mut()
+                    .rust_mut()
+                    .log
+                    .add_mora(index, &text, &notes, &lang);
                 q.as_mut().publish_turns();
             });
         });
@@ -1466,8 +1433,7 @@ impl qobject::Conversation {
             self.as_mut().close_mic();
         }
         self.as_mut().wake();
-        let index = self.log.len();
-        self.as_mut().rust_mut().log.push(json!({ "who": "learner", "text": text, "typed": typed, "corrections": [], "pending": true }));
+        let index = self.as_mut().rust_mut().log.add_learner(&text, input);
         self.as_mut().set_busy(true);
         self.as_mut().set_help_text(QString::default());
         self.as_mut().set_help_level(0);
@@ -1505,12 +1471,7 @@ impl qobject::Conversation {
                         {
                             let mut rust = q.as_mut().rust_mut();
                             let lang = rust.lang.clone();
-                            if let Some(turn) = rust.log.get_mut(index) {
-                                show_outcome(turn, &outcome, &lang);
-                            }
-                            rust.log.push(
-                                json!({ "who": "character", "markup": outcome.reply.clone() }),
-                            );
+                            rust.log.answer(index, &outcome, &lang);
                         }
                         q.as_mut().set_error(QString::default());
                         q.as_mut().say_all_failed(&turned.failed);
@@ -1532,10 +1493,7 @@ impl qobject::Conversation {
                     Err((e, failed)) => {
                         q.as_mut().say_all_failed(&failed);
                         // The line stays to be read, but it is no turn of the session.
-                        if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index) {
-                            turn["pending"] = json!(false);
-                            turn["failed"] = json!(true);
-                        }
+                        q.as_mut().rust_mut().log.fail(index);
                         let msg = tutor_error_text(&e, &q.lang);
                         q.as_mut().set_error(QString::from(&msg));
                     }
@@ -1566,28 +1524,6 @@ impl qobject::Conversation {
             self.as_mut().set_help_text(QString::from(&step.text));
             self.as_mut().set_help_level(i32::from(step.level));
         }
-    }
-}
-
-/// The learner's line of the log with what the tutor made of it.
-fn show_outcome(turn: &mut Value, outcome: &kaiwa_core::TurnOutcome, lang: &str) {
-    turn["corrections"] = Value::Array(
-        outcome
-            .shown
-            .iter()
-            .map(|x| kaiwa_backend::summary::shown_view(x, lang))
-            .collect(),
-    );
-    turn["pending"] = json!(false);
-    turn["incomplete"] = json!(outcome.incomplete);
-    // The tutor's furigana replace the dictionary's (ADR-004).
-    if outcome.own_markup.is_empty() {
-        return;
-    }
-    turn["markup"] = outcome.own_markup.clone().into();
-    if let Some(t) = turn.as_object_mut() {
-        t.remove("segments");
-        t.remove("words");
     }
 }
 
@@ -1659,7 +1595,7 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
                 // The reply came before the voice did; no listening aid, no response time.
                 kaiwa_backend::talk::Owed::Reply(markup) => q.speak(&markup),
                 kaiwa_backend::talk::Owed::Opening => {
-                    let opening = q.log[0]["markup"].as_str().unwrap_or_default().to_string();
+                    let opening = q.log.opening().to_string();
                     q.speak(&opening);
                 }
                 // A talk continued, or the models back after the idle time: hands-free
@@ -1727,38 +1663,18 @@ pub fn mora_model_json() -> Value {
     })
 }
 
-/// A mora hint as the page shows it: cautious, in the UI language, no severity (K-02).
-fn hint_json(h: &Hint, lang: &str) -> Value {
-    let de = lang == "de";
-    let word = if h.surface == h.meant {
-        h.meant.clone()
-    } else {
-        format!("{} ({})", h.surface, h.meant)
+/// A mora hint for the log: the backend words it.
+fn mora_note(h: &Hint) -> MoraNote {
+    let kind = match h.kind {
+        Kind::GeminateLeftOut => MoraKind::Geminate,
+        _ => MoraKind::Vowel,
     };
-    let text = match (h.kind, de) {
-        (Kind::GeminateLeftOut, true) => format!(
-            "Das っ in {word} war kaum zu hören, es klang eher wie {}. Vor dem nächsten Laut eine kurze Pause halten, so lang wie eine Silbe. Die Prüfung irrt sich manchmal; das zählt nicht als Fehler.",
-            h.heard
-        ),
-        (Kind::GeminateLeftOut, false) => format!(
-            "The っ in {word} was hard to hear; it sounded more like {}. Pause briefly before the next sound, as long as one syllable. The check is sometimes wrong; this does not count as a mistake.",
-            h.heard
-        ),
-        (_, true) => format!(
-            "Der lange Vokal in {word} klang eher kurz, wie {}. Ihn etwa doppelt so lang halten. Die Prüfung irrt sich manchmal; das zählt nicht als Fehler.",
-            h.heard
-        ),
-        (_, false) => format!(
-            "The long vowel in {word} sounded short, like {}. Hold it about twice as long. The check is sometimes wrong; this does not count as a mistake.",
-            h.heard
-        ),
-    };
-    json!({
-        "title": format!("{} → {}?", h.meant, h.heard),
-        "tierText": if de { "Aussprache · Hinweis" } else { "Pronunciation · hint" },
-        "meta": if de { "Moren-Länge" } else { "Mora length" },
-        "text": text,
-    })
+    MoraNote {
+        kind,
+        surface: h.surface.clone(),
+        meant: h.meant.clone(),
+        heard: h.heard.clone(),
+    }
 }
 
 /// What the learner reads when speaking does not work, in the UI language.
@@ -1794,40 +1710,6 @@ pub(crate) fn speech_text(e: &SpeechError, lang: &str) -> String {
         (SpeechError::Voice(why), true) => format!("Die Stimme ist ausgefallen ({why})."),
         (SpeechError::Voice(why), false) => format!("The voice failed ({why})."),
     }
-}
-
-/// The page's log of a restored session: the opening, then each turn with its corrections and
-/// the character's reply.
-fn log_of(scenario: &Scenario, state: &SessionState, lang: &str) -> Vec<Value> {
-    let mut log = vec![json!({ "who": "character", "markup": scenario.opening })];
-    for t in &state.turns {
-        let shown = kaiwa_core::feedback::visible(
-            if t.misrecognized { &[] } else { &t.corrections },
-            state.amount,
-        );
-        let corrections: Vec<Value> = shown
-            .iter()
-            .map(|x| {
-                let mut v = kaiwa_backend::summary::shown_view(x, lang);
-                v["disputed"] = json!(t.disputed.contains(&x.correction.better));
-                v
-            })
-            .collect();
-        log.push(json!({
-            "who": "learner",
-            "text": t.learner,
-            "typed": t.input == Input::Typed,
-            "corrections": corrections,
-            "pending": false,
-            "misrecognized": t.misrecognized,
-            "incomplete": t.incomplete,
-        }));
-        if !t.markup.is_empty() {
-            log.last_mut().expect("just pushed")["markup"] = t.markup.clone().into();
-        }
-        log.push(json!({ "who": "character", "markup": t.reply }));
-    }
-    log
 }
 
 /// The record of the summary with the kept mark in it. `None` without a record (recording the
