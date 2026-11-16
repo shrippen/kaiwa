@@ -123,8 +123,8 @@ QQC2.ScrollView {
             title: page.t("Ende eines Zugs", "End of a turn")
             hint: page.t("Beim Freisprechen: so lange Stille, bis Kaiwa annimmt, dass du fertig bist", "Hands-free: silence until Kaiwa takes it you are done")
             Choice {
-                readonly property var values: [1.2, 2, 3, 5]
-                model: [page.t("1,2 s", "1.2 s"), "2 s", "3 s", "5 s"]
+                readonly property var values: page.p.pauseSteps || []
+                model: values.map(function (s) { return String(Math.round(s * 100) / 100).replace(".", page.t(",", ".")) + " s" })
                 shown: Math.max(0, values.indexOf(page.p.endPause))
                 onActivated: function (i) { page.kaiwa.setSetting("endPause", String(values[i])) }
             }
