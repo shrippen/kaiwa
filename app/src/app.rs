@@ -139,13 +139,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use cxx_qt::Threading;
 
 use cxx_qt_lib::QString;
-use kaiwa_core::learner::Skill;
-use kaiwa_core::progress::DailyGoal;
-use kaiwa_store::Script;
+use kaiwa_backend::settings::{Felt, SettingError};
+use kaiwa_backend::transfer::ImportError;
 use serde_json::json;
 
 use crate::state::views;
-use crate::state::{AppState, now, state};
+use crate::state::{now, state};
 
 pub struct KaiwaAppRust {
     today: QString,
@@ -240,10 +239,20 @@ fn q(v: &serde_json::Value) -> QString {
 
 impl qobject::KaiwaApp {
     /// Tells the learner the profile was left as it is (it could not be read or written).
-    fn say_unreadable(mut self: Pin<&mut Self>, e: &kaiwa_store::StoreError) {
+    fn say_unreadable(mut self: Pin<&mut Self>, e: &anyhow::Error) {
         let msg = match self.lang().to_string() == "de" {
             true => format!("Das Profil ließ sich nicht ändern, nichts geändert: {e}"),
             false => format!("The profile could not be changed, nothing changed: {e}"),
+        };
+        self.as_mut().set_notice(QString::from(&msg));
+    }
+
+    /// Tells the learner the setting is saved but its effect failed (today's goal, deleting
+    /// recordings).
+    fn say_unapplied(mut self: Pin<&mut Self>, e: &anyhow::Error) {
+        let msg = match self.lang().to_string() == "de" {
+            true => format!("Gespeichert, aber nicht ganz umgesetzt: {e}"),
+            false => format!("Saved, but not fully applied: {e}"),
         };
         self.as_mut().set_notice(QString::from(&msg));
     }
@@ -372,131 +381,20 @@ impl qobject::KaiwaApp {
     }
 
     fn set_setting(mut self: Pin<&mut Self>, key: &QString, value: &QString) {
-        let (key, value) = (key.to_string(), value.to_string());
-        // The brake follows the new limit at once (/LF714/).
-        if key == "costLimit" {
-            let edited = state().set_cost_limit(value.parse().ok(), now());
-            if let Err(e) = edited {
-                self.as_mut().say_unreadable(&e);
-                return;
-            }
-            self.as_mut().refresh();
-            return;
+        let edited = state().set_setting(&key.to_string(), &value.to_string(), now());
+        match edited {
+            Err(SettingError::NotSaved(e)) => self.as_mut().say_unreadable(&e),
+            Err(SettingError::NotApplied(e)) => self.as_mut().say_unapplied(&e),
+            Ok(()) => {}
         }
-        // The pick is the learner's: a placement leaves it (V-02).
-        if key == "feedback" {
-            let Ok(a) = serde_json::from_value(json!(value)) else {
-                return;
-            };
-            if let Err(e) = state().store.set_feedback(a) {
-                self.as_mut().say_unreadable(&e);
-                return;
-            }
-            self.as_mut().refresh();
-            return;
-        }
-        {
-            let st = state();
-            // A profile that cannot be read stays as it is; the learner is told.
-            let edited = st.store.update_profile(|p| {
-                match key.as_str() {
-                    "goal" => {
-                        if let Ok(m) = value.parse::<u32>() {
-                            p.daily_goal = DailyGoal::Minutes(m.clamp(1, 120));
-                        }
-                    }
-                    "gamification" => p.gamification = value == "true",
-                    "script" => {
-                        p.script = match value.as_str() {
-                            "1" => Script::Kana,
-                            "2" => Script::Hidden,
-                            _ => Script::Furigana,
-                        }
-                    }
-                    "endPause" => {
-                        if let Ok(s) = value.parse::<f32>() {
-                            p.end_pause_secs = kaiwa_core::turn_end::clamp_pause(s);
-                        }
-                    }
-                    "style" => p.style = value.parse().unwrap_or(0).min(2),
-                    "uiLang" => {
-                        p.ui_lang = if value == "en" {
-                            "en".into()
-                        } else {
-                            "de".into()
-                        }
-                    }
-                    "reminder" => p.reminder = value.parse().ok(),
-                    "moraHints" => p.mora_hints = value == "true",
-                    "unloadAfter" => p.unload_after_min = value.parse().ok(),
-                    "handsFree" => p.hands_free = value == "true",
-                    "textScale" => {
-                        if let Ok(s) = value.parse::<f32>() {
-                            p.text_scale = s.clamp(1.0, kaiwa_store::TEXT_SCALE_MAX);
-                        }
-                    }
-                    "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
-                    "name" => p.name = value,
-                    // The tutor (Q-15): a preset id or "" for none; model and server for an
-                    // OpenAI-compatible one.
-                    // Model and server belong to the provider: a new one starts without them, so
-                    // no server of the old one is used by mistake.
-                    "tutorProvider" => {
-                        let id = kaiwa_ai::presets::preset(&value)
-                            .map(|p| p.id.to_string())
-                            .unwrap_or_default();
-                        if id != p.tutor.provider {
-                            p.tutor = kaiwa_ai::Tutor {
-                                provider: id,
-                                ..Default::default()
-                            };
-                        }
-                    }
-                    // The microphone (a device id from MicTest.devices); "" is the default.
-                    "microphone" => p.microphone = (!value.is_empty()).then_some(value),
-                    "tutorModel" => p.tutor.model = value.trim().to_string(),
-                    "tutorBase" => p.tutor.base_url = value.trim().to_string(),
-                    _ => {}
-                }
-            });
-            let p = match edited {
-                Ok(p) => p,
-                Err(e) => {
-                    drop(st);
-                    self.as_mut().say_unreadable(&e);
-                    return;
-                }
-            };
-            // A day already begun is judged by the goal it ends with (/LF602/).
-            if key == "goal"
-                && let Err(e) = st.store.set_day_goal(now().day(), p.daily_goal)
-            {
-                eprintln!("kaiwa: {e}");
-            }
-            // Turning recordings off (or shortening the days) deletes them now.
-            if key == "keepRecordings"
-                && let Err(e) = st.purge_recordings(now())
-            {
-                eprintln!("kaiwa: {e:#}");
-            }
-        }
+        // Also after a failure: the page shows what the profile now holds.
         self.as_mut().refresh();
     }
 
     fn nudge(mut self: Pin<&mut Self>, skill: &QString, up: bool) {
-        let Ok(skill) = serde_json::from_value::<Skill>(json!(skill.to_string())) else {
-            return;
-        };
         self.as_mut().set_notice(QString::default());
-        let saved = {
-            let st = state();
-            st.store.learning().and_then(|mut l| {
-                // "Too easy" for listening lifts the speed one step at once (Selin, /LF202/).
-                let (model, regulator) = (&mut l.model, &mut l.regulator);
-                kaiwa_core::difficulty::learner_says(model, regulator, skill, up);
-                st.store.set_learning(&l)
-            })
-        };
+        let felt = if up { Felt::TooEasy } else { Felt::TooHard };
+        let saved = state().nudge(&skill.to_string(), felt);
         if let Err(e) = saved {
             self.as_mut().say_unreadable(&e);
         }
@@ -515,22 +413,11 @@ impl qobject::KaiwaApp {
     }
 
     fn export_profile(mut self: Pin<&mut Self>, file: &QString) {
-        let file = file.to_string();
-        let file = file.strip_prefix("file://").unwrap_or(&file).to_string();
-        let result = {
-            let st = state();
-            st.store
-                .export(now())
-                .map_err(anyhow::Error::from)
-                .and_then(|v| {
-                    std::fs::write(&file, serde_json::to_string_pretty(&v)?)?;
-                    Ok(())
-                })
-        };
+        let result = state().export_to(&file.to_string(), now());
         let de = self.lang().to_string() == "de";
         self.as_mut().set_notice(QString::from(&match result {
-            Ok(()) if de => format!("Exportiert nach {file}."),
-            Ok(()) => format!("Exported to {file}."),
+            Ok(file) if de => format!("Exportiert nach {}.", file.display()),
+            Ok(file) => format!("Exported to {}.", file.display()),
             Err(e) if de => format!("Der Export ist fehlgeschlagen: {e}"),
             Err(e) => format!("The export failed: {e}"),
         }));
@@ -594,21 +481,12 @@ impl qobject::KaiwaApp {
     }
 
     fn import_profile(mut self: Pin<&mut Self>, file: &QString) {
-        let file = file.to_string();
-        let file = file.strip_prefix("file://").unwrap_or(&file).to_string();
-        let result = std::fs::read_to_string(&file)
-            .map_err(|e| ImportError::Unreadable(e.to_string()))
-            .and_then(|text| {
-                serde_json::from_str::<serde_json::Value>(&text)
-                    .map_err(|_| ImportError::NotAnExport)
-            })
-            .and_then(|v| {
-                state().store.import(&v).map_err(|e| match e {
-                    kaiwa_store::StoreError::NotEmpty => ImportError::NotEmpty,
-                    kaiwa_store::StoreError::WrongFormat(_) => ImportError::NotAnExport,
-                    e => ImportError::Broken(e.to_string()),
-                })
-            });
+        let result = state().import_from(&file.to_string());
+        let file = match &result {
+            Ok(file) => file.display().to_string(),
+            Err(_) => file.to_string(),
+        };
+        let result = result.map(|_| ());
         // The import brings its own UI language: say it in the one the profile has now.
         self.as_mut().refresh();
         let de = self.lang().to_string() == "de";
@@ -638,10 +516,7 @@ impl qobject::KaiwaApp {
         self.as_mut().set_notice(QString::default());
         let result = {
             let mut st = state();
-            let dir = st.dir();
-            kaiwa_backend::profiles::set_current(&dir, &file.to_string())
-                .and_then(|path| AppState::open_at(path, false))
-                .map(|b| *st = b)
+            st.open_profile(&file.to_string()).map(|b| *st = b)
         };
         if let Err(e) = result {
             self.as_mut().set_notice(QString::from(&format!("{e:#}")));
@@ -651,22 +526,15 @@ impl qobject::KaiwaApp {
 
     fn new_profile(mut self: Pin<&mut Self>, name: &QString) {
         let name = name.to_string();
-        if name.trim().is_empty() {
-            return;
-        }
         self.as_mut().set_answer(QString::default());
         self.as_mut().set_notice(QString::default());
         let result = {
             let mut st = state();
-            let dir = st.dir();
-            let lang = st
-                .store
-                .profile()
-                .map(|p| p.ui_lang)
-                .unwrap_or_else(|_| "de".into());
-            kaiwa_backend::profiles::create(&dir, &name, &lang)
-                .and_then(|path| AppState::open_at(path, false))
-                .map(|b| *st = b)
+            st.add_profile(&name).map(|b| {
+                if let Some(b) = b {
+                    *st = b;
+                }
+            })
         };
         if let Err(e) = result {
             self.as_mut().set_notice(QString::from(&format!("{e:#}")));
@@ -705,21 +573,11 @@ impl qobject::KaiwaApp {
     }
 
     fn skip_placement(mut self: Pin<&mut Self>) {
-        {
-            let edited = state().store.update_profile(|p| p.placed = true);
-            if let Err(e) = edited {
-                self.as_mut().say_unreadable(&e);
-                return;
-            }
+        let edited = state().skip_placement();
+        if let Err(e) = edited {
+            self.as_mut().say_unreadable(&e);
+            return;
         }
         self.as_mut().refresh();
     }
-}
-
-/// Why an import did not happen, for the words the page says.
-enum ImportError {
-    Unreadable(String),
-    NotAnExport,
-    NotEmpty,
-    Broken(String),
 }

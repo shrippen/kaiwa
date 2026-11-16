@@ -88,10 +88,10 @@ A change that needs more places than its row lists is a finding for the next aud
 
 ## Known deviations
 
-- The app reaches past the backend: it uses the store at about 30 places and depends on
-  `kaiwa-store`, `kaiwa-core`, `kaiwa-ai` and `kaiwa-lang` directly; rules for settings
-  live in `app/src/app.rs`. `kaiwa-sim` depends on the same four crates. `AUDIT.md`
-  finding 7.
+- The app reaches past the backend: it uses the store at about 20 places (17 in
+  `conversation.rs`, the rest profile reads in `app.rs`, `main.rs`, `mic.rs`) and depends on
+  `kaiwa-store`, `kaiwa-core`, `kaiwa-ai` and `kaiwa-lang` directly. `kaiwa-sim` depends on
+  the same four crates. `AUDIT.md` finding 7.
 - The app drives microphone and voice itself: `app/src` uses `kaiwa-speech` directly
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
   command yet. Not in `AUDIT.md` so far; finding 6 proposes to leave microphone and

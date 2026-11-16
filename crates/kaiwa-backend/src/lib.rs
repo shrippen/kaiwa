@@ -20,8 +20,10 @@ pub mod pause;
 pub mod profiles;
 pub mod recordings;
 pub mod reminder;
+pub mod settings;
 pub mod short;
 pub mod talk;
+pub mod transfer;
 pub mod views;
 
 use std::collections::BTreeMap;
