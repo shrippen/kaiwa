@@ -112,7 +112,9 @@ impl qobject::MicTest {
             p.silence();
         }
         self.as_mut().set_playing(false);
-        match Mic::open(&state(), Hands::Button).mic {
+        // Own statement: the state guard must not live through the arms, `lang()` locks it again.
+        let opened = Mic::open(&state(), Hands::Button).mic;
+        match opened {
             Ok(m) => {
                 self.as_mut().rust_mut().mic = Some((m, Instant::now()));
                 self.as_mut().rust_mut().recording = None;

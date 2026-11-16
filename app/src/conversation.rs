@@ -863,9 +863,9 @@ impl qobject::Conversation {
     }
 
     fn set_sound(mut self: Pin<&mut Self>, louder: bool, clear: bool) {
-        if let Err(e) = state().set_sound(louder, clear) {
-            self.as_mut().say_unsaved(&e.to_string());
-        }
+        state()
+            .set_sound(louder, clear)
+            .unwrap_or_else(|e| self.as_mut().say_unsaved(&e.to_string()));
         self.as_mut().set_louder(louder);
         self.as_mut().set_clear(clear);
     }
