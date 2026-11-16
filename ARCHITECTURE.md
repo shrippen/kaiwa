@@ -96,8 +96,7 @@ A change that needs more places than its row lists is a finding for the next aud
 - The app drives microphone and voice itself: `app/src` uses `kaiwa-speech` directly
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
   command yet. `AUDIT.md` finding 7.
-- The placement runs in the app, not as a flow in the backend; the page's conversation log
-  is built in the app and read back by the backend. Findings 4 and 5.
+- The page's conversation log is built in the app and read back by the backend. Finding 5.
 - The summary after a talk is put together in three places (backend, app, short talk).
   Finding 1.
 - Some failures to load are only logged: the main pages, an unreadable profile on them,
