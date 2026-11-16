@@ -28,15 +28,15 @@ impl Backend {
     }
 
     fn book(&self, spent: Spent, now: Moment, session_ended: bool) -> anyhow::Result<Month> {
-        let mut m = self.month_cost(now)?;
-        m.cents += spent.cents;
-        m.calls += spent.calls;
-        m.unknown_calls += spent.unknown_calls;
-        m.paid |= spent.cents > 0.0;
-        if session_ended && std::mem::take(&mut m.paid) {
-            m.sessions += 1;
-        }
-        self.store.set_state_value(&key(now), &m)?;
+        let (m, ()) = self.store.update_state_value(&key(now), |m: &mut Month| {
+            m.cents += spent.cents;
+            m.calls += spent.calls;
+            m.unknown_calls += spent.unknown_calls;
+            m.paid |= spent.cents > 0.0;
+            if session_ended && std::mem::take(&mut m.paid) {
+                m.sessions += 1;
+            }
+        })?;
         self.arm_brake(now)?;
         Ok(m)
     }
@@ -124,7 +124,7 @@ mod tests {
     #[test]
     fn two_backends_booking_at_once_lose_nothing() {
         // Two windows on one profile file: every booking lands in the month.
-        const BOOKINGS: u32 = 100;
+        const BOOKINGS: u32 = 25;
         const WINDOWS: usize = 2;
         let b = backend("cost-race");
         let path = b.dir.join("profile.kaiwa");

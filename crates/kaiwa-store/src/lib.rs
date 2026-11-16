@@ -1475,6 +1475,6 @@ impl Store {
         Ok(())
     }
 }
-
+mod shared;
 #[cfg(test)]
 mod tests;
