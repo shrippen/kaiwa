@@ -122,6 +122,42 @@ mod tests {
     }
 
     #[test]
+    fn two_backends_booking_at_once_lose_nothing() {
+        // Two windows on one profile file: every booking lands in the month.
+        const BOOKINGS: u32 = 100;
+        const WINDOWS: usize = 2;
+        let b = backend("cost-race");
+        let path = b.dir.join("profile.kaiwa");
+        let now = Moment::new(1_791_100_000, 120);
+        // Opened first, released together, so the bookings overlap.
+        let start = std::sync::Arc::new(std::sync::Barrier::new(WINDOWS));
+        let threads: Vec<_> = (0..WINDOWS)
+            .map(|_| {
+                let other = crate::Backend::open_at(path.clone(), false).unwrap();
+                let start = start.clone();
+                std::thread::spawn(move || {
+                    start.wait();
+                    for _ in 0..BOOKINGS {
+                        let spent = Spent {
+                            cents: 1.0,
+                            calls: 1,
+                            unknown_calls: 0,
+                        };
+                        other.book(spent, now, false).unwrap();
+                    }
+                })
+            })
+            .collect();
+        for t in threads {
+            t.join().unwrap();
+        }
+
+        let m = b.month_cost(now).unwrap();
+        assert_eq!(m.calls, WINDOWS as u32 * BOOKINGS);
+        assert_eq!(m.cents, f64::from(WINDOWS as u32 * BOOKINGS));
+    }
+
+    #[test]
     fn a_new_limit_brakes_or_frees_at_once() {
         let b = backend("cost-limit");
         let now = Moment::new(1_791_100_000, 120);
