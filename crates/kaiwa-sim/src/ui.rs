@@ -309,7 +309,7 @@ fn gamification_off(root: &Path) -> Result<Option<String>> {
     for g in &goals {
         last = t.say(&b, &g.help.example, false, NOW)?;
     }
-    if last["recorded"].get("xp").is_some() {
+    if !last["recorded"]["xp"].is_null() {
         found.push("XP after a short talk".into());
     }
     for dir in ["app/qml"] {

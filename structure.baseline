@@ -8,7 +8,7 @@ exclude	spikes/s06-moren/*
 exclude	spikes/s07-pitch/*
 app/qml/ConversationPage.qml	-	lines=980
 app/src/app.rs	refresh	length=90
-app/src/conversation.rs	-	lines=1919
+app/src/conversation.rs	-	lines=1895
 app/src/conversation.rs	begin	length=98
 app/src/conversation.rs	listen	ccn=24 length=100
 app/src/conversation.rs	speak_at	ccn=18
@@ -30,7 +30,7 @@ crates/kaiwa-core/src/difficulty.rs	words	ccn=32
 crates/kaiwa-core/src/learner.rs	describe_level	ccn=36 nesting=6
 crates/kaiwa-core/src/progress.rs	streak	nesting=5
 crates/kaiwa-core/src/romaji.rs	word_to_kana	ccn=18
-crates/kaiwa-core/src/session.rs	-	lines=1321
+crates/kaiwa-core/src/session.rs	-	lines=1312
 crates/kaiwa-core/src/session.rs	take	length=90
 crates/kaiwa-lang/examples/excerpt.rs	main	ccn=34 length=102
 crates/kaiwa-lang/examples/levels.rs	main	ccn=38 length=136
