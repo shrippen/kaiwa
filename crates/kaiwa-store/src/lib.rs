@@ -72,17 +72,12 @@ fn is_month_key(key: &str) -> bool {
         && (b"01".as_slice()..=b"12".as_slice()).contains(&&b[5..7])
 }
 
-/// The text sizes the settings offer (/LL202/); the profile page shows them as they are.
-pub const TEXT_SCALE_STEPS: [f32; 4] = [1.0, 1.25, 1.5, 1.6];
+pub use kaiwa_core::choices::{TEXT_SCALE_STEPS, UNLOAD_STEPS};
 
 /// The largest text size the app offers (/LL202/; owner, 10.11.2026: 160 % for now). Above
 /// it the profile page no longer fits a small laptop's window (`tools/font-160.sh`). A profile
 /// that holds more is shown and started at this size.
 pub const TEXT_SCALE_MAX: f32 = TEXT_SCALE_STEPS[TEXT_SCALE_STEPS.len() - 1];
-
-/// The idle times the settings offer for unloading the speech models, in minutes; `None`
-/// keeps them (/LL012/).
-pub const UNLOAD_STEPS: [Option<u32>; 4] = [Some(5), Some(10), Some(30), None];
 
 /// What a new profile unloads after: one of `UNLOAD_STEPS`.
 pub const DEFAULT_UNLOAD: Option<u32> = UNLOAD_STEPS[1];

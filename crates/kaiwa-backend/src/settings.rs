@@ -12,9 +12,6 @@ use crate::Backend;
 
 const GOAL_MIN_MINUTES: u32 = 1;
 const GOAL_MAX_MINUTES: u32 = 120;
-/// The daily goals the settings offer, in minutes; inside the limits above, which also hold
-/// a value an import or an older profile brings.
-pub(crate) const GOAL_STEPS: [u32; 5] = [3, 5, 10, 15, 20];
 /// The highest style: 0 system, 1 Kante, 2 Kante Light.
 const STYLE_MAX: u8 = 2;
 const LANG_EN: &str = "en";
@@ -314,7 +311,7 @@ mod tests {
             last.as_f64().unwrap() as f32
         );
         assert_eq!(set(&b, "goal", "3").daily_goal, DailyGoal::Minutes(3));
-        let goals = GOAL_STEPS;
+        let goals = kaiwa_core::choices::GOAL_STEPS;
         assert!(
             goals
                 .iter()
