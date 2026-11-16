@@ -8,7 +8,6 @@ exclude	spikes/s06-moren/*
 exclude	spikes/s07-pitch/*
 app/qml/ConversationPage.qml	-	lines=980
 app/src/app.rs	refresh	length=90
-app/src/app.rs	set_setting	ccn=35 length=111
 app/src/conversation.rs	-	lines=2002
 app/src/conversation.rs	begin	length=111
 app/src/conversation.rs	listen	ccn=24 length=100

@@ -114,6 +114,27 @@ impl Backend {
         Ok(())
     }
 
+    /// Makes `file` (a name in this profile's directory) the profile in use and opens it.
+    pub fn open_profile(&self, file: &str) -> anyhow::Result<Backend> {
+        let path = set_current(&self.dir(), file)?;
+        Backend::open_at(path, false)
+    }
+
+    /// Creates a profile called `name`, with this one's UI language, makes it current and
+    /// opens it; `None` for a blank name.
+    pub fn add_profile(&self, name: &str) -> anyhow::Result<Option<Backend>> {
+        if name.trim().is_empty() {
+            return Ok(None);
+        }
+        let lang = self
+            .store
+            .profile()
+            .map(|p| p.ui_lang)
+            .unwrap_or_else(|_| "de".into());
+        let path = create(&self.dir(), name, &lang)?;
+        Ok(Some(Backend::open_at(path, false)?))
+    }
+
     /// The provider whose key the settings show: the tutor's, when it takes a key.
     fn key_provider(&self) -> Option<&'static str> {
         let id = self.tutor_env()("KAIWA_PROVIDER")?;
@@ -400,5 +421,31 @@ mod tests {
 
         drop(b);
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_blank_name_makes_no_profile() {
+        let b = crate::TempBackend::new("blank-profile", false).unwrap();
+        assert!(b.add_profile("  ").unwrap().is_none());
+        assert_eq!(profiles_in(&b.dir()).len(), 1);
+    }
+
+    #[test]
+    fn a_new_profile_takes_the_language_and_becomes_current() {
+        let b = crate::TempBackend::new("new-profile", false).unwrap();
+        b.set_setting("uiLang", "en", crate::now()).unwrap();
+        let lena = b.add_profile(" Lena ").unwrap().unwrap();
+        let p = lena.store.profile().unwrap();
+        assert_eq!((p.name.as_str(), p.ui_lang.as_str()), ("Lena", "en"));
+        assert_eq!(current_in(&b.dir()), lena.path);
+    }
+
+    #[test]
+    fn switching_opens_the_named_profile_and_refuses_a_missing_one() {
+        let b = crate::TempBackend::new("switch-profile", false).unwrap();
+        let lena = b.add_profile("Lena").unwrap().unwrap();
+        let back = lena.open_profile("profile.kaiwa").unwrap();
+        assert_eq!(back.path, b.path);
+        assert!(back.open_profile("gone.kaiwa").is_err());
     }
 }
