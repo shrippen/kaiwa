@@ -1,5 +1,5 @@
 //! The skip commands (/LF215/): the offer on the path and the offer after the placement, and
-//! taking them. The rule for keigo is `LearnerModel::keigo_ready`.
+//! taking them. The rule for keigo is `LearnerModel::may_skip`.
 
 use kaiwa_core::curriculum::NodeState;
 
@@ -14,7 +14,7 @@ fn has_keigo(st: &Backend, id: &str) -> bool {
 
 /// The unit the skip offer is about (/LF215/, T-08), if there is an offer: three sessions in a
 /// row went almost without a slip since the last skip, and the unit the learner is in now is
-/// not one with keigo while the learner's register lacks it (`LearnerModel::keigo_ready`, as after
+/// not one with keigo while the learner's register lacks it (`LearnerModel::may_skip`, as after
 /// the placement).
 pub fn skip_offer(st: &Backend) -> anyhow::Result<Option<kaiwa_core::curriculum::UnitNode>> {
     let l = st.store.learning()?;
@@ -30,8 +30,8 @@ pub fn skip_offer(st: &Backend) -> anyhow::Result<Option<kaiwa_core::curriculum:
     else {
         return Ok(None);
     };
-    let keigo = unit.scenarios.iter().any(|s| has_keigo(st, &s.id));
-    Ok((l.model.keigo_ready() || !keigo).then_some(unit))
+    let keigo = || unit.scenarios.iter().any(|s| has_keigo(st, &s.id));
+    Ok(l.model.may_skip(keigo).then_some(unit))
 }
 
 /// Takes the skip offer for `unit` (the button at the path's hint): the unit counts as done and

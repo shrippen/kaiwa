@@ -507,10 +507,9 @@ impl Curriculum {
             Some("n4") => level >= at("n3"),
             _ => false,
         };
-        let keigo_ok = m.keigo_ready();
         self.units
             .iter()
-            .take_while(|u| ready(u) && (keigo_ok || !keigo(u)))
+            .take_while(|u| ready(u) && m.may_skip(|| keigo(u)))
             .filter(|u| !self.unit_done(u, p))
             .map(|u| u.id.clone())
             .collect()
