@@ -92,17 +92,24 @@ A change that needs more places than its row lists is a finding for the next aud
   `kaiwa-lang` directly: placement state and session types, feedback words, `turn_end` for
   the microphone, the tutor's error kinds, and unloading UniDic. `kaiwa-sim` reaches the
   store and the same four crates, and the backend's `store` stays public for it.
-  `AUDIT.md` finding 7.
+  `AUDIT.md` findings 4, 5 and 6.
 - The app drives microphone and voice itself: `app/src` uses `kaiwa-speech` directly
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
-  command yet. Not in `AUDIT.md` so far; finding 6 proposes to leave microphone and
-  voice in the app, this file replaces that part.
+  command yet. `AUDIT.md` finding 7.
+- The placement runs in the app, not as a flow in the backend; the page's conversation log
+  is built in the app and read back by the backend. Findings 4 and 5.
+- The summary after a talk is put together in three places (backend, app, short talk).
+  Finding 1.
+- Some failures to load are only logged: the main pages, an unreadable profile on them,
+  arming the cost brake after a new limit, purging old recordings on opening. Finding 2.
+- The settings page keeps its own lists for text size, daily goal and unloading time.
+  Finding 3.
 - `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
-  `turn_xp`. Rest of finding 4.
+  `turn_xp`. `AUDIT.md`, "Seit dem letzten Audit", finding 4.
 - Some persona checks still read source text: scans of all pages for strings, names,
   handlers and gamification text, the palette's colours, the voice's pace in
   `app/src/conversation.rs` and the one file that downloads. What a page does is checked in
-  QML tests (`app/qml/tests`). Finding 8.
+  QML tests (`app/qml/tests`). `AUDIT.md`, "Seit dem letzten Audit", finding 8.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
   then the app is the only front end and runs the backend in its own process. On that
   branch `kaiwad` drives microphone and recognition itself; M4 moves that into the
