@@ -100,8 +100,6 @@ A change that needs more places than its row lists is a finding for the next aud
   short talk, and the two differ. Finding 6.
 - What a finished talk changes is written twice in the store and a third time in
   `kaiwa-sim`'s day simulation. Finding 4.
-- Error kinds are named in the core and again, differently, in the backend's views.
-  Finding 1.
 - A failed save in a conversation is only logged. Finding 5.
 - Some persona checks still read source text: scans of all pages for strings, names,
   handlers and gamification text, the palette's colours, the voice's pace in
