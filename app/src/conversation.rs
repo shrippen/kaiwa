@@ -446,12 +446,13 @@ impl qobject::Conversation {
     fn start_placement(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().placement = Some(Placement::default());
         self.as_mut().set_placement_ask(false);
+        // Cleared here, not per stage: a failure booked at the end of a stage stays shown.
+        self.as_mut().set_notice(QString::default());
         self.begin_stage(0);
     }
 
     /// Plays stage `i` of the placement ([`placement::stage_session`]), nothing stored.
     fn begin_stage(mut self: Pin<&mut Self>, i: usize) {
-        self.as_mut().set_notice(QString::default());
         let id = STAGES[i].0;
         let mut failed = Vec::new();
         let prepared = {
