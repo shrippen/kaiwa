@@ -99,6 +99,10 @@ jobs:
         run: tools/qml-tests.sh
       - name: Speech crate (microphone, ReazonSpeech; the model test skips without a model)
         run: cargo test --locked -p kaiwa-speech
+      - name: Backend speech (microphone, voice, models; feature `speech`)
+        run: cargo test --locked -p kaiwa-backend --features speech
+      - name: Lint the app (Qt; the job `rust` lints the rest)
+        run: cargo clippy --locked -p kaiwa-app --all-targets -- -D warnings
       - name: A package has no demo (Q-15)
         run: |
           cargo build --locked -p kaiwa-app
