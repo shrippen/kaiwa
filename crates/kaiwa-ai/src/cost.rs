@@ -62,7 +62,7 @@ pub struct Spent {
     pub calls: u32,
 }
 
-/// What the cloud calls of this process cost since the last [`Meter::take`].
+/// What the cloud calls of one profile's tutor cost since the last [`Meter::take`].
 #[derive(Debug, Default)]
 pub struct Meter {
     spent: Mutex<Spent>,

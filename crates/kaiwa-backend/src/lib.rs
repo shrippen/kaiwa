@@ -495,7 +495,9 @@ impl Backend {
             .unwrap_or_default()
     }
 
-    /// What this profile's cloud tutor has cost since the last booking.
+    /// What this profile's cloud tutor has cost since the last booking; only tests and the
+    /// simulation read it, a front end sees costs through the views.
+    #[cfg(any(test, feature = "sim"))]
     pub fn meter(&self) -> &Arc<kaiwa_ai::cost::Meter> {
         &self.meter
     }
