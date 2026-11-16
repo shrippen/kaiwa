@@ -90,9 +90,11 @@ A change that needs more places than its row lists is a finding for the next aud
 
 - The app no longer uses the store, but still depends on `kaiwa-core`, `kaiwa-ai` and
   `kaiwa-lang` directly: placement state and session types, feedback words, `turn_end` for
-  the microphone, the tutor's error kinds, and unloading UniDic. `kaiwa-sim` reaches the
-  store and the same four crates, and the backend's `store` stays public for it.
-  `AUDIT.md` findings 4, 5 and 6.
+  the microphone, the tutor's error kinds, and unloading UniDic. `AUDIT.md` findings 4
+  and 5.
+- `kaiwa-sim` sets up and reads test state through the backend's `seed` (feature `sim`,
+  only the sim turns it on) and still depends on `kaiwa-store`, `kaiwa-core`, `kaiwa-ai`
+  and `kaiwa-lang` directly for its own checks. Rest of finding 6.
 - The app drives microphone and voice itself: `app/src` uses `kaiwa-speech` directly
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
   command yet. `AUDIT.md` finding 7.
