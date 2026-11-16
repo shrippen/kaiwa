@@ -366,6 +366,8 @@ impl Talk {
         };
         self.finished = true;
         failed.extend(b.track_grammar(&self.session, now).err());
+        // A profile kept open for days still honours the keep deadline (/LF712/).
+        failed.extend(b.purge_recordings(now).err());
         Some(recorded)
     }
 
