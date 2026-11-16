@@ -115,28 +115,35 @@ Kirigami.ApplicationWindow {
         KanteScope { target: home }
         globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
 
-        header: Rectangle {
-            color: KanteStyle.backgroundColor
-            implicitHeight: tabs.implicitHeight + KanteStyle.unit(16)
-            MainTabs {
-                id: tabs
-                anchors.fill: parent
-                anchors.margins: KanteStyle.unit(8)
-                model: [root.t("Heute", "Today"), root.t("Lernpfad", "Path"), root.t("Wiederholen", "Review"), root.t("Profil", "Profile"), root.t("Einstellungen", "Settings")]
-                counts: ["", "", reviewCount > 0 ? String(reviewCount) : "", "", ""]
-                // Everything due, as the start page counts it (the review page holds ten at a time).
-                readonly property int reviewCount: kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0
-                currentIndex: Math.max(0, root.views.indexOf(root.arg("--view", "start")))
-                review: root.views.indexOf("review")
-                // Every change reloads the views; leaving the review also forgets its unit.
-                onSwitched: function (kind) {
-                    if (kind === MainTabs.FromReview) {
-                        kaiwa.openReview("")
-                        return
+        header: Column {
+            Rectangle {
+                width: parent.width
+                color: KanteStyle.backgroundColor
+                implicitHeight: tabs.implicitHeight + KanteStyle.unit(16)
+                MainTabs {
+                    id: tabs
+                    anchors.fill: parent
+                    anchors.margins: KanteStyle.unit(8)
+                    model: [root.t("Heute", "Today"), root.t("Lernpfad", "Path"), root.t("Wiederholen", "Review"), root.t("Profil", "Profile"), root.t("Einstellungen", "Settings")]
+                    counts: ["", "", reviewCount > 0 ? String(reviewCount) : "", "", ""]
+                    // Everything due, as the start page counts it (the review page holds ten at a time).
+                    readonly property int reviewCount: kaiwa.today.length > 0 ? (JSON.parse(kaiwa.today).due || 0) : 0
+                    currentIndex: Math.max(0, root.views.indexOf(root.arg("--view", "start")))
+                    review: root.views.indexOf("review")
+                    // Every change reloads the views; leaving the review also forgets its unit.
+                    // What the last tab said (a notice) is not for the next.
+                    onSwitched: function (kind) {
+                        kaiwa.notice = ""
+                        if (kind === MainTabs.FromReview) {
+                            kaiwa.openReview("")
+                            return
+                        }
+                        kaiwa.refresh()
                     }
-                    kaiwa.refresh()
                 }
             }
+            // Profile and settings show the notice themselves.
+            NoticeLine { width: parent.width; kaiwa: kaiwa; wanted: tabs.currentIndex < root.views.indexOf("profile") }
         }
 
         StackLayout {

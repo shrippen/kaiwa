@@ -146,4 +146,32 @@ mod tests {
         b.purge_recordings(T0).unwrap();
         assert!(!f.exists());
     }
+
+    #[cfg(unix)]
+    #[test]
+    fn expired_recordings_that_stay_are_returned_by_open() {
+        // The recordings' folder is read-only, so the purge at opening fails.
+        use std::os::unix::fs::PermissionsExt;
+        let b = backend("open-locked", Some(30));
+        let f = b
+            .keep_recording(1, 0, &[0.1; 1600], 16_000, T0)
+            .unwrap()
+            .unwrap();
+        b.store
+            .update_profile(|p| p.keep_recordings_days = None)
+            .unwrap();
+        let dir = f.parent().unwrap().to_path_buf();
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o500)).unwrap();
+        // Root may delete there anyway: then there is nothing to show.
+        if std::fs::write(dir.join("probe"), b"").is_ok() {
+            std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
+            return;
+        }
+
+        let mut reopened = crate::Backend::open_at(b.path.clone(), false).unwrap();
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
+
+        assert!(reopened.take_unpurged().is_some());
+        assert!(reopened.take_unpurged().is_none(), "said once");
+    }
 }
