@@ -146,73 +146,24 @@ pub fn severity_word(s: Severity, lang: &str) -> &'static str {
 /// The word for a kind of mistake in the UI language.
 pub fn kind_word(k: kaiwa_ai::CorrectionKind, lang: &str) -> &'static str {
     use kaiwa_ai::CorrectionKind as K;
-    let de = lang == "de";
-    match k {
-        K::Particle => {
-            if de {
-                "Partikel"
-            } else {
-                "Particle"
-            }
-        }
-        K::Conjugation => {
-            if de {
-                "Konjugation"
-            } else {
-                "Conjugation"
-            }
-        }
-        K::WordChoice => {
-            if de {
-                "Wortwahl"
-            } else {
-                "Word choice"
-            }
-        }
-        K::Register => "Register",
-        K::WordOrder => {
-            if de {
-                "Satzstellung"
-            } else {
-                "Word order"
-            }
-        }
-        K::Counter => {
-            if de {
-                "Zählwort"
-            } else {
-                "Counter"
-            }
-        }
-        K::Omission => {
-            if de {
-                "Auslassung"
-            } else {
-                "Omission"
-            }
-        }
-        K::Loanword => {
-            if de {
-                "Lehnwort"
-            } else {
-                "Loanword"
-            }
-        }
-        K::Tense => {
-            if de {
-                "Zeitform"
-            } else {
-                "Tense"
-            }
-        }
-        K::Pronunciation => {
-            if de {
-                "Aussprache"
-            } else {
-                "Pronunciation"
-            }
-        }
+
+    // (German, English) per kind.
+    let (de, en) = match k {
+        K::Particle => ("Partikel", "Particle"),
+        K::Conjugation => ("Konjugation", "Conjugation"),
+        K::WordChoice => ("Wortwahl", "Word choice"),
+        K::Register => ("Höflichkeit", "Politeness"),
+        K::WordOrder => ("Satzstellung", "Word order"),
+        K::Counter => ("Zählwort", "Counter"),
+        K::Omission => ("Auslassung", "Omission"),
+        K::Loanword => ("Lehnwort", "Loanword"),
+        K::Tense => ("Zeitform", "Tense"),
+        K::Pronunciation => ("Aussprache", "Pronunciation"),
+    };
+    if lang == "de" {
+        return de;
     }
+    en
 }
 
 #[cfg(test)]

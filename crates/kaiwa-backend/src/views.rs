@@ -206,7 +206,7 @@ fn review_rows(st: &Backend, due: &[kaiwa_core::srs::Item]) -> anyhow::Result<Va
                     // The character's line to answer: a mini conversation (/LF230/).
                     // The line it answered, with furigana over every kanji like in the talk.
                     "cue": i.cue.as_deref().map(|c| kaiwa_lang::complete(crate::lookup::words(), c)),
-                    // What the correction was about, in words (Register, Partikel …).
+                    // What the correction was about, in words (Höflichkeit, Partikel …).
                     "practises": match &i.source {
                         kaiwa_core::srs::Source::Correction { kind } => kind_word(kind, de),
                         _ => "",
@@ -837,6 +837,7 @@ mod tests {
         assert_eq!(kind_word("omission", true), "Auslassung");
         assert_eq!(kind_word("loanword", false), "Loanword");
         assert_eq!(kind_word("word_order", true), "Satzstellung");
+        assert_eq!(kind_word("register", true), "Höflichkeit");
         assert_eq!(kind_word("nonsense", true), "Sonstiges");
         assert_eq!(kind_word("nonsense", false), "Other");
     }
