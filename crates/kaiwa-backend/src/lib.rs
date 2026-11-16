@@ -280,6 +280,8 @@ pub struct Backend {
     pub demo_data: bool,
     /// The keys of this profile ([`kaiwa_ai::secrets::KeyHome`]).
     keys: kaiwa_ai::secrets::Keys,
+    /// Why expired recordings stayed when the profile opened; [`Backend::take_unpurged`].
+    unpurged: Option<anyhow::Error>,
 }
 
 impl Backend {
@@ -380,7 +382,7 @@ impl Backend {
             .iter()
             .map(|j| Scenario::from_json(j).map(|s| (s.id.clone(), s)))
             .collect::<Result<_, _>>()?;
-        let st = Backend {
+        let mut st = Backend {
             store: db,
             keys,
             path,
@@ -389,16 +391,21 @@ impl Backend {
             grammar,
             scenarios,
             demo_data: demo,
+            unpurged: None,
         };
         #[cfg(any(test, feature = "demo"))]
         if demo && fresh {
             demo::seed(&st)?;
         }
         // Recordings past their days go when the profile opens (/LF712/).
-        if let Err(e) = st.purge_recordings(now()) {
-            eprintln!("kaiwa: {e:#}");
-        }
+        st.unpurged = st.purge_recordings(now()).err();
         Ok(st)
+    }
+
+    /// Why expired recordings stayed when the profile opened; once, for the front end to
+    /// tell the learner.
+    pub fn take_unpurged(&mut self) -> Option<anyhow::Error> {
+        self.unpurged.take()
     }
 }
 
