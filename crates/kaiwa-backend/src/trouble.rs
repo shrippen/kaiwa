@@ -134,4 +134,24 @@ mod tests {
         spare.wipe().unwrap();
         assert!(!spare.is_spare());
     }
+
+    #[test]
+    fn a_tutor_that_cannot_be_set_up_reaches_the_learner() {
+        // The local test's environment wins over the settings.
+        if std::env::var_os("KAIWA_PROVIDER").is_some()
+            || std::env::var_os("ANTHROPIC_API_KEY").is_some()
+        {
+            return;
+        }
+        let b = crate::TempBackend::new("tutor-no-key", false).unwrap();
+        b.store
+            .update_profile(|p| p.tutor.provider = "anthropic".into())
+            .unwrap();
+
+        // Chosen, but no key anywhere.
+        b.provider("n5-01-aisatsu");
+
+        let troubles = b.take_troubles();
+        assert!(!troubles.is_empty(), "the unready tutor was only logged");
+    }
 }
