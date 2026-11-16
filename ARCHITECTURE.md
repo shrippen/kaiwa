@@ -89,16 +89,16 @@ A change that needs more places than its row lists is a finding for the next aud
 ## Known deviations
 
 - The app no longer uses the store, but still depends on `kaiwa-core`, `kaiwa-ai` and
-  `kaiwa-lang` directly: placement state and session types, feedback words, `turn_end` for
-  the microphone, the tutor's error kinds, and unloading UniDic. `kaiwa-sim` reaches the
-  store and the same four crates, and the backend's `store` stays public for it.
-  `AUDIT.md` findings 4, 5 and 6.
+  `kaiwa-lang` directly, all in `conversation.rs`: session and turn types for the log,
+  `turn_end` for the microphone, the tutor's error kinds, the lookup's words, unloading
+  UniDic. `AUDIT.md` findings 5 and 7.
+- `kaiwa-sim` sets up and reads test state through the backend's `seed` (feature `sim`,
+  only the sim turns it on) and still depends on `kaiwa-store`, `kaiwa-core`, `kaiwa-ai`
+  and `kaiwa-lang` directly for its own checks. Rest of finding 6.
 - The app drives microphone and voice itself: `app/src` uses `kaiwa-speech` directly
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
   command yet. `AUDIT.md` finding 7.
 - The page's conversation log is built in the app and read back by the backend. Finding 5.
-- The summary after a talk is put together in three places (backend, app, short talk).
-  Finding 1.
 - Some failures to load are only logged: the main pages, an unreadable profile on them,
   arming the cost brake after a new limit, purging old recordings on opening. Finding 2.
 - The settings page keeps its own lists for text size, daily goal and unloading time.

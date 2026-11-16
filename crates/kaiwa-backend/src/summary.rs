@@ -1,10 +1,57 @@
 //! The summary page of a finished talk: what the end of the session did, in words
 //! (/LF310/, /LF603/, /LF605/).
 
-use kaiwa_core::Session;
+use kaiwa_core::feedback::{Shown, kind_word, severity_word};
+use kaiwa_core::{Session, Summary};
 use serde_json::{Value, json};
 
 use crate::{Backend, Recorded};
+
+/// One correction as the pages show it.
+pub fn shown_view(s: &Shown, lang: &str) -> Value {
+    let tier_text = if s.correction.also_possible {
+        if lang == "de" {
+            "Auch möglich"
+        } else {
+            "Also possible"
+        }
+    } else {
+        severity_word(s.correction.severity, lang)
+    };
+    json!({
+        "tier": s.tier,
+        "tierText": tier_text,
+        "meta": kind_word(s.correction.kind, lang),
+        "parts": s.parts,
+        "better": s.correction.better,
+        "explanation": s.correction.explanation,
+        "interrupts": s.interrupts,
+    })
+}
+
+/// The goals of a talk with which are reached, during the talk and on the summary.
+pub fn goals_view(s: &Session, lang: &str) -> Vec<Value> {
+    let met = s.summary().goals_met;
+    s.goals()
+        .iter()
+        .map(|g| json!({ "id": g.id, "text": g.text.get(lang), "done": met.contains(&g.id) }))
+        .collect()
+}
+
+/// What the session says about itself at the end: goals met, the top corrections, the
+/// review, the turns by kind.
+pub fn summary_view(s: &Session, lang: &str) -> Value {
+    let sum: Summary = s.summary();
+    json!({
+        "goalsMet": sum.goals_met.len(),
+        "goalsTotal": sum.goals_total,
+        "top": sum.top.iter().map(|x| shown_view(x, lang)).collect::<Vec<_>>(),
+        "review": sum.review,
+        "spoken": sum.spoken_turns,
+        "typed": sum.typed_turns,
+        "helps": sum.helps_used,
+    })
+}
 
 impl Backend {
     /// The summary of a recorded talk, and why the profile could not be read if it could not:
@@ -66,6 +113,23 @@ mod tests {
         assert!(view["xp"].is_null());
         assert!(view["xpWhy"].as_array().unwrap().is_empty());
         assert!(unread.is_none());
+    }
+
+    #[test]
+    fn the_goals_say_which_are_reached() {
+        let b = TempBackend::new("summary-goals", false).unwrap();
+        let s = session(&b);
+
+        let goals = goals_view(&s, "en");
+
+        assert_eq!(goals.len(), s.goals().len());
+        assert!(
+            goals
+                .iter()
+                .all(|g| g["done"] == false && g["id"].is_string())
+        );
+        assert_eq!(summary_view(&s, "en")["goalsTotal"], goals.len());
+        assert_eq!(summary_view(&s, "en")["goalsMet"], 0);
     }
 
     #[test]

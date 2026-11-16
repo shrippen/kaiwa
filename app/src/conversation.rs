@@ -202,9 +202,8 @@ use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_backend::flow::{self, Length, Talk};
 use kaiwa_backend::placing::{self, Next, Placing, Stage};
-use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::session::{Aid, SessionState};
-use kaiwa_core::{Input, Scenario, Summary};
+use kaiwa_core::{Input, Scenario};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
 use kaiwa_speech::g2p::G2p;
@@ -314,30 +313,6 @@ const MIN_CHECKED_SECS: f32 = 0.5;
 /// The voice's pace without a session: a little below Kokoro's normal one.
 const SPEED: f32 = 0.9;
 
-fn shown_json(s: &Shown, lang: &str) -> Value {
-    json!({
-        "tier": s.tier,
-        "tierText": if s.correction.also_possible { if lang == "de" { "Auch möglich" } else { "Also possible" } } else { severity_word(s.correction.severity, lang) },
-        "meta": kind_word(s.correction.kind, lang),
-        "parts": s.parts,
-        "better": s.correction.better,
-        "explanation": s.correction.explanation,
-        "interrupts": s.interrupts,
-    })
-}
-
-fn summary_json(s: &Summary, lang: &str) -> Value {
-    json!({
-        "goalsMet": s.goals_met.len(),
-        "goalsTotal": s.goals_total,
-        "top": s.top.iter().map(|x| shown_json(x, lang)).collect::<Vec<_>>(),
-        "review": s.review,
-        "spoken": s.spoken_turns,
-        "typed": s.typed_turns,
-        "helps": s.helps_used,
-    })
-}
-
 impl qobject::Conversation {
     fn publish_turns(mut self: Pin<&mut Self>) {
         // Every line as words to look up (/LF112/, Kante 1.33), once per line: the
@@ -378,13 +353,8 @@ impl qobject::Conversation {
         let (goals, done, summary) = {
             let talk = talk.lock().expect("talk lock");
             let session = talk.session();
-            let met = session.summary().goals_met;
-            let goals: Vec<Value> = session
-                .goals()
-                .iter()
-                .map(|g| json!({ "id": g.id, "text": g.text.get(&lang), "done": met.contains(&g.id) }))
-                .collect();
-            let summary = summary_json(&session.summary(), &lang).to_string();
+            let goals = kaiwa_backend::summary::goals_view(session, &lang);
+            let summary = kaiwa_backend::summary::summary_view(session, &lang).to_string();
             (goals, session.done(), summary)
         };
         self.as_mut()
@@ -702,7 +672,7 @@ impl qobject::Conversation {
         let (finished, shown) = {
             let talk = talk.lock().expect("talk lock");
             let shown = marked.recorded.as_ref().map(|r| {
-                let summary = summary_json(&talk.session().summary(), &lang);
+                let summary = kaiwa_backend::summary::summary_view(talk.session(), &lang);
                 (state().recorded_view(r, talk.session(), &lang), summary)
             });
             (talk.finished(), shown)
@@ -1360,7 +1330,7 @@ impl qobject::Conversation {
             self.as_mut().set_talk_state(ERROR);
             return;
         };
-        if !kaiwa_backend::talk::may_recognize(*self.busy()) {
+        if *self.busy() {
             return;
         }
         // No voice in it (no microphone, muted, wrong input): say so instead of letting the
@@ -1593,7 +1563,13 @@ impl qobject::Conversation {
 
 /// The learner's line of the log with what the tutor made of it.
 fn show_outcome(turn: &mut Value, outcome: &kaiwa_core::TurnOutcome, lang: &str) {
-    turn["corrections"] = Value::Array(outcome.shown.iter().map(|x| shown_json(x, lang)).collect());
+    turn["corrections"] = Value::Array(
+        outcome
+            .shown
+            .iter()
+            .map(|x| kaiwa_backend::summary::shown_view(x, lang))
+            .collect(),
+    );
     turn["pending"] = json!(false);
     turn["incomplete"] = json!(outcome.incomplete);
     // The tutor's furigana replace the dictionary's (ADR-004).
@@ -1824,7 +1800,7 @@ fn log_of(scenario: &Scenario, state: &SessionState, lang: &str) -> Vec<Value> {
         let corrections: Vec<Value> = shown
             .iter()
             .map(|x| {
-                let mut v = shown_json(x, lang);
+                let mut v = kaiwa_backend::summary::shown_view(x, lang);
                 v["disputed"] = json!(t.disputed.contains(&x.correction.better));
                 v
             })
