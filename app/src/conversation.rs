@@ -205,7 +205,7 @@ use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::learner::Skill;
 use kaiwa_core::placement::{self, Placement, Reading, STAGES, Step, TURNS_PER_STAGE};
 use kaiwa_core::session::{Aid, SessionState};
-use kaiwa_core::{Input, Scenario, Session, Summary};
+use kaiwa_core::{Input, Scenario, Summary};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
 use kaiwa_speech::g2p::G2p;
@@ -423,8 +423,8 @@ impl qobject::Conversation {
         let mut failed = Vec::new();
         let prepared = {
             let st = state();
-            let profile = or_default(st.store.profile(), &mut failed);
-            st.scenarios.get(id).cloned().map(|s| (s, profile))
+            let profile = or_default(st.profile(), &mut failed);
+            st.scenario(id).map(|s| (s, profile))
         };
         let Some((scenario, profile)) = prepared else {
             self.as_mut().say_all_unsaved(&failed);
@@ -507,7 +507,7 @@ impl qobject::Conversation {
             .filter(|(s, _)| *s != Skill::Pronunciation)
             .map(|(_, w)| w)
             .collect();
-        let saved = state().store.set_placement(model);
+        let saved = state().set_placement(model);
         if let Err(e) = saved {
             self.as_mut().say_unsaved(&e.to_string());
         }
@@ -560,7 +560,7 @@ impl qobject::Conversation {
             .unwrap_or_else(|| "jf_tebukuro".into());
         let opening = (log.len() == 1).then(|| session.opening().to_string());
         let mut failed = Vec::new();
-        let read = state().store.profile();
+        let read = state().profile();
         let sound = or_default(read.map(|p| (p.louder, p.clear, p.hands_free)), &mut failed);
         self.as_mut().say_all_unsaved(&failed);
         self.as_mut().set_louder(sound.0);
@@ -747,7 +747,7 @@ impl qobject::Conversation {
             let talk = talk.lock().expect("talk lock");
             let shown = marked.recorded.as_ref().map(|r| {
                 let summary = summary_json(&talk.session().summary(), &lang);
-                (recorded_view(r, talk.session(), &lang), summary)
+                (state().recorded_view(r, talk.session(), &lang), summary)
             });
             (talk.finished(), shown)
         };
@@ -772,7 +772,7 @@ impl qobject::Conversation {
         let mut failed = Vec::new();
         let (opened, lang) = {
             let st = state();
-            let lang = or_default(st.store.profile(), &mut failed).ui_lang;
+            let lang = or_default(st.profile(), &mut failed).ui_lang;
             (Talk::resume(&st, now()), lang)
         };
         self.as_mut().rust_mut().lang = lang.clone();
@@ -796,7 +796,7 @@ impl qobject::Conversation {
         let mut failed = Vec::new();
         let (opened, lang) = {
             let st = state();
-            let lang = or_default(st.store.profile(), &mut failed).ui_lang;
+            let lang = or_default(st.profile(), &mut failed).ui_lang;
             let id = match wanted.is_empty() {
                 true => {
                     let (id, next_failed) = Talk::next_scenario(&st);
@@ -807,8 +807,7 @@ impl qobject::Conversation {
             };
             // Nothing opens for a scenario that does not exist.
             let opened = st
-                .scenarios
-                .contains_key(&id)
+                .has_scenario(&id)
                 .then(|| Talk::begin(&st, &id, now(), Length::Full));
             (opened, lang)
         };
@@ -928,12 +927,7 @@ impl qobject::Conversation {
     }
 
     fn idle(mut self: Pin<&mut Self>) {
-        let Some(minutes) = state()
-            .store
-            .profile()
-            .ok()
-            .and_then(|p| p.unload_after_min)
-        else {
+        let Some(minutes) = state().profile().ok().and_then(|p| p.unload_after_min) else {
             return;
         };
         let quiet = *self.talk_state() == READY && !*self.busy() && self.capture.is_none();
@@ -976,7 +970,6 @@ impl qobject::Conversation {
     /// pause (/LF101/, T-01).
     fn after_turn(mut self: Pin<&mut Self>, by_pause: bool, text: &str) {
         let now = state()
-            .store
             .profile()
             .map(|p| p.end_pause_secs)
             .unwrap_or(kaiwa_core::turn_end::DEFAULT_PAUSE);
@@ -998,15 +991,7 @@ impl qobject::Conversation {
         let secs = *self.longer_pause() as f32;
         let mut failed = None;
         if secs > 0.0 {
-            let st = state();
-            match st.store.profile() {
-                Ok(mut p) if secs > p.end_pause_secs => {
-                    p.end_pause_secs = secs;
-                    failed = st.store.set_profile(&p).err().map(|e| e.to_string());
-                }
-                Ok(_) => {}
-                Err(e) => failed = Some(e.to_string()),
-            }
+            failed = state().take_longer_pause(secs).err().map(|e| e.to_string());
         }
         if let Some(e) = failed {
             self.as_mut().say_unsaved(&e);
@@ -1022,15 +1007,7 @@ impl qobject::Conversation {
     }
 
     fn set_sound(mut self: Pin<&mut Self>, louder: bool, clear: bool) {
-        let saved = {
-            let st = state();
-            st.store.profile().and_then(|mut p| {
-                p.louder = louder;
-                p.clear = clear;
-                st.store.set_profile(&p)
-            })
-        };
-        if let Err(e) = saved {
+        if let Err(e) = state().set_sound(louder, clear) {
             self.as_mut().say_unsaved(&e.to_string());
         }
         self.as_mut().set_louder(louder);
@@ -1185,10 +1162,7 @@ impl qobject::Conversation {
         let found = kaiwa_backend::lookup::lookup(&st, &w, &lang);
         let text = found["word"].as_str().unwrap_or(&w.key).to_string();
         // The unit as the review counts it (the curriculum's id, as for words from mistakes).
-        let unit = st
-            .curriculum
-            .unit_of(&self.scenario().to_string())
-            .map(|u| u.id.clone());
+        let unit = st.unit_id_of(&self.scenario().to_string());
         match kaiwa_backend::lookup::remember(&st, &text, unit.as_deref(), now()) {
             Ok(added) => added,
             Err(e) => {
@@ -1295,14 +1269,13 @@ impl qobject::Conversation {
         if *self.talk_state() != READY || *self.busy() || *self.finished() {
             return;
         }
-        let read = state().store.profile();
+        let read = state().profile();
         let read = read.inspect_err(|e| self.as_mut().say_unsaved(&e.to_string()));
         let microphone = read.ok().and_then(|p| p.microphone);
         match Capture::start_on(microphone.as_deref()) {
             Ok(c) => {
                 let turn_end = self.hands_free.then(|| {
                     let pause = state()
-                        .store
                         .profile()
                         .map(|p| p.end_pause_secs)
                         .unwrap_or(kaiwa_core::turn_end::DEFAULT_PAUSE);
@@ -1501,7 +1474,7 @@ impl qobject::Conversation {
         let Some(check) = self.mora.clone() else {
             return;
         };
-        if !state().store.profile().is_ok_and(|p| p.mora_hints) {
+        if !state().profile().is_ok_and(|p| p.mora_hints) {
             return;
         }
         let lang = self.lang.clone();
@@ -1586,7 +1559,7 @@ impl qobject::Conversation {
                             let shown = turned
                                 .recorded
                                 .as_ref()
-                                .map(|r| recorded_view(r, t.session(), &q.lang));
+                                .map(|r| state().recorded_view(r, t.session(), &q.lang));
                             Ok((turned, shown))
                         }
                         Err(e) => Err((e, t.failed_call(&state(), now()))),
@@ -1926,33 +1899,6 @@ fn keep_mark(recorded: &str) -> Option<String> {
     }
     recorded["markKept"] = json!(true);
     Some(recorded.to_string())
-}
-
-/// The summary of a recorded talk, and why the profile could not be read if it could not:
-/// the page then shows the summary with the defaults and says so.
-fn recorded_view(r: &kaiwa_store::Recorded, s: &Session, lang: &str) -> (Value, Option<String>) {
-    let profile = state().store.profile();
-    let unread = profile.as_ref().err().map(|e| e.to_string());
-    (recorded_json(r, s, profile.ok(), lang), unread)
-}
-
-/// What the end of the session did, in words (/LF310/, /LF603/, /LF605/).
-fn recorded_json(
-    r: &kaiwa_store::Recorded,
-    s: &Session,
-    profile: Option<kaiwa_store::Profile>,
-    lang: &str,
-) -> Value {
-    let gamification = profile.map(|p| p.gamification).unwrap_or(true);
-    let change = r.change.as_ref().map(|c| c.words(lang));
-    json!({
-        "xp": if gamification { Some(r.xp) } else { None },
-        "xpWhy": if gamification { s.summary().xp.explain(lang) } else { Vec::new() },
-        "change": change,
-        "newItems": r.new_items,
-        "scenarioDone": r.scenario_done,
-        "minutes": r.day.speaking_secs / 60,
-    })
 }
 
 #[cfg(test)]

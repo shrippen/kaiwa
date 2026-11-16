@@ -262,7 +262,7 @@ impl qobject::KaiwaApp {
         let unit = self.review_unit().to_string();
         let (today, path, review, scope, learner, stats, profile, lang, gam, privacy) = {
             let st = state();
-            let p = st.store.profile().unwrap_or_default();
+            let p = st.profile().unwrap_or_default();
             let privacy = views::privacy(&st, &p.ui_lang);
             (
                 views::today(&st, now),
@@ -442,7 +442,7 @@ impl qobject::KaiwaApp {
             let (added, streak) = {
                 let st = state();
                 let added = st.pause(today, days.unsigned_abs());
-                let streak = st.store.profile().map(|p| p.gamification).unwrap_or(true);
+                let streak = st.profile().map(|p| p.gamification).unwrap_or(true);
                 (added, streak)
             };
             // Say that it took, and until when: nothing else on the page shows a pause.

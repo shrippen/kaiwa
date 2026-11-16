@@ -22,6 +22,7 @@ pub mod recordings;
 pub mod reminder;
 pub mod settings;
 pub mod short;
+pub mod summary;
 pub mod talk;
 pub mod transfer;
 pub mod views;
@@ -38,6 +39,7 @@ use kaiwa_core::Scenario;
 use kaiwa_core::clock::Moment;
 use kaiwa_core::curriculum::Curriculum;
 use kaiwa_store::Store;
+pub use kaiwa_store::{Profile, Recorded};
 
 /// The level files of the curriculum (ADR-009), joined by [`Curriculum::from_files`].
 const CURRICULUM: &[&str] = &[
@@ -275,6 +277,21 @@ pub struct Backend {
 }
 
 impl Backend {
+    /// Whether a scenario with this id exists.
+    pub fn has_scenario(&self, id: &str) -> bool {
+        self.scenarios.contains_key(id)
+    }
+
+    /// The scenario with this id.
+    pub fn scenario(&self, id: &str) -> Option<Scenario> {
+        self.scenarios.get(id).cloned()
+    }
+
+    /// The curriculum's unit that holds the scenario, as the review counts it.
+    pub fn unit_id_of(&self, scenario: &str) -> Option<String> {
+        self.curriculum.unit_of(scenario).map(|u| u.id.clone())
+    }
+
     /// Opens the default profile, or the demo profile with `KAIWA_DEMO` set.
     pub fn open() -> anyhow::Result<Self> {
         #[cfg(any(test, feature = "demo"))]

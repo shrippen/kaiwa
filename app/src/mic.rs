@@ -90,7 +90,6 @@ pub struct MicTestRust {
 
 fn lang() -> String {
     state()
-        .store
         .profile()
         .map(|p| p.ui_lang)
         .unwrap_or_else(|_| "de".into())
@@ -170,7 +169,7 @@ impl qobject::MicTest {
             p.silence();
         }
         self.as_mut().set_playing(false);
-        let microphone = state().store.profile().ok().and_then(|p| p.microphone);
+        let microphone = state().profile().ok().and_then(|p| p.microphone);
         match Capture::start_on(microphone.as_deref()) {
             Ok(c) => {
                 self.as_mut().rust_mut().capture = Some((c, Instant::now()));

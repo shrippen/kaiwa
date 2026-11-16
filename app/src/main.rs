@@ -16,11 +16,7 @@ use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 fn main() {
     // The text size of the profile scales the whole interface, readings included (/LL202/),
     // on top of the system's own scaling.
-    let scale = state::state()
-        .store
-        .profile()
-        .map(|p| p.text_scale.min(kaiwa_store::TEXT_SCALE_MAX))
-        .unwrap_or(1.0);
+    let scale = state::state().text_scale();
     if scale > 1.0 {
         let base: f32 = std::env::var("QT_SCALE_FACTOR")
             .ok()
