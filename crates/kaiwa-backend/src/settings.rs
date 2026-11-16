@@ -2,6 +2,7 @@
 //! limits of each setting and what a change sets off live here, so no front end repeats them.
 //! An unknown key or a value that does not parse leaves the profile as it is.
 
+use kaiwa_core::Event;
 use kaiwa_core::clock::Moment;
 use kaiwa_core::learner::Skill;
 use kaiwa_core::progress::DailyGoal;
@@ -9,6 +10,7 @@ use kaiwa_store::{Profile, Script};
 use serde_json::json;
 
 use crate::Backend;
+use crate::journal::{self, DEVICE_SETTINGS};
 
 const GOAL_MIN_MINUTES: u32 = 1;
 const GOAL_MAX_MINUTES: u32 = 120;
@@ -124,6 +126,23 @@ impl Backend {
     /// reminder, unloadAfter, costLimit, moraHints, handsFree, textScale, keepRecordings,
     /// name, tutorProvider (a preset id), tutorModel, tutorBase, microphone.
     pub fn set_setting(&self, key: &str, value: &str, now: Moment) -> Result<(), SettingError> {
+        let event = Event::Setting {
+            key: key.into(),
+            value: value.into(),
+        };
+        if DEVICE_SETTINGS.contains(&key) {
+            return self.change_setting(key, value, now);
+        }
+        journal::record(self, &event, now)
+    }
+
+    /// The change itself; [`journal::apply`] calls it for the journal's events too.
+    pub(crate) fn change_setting(
+        &self,
+        key: &str,
+        value: &str,
+        now: Moment,
+    ) -> Result<(), SettingError> {
         match key {
             // The brake follows the new limit at once (/LF714/).
             "costLimit" => {
