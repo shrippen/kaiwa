@@ -22,6 +22,18 @@ pub(crate) fn or_default<T: Default, E: std::fmt::Display>(
     })
 }
 
+/// The notice with `msg` on a line of its own below what it says; unchanged
+/// when it says `msg` already. Every page adds this way, so two failures both show.
+pub(crate) fn append_notice(old: &str, msg: &str) -> String {
+    if old.contains(msg) {
+        return old.to_string();
+    }
+    match old.is_empty() {
+        true => msg.to_string(),
+        false => format!("{old}\n{msg}"),
+    }
+}
+
 /// The record of the summary with the kept mark in it. `None` without a record (recording the
 /// talk failed): the mark has nothing to stay with.
 pub(crate) fn keep_mark(recorded: &str) -> Option<String> {
@@ -35,7 +47,18 @@ pub(crate) fn keep_mark(recorded: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::keep_mark;
+    use super::{append_notice, keep_mark};
+
+    #[test]
+    fn two_notices_both_show_and_one_shows_once() {
+        let first = append_notice("", "The export failed: disk full");
+        let both = append_notice(&first, "Saved, but not fully applied: locked");
+        assert_eq!(
+            both,
+            "The export failed: disk full\nSaved, but not fully applied: locked"
+        );
+        assert_eq!(append_notice(&both, "The export failed: disk full"), both);
+    }
 
     #[test]
     fn a_kept_mark_needs_a_record() {

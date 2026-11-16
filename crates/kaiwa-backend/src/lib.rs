@@ -37,6 +37,7 @@ mod trouble;
 pub use trouble::Trouble;
 pub mod views;
 pub mod voice;
+pub mod words;
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

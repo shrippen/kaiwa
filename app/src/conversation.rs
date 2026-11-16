@@ -200,6 +200,7 @@ use std::time::Duration;
 
 use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
+use kaiwa_ai::AiError;
 use kaiwa_backend::ears::{
     self, Clip, Ears, Hands, Heard, Mic, MoraFailure, Moras, Offer, Patience, Recognition,
 };
@@ -207,11 +208,12 @@ use kaiwa_backend::flow::{self, Hear, Length, Talk, VoiceState};
 use kaiwa_backend::log::Log;
 use kaiwa_backend::placing::{self, Next, Placing, Stage};
 use kaiwa_backend::voice::{self, Debt, Enhance, Line, Owed, Pace, Said, Speaker};
+use kaiwa_backend::words;
 use kaiwa_core::Input;
 use serde_json::Value;
 
 use crate::state::{now, state};
-use crate::util::{book_latency, keep_mark, or_default};
+use crate::util::{append_notice, book_latency, keep_mark, or_default};
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -519,19 +521,23 @@ impl qobject::Conversation {
 
     /// Tells the learner a save or load failed (it was only logged before). The page shows
     /// `notice` as the settings page does; it is cleared when the next talk begins.
-    fn say_unsaved(mut self: Pin<&mut Self>, e: &str) {
-        let msg = match self.lang == "de" {
-            true => format!("Das Profil ließ sich nicht lesen oder schreiben: {e}"),
-            false => format!("The profile could not be read or written: {e}"),
-        };
-        self.as_mut().set_notice(QString::from(&msg));
+    fn say_unsaved(self: Pin<&mut Self>, e: &str) {
+        let msg = words::unsaved(e, &self.lang);
+        self.add_notice(&msg);
+    }
+
+    /// Adds `msg` below what the notice already says, once: a second failure does not wipe
+    /// the first.
+    fn add_notice(mut self: Pin<&mut Self>, msg: &str) {
+        let new = append_notice(&self.notice().to_string(), msg);
+        self.as_mut().set_notice(QString::from(&new));
     }
 
     /// Tells the learner why there are no pronunciation hints; the talk goes on without.
-    fn say_mora_failed(mut self: Pin<&mut Self>, e: &ears::SpeechError, when: MoraFailure) {
+    fn say_mora_failed(self: Pin<&mut Self>, e: &ears::SpeechError, when: MoraFailure) {
         eprintln!("kaiwa: mora check: {e}");
-        let msg = QString::from(ears::mora_text(when, &self.lang));
-        self.as_mut().set_notice(msg);
+        let msg = ears::mora_text(when, &self.lang);
+        self.add_notice(msg);
     }
 
     fn say_all_unsaved(mut self: Pin<&mut Self>, failed: &[String]) {
@@ -691,11 +697,7 @@ impl qobject::Conversation {
     /// The profile could not be read for a talk: the page says so instead of staying empty.
     fn cannot_open(mut self: Pin<&mut Self>, e: &anyhow::Error, lang: &str) {
         eprintln!("kaiwa: {e:#}");
-        let msg = if lang == "en" {
-            format!("The talk cannot be opened: {e}")
-        } else {
-            format!("Das Gespräch lässt sich nicht öffnen: {e}")
-        };
+        let msg = words::talk_unopened(e, lang);
         self.as_mut().set_error(QString::from(&msg));
     }
 
@@ -949,20 +951,8 @@ impl qobject::Conversation {
                 q.as_mut().say_all_failed(&taken.failed);
                 match taken.result {
                     Ok(text) => q.as_mut().rust_mut().log.translation(i, &text),
-                    Err(kaiwa_ai::AiError::NoFixture) => {
-                        let msg = if lang == "en" {
-                            "The recorded answers have no translation for this line."
-                        } else {
-                            "Für diese Zeile haben die aufgezeichneten Antworten keine Übersetzung."
-                        };
-                        q.as_mut().set_error(QString::from(msg));
-                    }
                     Err(e) => {
-                        let msg = if lang == "en" {
-                            format!("No translation right now: {e}")
-                        } else {
-                            format!("Gerade keine Übersetzung: {e}")
-                        };
+                        let msg = words::translation_failed(&e, &lang);
                         q.as_mut().set_error(QString::from(&msg));
                     }
                 }
@@ -1220,11 +1210,7 @@ impl qobject::Conversation {
         if rec.check().no_voice() {
             let by_pause = std::mem::take(&mut self.as_mut().rust_mut().ended_by_pause);
             self.as_mut().set_talk_state(READY);
-            let msg = if self.lang == "en" {
-                "No sound came in. Is a microphone plugged in, switched on and chosen? Settings › Microphone tests it."
-            } else {
-                "Es kam kein Ton an. Ist ein Mikrofon angeschlossen, eingeschaltet und gewählt? Einstellungen › Mikrofon testet es."
-            };
+            let msg = words::no_sound(&self.lang);
             self.as_mut().set_error(QString::from(msg));
             // Hands-free goes on listening when the pause ended the turn; a click on the
             // button closed the microphone, and it stays closed.
@@ -1260,11 +1246,7 @@ impl qobject::Conversation {
                     }
                     return;
                 }
-                let msg = if q.lang == "en" {
-                    "Nothing understood. Once more, a little louder or closer to the microphone."
-                } else {
-                    "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon."
-                };
+                let msg = words::not_understood(&q.lang);
                 q.as_mut().set_error(QString::from(msg));
                 if by_pause {
                     q.listen_after_nothing();
@@ -1340,9 +1322,9 @@ impl qobject::Conversation {
             // The talk is held only to ask and to take the answer, not while the tutor
             // thinks: the window locks it for help and the listening aids.
             let asking = talk.lock().map(|mut t| t.ask(&text));
-            let answered: Result<_, String> = asking
-                .map_err(|e| e.to_string())
-                .and_then(|a| a.run().map_err(|e| e.to_string()));
+            let answered: Result<_, AiError> = asking
+                .map_err(|e| AiError::Format(e.to_string()))
+                .and_then(|a| a.run());
             let _ = thread.queue(move |mut q| {
                 // Lock order: the talk, then the state. The backend keeps the talk, records
                 // the end and books the cost; what it could not do is shown.
@@ -1390,7 +1372,7 @@ impl qobject::Conversation {
                         q.as_mut().say_all_failed(&failed);
                         // The line stays to be read, but it is no turn of the session.
                         q.as_mut().rust_mut().log.fail(index);
-                        let msg = tutor_error_text(&e, &q.lang);
+                        let msg = words::tutor_failed(&e, &q.lang);
                         q.as_mut().set_error(QString::from(&msg));
                     }
                 }
@@ -1419,22 +1401,6 @@ impl qobject::Conversation {
             self.as_mut().set_help_text(QString::from(&step.text));
             self.as_mut().set_help_level(i32::from(step.level));
         }
-    }
-}
-
-/// What the page says when the tutor did not answer.
-fn tutor_error_text(e: &str, lang: &str) -> String {
-    let budget = e == kaiwa_ai::AiError::Budget.to_string();
-    let no_tutor = e == kaiwa_ai::AiError::NoTutor.to_string();
-    match (no_tutor, lang == "en") {
-        (true, true) => "No tutor is set up. Choose one in the settings under Tutor.".to_string(),
-        (true, false) => "Es ist kein Tutor eingerichtet. In den Einstellungen unter „Tutor“ einen wählen.".to_string(),
-        _ => match (budget, lang == "en") {
-        (true, true) => "The cost limit for this month is reached. Raise it in the settings or switch to a local tutor.".to_string(),
-        (true, false) => "Das Kostenlimit für diesen Monat ist erreicht. In den Einstellungen anheben oder auf einen lokalen Tutor wechseln.".to_string(),
-        (false, true) => format!("The tutor did not answer: {e}"),
-        (false, false) => format!("Der Tutor hat nicht geantwortet: {e}"),
-        },
     }
 }
 
