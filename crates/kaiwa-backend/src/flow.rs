@@ -248,16 +248,22 @@ impl Talk {
         }
         let answer = match self.ask(&text).run() {
             Ok(answer) => answer,
-            Err(e) => return Err(self.failed_call(b, now, e.into())),
+            Err(e) => {
+                let e = anyhow::Error::from(e);
+                return Err(self
+                    .failed_call(b, now)
+                    .into_iter()
+                    .fold(e, |e, f| e.context(f)));
+            }
         };
         Ok(Some(self.take(b, &text, input, answer, now)))
     }
 
-    /// The tutor did not answer: book the cost, keep the state, name what failed too.
-    fn failed_call(&self, b: &Backend, now: Moment, e: anyhow::Error) -> anyhow::Error {
+    /// The tutor did not answer: books the cost and keeps the state. What failed on top of
+    /// that is returned; a front end that runs the call itself ([`Talk::ask`]) calls this.
+    pub fn failed_call(&self, b: &Backend, now: Moment) -> Vec<anyhow::Error> {
         let booked = b.book_costs(now, false).err();
-        let saved = self.save(b).err();
-        booked.into_iter().chain(saved).fold(e, |e, f| e.context(f))
+        booked.into_iter().chain(self.save(b).err()).collect()
     }
 
     /// Takes the tutor's answer into the session, keeps the talk (the state, or the record

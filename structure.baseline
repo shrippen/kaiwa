@@ -6,15 +6,15 @@ exclude	spikes/s03-stt/*
 exclude	spikes/s04-tts/*
 exclude	spikes/s06-moren/*
 exclude	spikes/s07-pitch/*
-app/qml/ConversationPage.qml	-	lines=981
+app/qml/ConversationPage.qml	-	lines=980
 app/src/app.rs	refresh	length=90
 app/src/app.rs	set_setting	ccn=35 length=111
-app/src/conversation.rs	-	lines=2002
-app/src/conversation.rs	begin	length=111
+app/src/conversation.rs	-	lines=1965
+app/src/conversation.rs	begin	length=98
 app/src/conversation.rs	listen	ccn=24 length=100
 app/src/conversation.rs	speak_at	ccn=18
 app/src/conversation.rs	start	length=127
-app/src/conversation.rs	submit	ccn=21 length=112
+app/src/conversation.rs	submit	length=102
 crates/kaiwa-ai/src/privacy.rs	flows	length=84
 crates/kaiwa-backend/src/demo.rs	seed	ccn=29 length=200
 crates/kaiwa-backend/src/reminder.rs	reminder	ccn=21

@@ -1,7 +1,9 @@
 //! The conversation as a QObject for QML. State goes to QML as JSON strings (turns, goals,
 //! summary), so the page renders it with Kante components without a C++ model class.
-//! The session lives in the profile: saved after every turn (to continue later, /LF121/) and
-//! recorded at the end (learner model, difficulty, path, review, day).
+//! The talk (`kaiwa_backend::flow::Talk`) lives in the profile: the backend saves it after
+//! every turn (to continue later, /LF121/) and records it at the end; this object shows it.
+//! Lock order: the talk first, then `state()`; nothing holds a `state()` guard while it
+//! takes the talk.
 //! Provider calls run on a worker thread and come back through `qt_thread().queue`, the
 //! path spike 0.2 tried (ADR-001).
 
@@ -198,11 +200,12 @@ use std::time::Duration;
 
 use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
+use kaiwa_backend::flow::{self, Length, Talk};
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::learner::Skill;
 use kaiwa_core::placement::{self, Placement, Reading, STAGES, Step, TURNS_PER_STAGE};
 use kaiwa_core::session::{Aid, SessionState};
-use kaiwa_core::{Input, Scenario, Session, Summary, TurnOutcome};
+use kaiwa_core::{Input, Scenario, Session, Summary};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
 use kaiwa_speech::g2p::G2p;
@@ -258,12 +261,9 @@ pub struct ConversationRust {
     placement_ask: bool,
     placement: Option<Placement>,
     lang: String,
-    session_id: Option<i64>,
     /// Since when the time in this talk has not been added to the session.
     sitting: Option<std::time::Instant>,
-    /// When this sitting began: its day gets the practice.
-    began: Option<kaiwa_core::Moment>,
-    session: Option<Arc<Mutex<Session>>>,
+    talk: Option<Arc<Mutex<Talk>>>,
     log: Vec<Value>,
     /// Any engine behind the traits (/LL504/); ReazonSpeech and Kokoro today.
     recognizer: Option<Arc<dyn Transcriber>>,
@@ -314,6 +314,9 @@ const MIN_CHECKED_SECS: f32 = 0.5;
 
 /// The voice's pace without a session: a little below Kokoro's normal one.
 const SPEED: f32 = 0.9;
+
+/// The longest time one count adds to a talk.
+const MAX_SITTING_SECS: u64 = 3600;
 
 fn shown_json(s: &Shown, lang: &str) -> Value {
     json!({
@@ -369,78 +372,44 @@ impl qobject::Conversation {
         self.as_mut().set_turns(QString::from(&text));
     }
 
+    /// Shows the goals and, once the goals are reached, the summary. Keeping the talk is the
+    /// backend's (`Talk::take`).
     fn publish_goals(mut self: Pin<&mut Self>) {
-        let Some(session) = self.session.clone() else {
+        let Some(talk) = self.talk.clone() else {
             return;
         };
         let lang = self.lang.clone();
-        let session_id = self.session_id;
-        let mut guard = session.lock().expect("session lock");
-        // The time since the talk began here, or since it was last kept, counts as spent in
-        // it; a talk continued later keeps what it had (/LF121/).
-        if let Some(since) = self.sitting {
-            // Whole seconds; the rest stays for the next time.
-            let secs = since.elapsed().as_secs();
-            self.as_mut().rust_mut().sitting = Some(since + Duration::from_secs(secs));
-            guard.spend(secs.min(3600) as u32);
-        }
-        let met = guard.summary().goals_met;
-        let goals: Vec<Value> = guard
-            .goals()
-            .iter()
-            .map(|g| json!({ "id": g.id, "text": g.text.get(&lang), "done": met.contains(&g.id) }))
-            .collect();
-        let done = guard.done();
-        let summary = summary_json(&guard.summary(), &lang).to_string();
-        // Keep the state after every turn; record the session once it is done.
-        let mut failed: Vec<String> = Vec::new();
-        let recorded = {
-            let st = state();
-            match session_id {
-                Some(id) if done && !*self.finished() => {
-                    let end = now();
-                    // Practice time is the time spent in the talk, over every sitting; it counts
-                    // for the day this sitting began.
-                    let begun = end.plus_secs(-i64::from(guard.spent_secs()));
-                    let day = self.began.unwrap_or(end).day();
-                    match st
-                        .store
-                        .record_on(id, &guard, begun, end, day, Some(&st.curriculum))
-                    {
-                        Ok(r) => {
-                            if let Err(e) = st.track_grammar(&guard, end) {
-                                failed.push(format!("{e:#}"));
-                            }
-                            let profile = st.store.profile();
-                            let profile = profile.inspect_err(|e| failed.push(e.to_string()));
-                            Some(recorded_json(&r, &guard, profile.ok(), &lang))
-                        }
-                        Err(e) => {
-                            failed.push(e.to_string());
-                            None
-                        }
-                    }
-                }
-                Some(id) if !done => {
-                    if let Err(e) = st.store.save_session(id, &guard.snapshot()) {
-                        failed.push(e.to_string());
-                    }
-                    None
-                }
-                _ => None,
-            }
+        let (goals, done, summary) = {
+            let talk = talk.lock().expect("talk lock");
+            let session = talk.session();
+            let met = session.summary().goals_met;
+            let goals: Vec<Value> = session
+                .goals()
+                .iter()
+                .map(|g| json!({ "id": g.id, "text": g.text.get(&lang), "done": met.contains(&g.id) }))
+                .collect();
+            let summary = summary_json(&session.summary(), &lang).to_string();
+            (goals, session.done(), summary)
         };
-        drop(guard);
-        self.as_mut().say_all_unsaved(&failed);
         self.as_mut()
             .set_goals(QString::from(&Value::Array(goals).to_string()));
-        if let Some(r) = recorded {
-            self.as_mut().set_recorded(QString::from(&r.to_string()));
-        }
         if done && self.placement.is_none() {
             self.as_mut().set_summary(QString::from(&summary));
             self.as_mut().set_finished(true);
         }
+    }
+
+    /// Adds the time since the talk began here, or since it was last counted, to the talk
+    /// (a talk continued later keeps what it had, /LF121/). Before `Talk::take`: the record
+    /// counts it.
+    fn spend_sitting(mut self: Pin<&mut Self>, talk: &mut Talk) {
+        let Some(since) = self.sitting else {
+            return;
+        };
+        // Whole seconds; the rest stays for the next time.
+        let secs = since.elapsed().as_secs();
+        self.as_mut().rust_mut().sitting = Some(since + Duration::from_secs(secs));
+        talk.spend(secs.min(MAX_SITTING_SECS) as u32);
     }
 
     fn start_placement(mut self: Pin<&mut Self>) {
@@ -460,16 +429,20 @@ impl qobject::Conversation {
             let profile = or_default(st.store.profile(), &mut failed);
             st.scenarios.get(id).cloned().map(|s| (s, profile))
         };
-        self.as_mut().say_all_unsaved(&failed);
         let Some((scenario, profile)) = prepared else {
+            self.as_mut().say_all_unsaved(&failed);
             return;
         };
+        self.as_mut().rust_mut().lang = profile.ui_lang.clone();
+        self.as_mut().say_all_unsaved(&failed);
         let (provider, demo) = state().provider(&scenario.id);
         let log = vec![json!({ "who": "character", "markup": scenario.opening.clone() })];
         let session =
             placement::stage_session(scenario, provider, profile.feedback, &profile.ui_lang, i);
         let lang = profile.ui_lang;
-        self.as_mut().begin(session, None, demo, log, lang.clone());
+        let opened = Talk::unstored(&state(), session, demo, now());
+        self.as_mut().say_all_failed(&opened.failed);
+        self.as_mut().begin(opened.talk, log, lang.clone());
         let word = if lang == "en" {
             "Placement"
         } else {
@@ -488,7 +461,7 @@ impl qobject::Conversation {
         if self.placement.is_none() {
             return;
         }
-        let Some(session) = self.session.clone() else {
+        let Some(talk) = self.talk.clone() else {
             return;
         };
         let step = {
@@ -496,7 +469,7 @@ impl qobject::Conversation {
             let Some(p) = rust.placement.as_mut() else {
                 return;
             };
-            p.after_turn(&session.lock().expect("session lock"))
+            p.after_turn(talk.lock().expect("talk lock").session())
         };
         match step {
             Step::Go => {}
@@ -571,20 +544,9 @@ impl qobject::Conversation {
     }
 
     /// Shows a session (new or restored) and loads speech once.
-    fn begin(
-        mut self: Pin<&mut Self>,
-        session: Session,
-        id: Option<i64>,
-        demo: bool,
-        log: Vec<Value>,
-        lang: String,
-    ) {
-        // The cost limit holds from the first call of every talk: a new one, one continued
-        // and the placement (/LF714/).
-        let armed = state().arm_brake(now());
-        if let Err(e) = armed {
-            self.as_mut().say_unsaved(&e.to_string());
-        }
+    fn begin(mut self: Pin<&mut Self>, talk: Talk, log: Vec<Value>, lang: String) {
+        let demo = talk.demo();
+        let session = talk.session();
         let title = session.scenario.title.get(&lang).to_string();
         let scenario = session.scenario.id.clone();
         let character = session.scenario.name.clone().unwrap_or_else(|| {
@@ -609,13 +571,11 @@ impl qobject::Conversation {
         self.as_mut().set_hands_free(sound.2);
         {
             let mut rust = self.as_mut().rust_mut();
-            rust.session = Some(Arc::new(Mutex::new(session)));
+            rust.talk = Some(Arc::new(Mutex::new(talk)));
             rust.voice_name = voice.clone();
             rust.log = log;
             rust.lang = lang;
-            rust.session_id = id;
             rust.sitting = Some(std::time::Instant::now());
-            rust.began = Some(now());
             rust.last_use = Some(std::time::Instant::now());
             // Another conversation: nothing said before counts.
             if let Ok(mut c) = rust.said.lock() {
@@ -704,16 +664,22 @@ impl qobject::Conversation {
         }
     }
 
+    /// What failed beside what worked: each one to the notice.
+    fn say_all_failed(mut self: Pin<&mut Self>, failed: &[anyhow::Error]) {
+        for e in failed {
+            self.as_mut().say_unsaved(&format!("{e:#}"));
+        }
+    }
+
+    /// Keeps the state of the talk after a change outside a turn (help, a listening aid, a
+    /// translation).
     fn save(mut self: Pin<&mut Self>) {
-        let saved = match (&self.session, self.session_id) {
-            (Some(session), Some(id)) => session
-                .lock()
-                .ok()
-                .map(|s| state().store.save_session(id, &s.snapshot())),
-            _ => None,
+        let Some(talk) = self.talk.clone() else {
+            return;
         };
+        let saved = talk.lock().ok().map(|t| t.save(&state()));
         if let Some(Err(e)) = saved {
-            self.as_mut().say_unsaved(&e.to_string());
+            self.as_mut().say_unsaved(&format!("{e:#}"));
         }
     }
 
@@ -721,17 +687,21 @@ impl qobject::Conversation {
         let Some(turn) = self.turn_of(log_index) else {
             return;
         };
-        if let Some(session) = &self.session
-            && let Ok(mut s) = session.lock()
-            && !s.mark_misrecognized(turn)
-        {
+        let Some(talk) = self.talk.clone() else {
             return;
-        }
+        };
+        let marked = talk
+            .lock()
+            .expect("talk lock")
+            .mark_misrecognized(&state(), turn);
+        let Some(marked) = marked else {
+            return;
+        };
         if let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize) {
             e["corrections"] = json!([]);
             e["misrecognized"] = json!(true);
         }
-        self.as_mut().save_marks();
+        self.as_mut().show_marked(&talk, marked);
         self.as_mut().publish_turns();
     }
 
@@ -740,70 +710,54 @@ impl qobject::Conversation {
         let Some(turn) = self.turn_of(log_index) else {
             return;
         };
-        let found = self.session.as_ref().and_then(|session| {
-            let mut s = session.lock().ok()?;
-            let learner = s.turns().get(turn)?.learner.clone();
-            let c = s.dispute(turn, &better)?;
-            Some((s.scenario.id.clone(), learner, c))
-        });
-        let Some((scenario, learner, c)) = found else {
+        let Some(talk) = self.talk.clone() else {
             return;
         };
-        let kept = state().store.add_dispute(&kaiwa_store::Dispute {
-            at: now(),
-            scenario,
-            learner,
-            original: c.original,
-            better: c.better.clone(),
-            explanation: c.explanation,
-        });
-        if let Err(e) = kept {
-            self.as_mut().say_unsaved(&e.to_string());
-        }
-        if let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize)
+        let marked = talk
+            .lock()
+            .expect("talk lock")
+            .dispute(&state(), turn, &better);
+        let Some(marked) = marked else {
+            return;
+        };
+        if let Some(c) = &marked.correction
+            && let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize)
             && let Some(list) = e["corrections"].as_array_mut()
         {
             for x in list.iter_mut().filter(|x| x["better"] == c.better.as_str()) {
                 x["disputed"] = json!(true);
             }
         }
-        self.as_mut().save_marks();
+        self.as_mut().show_marked(&talk, marked);
         self.as_mut().publish_turns();
     }
 
-    /// Keeps a mark. On the summary (V-05) the mark corrects the recorded talk: its record,
-    /// the learner model and the review, and the summary shows the corrected result.
-    fn save_marks(mut self: Pin<&mut Self>) {
-        let (Some(session), Some(id)) = (self.session.clone(), self.session_id) else {
-            return;
-        };
-        if !*self.finished() || self.placement.is_some() {
-            self.as_mut().save();
-            return;
-        }
+    /// Shows a kept mark. On the summary (V-05) the mark corrected the recorded talk: its
+    /// record, the learner model and the review, and the summary shows the corrected result.
+    fn show_marked(mut self: Pin<&mut Self>, talk: &Arc<Mutex<Talk>>, marked: flow::Marked) {
+        self.as_mut().say_all_failed(&marked.failed);
         let lang = self.lang.clone();
-        let s = session.lock().expect("session lock");
-        let st = state();
-        let r = match st.correct_talk(id, &s) {
-            Ok(r) => r,
-            Err(e) => {
-                self.as_mut().say_unsaved(&format!("{e:#}"));
-                drop(s);
-                self.as_mut().save();
-                // The record stays (a later talk was recorded, or this one has no record to
-                // redo): the page says so instead of promising a correction. Without a record
-                // there is nothing to say.
-                if let Some(kept) = keep_mark(&self.recorded().to_string()) {
-                    self.as_mut().set_recorded(QString::from(&kept));
-                }
-                return;
-            }
+        let (finished, shown) = {
+            let talk = talk.lock().expect("talk lock");
+            let shown = marked.recorded.as_ref().map(|r| {
+                let profile = state().store.profile();
+                let summary = summary_json(&talk.session().summary(), &lang);
+                (
+                    recorded_json(r, talk.session(), profile.ok(), &lang),
+                    summary,
+                )
+            });
+            (talk.finished(), shown)
         };
-        let profile = st.store.profile();
-        let profile = profile.inspect_err(|e| self.as_mut().say_unsaved(&e.to_string()));
-        let recorded = recorded_json(&r, &s, profile.ok(), &lang);
-        let summary = summary_json(&s.summary(), &lang);
-        drop(s);
+        let Some((recorded, summary)) = shown else {
+            // The record stays (a later talk was recorded, or this one has no record to
+            // redo): the page says so instead of promising a correction. Without a record
+            // there is nothing to say.
+            if finished && let Some(kept) = keep_mark(&self.recorded().to_string()) {
+                self.as_mut().set_recorded(QString::from(&kept));
+            }
+            return;
+        };
         self.as_mut()
             .set_recorded(QString::from(&recorded.to_string()));
         self.as_mut()
@@ -815,31 +769,22 @@ impl qobject::Conversation {
         self.as_mut().rust_mut().placement = None;
         self.as_mut().set_placing(false);
         let mut failed = Vec::new();
-        let found = {
+        let (opened, lang) = {
             let st = state();
-            let profile = or_default(st.store.profile(), &mut failed);
-            or_default(st.store.open_session(), &mut failed).and_then(|row| {
-                let state = match st.store.session_state(row.id) {
-                    Ok(state) => state,
-                    Err(e) => {
-                        failed.push(e.to_string());
-                        return None;
-                    }
-                };
-                let scenario = st.scenarios.get(&state.scenario)?.clone();
-                Some((row.id, state, scenario, profile.ui_lang))
-            })
+            let lang = or_default(st.store.profile(), &mut failed).ui_lang;
+            (Talk::resume(&st, now()), lang)
         };
+        self.as_mut().rust_mut().lang = lang.clone();
         self.as_mut().say_all_unsaved(&failed);
-        let Some((id, state, scenario, lang)) = found else {
-            return;
+        let opened = match opened {
+            Ok(Some(opened)) => opened,
+            Ok(None) => return,
+            Err(e) => return self.cannot_open(&e, &lang),
         };
-        let log = log_of(&scenario, &state, &lang);
-        let continued = crate::state::state().continued_talk(scenario, state);
-        match continued {
-            Ok((session, demo)) => self.begin(session, Some(id), demo, log, lang),
-            Err(e) => self.cannot_open(&e, &lang),
-        }
+        self.as_mut().say_all_failed(&opened.failed);
+        let session = opened.talk.session();
+        let log = log_of(&session.scenario, &session.snapshot(), &lang);
+        self.begin(opened.talk, log, lang);
     }
 
     fn start(mut self: Pin<&mut Self>, scenario: &QString) {
@@ -848,38 +793,34 @@ impl qobject::Conversation {
         self.as_mut().set_placing(false);
         let wanted = scenario.to_string();
         let mut failed = Vec::new();
-        let prepared = {
+        let (opened, lang) = {
             let st = state();
-            let profile = or_default(st.store.profile(), &mut failed);
-            let learning = or_default(st.store.learning(), &mut failed);
-            let id = if wanted.is_empty() {
-                st.curriculum
-                    .next_scenario(&learning.course)
-                    .unwrap_or_else(|| "n5-02-jikoshoukai".into())
-            } else {
-                wanted
+            let lang = or_default(st.store.profile(), &mut failed).ui_lang;
+            let id = match wanted.is_empty() {
+                true => {
+                    let (id, next_failed) = Talk::next_scenario(&st);
+                    failed.extend(next_failed.iter().map(|e| format!("{e:#}")));
+                    id
+                }
+                false => wanted,
             };
-            st.scenarios.get(&id).cloned().map(|s| (s, profile))
+            // Nothing opens for a scenario that does not exist.
+            let opened = st
+                .scenarios
+                .contains_key(&id)
+                .then(|| Talk::begin(&st, &id, now(), Length::Full));
+            (opened, lang)
         };
+        self.as_mut().rust_mut().lang = lang.clone();
         self.as_mut().say_all_unsaved(&failed);
-        let Some((scenario, profile)) = prepared else {
-            return;
+        let opened = match opened {
+            Some(Ok(opened)) => opened,
+            Some(Err(e)) => return self.cannot_open(&e, &lang),
+            None => return,
         };
-        let opening = scenario.opening.clone();
-        let talk = state().new_talk(scenario);
-        let (session, demo) = match talk {
-            Ok(t) => t,
-            Err(e) => {
-                self.cannot_open(&e, &profile.ui_lang);
-                return;
-            }
-        };
-        let begun = state().store.begin_session(&session.snapshot(), now());
-        let id = begun
-            .inspect_err(|e| self.as_mut().say_unsaved(&e.to_string()))
-            .ok();
-        let log = vec![json!({ "who": "character", "markup": opening })];
-        self.begin(session, id, demo, log, profile.ui_lang);
+        self.as_mut().say_all_failed(&opened.failed);
+        let log = vec![json!({ "who": "character", "markup": opened.talk.session().opening() })];
+        self.begin(opened.talk, log, lang);
     }
 
     /// The profile could not be read for a talk: the page says so instead of staying empty.
@@ -909,9 +850,9 @@ impl qobject::Conversation {
     /// The pace the difficulty sets, 0.7 to 1.1 (/LF211/); eased within the session after
     /// two misses.
     fn speed(&self) -> f32 {
-        self.session
+        self.talk
             .as_ref()
-            .and_then(|s| s.lock().ok().map(|s| s.difficulty.speed() as f32))
+            .and_then(|t| t.lock().ok().map(|t| t.session().difficulty.speed() as f32))
             .unwrap_or(SPEED)
     }
 
@@ -1108,7 +1049,7 @@ impl qobject::Conversation {
         let line = kaiwa_backend::talk::turns(&self.log[..i]);
         // Already there, or on its way (a second click asks the tutor no second time).
         let translated = entry.get("translation").is_some() || entry["translating"] == true;
-        let Some(session) = self.session.clone() else {
+        let Some(talk) = self.talk.clone() else {
             return;
         };
         // Not while the tutor thinks about a turn already sent: the aid would count for it,
@@ -1124,9 +1065,9 @@ impl qobject::Conversation {
                 if self.speaker.is_none() {
                     return;
                 }
-                if let Ok(mut s) = session.lock() {
+                if let Ok(mut t) = talk.lock() {
                     let kind = if aid == 0 { Aid::Repeat } else { Aid::Slow };
-                    s.aid(kind, line);
+                    t.session_mut().aid(kind, line);
                 }
                 self.as_mut().save();
                 self.as_mut().interrupt();
@@ -1145,7 +1086,7 @@ impl qobject::Conversation {
                 std::thread::spawn(move || {
                     let line = kaiwa_core::plain(&markup);
                     // Asked without holding the session (the window needs it meanwhile).
-                    let asking = session.lock().ok().map(|s| s.translating(&line));
+                    let asking = talk.lock().ok().map(|t| t.session().translating(&line));
                     let result = asking.map(|a| a.run());
                     let _ = thread.queue(move |mut q| {
                         if let Some(e) = q.as_mut().rust_mut().log.get_mut(i)
@@ -1161,8 +1102,8 @@ impl qobject::Conversation {
                         match result {
                             Some(Ok(text)) => {
                                 // It counts as help once the learner has it (/LF212/).
-                                if let Ok(mut s) = session.lock() {
-                                    s.aid(Aid::Translate, asked_at);
+                                if let Ok(mut t) = talk.lock() {
+                                    t.session_mut().aid(Aid::Translate, asked_at);
                                 }
                                 if let Some(e) = q.as_mut().rust_mut().log.get_mut(i) {
                                     e["translation"] = json!(text);
@@ -1513,7 +1454,7 @@ impl qobject::Conversation {
             return;
         }
         // Kept only with the opt-in, for the chosen days (/LF712/).
-        if let Some(id) = self.session_id {
+        if let Some(id) = self.talk.as_ref().and_then(|t| t.lock().ok()?.id()) {
             let turn = kaiwa_backend::talk::turns(&self.log);
             let kept = state().keep_recording(id, turn, &rec.samples, rec.sample_rate, now());
             if let Err(e) = kept {
@@ -1601,14 +1542,11 @@ impl qobject::Conversation {
 
     /// Sends a turn to the tutor; returns its index in the log.
     fn submit(mut self: Pin<&mut Self>, text: &str, typed: bool) -> Option<usize> {
-        let text = text.trim().to_string();
+        let input = if typed { Input::Typed } else { Input::Spoken };
         // Typed rōmaji becomes kana, shown as such (/LF120/).
-        let text = if typed && kaiwa_core::romaji::has_romaji(&text) {
-            kaiwa_core::romaji::to_kana(&text)
-        } else {
-            text
-        };
-        if text.is_empty() || *self.busy() || *self.finished() {
+        let text = flow::prepare(text, input);
+        let talk = self.talk.clone()?;
+        if *self.busy() || *self.finished() || !talk.lock().ok()?.may_say(&text) {
             return None;
         }
         if typed {
@@ -1620,7 +1558,6 @@ impl qobject::Conversation {
             self.as_mut().close_mic();
         }
         self.as_mut().wake();
-        let session = self.session.clone()?;
         let index = self.log.len();
         self.as_mut().rust_mut().log.push(json!({ "who": "learner", "text": text, "typed": typed, "corrections": [], "pending": true }));
         self.as_mut().set_busy(true);
@@ -1630,81 +1567,75 @@ impl qobject::Conversation {
 
         let thread = self.qt_thread();
         std::thread::spawn(move || {
-            let input = if typed { Input::Typed } else { Input::Spoken };
-            // The session is held only to ask and to take the answer, not while the tutor
+            // The talk is held only to ask and to take the answer, not while the tutor
             // thinks: the window locks it for help and the listening aids.
-            let asking = session.lock().map(|s| s.ask(&text));
-            let result: Result<TurnOutcome, String> = asking
+            let asking = talk.lock().map(|t| t.ask(&text));
+            let answered: Result<_, String> = asking
                 .map_err(|e| e.to_string())
-                .and_then(|a| a.run().map_err(|e| e.to_string()))
-                .and_then(|answer| {
-                    session
-                        .lock()
-                        .map(|mut s| s.take(&text, input, answer))
-                        .map_err(|e| e.to_string())
-                });
+                .and_then(|a| a.run().map_err(|e| e.to_string()));
             let _ = thread.queue(move |mut q| {
+                // Lock order: the talk, then the state. The backend keeps the talk, records
+                // the end and books the cost; what it could not do is shown.
+                let result = {
+                    let mut t = talk.lock().expect("talk lock");
+                    match answered {
+                        Ok(answer) => {
+                            q.as_mut().spend_sitting(&mut t);
+                            let turned = t.take(&state(), &text, input, answer, now());
+                            let shown = turned.recorded.as_ref().map(|r| {
+                                let profile = state().store.profile();
+                                let lang = q.lang.clone();
+                                recorded_json(r, t.session(), profile.ok(), &lang)
+                            });
+                            Ok((turned, shown))
+                        }
+                        Err(e) => Err((e, t.failed_call(&state(), now()))),
+                    }
+                };
                 match result {
-                    Ok(outcome) => {
+                    Ok((turned, shown)) => {
+                        let outcome = turned.outcome;
                         {
                             let mut rust = q.as_mut().rust_mut();
                             let lang = rust.lang.clone();
                             if let Some(turn) = rust.log.get_mut(index) {
-                                turn["corrections"] = Value::Array(
-                                    outcome.shown.iter().map(|x| shown_json(x, &lang)).collect(),
-                                );
-                                turn["pending"] = json!(false);
-                                turn["incomplete"] = json!(outcome.incomplete);
-                                // The tutor's furigana replace the dictionary's (ADR-004).
-                                if !outcome.own_markup.is_empty() {
-                                    turn["markup"] = outcome.own_markup.clone().into();
-                                    if let Some(t) = turn.as_object_mut() {
-                                        t.remove("segments");
-                                        t.remove("words");
-                                    }
-                                }
+                                show_outcome(turn, &outcome, &lang);
                             }
                             rust.log.push(
                                 json!({ "who": "character", "markup": outcome.reply.clone() }),
                             );
                         }
                         q.as_mut().set_error(QString::default());
+                        q.as_mut().say_all_failed(&turned.failed);
+                        if let Some(r) = shown {
+                            q.as_mut().set_recorded(QString::from(&r.to_string()));
+                        }
                         q.as_mut().speak_reply(&outcome.reply);
                         // Without a voice the reply's text is the answer.
-                        if let Some(e) = q.as_mut().rust_mut().speech_end.take().and_then(book_latency)
+                        if let Some(e) = q
+                            .as_mut()
+                            .rust_mut()
+                            .speech_end
+                            .take()
+                            .and_then(book_latency)
                         {
                             q.as_mut().say_unsaved(&e);
                         }
                     }
-                    Err(e) => {
+                    Err((e, failed)) => {
+                        q.as_mut().say_all_failed(&failed);
                         // The line stays to be read, but it is no turn of the session.
                         if let Some(turn) = q.as_mut().rust_mut().log.get_mut(index) {
                             turn["pending"] = json!(false);
                             turn["failed"] = json!(true);
                         }
-                        let budget = e == kaiwa_ai::AiError::Budget.to_string();
-                        let no_tutor = e == kaiwa_ai::AiError::NoTutor.to_string();
-                        let msg = match (no_tutor, q.lang == "en") {
-                            (true, true) => "No tutor is set up. Choose one in the settings under Tutor.".to_string(),
-                            (true, false) => "Es ist kein Tutor eingerichtet. In den Einstellungen unter „Tutor“ einen wählen.".to_string(),
-                            _ => match (budget, q.lang == "en") {
-                            (true, true) => "The cost limit for this month is reached. Raise it in the settings or switch to a local tutor.".to_string(),
-                            (true, false) => "Das Kostenlimit für diesen Monat ist erreicht. In den Einstellungen anheben oder auf einen lokalen Tutor wechseln.".to_string(),
-                            (false, true) => format!("The tutor did not answer: {e}"),
-                            (false, false) => format!("Der Tutor hat nicht geantwortet: {e}"),
-                            },
-                        };
+                        let msg = tutor_error_text(&e, &q.lang);
                         q.as_mut().set_error(QString::from(&msg));
                     }
                 }
                 q.as_mut().set_busy(false);
                 q.as_mut().publish_turns();
                 q.as_mut().publish_goals();
-                // The cost brake: book what the turn cost (/LF714/).
-                let booked = state().book_costs(now(), *q.finished());
-                if let Err(e) = booked {
-                    q.as_mut().say_unsaved(&e.to_string());
-                }
                 // Without a voice nothing is spoken: listen again right away.
                 q.as_mut().listen_again();
                 q.placement_step();
@@ -1718,16 +1649,48 @@ impl qobject::Conversation {
         if *self.busy() {
             return;
         }
-        let Some(session) = self.session.clone() else {
+        let Some(talk) = self.talk.clone() else {
             return;
         };
-        let step = session.lock().expect("session lock").help();
+        let step = talk.lock().expect("talk lock").session_mut().help();
         // Kept at once: help used after the last turn is there when the talk is continued.
         self.as_mut().save();
         if let Some(step) = step {
             self.as_mut().set_help_text(QString::from(&step.text));
             self.as_mut().set_help_level(i32::from(step.level));
         }
+    }
+}
+
+/// The learner's line of the log with what the tutor made of it.
+fn show_outcome(turn: &mut Value, outcome: &kaiwa_core::TurnOutcome, lang: &str) {
+    turn["corrections"] = Value::Array(outcome.shown.iter().map(|x| shown_json(x, lang)).collect());
+    turn["pending"] = json!(false);
+    turn["incomplete"] = json!(outcome.incomplete);
+    // The tutor's furigana replace the dictionary's (ADR-004).
+    if outcome.own_markup.is_empty() {
+        return;
+    }
+    turn["markup"] = outcome.own_markup.clone().into();
+    if let Some(t) = turn.as_object_mut() {
+        t.remove("segments");
+        t.remove("words");
+    }
+}
+
+/// What the page says when the tutor did not answer.
+fn tutor_error_text(e: &str, lang: &str) -> String {
+    let budget = e == kaiwa_ai::AiError::Budget.to_string();
+    let no_tutor = e == kaiwa_ai::AiError::NoTutor.to_string();
+    match (no_tutor, lang == "en") {
+        (true, true) => "No tutor is set up. Choose one in the settings under Tutor.".to_string(),
+        (true, false) => "Es ist kein Tutor eingerichtet. In den Einstellungen unter „Tutor“ einen wählen.".to_string(),
+        _ => match (budget, lang == "en") {
+        (true, true) => "The cost limit for this month is reached. Raise it in the settings or switch to a local tutor.".to_string(),
+        (true, false) => "Das Kostenlimit für diesen Monat ist erreicht. In den Einstellungen anheben oder auf einen lokalen Tutor wechseln.".to_string(),
+        (false, true) => format!("The tutor did not answer: {e}"),
+        (false, false) => format!("Der Tutor hat nicht geantwortet: {e}"),
+        },
     }
 }
 
