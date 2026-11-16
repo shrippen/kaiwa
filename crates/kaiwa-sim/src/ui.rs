@@ -304,7 +304,7 @@ fn gamification_off(root: &Path) -> Result<Option<String>> {
         found.push(format!("streak note: {}", today["streakNote"]));
     }
     let mut t = ShortTalk::start(&b, NOW)?;
-    let goals = t.session.goals().to_vec();
+    let goals = t.session().goals().to_vec();
     let mut last = Value::Null;
     for g in &goals {
         last = t.say(&b, &g.help.example, false, NOW)?;
