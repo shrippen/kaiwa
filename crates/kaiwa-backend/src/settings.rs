@@ -133,9 +133,7 @@ impl Backend {
             value: value.into(),
         };
         // Refused before the journal: a refused change is no event.
-        if self.spare && key == "keepRecordings" {
-            return Err(SettingError::Spare);
-        }
+        self.spare_refuses(key)?;
         if DEVICE_SETTINGS.contains(&key) {
             return self.change_setting(key, value, now);
         }
@@ -149,6 +147,8 @@ impl Backend {
         value: &str,
         now: Moment,
     ) -> Result<(), SettingError> {
+        // Again for a fold: the spare's recordings directory is the real profile's.
+        self.spare_refuses(key)?;
         match key {
             // The brake follows the new limit at once (/LF714/).
             "costLimit" => {
@@ -163,6 +163,14 @@ impl Backend {
                 }
             }
             _ => self.edit_profile(key, value, now)?,
+        }
+        Ok(())
+    }
+
+    /// On a spare, a change that would delete the real profile's recordings.
+    fn spare_refuses(&self, key: &str) -> Result<(), SettingError> {
+        if self.spare && key == "keepRecordings" {
+            return Err(SettingError::Spare);
         }
         Ok(())
     }

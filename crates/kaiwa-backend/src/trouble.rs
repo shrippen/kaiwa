@@ -121,6 +121,12 @@ mod tests {
             spare.store.events().unwrap().is_empty(),
             "a refused change is no event"
         );
+        let event = kaiwa_core::Event::Setting {
+            key: "keepRecordings".into(),
+            value: "1".into(),
+        };
+        let folded = crate::journal::apply(&spare, &event, now);
+        assert!(matches!(folded, Err(crate::settings::SettingError::Spare)));
 
         spare
             .store
