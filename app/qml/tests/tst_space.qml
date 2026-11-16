@@ -132,10 +132,19 @@ ConversationTest {
         // least 48 units high.
         function test_c_every_state_has_a_name_and_the_button_is_tall_enough() {
             const talk = t.talkButton()
-            for (let state = 0; state < 5; state++) {
-                t.conv.talkState = state
-                verify(talk.title.length > 0, "state " + state)
+            // The page's own words, in both languages (Kante's defaults differ).
+            const words = {
+                de: ["Sprechen", "Hört zu", "Denkt nach", "Spricht", "Kein Sprechen"],
+                en: ["Speak", "Listening", "Thinking", "Speaking", "No speech"]
             }
+            for (const lang of ["de", "en"]) {
+                t.page.lang = lang
+                for (let state = 0; state < 5; state++) {
+                    t.conv.talkState = state
+                    compare(talk.title, words[lang][state], lang + " state " + state)
+                }
+            }
+            t.page.lang = "de"
             t.conv.talkState = 0
             verify(talk.height >= 48, "height " + talk.height)
         }

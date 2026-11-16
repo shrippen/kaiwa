@@ -8,6 +8,11 @@
 //!   lena_idle_memory   a fresh profile, idle: PSS at most 150 MB (/LL012/, U-01)
 //!   lena_app_egress    a conversation under strace: no connection off the machine (/LL401/)
 //!
+//! Eight checks run as QML tests of the real pages (`app/qml/tests`, see `qml.rs`) where Qt 6
+//! is installed, so with `--app` in the CI's Qt job: mara_ptt, hinnerk_targets,
+//! mara_listen_tools, mara_diff_audio, mara_word_lookup, hinnerk_tts_slow,
+//! lena_suggest_smaller, lena_download_announced.
+//!
 //! The recorded tutor and no models: what the local tutor, the models and kaiwad send, and
 //! whether the models are unloaded, stays in the local test (lena_zero_egress,
 //! lena_models_unload), as do overlaps, furigana and a look at the pictures
