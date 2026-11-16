@@ -8,7 +8,7 @@ import "."
  *   contentWidth, contentHeight   size of the plan in model units (x right, y down)
  *   gridStep                      grid in model units, 0 = none; left out while the lines would
  *                                 be closer than a few pixels
- *   shapes     [{ kind, points, radius, width, label, stroke, fill, text, key, selected }]
+ *   shapes     [{ kind, points, radius, width, label, stroke, fill, text, key, selected, opacity }]
  *     kind     "line" (2 points), "polyline", "polygon" (closed), "circle" (points [cx, cy], radius)
  *     points   [x0, y0, x1, y1, …] in model units
  *     width    stroke width in model units, 0 = hairline (always at least one pixel)
@@ -23,6 +23,7 @@ import "."
  *              zoom, like the shape, and is left out below 4 px. Default: the small font, fixed.
  *     textAnchor  "center" (default) or "topLeft": a polygon's caption starts at its top left
  *              corner, with a small margin, instead of at its centre
+ *     opacity  0..1 (default 1): fades fill, stroke, selection frame and caption; not the hit test
  *     key      id given back by the signals; selected: framed wider in the focus colour
  *     Drawn in order, so the last shape is on top (and wins the hit test).
  *   Image     { kind: "image", source, points: [x, y], width, height, rotation, opacity, key }
@@ -456,14 +457,18 @@ FocusScope {
                 return
             }
 
-            const alpha = s.opacity === undefined ? 1 : Math.max(0, Math.min(1, s.opacity))
             ctx.save()
-            ctx.globalAlpha = alpha
+            ctx.globalAlpha = _alpha(s)
             const a = (s.rotation || 0) * Math.PI / 180
             ctx.transform(Math.cos(a), Math.sin(a), -Math.sin(a), Math.cos(a),
                           root.panX + pts[0] * root.zoom, root.panY + pts[1] * root.zoom)
             ctx.drawImage(src, 0, 0, (s.width || 0) * root.zoom, (s.height || 0) * root.zoom)
             ctx.restore()
+        }
+
+        // A shape's opacity, 0..1; 1 when not given.
+        function _alpha(s) {
+            return Number.isFinite(s.opacity) ? Math.max(0, Math.min(1, s.opacity)) : 1
         }
 
         function _dash(ctx, stroke) {
@@ -626,6 +631,7 @@ FocusScope {
                     continue
                 }
 
+                ctx.globalAlpha = _alpha(s)
                 if (s.fill === "solid" || s.fill === "tint") {
                     ctx.fillStyle = s.fill === "solid" ? color : _tint(s.label)
                     ctx.fill()
@@ -650,9 +656,11 @@ FocusScope {
             _align = ""
             for (const s of root.shapes) {
                 if (s.text && s.kind !== "image") {
+                    ctx.globalAlpha = _alpha(s)
                     _caption(ctx, s)
                 }
             }
+            ctx.globalAlpha = 1
         }
     }
 
