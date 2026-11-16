@@ -349,6 +349,8 @@ Item {
 
     KanteStickyHeader {
         id: header
+        // Main.qml's text check: these tabs scroll sideways past the window's edge.
+        objectName: "sectionTabs"
         anchors { left: parent.left; right: parent.right; top: parent.top }
         flickable: flick
         title: page.t("Einstellungen", "Settings")
