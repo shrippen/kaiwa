@@ -343,6 +343,7 @@ mod tests {
         assert!(!f.exists());
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_failed_effect_keeps_the_saved_setting() {
         // The recordings cannot be deleted (their folder is read-only): the setting is
@@ -356,6 +357,11 @@ mod tests {
             .unwrap();
         let dir = f.parent().unwrap().to_path_buf();
         std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o500)).unwrap();
+        // Root may delete there anyway: then there is nothing to show.
+        if std::fs::write(dir.join("probe"), b"").is_ok() {
+            std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
+            return;
+        }
         let r = b.set_setting("keepRecordings", "", T0);
         std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
         assert!(matches!(r, Err(SettingError::NotApplied(_))), "{r:?}");
