@@ -277,8 +277,8 @@ pub struct Backend {
     pub demo_data: bool,
     /// The keys of this profile ([`kaiwa_ai::secrets::KeyHome`]).
     keys: kaiwa_ai::secrets::Keys,
-    /// What failed while the profile opened and is not fatal; [`Backend::take_open_failure`].
-    open_failure: Option<anyhow::Error>,
+    /// Why expired recordings stayed when the profile opened; [`Backend::take_unpurged`].
+    unpurged: Option<anyhow::Error>,
 }
 
 impl Backend {
@@ -388,24 +388,21 @@ impl Backend {
             grammar,
             scenarios,
             demo_data: demo,
-            open_failure: None,
+            unpurged: None,
         };
         #[cfg(any(test, feature = "demo"))]
         if demo && fresh {
             demo::seed(&st)?;
         }
         // Recordings past their days go when the profile opens (/LF712/).
-        st.open_failure = st
-            .purge_recordings(now())
-            .err()
-            .map(|e| e.context("expired recordings could not be deleted"));
+        st.unpurged = st.purge_recordings(now()).err();
         Ok(st)
     }
 
-    /// What went wrong while the profile opened without stopping it (expired recordings that
-    /// stayed); once, for the front end to tell the learner.
-    pub fn take_open_failure(&mut self) -> Option<anyhow::Error> {
-        self.open_failure.take()
+    /// Why expired recordings stayed when the profile opened; once, for the front end to
+    /// tell the learner.
+    pub fn take_unpurged(&mut self) -> Option<anyhow::Error> {
+        self.unpurged.take()
     }
 }
 

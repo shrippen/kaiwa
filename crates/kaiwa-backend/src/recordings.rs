@@ -171,7 +171,7 @@ mod tests {
         let mut reopened = crate::Backend::open_at(b.path.clone(), false).unwrap();
         std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
 
-        assert!(reopened.take_open_failure().is_some());
-        assert!(reopened.take_open_failure().is_none(), "said once");
+        assert!(reopened.take_unpurged().is_some());
+        assert!(reopened.take_unpurged().is_none(), "said once");
     }
 }

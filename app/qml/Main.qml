@@ -143,7 +143,7 @@ Kirigami.ApplicationWindow {
                 }
             }
             // Profile and settings show the notice themselves.
-            NoticeLine { width: parent.width; kaiwa: kaiwa; wanted: tabs.currentIndex < 3 }
+            NoticeLine { width: parent.width; kaiwa: kaiwa; wanted: tabs.currentIndex < root.views.indexOf("profile") }
         }
 
         StackLayout {

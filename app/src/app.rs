@@ -267,13 +267,23 @@ impl qobject::KaiwaApp {
         self.as_mut().set_notice(QString::from(&msg));
     }
 
+    /// Tells the learner expired recordings stayed when the profile opened (/LF712/).
+    fn say_unpurged(mut self: Pin<&mut Self>, e: &anyhow::Error) {
+        let msg = match self.lang().to_string() == "de" {
+            true => format!("Abgelaufene Aufnahmen ließen sich nicht löschen: {e}"),
+            false => format!("Expired recordings could not be deleted: {e}"),
+        };
+        self.as_mut().set_notice(QString::from(&msg));
+    }
+
     fn refresh(mut self: Pin<&mut Self>) {
         let now = now();
         let unit = self.review_unit().to_string();
-        let mut failed;
+        let mut failed = None;
+        let unpurged;
         let (today, path, review, scope, learner, stats, profile, lang, gam, privacy) = {
             let mut st = state();
-            failed = st.take_open_failure();
+            unpurged = st.take_unpurged();
             let p = st.profile().unwrap_or_else(|e| {
                 failed.get_or_insert(e);
                 Default::default()
@@ -330,8 +340,16 @@ impl qobject::KaiwaApp {
         self.as_mut().set_models(q(&models_json(&lang)));
         self.as_mut().set_lang(QString::from(&lang));
         self.as_mut().set_gamification(gam);
+        // What an action just said is more precise than a failed load; keep it.
+        if !self.notice().is_empty() {
+            return;
+        }
         if let Some(e) = failed {
             self.as_mut().say_unloaded(&e);
+            return;
+        }
+        if let Some(e) = unpurged {
+            self.as_mut().say_unpurged(&e);
         }
     }
 
