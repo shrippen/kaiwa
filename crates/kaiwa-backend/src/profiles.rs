@@ -8,7 +8,7 @@ use kaiwa_ai::secrets::KeyError;
 use kaiwa_store::{Store, profiles_in};
 use serde_json::{Value, json};
 
-use crate::Backend;
+use crate::{Backend, Trouble};
 
 const CURRENT: &str = "current";
 const DEFAULT: &str = "default.kaiwa";
@@ -88,7 +88,7 @@ impl Backend {
         // The emptied profile keeps the language the page is in.
         let lang = self.store.profile().map(|p| p.ui_lang).ok();
         if let Err(e) = self.delete_recordings() {
-            eprintln!("kaiwa: {e:#}");
+            self.trouble(Trouble::RecordingsKept(e));
         }
 
         // Close the file before removing it. Whether removing works or not, the file is opened
@@ -101,9 +101,10 @@ impl Backend {
         // The profile's keys go with it (V-01). A keyring that refuses does not stop the
         // deletion.
         if let Err(e) = self.keys.remove_all() {
-            eprintln!("kaiwa: the keyring kept keys of this profile: {e}");
+            self.trouble(Trouble::KeysKept(e));
         }
         self.store = Store::open(&self.path)?;
+        self.spare = false;
         deleted?;
 
         if let Some(lang) = lang {
@@ -147,13 +148,19 @@ impl Backend {
     /// without a key.
     pub fn store_key(&self, key: &str) -> Option<Result<(), KeyError>> {
         let provider = self.key_provider()?;
+        if self.spare {
+            return Some(Err(KeyError::Spare));
+        }
         Some(self.keys.store(provider, key))
     }
 
     /// Removes this profile's key of the tutor's provider; other profiles keep theirs.
-    pub fn remove_key(&self) -> Option<Result<(), String>> {
+    pub fn remove_key(&self) -> Option<Result<(), KeyError>> {
         let provider = self.key_provider()?;
-        Some(self.keys.remove(provider))
+        if self.spare {
+            return Some(Err(KeyError::Spare));
+        }
+        Some(self.keys.remove(provider).map_err(KeyError::Keyring))
     }
 
     /// Moves the keys of before V-01 (one per provider) to this profile, once: a marker in
@@ -168,11 +175,11 @@ impl Backend {
             return;
         }
         if let Err(e) = self.keys.migrate() {
-            eprintln!("kaiwa: the keys stay where they are: {e}");
+            self.trouble(Trouble::KeysUnmoved(e));
             return;
         }
         if let Err(e) = std::fs::write(&marker, b"") {
-            eprintln!("kaiwa: {e}");
+            self.trouble(Trouble::KeysMarkerLost(e.to_string()));
         }
     }
 
@@ -212,6 +219,30 @@ impl Backend {
                 })
             })
             .collect()
+    }
+}
+
+/// Why a key was not stored, in words.
+pub fn key_error(e: &kaiwa_ai::secrets::KeyError, lang: &str) -> String {
+    use kaiwa_ai::secrets::KeyError;
+    let de = lang != "en";
+    match (e, de) {
+        (KeyError::Empty, true) => "Kein Schlüssel eingegeben.".to_string(),
+        (KeyError::Empty, false) => "No key entered.".to_string(),
+        (KeyError::EnvOnly, true) => {
+            "Für dieses Profil speichert Kaiwa keinen Schlüssel im Schlüsselbund; er kommt nur aus der Umgebung.".to_string()
+        }
+        (KeyError::EnvOnly, false) => {
+            "For this profile Kaiwa keeps no key in the keyring; it comes only from the environment.".to_string()
+        }
+        (KeyError::Spare, true) => {
+            "Das Profil ließ sich nicht öffnen; seine Schlüssel bleiben, wie sie sind.".to_string()
+        }
+        (KeyError::Spare, false) => {
+            "The profile could not be opened; its keys stay as they are.".to_string()
+        }
+        (KeyError::Keyring(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
+        (KeyError::Keyring(e), false) => format!("The keyring refused: {e}"),
     }
 }
 

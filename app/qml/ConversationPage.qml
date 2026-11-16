@@ -903,7 +903,7 @@ Kirigami.ScrollablePage {
                 Text {
                     visible: wordPopup.info !== null && wordPopup.info.found === false
                     Layout.fillWidth: true
-                    text: page.t("Dieses Wort steht nicht im Wörterbuch.", "This word is not in the dictionary.")
+                    text: wordPopup.info && wordPopup.info.error ? page.t("Das Nachschlagen ist fehlgeschlagen: " + wordPopup.info.error, "The lookup failed: " + wordPopup.info.error) : page.t("Dieses Wort steht nicht im Wörterbuch.", "This word is not in the dictionary.")
                     color: KanteStyle.mutedTextColor
                     font: KanteStyle.defaultFont
                     wrapMode: Text.Wrap
