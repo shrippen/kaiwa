@@ -10,7 +10,7 @@ static STATE: OnceLock<Mutex<AppState>> = OnceLock::new();
 /// The state; opened on first use.
 pub fn state() -> MutexGuard<'static, AppState> {
     STATE
-        .get_or_init(|| Mutex::new(AppState::open().expect("the profile opens")))
+        .get_or_init(|| Mutex::new(AppState::open_or_spare()))
         .lock()
         .unwrap_or_else(|e| e.into_inner())
 }

@@ -201,7 +201,7 @@ use std::time::Duration;
 use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_backend::ears::{
-    self, Clip, Ears, Hands, Heard, Mic, Moras, Offer, Patience, Recognition,
+    self, Clip, Ears, Hands, Heard, Mic, MoraFailure, Moras, Offer, Patience, Recognition,
 };
 use kaiwa_backend::flow::{self, Length, Talk};
 use kaiwa_backend::log::Log;
@@ -209,9 +209,10 @@ use kaiwa_backend::placing::{self, Next, Placing, Stage};
 use kaiwa_backend::voice::{self, Debt, Enhance, Line, Owed, Pace, Said, Speaker};
 use kaiwa_core::Input;
 use kaiwa_core::session::Aid;
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use crate::state::{now, state};
+use crate::util::{book_latency, keep_mark, or_default};
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -527,6 +528,13 @@ impl qobject::Conversation {
         self.as_mut().set_notice(QString::from(&msg));
     }
 
+    /// Tells the learner why there are no pronunciation hints; the talk goes on without.
+    fn say_mora_failed(mut self: Pin<&mut Self>, e: &ears::SpeechError, when: MoraFailure) {
+        eprintln!("kaiwa: mora check: {e}");
+        let msg = QString::from(ears::mora_text(when, &self.lang));
+        self.as_mut().set_notice(msg);
+    }
+
     fn say_all_unsaved(mut self: Pin<&mut Self>, failed: &[String]) {
         for e in failed {
             self.as_mut().say_unsaved(e);
@@ -770,8 +778,12 @@ impl qobject::Conversation {
                 };
                 let _ = thread.queue(move |mut q| q.as_mut().say_unsaved(&e));
             };
-            speaker.say(&said, &line, &still, &mut on_sound);
+            let failed = speaker.say(&said, &line, &still, &mut on_sound);
             let _ = thread.queue(move |mut q| {
+                // A failed sentence leaves a note until a line plays without one.
+                let note = failed.map(|e| voice::voice_text(&e, &q.lang));
+                q.as_mut()
+                    .set_voice_note(QString::from(&note.unwrap_or_default()));
                 if q.utterance.load(Ordering::SeqCst) == id {
                     q.quiet.store(id, Ordering::SeqCst);
                     if *q.talk_state() == SPEAKING {
@@ -1277,7 +1289,14 @@ impl qobject::Conversation {
         let lang = self.lang.clone();
         let thread = self.qt_thread();
         std::thread::spawn(move || {
-            let notes = check.check(&rec, &text);
+            let notes = match check.check(&rec, &text) {
+                Ok(notes) => notes,
+                Err(e) => {
+                    let _ = thread
+                        .queue(move |mut q| q.as_mut().say_mora_failed(&e, MoraFailure::Check));
+                    return;
+                }
+            };
             if notes.is_empty() {
                 return;
             }
@@ -1484,21 +1503,6 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
     });
 }
 
-/// Keeps a response time on the device (/LL010/); the failure, if any, as text.
-fn book_latency(since: std::time::Instant) -> Option<String> {
-    let ms = u32::try_from(since.elapsed().as_millis()).unwrap_or(u32::MAX);
-    state().add_latency(ms).err().map(|e| format!("{e:#}"))
-}
-
-/// The value of a store read; a failure is noted in `failed` (for `say_unsaved`) and the
-/// default stands in.
-fn or_default<T: Default, E: std::fmt::Display>(r: Result<T, E>, failed: &mut Vec<String>) -> T {
-    r.unwrap_or_else(|e| {
-        failed.push(e.to_string());
-        T::default()
-    })
-}
-
 /// Loads the mora check (/LF320/). Without its model there are no hints; the settings say where
 /// it comes from (`models::mora_model`).
 fn load_mora(thread: &CxxQtThread<qobject::Conversation>) {
@@ -1507,34 +1511,8 @@ fn load_mora(thread: &CxxQtThread<qobject::Conversation>) {
             let _ = thread.queue(move |mut q| q.as_mut().rust_mut().ears.set_moras(check));
         }
         Err(e) if ears::model_missing(&e) => {}
-        Err(e) => eprintln!("kaiwa: mora check: {e}"),
-    }
-}
-
-/// The record of the summary with the kept mark in it. `None` without a record (recording the
-/// talk failed): the mark has nothing to stay with.
-fn keep_mark(recorded: &str) -> Option<String> {
-    let mut recorded: Value = serde_json::from_str(recorded).ok()?;
-    if !recorded.is_object() {
-        return None;
-    }
-    recorded["markKept"] = json!(true);
-    Some(recorded.to_string())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::keep_mark;
-
-    #[test]
-    fn a_kept_mark_needs_a_record() {
-        // Recording failed: `recorded` is empty, the page must not get a record from it.
-        assert_eq!(keep_mark(""), None);
-        assert_eq!(keep_mark("null"), None);
-
-        let kept = keep_mark(r#"{"minutes":3,"xp":null}"#).unwrap();
-        let v: serde_json::Value = serde_json::from_str(&kept).unwrap();
-        assert_eq!(v["markKept"], true);
-        assert_eq!(v["minutes"], 3);
+        Err(e) => {
+            let _ = thread.queue(move |mut q| q.as_mut().say_mora_failed(&e, MoraFailure::Load));
+        }
     }
 }

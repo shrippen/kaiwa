@@ -102,8 +102,7 @@ A change that needs more places than its row lists is a finding for the next aud
 - Microphone, recognition, voice and downloads are backend types (`ears`, `voice`,
   `models`), but the app holds them and drives when to load, listen, speak and unload. For
   `kaiwad` (M4) that flow still has to move into the backend.
-- Two failures are still only logged: deleting the recordings when all data of a profile
-  is wiped (`profiles.rs`, `wipe`), and an unreadable tutor key, which then looks like no
+- One failure is still only logged: an unreadable tutor key, which then looks like no
   tutor (`lib.rs`, `provider`). Found in the review of PR 153.
 - `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
   `turn_xp`. `AUDIT.md`, "Seit dem letzten Audit", finding 4.
