@@ -225,10 +225,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     let keys = std::sync::Arc::new(kaiwa_ai::secrets::MemoryKeys::default());
     let open = |path: PathBuf| Backend::open_with(path, false, keys.clone(), Some(&dir));
     let key_of = |b: &Backend| {
-        let id = b
-            .path()
-            .file_stem()
-            .map(|s| s.to_string_lossy().to_string());
+        let id = b.path().file_stem().and_then(|s| s.to_str());
         keys.get(&format!("anthropic/{}", id.unwrap_or_default()))
             .ok()
             .flatten()

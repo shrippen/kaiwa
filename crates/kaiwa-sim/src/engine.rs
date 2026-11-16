@@ -450,11 +450,7 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
     let Some((id, _)) = topics[0].first().cloned() else {
         return Ok(Some(found.join("; ")));
     };
-    let scenario = b
-        .scenarios()
-        .get(&id)
-        .cloned()
-        .with_context(|| id.clone())?;
+    let scenario = b.scenario(&id).with_context(|| id.clone())?;
 
     // His level: the profile holds his placement, and a talk started the way the app starts
     // it (`Backend::new_talk`) names the level of his `start_level.speaking` to the
