@@ -71,6 +71,7 @@ pub fn check(id: &str, root: &Path, bin: &Path) -> Outcome {
             "hinnerk_font" => font(bin, &tmp),
             "lena_idle_memory" => memory(bin, &tmp),
             "lena_app_egress" => egress(bin, &tmp),
+            _ if crate::qml::uses(id) => Ok(Some("needs Qt 6 (qmltestrunner)".into())),
             _ => Ok(Some(format!("no app check {id}"))),
         });
     let _ = fs::remove_dir_all(&tmp);
