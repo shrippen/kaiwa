@@ -1833,7 +1833,6 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
- "hound",
  "kaiwa-ai",
  "kaiwa-backend",
  "kaiwa-core",

@@ -200,20 +200,20 @@ use std::time::Duration;
 
 use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
+use kaiwa_backend::ears::{
+    self, Clip, Ears, Hands, Heard, Mic, Moras, Offer, Patience, Recognition,
+};
 use kaiwa_backend::flow::{self, Length, Talk};
-use kaiwa_backend::log::{Log, MoraKind, MoraNote};
+use kaiwa_backend::log::Log;
 use kaiwa_backend::placing::{self, Next, Placing, Stage};
 use kaiwa_core::Input;
 use kaiwa_core::session::Aid;
 use kaiwa_speech::SpeechError;
-use kaiwa_speech::capture::{Capture, Recording};
-use kaiwa_speech::g2p::G2p;
-use kaiwa_speech::models::{KANA_CTC_URL, kokoro_dir, models_dir, reazonspeech_dir};
-use kaiwa_speech::mora::{self, Checker, Hint, Kind};
+use kaiwa_speech::Synthesizer;
+use kaiwa_speech::models::{KANA_CTC_URL, kokoro_dir, models_dir};
+use kaiwa_speech::mora;
 use kaiwa_speech::playback::{self, Player};
-use kaiwa_speech::stt::Recognizer;
 use kaiwa_speech::tts::{self, SpeechCache, Voice};
-use kaiwa_speech::{Synthesizer, Transcriber};
 use serde_json::{Value, json};
 
 use crate::state::{now, state};
@@ -242,14 +242,12 @@ pub struct ConversationRust {
     longer_pause: f64,
     /// The pause ended the last recording, and the turns that sounded cut off by it.
     ended_by_pause: bool,
-    /// Hands-free: turns in a row the pause ended that gave nothing to send.
-    empty_turns: kaiwa_core::turn_end::EmptyTurns,
-    cut_offs: kaiwa_core::turn_end::CutOffs,
+    /// Hands-free: turns in a row the pause ended that gave nothing to send, and the turns
+    /// it cut off.
+    patience: Patience,
     /// When the learner stopped speaking, for the response time (/LL010/); handed on to the
     /// reply, which books it at its first sound.
     speech_end: Option<std::time::Instant>,
-    /// While listening hands-free: when the turn ends, and when the level was last read.
-    turn_end: Option<(kaiwa_core::turn_end::EndOfTurn, std::time::Instant)>,
     voice_note: QString,
     speech_ready: bool,
     scenario: QString,
@@ -264,12 +262,11 @@ pub struct ConversationRust {
     sitting: Option<std::time::Instant>,
     talk: Option<Arc<Mutex<Talk>>>,
     log: Log,
-    /// Any engine behind the traits (/LL504/); ReazonSpeech and Kokoro today.
-    recognizer: Option<Arc<dyn Transcriber>>,
-    capture: Option<Capture>,
+    /// The recognition (/LL504/) and the mora check (/LF320/); each missing without its model.
+    ears: Ears,
+    /// Open while listening.
+    mic: Option<Mic>,
     speaker: Option<Speaker>,
-    /// The mora check (/LF320/); `None` without its model.
-    mora: Option<Arc<Mutex<MoraCheck>>>,
     /// The last time speech was used; the models were unloaded since when `unloaded`.
     last_use: Option<std::time::Instant>,
     unloaded: bool,
@@ -287,12 +284,6 @@ pub struct ConversationRust {
     debt: kaiwa_backend::talk::Debt,
 }
 
-/// The mora check's model and the reading of what the learner meant.
-struct MoraCheck {
-    checker: Checker,
-    g2p: G2p,
-}
-
 /// The interim voice and the speaker it plays through.
 #[derive(Clone)]
 struct Speaker {
@@ -305,11 +296,6 @@ const LISTENING: i32 = 1;
 const THINKING: i32 = 2;
 const SPEAKING: i32 = 3;
 const ERROR: i32 = 4;
-
-/// Hands-free: listening stops after this long without any speech.
-const HANDS_FREE_WAIT_SECS: f64 = 30.0;
-/// Shorter recordings (a tap) are not checked for a voice.
-const MIN_CHECKED_SECS: f32 = 0.5;
 
 /// The voice's pace without a session: a little below Kokoro's normal one.
 const SPEED: f32 = 0.9;
@@ -500,9 +486,9 @@ impl qobject::Conversation {
         if *self.speech_ready() {
             // Load what was missing and may have been downloaded since (settings, F-08).
             let missing = (
-                self.recognizer.is_none(),
+                self.ears.recognition().is_none(),
                 self.speaker.is_none(),
-                self.mora.is_none(),
+                self.ears.moras().is_none(),
             );
             if missing != (false, false, false) {
                 let thread = self.qt_thread();
@@ -831,22 +817,19 @@ impl qobject::Conversation {
         let Some(minutes) = state().profile().ok().and_then(|p| p.unload_after_min) else {
             return;
         };
-        let quiet = *self.talk_state() == READY && !*self.busy() && self.capture.is_none();
+        let quiet = *self.talk_state() == READY && !*self.busy() && self.mic.is_none();
         let long = self
             .last_use
             .is_some_and(|t| t.elapsed() >= Duration::from_secs(u64::from(minutes) * 60));
-        let loaded = self.recognizer.is_some() || self.speaker.is_some() || self.mora.is_some();
+        let loaded = self.ears.loaded() || self.speaker.is_some();
         if quiet && long && loaded {
             let mut rust = self.as_mut().rust_mut();
-            rust.recognizer = None;
+            rust.ears.unload();
             rust.speaker = None;
-            rust.mora = None;
             rust.unloaded = true;
             if let Ok(mut c) = rust.said.lock() {
                 c.clear();
             }
-            // The readings (UniDic) load again with the next line that needs them.
-            kaiwa_lang::unidic::unload();
         }
     }
 
@@ -870,20 +853,16 @@ impl qobject::Conversation {
     /// A recognised turn: the first that the pause seems to have cut off offers a longer
     /// pause (/LF101/, T-01).
     fn after_turn(mut self: Pin<&mut Self>, by_pause: bool, text: &str) {
-        let now = state()
-            .profile()
-            .map(|p| p.end_pause_secs)
-            .unwrap_or(kaiwa_core::turn_end::DEFAULT_PAUSE);
-        if let Some(next) = self
+        let offered = *self.longer_pause() as f32;
+        let offer = self
             .as_mut()
             .rust_mut()
-            .cut_offs
-            .after_turn(by_pause, text, now)
-        {
-            self.as_mut().set_longer_pause(f64::from(next));
-        } else if *self.longer_pause() > 0.0 && f64::from(now) >= *self.longer_pause() {
-            // The pause was set at least that long in the meantime: the offer is stale.
-            self.as_mut().set_longer_pause(0.0);
+            .patience
+            .after_turn(&state(), by_pause, text, offered);
+        match offer {
+            Offer::Make(next) => self.as_mut().set_longer_pause(f64::from(next)),
+            Offer::Withdraw => self.as_mut().set_longer_pause(0.0),
+            Offer::Keep => {}
         }
     }
 
@@ -897,13 +876,13 @@ impl qobject::Conversation {
         if let Some(e) = failed {
             self.as_mut().say_unsaved(&e);
         }
-        self.as_mut().rust_mut().cut_offs.reset();
+        self.as_mut().rust_mut().patience.take_offer();
         self.as_mut().set_longer_pause(0.0);
     }
 
     /// Declines the offered pause: it comes back only after two more turns that sound cut off.
     fn decline_longer_pause(mut self: Pin<&mut Self>) {
-        self.as_mut().rust_mut().cut_offs.decline();
+        self.as_mut().rust_mut().patience.decline_offer();
         self.as_mut().set_longer_pause(0.0);
     }
 
@@ -1110,13 +1089,13 @@ impl qobject::Conversation {
     }
 
     fn barge_in(mut self: Pin<&mut Self>) {
-        self.as_mut().rust_mut().empty_turns.reset();
+        self.as_mut().rust_mut().patience.reset_empty();
         self.as_mut().interrupt();
         self.listen_again();
     }
 
     fn retry_talk(mut self: Pin<&mut Self>) {
-        if *self.talk_state() == ERROR && self.recognizer.is_some() {
+        if *self.talk_state() == ERROR && self.ears.recognition().is_some() {
             self.as_mut().set_talk_state(READY);
         }
     }
@@ -1124,7 +1103,7 @@ impl qobject::Conversation {
     /// Hands-free after a turn that gave nothing to send: listens again, but not for ever.
     fn listen_after_nothing(mut self: Pin<&mut Self>) {
         // After the third in a row the message stays and the microphone is closed.
-        if self.as_mut().rust_mut().empty_turns.after_empty() {
+        if self.as_mut().rust_mut().patience.listen_after_empty() {
             self.listen_again();
         }
     }
@@ -1132,9 +1111,8 @@ impl qobject::Conversation {
     /// Stops listening without sending anything (hands-free: the character speaks, or the
     /// learner typed instead).
     fn close_mic(mut self: Pin<&mut Self>) {
-        self.as_mut().rust_mut().turn_end = None;
-        if let Some(c) = self.as_mut().rust_mut().capture.take() {
-            drop(c.stop());
+        if let Some(m) = self.as_mut().rust_mut().mic.take() {
+            drop(m.stop());
             self.as_mut().set_level(0.0);
             if *self.talk_state() == LISTENING {
                 self.as_mut().set_talk_state(READY);
@@ -1144,7 +1122,7 @@ impl qobject::Conversation {
 
     /// The talk button: the learner starts a turn.
     fn start_talk(mut self: Pin<&mut Self>) {
-        self.as_mut().rust_mut().empty_turns.reset();
+        self.as_mut().rust_mut().patience.reset_empty();
         self.open_mic();
     }
 
@@ -1163,30 +1141,25 @@ impl qobject::Conversation {
         if *self.talk_state() != READY || *self.busy() || *self.finished() {
             return;
         }
-        let read = state().profile();
-        let read = read.inspect_err(|e| self.as_mut().say_unsaved(&e.to_string()));
-        let microphone = read.ok().and_then(|p| p.microphone);
-        match Capture::start_on(microphone.as_deref()) {
-            Ok(c) => {
-                let turn_end = self.hands_free.then(|| {
-                    let pause = state()
-                        .profile()
-                        .map(|p| p.end_pause_secs)
-                        .unwrap_or(kaiwa_core::turn_end::DEFAULT_PAUSE);
-                    (
-                        kaiwa_core::turn_end::EndOfTurn::new(pause),
-                        std::time::Instant::now(),
-                    )
-                });
-                self.as_mut().rust_mut().turn_end = turn_end;
-                self.as_mut().rust_mut().capture = Some(c);
+        let hands = if self.hands_free {
+            Hands::Free
+        } else {
+            Hands::Button
+        };
+        let opened = Mic::open(&state(), hands);
+        if let Some(e) = opened.unread {
+            self.as_mut().say_unsaved(&e);
+        }
+        match opened.mic {
+            Ok(m) => {
+                self.as_mut().rust_mut().mic = Some(m);
                 // The microphone is back (after an error and `retry_talk`).
                 self.as_mut().set_speech_error(QString::default());
                 self.as_mut().set_level(0.0);
                 self.as_mut().set_talk_state(LISTENING);
             }
             Err(e) => {
-                let text = speech_text(&e, &self.lang);
+                let text = ears::speech_text(&e, &self.lang);
                 self.as_mut().set_speech_error(QString::from(&text));
                 self.as_mut().set_talk_state(ERROR);
             }
@@ -1194,49 +1167,35 @@ impl qobject::Conversation {
     }
 
     fn poll_level(mut self: Pin<&mut Self>) {
-        let level = self
-            .capture
-            .as_ref()
-            .map(|c| f64::from(c.level()))
-            .unwrap_or(0.0);
-        self.as_mut().set_level(level);
-        // Hands-free: nothing said for a while stops listening, without sending anything, so
-        // the microphone does not record an empty room for hours. The next click or reply
-        // starts it again.
-        let silent = self
-            .turn_end
-            .as_ref()
-            .is_some_and(|(e, _)| !e.heard() && e.listened_secs() >= HANDS_FREE_WAIT_SECS);
-        if silent {
-            self.as_mut().rust_mut().empty_turns.reset();
-            self.as_mut().rust_mut().turn_end = None;
-            if let Some(c) = self.as_mut().rust_mut().capture.take() {
-                drop(c.stop());
-            }
-            self.as_mut().set_level(0.0);
-            self.as_mut().set_talk_state(READY);
-            return;
-        }
-        // Hands-free: the set pause after speaking ends the turn (/LF101/).
-        let ended = self
+        let heard = self
             .as_mut()
             .rust_mut()
-            .turn_end
+            .mic
             .as_mut()
-            .is_some_and(|(e, last)| {
-                let dt = last.elapsed().as_secs_f64();
-                *last = std::time::Instant::now();
-                e.update(level as f32, dt)
-            });
-        if ended {
-            // The speech ended a pause ago, not now.
-            let quiet = self.turn_end.as_ref().map_or(0.0, |(e, _)| e.quiet_secs());
-            self.as_mut().rust_mut().ended_by_pause = true;
-            self.as_mut().stop_talk();
-            let end = std::time::Instant::now()
-                .checked_sub(Duration::from_secs_f64(quiet))
-                .unwrap_or_else(std::time::Instant::now);
-            self.as_mut().rust_mut().speech_end = Some(end);
+            .map(|m| m.poll(std::time::Instant::now()));
+        match heard {
+            None => self.as_mut().set_level(0.0),
+            Some(Heard::Listening(level)) => self.as_mut().set_level(f64::from(level)),
+            // Nothing said for a while: stop listening without sending anything. The next
+            // click or reply starts it again.
+            Some(Heard::GaveUp) => {
+                self.as_mut().rust_mut().patience.reset_empty();
+                if let Some(m) = self.as_mut().rust_mut().mic.take() {
+                    drop(m.stop());
+                }
+                self.as_mut().set_level(0.0);
+                self.as_mut().set_talk_state(READY);
+            }
+            // The set pause after speaking ends the turn (/LF101/).
+            Some(Heard::Ended { quiet_secs }) => {
+                self.as_mut().rust_mut().ended_by_pause = true;
+                self.as_mut().stop_talk();
+                // The speech ended a pause ago, not now.
+                let end = std::time::Instant::now()
+                    .checked_sub(Duration::from_secs_f64(quiet_secs))
+                    .unwrap_or_else(std::time::Instant::now);
+                self.as_mut().rust_mut().speech_end = Some(end);
+            }
         }
     }
 
@@ -1245,24 +1204,25 @@ impl qobject::Conversation {
         let ready = *self.talk_state() == READY && !*self.busy() && !*self.finished();
         // Not in the placement: its stages change the scene between turns. And not into the
         // character's voice: it listens again when the character is done.
-        let talk =
-            ready && self.recognizer.is_some() && self.placement.is_none() && !self.speaking();
+        let talk = ready
+            && self.ears.recognition().is_some()
+            && self.placement.is_none()
+            && !self.speaking();
         if *self.hands_free() && talk {
             self.as_mut().open_mic();
         }
     }
 
     fn stop_talk(mut self: Pin<&mut Self>) {
-        self.as_mut().rust_mut().turn_end = None;
-        let Some(capture) = self.as_mut().rust_mut().capture.take() else {
+        let Some(mic) = self.as_mut().rust_mut().mic.take() else {
             return;
         };
         self.as_mut().rust_mut().speech_end = Some(std::time::Instant::now());
         self.as_mut().set_level(0.0);
-        match capture.stop() {
+        match mic.stop() {
             Ok(rec) => self.recognize(rec),
             Err(e) => {
-                let text = speech_text(&e, &self.lang);
+                let text = ears::speech_text(&e, &self.lang);
                 self.as_mut().set_speech_error(QString::from(&text));
                 self.as_mut().set_talk_state(ERROR);
             }
@@ -1270,31 +1230,15 @@ impl qobject::Conversation {
     }
 
     fn say_wav(self: Pin<&mut Self>, path: &QString) {
-        let path = path.to_string();
-        let rec = hound::WavReader::open(&path).ok().map(|mut r| {
-            let spec = r.spec();
-            let samples: Vec<f32> = match spec.sample_format {
-                hound::SampleFormat::Float => r.samples::<f32>().filter_map(Result::ok).collect(),
-                hound::SampleFormat::Int => r
-                    .samples::<i32>()
-                    .filter_map(Result::ok)
-                    .map(|s| s as f32 / (1u64 << (spec.bits_per_sample - 1)) as f32)
-                    .collect(),
-            };
-            let channels = usize::from(spec.channels);
-            Recording {
-                samples: kaiwa_speech::capture::to_mono(&samples, channels).collect(),
-                sample_rate: spec.sample_rate,
-            }
-        });
+        let rec = Clip::from_wav(std::path::Path::new(&path.to_string()));
         if let Some(rec) = rec {
             self.recognize(rec);
         }
     }
 
     /// Recognises a recording on a worker thread and sends it as a spoken turn.
-    fn recognize(mut self: Pin<&mut Self>, rec: Recording) {
-        let Some(recognizer) = self.recognizer.clone() else {
+    fn recognize(mut self: Pin<&mut Self>, rec: Clip) {
+        let Some(recognizer) = self.ears.recognition() else {
             self.as_mut().set_talk_state(ERROR);
             return;
         };
@@ -1304,8 +1248,7 @@ impl qobject::Conversation {
         // No voice in it (no microphone, muted, wrong input): say so instead of letting the
         // recognition invent sounds from the silence (/LF104/). A tap too short to measure
         // goes on as before.
-        let level = kaiwa_speech::capture::check(&rec);
-        if level.seconds >= MIN_CHECKED_SECS && !level.voice() {
+        if rec.check().no_voice() {
             let by_pause = std::mem::take(&mut self.as_mut().rust_mut().ended_by_pause);
             self.as_mut().set_talk_state(READY);
             let msg = if self.lang == "en" {
@@ -1324,7 +1267,7 @@ impl qobject::Conversation {
         // Kept only with the opt-in, for the chosen days (/LF712/).
         if let Some(id) = self.talk.as_ref().and_then(|t| t.lock().ok()?.id()) {
             let turn = self.log.turns();
-            let kept = state().keep_recording(id, turn, &rec.samples, rec.sample_rate, now());
+            let kept = state().keep_recording(id, turn, rec.samples(), rec.sample_rate(), now());
             if let Err(e) = kept {
                 self.as_mut().say_unsaved(&format!("{e:#}"));
             }
@@ -1336,13 +1279,13 @@ impl qobject::Conversation {
         let by_pause = std::mem::take(&mut self.as_mut().rust_mut().ended_by_pause);
         let thread = self.qt_thread();
         std::thread::spawn(move || {
-            let text = recognizer.transcribe(&rec.samples, rec.sample_rate);
+            let text = recognizer.text(&rec);
             let _ = thread.queue(move |mut q| {
                 q.as_mut().set_busy(false);
                 q.as_mut().set_talk_state(READY);
                 q.as_mut().after_turn(by_pause, &text);
                 if !text.is_empty() {
-                    q.as_mut().rust_mut().empty_turns.reset();
+                    q.as_mut().rust_mut().patience.reset_empty();
                     if let Some(index) = q.as_mut().submit(&text, false) {
                         q.check_moras(index, text, rec);
                     }
@@ -1364,8 +1307,8 @@ impl qobject::Conversation {
     /// Checks the mora lengths of a spoken turn beside the tutor's answer and adds the hint to
     /// the turn when it comes (/LF320/: only shortenings, only in sentences, at most one, never
     /// a mistake; K-01, K-02, J-05). The recording stays in memory (/LF712/).
-    fn check_moras(&self, index: usize, text: String, rec: Recording) {
-        let Some(check) = self.mora.clone() else {
+    fn check_moras(&self, index: usize, text: String, rec: Clip) {
+        let Some(check) = self.ears.moras() else {
             return;
         };
         if !state().profile().is_ok_and(|p| p.mora_hints) {
@@ -1374,26 +1317,11 @@ impl qobject::Conversation {
         let lang = self.lang.clone();
         let thread = self.qt_thread();
         std::thread::spawn(move || {
-            let hints = {
-                let Ok(mut c) = check.lock() else {
-                    return;
-                };
-                let Some(words) = c.g2p.pronounced_words(&text) else {
-                    return;
-                };
-                match c.checker.hints(&rec.samples, rec.sample_rate, &words) {
-                    Ok(h) => h,
-                    Err(e) => {
-                        eprintln!("kaiwa: {e}");
-                        return;
-                    }
-                }
-            };
-            if hints.is_empty() {
+            let notes = check.check(&rec, &text);
+            if notes.is_empty() {
                 return;
             }
             let _ = thread.queue(move |mut q| {
-                let notes: Vec<MoraNote> = hints.iter().map(mora_note).collect();
                 q.as_mut()
                     .rust_mut()
                     .log
@@ -1419,7 +1347,7 @@ impl qobject::Conversation {
         if typed {
             // Only spoken turns have a response time.
             self.as_mut().rust_mut().speech_end = None;
-            self.as_mut().rust_mut().empty_turns.reset();
+            self.as_mut().rust_mut().patience.reset_empty();
             // Typed instead of spoken: the microphone closes, hands-free or not; a recording
             // finishing during this turn would run a second one beside it.
             self.as_mut().close_mic();
@@ -1538,22 +1466,17 @@ fn tutor_error_text(e: &str, lang: &str) -> String {
 /// Loads ReazonSpeech; without the model the talk button shows why.
 fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>, lang: &str) {
     let lang = lang.to_string();
-    let dir = reazonspeech_dir();
-    let loaded = Recognizer::from_dir(&dir, 2);
+    let loaded = Recognition::load();
     let _ = thread.queue(move |mut q| match loaded {
         Ok(rec) => {
-            q.as_mut().rust_mut().recognizer = Some(Arc::new(rec));
+            q.as_mut().rust_mut().ears.set_recognition(rec);
             q.as_mut().set_speech_error(QString::default());
             if *q.talk_state() != SPEAKING {
                 q.as_mut().set_talk_state(READY);
             }
         }
         Err(e) => {
-            let text = match e {
-                SpeechError::ModelMissing(_) if lang == "de" => "Das Modell für die Spracherkennung fehlt. ReazonSpeech lässt sich in den Einstellungen unter „Modelle“ laden. Bis dahin geht Tippen.".to_string(),
-                SpeechError::ModelMissing(_) => "The speech recognition model is missing. Download ReazonSpeech in the settings under “Models”. You can type meanwhile.".to_string(),
-                e => speech_text(&e, &lang),
-            };
+            let text = ears::recognizer_text(&e, &lang);
             q.as_mut().set_speech_error(QString::from(&text));
             q.as_mut().set_talk_state(ERROR);
         }
@@ -1599,8 +1522,8 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
             let text = match (e, lang == "de") {
                 (SpeechError::ModelMissing(_), true) => "Die Figur antwortet ohne Stimme. Die Übergangsstimme Kokoro lässt sich in den Einstellungen unter „Modelle“ laden.".to_string(),
                 (SpeechError::ModelMissing(_), false) => "The character answers without a voice. Download the interim voice Kokoro in the settings under “Models”.".to_string(),
-                (e, true) => format!("Die Figur antwortet ohne Stimme: {}", speech_text(&e, "de")),
-                (e, false) => format!("The character answers without a voice: {}", speech_text(&e, "en")),
+                (e, true) => format!("Die Figur antwortet ohne Stimme: {}", ears::speech_text(&e, "de")),
+                (e, false) => format!("The character answers without a voice: {}", ears::speech_text(&e, "en")),
             };
             q.as_mut().set_voice_note(QString::from(&text));
             q.as_mut().rust_mut().debt.forgive();
@@ -1630,14 +1553,11 @@ fn or_default<T: Default, E: std::fmt::Display>(r: Result<T, E>, failed: &mut Ve
 /// Loads the mora check (/LF320/). Without its model there are no hints; the settings say where
 /// it comes from (`mora_model_json`).
 fn load_mora(thread: &CxxQtThread<qobject::Conversation>) {
-    let loaded = Checker::from_dir(&models_dir().join(mora::MODEL), 2)
-        .and_then(|checker| Ok((checker, G2p::new()?)));
-    match loaded {
-        Ok((checker, g2p)) => {
-            let check = Arc::new(Mutex::new(MoraCheck { checker, g2p }));
-            let _ = thread.queue(move |mut q| q.as_mut().rust_mut().mora = Some(check));
+    match Moras::load() {
+        Ok(check) => {
+            let _ = thread.queue(move |mut q| q.as_mut().rust_mut().ears.set_moras(check));
         }
-        Err(SpeechError::ModelMissing(_)) => {}
+        Err(e) if ears::model_missing(&e) => {}
         Err(e) => eprintln!("kaiwa: mora check: {e}"),
     }
 }
@@ -1653,55 +1573,6 @@ pub fn mora_model_json() -> Value {
         "size": "356 MB",
         "licence": "Apache-2.0",
     })
-}
-
-/// A mora hint for the log: the backend words it.
-fn mora_note(h: &Hint) -> MoraNote {
-    let kind = match h.kind {
-        Kind::GeminateLeftOut => MoraKind::Geminate,
-        _ => MoraKind::Vowel,
-    };
-    MoraNote {
-        kind,
-        surface: h.surface.clone(),
-        meant: h.meant.clone(),
-        heard: h.heard.clone(),
-    }
-}
-
-/// What the learner reads when speaking does not work, in the UI language.
-pub(crate) fn speech_text(e: &SpeechError, lang: &str) -> String {
-    let de = lang == "de";
-    match (e, de) {
-        (SpeechError::NoMicrophone, true) => {
-            "Kein Mikrofon gefunden. Bis dahin geht Tippen.".into()
-        }
-        (SpeechError::NoMicrophone, false) => "No microphone found. You can type meanwhile.".into(),
-        (SpeechError::Microphone(why), true) => {
-            format!("Das Mikrofon lässt sich nicht öffnen ({why}). Bis dahin geht Tippen.")
-        }
-        (SpeechError::Microphone(why), false) => {
-            format!("The microphone cannot be opened ({why}). You can type meanwhile.")
-        }
-        (SpeechError::ModelMissing(dir), true) => {
-            format!("Das Modell für die Spracherkennung fehlt in {dir}.")
-        }
-        (SpeechError::ModelMissing(dir), false) => format!("The speech model is missing in {dir}."),
-        (SpeechError::ModelLoad(dir), true) => format!(
-            "Das Modell in {dir} lässt sich nicht laden. Neu entpacken; bis dahin geht Tippen."
-        ),
-        (SpeechError::ModelLoad(dir), false) => {
-            format!("The model in {dir} cannot be loaded. Unpack it again; you can type meanwhile.")
-        }
-        (SpeechError::NoSpeaker, true) => "Kein Lautsprecher gefunden.".into(),
-        (SpeechError::NoSpeaker, false) => "No speaker found.".into(),
-        (SpeechError::Speaker(why), true) => {
-            format!("Der Lautsprecher lässt sich nicht öffnen ({why}).")
-        }
-        (SpeechError::Speaker(why), false) => format!("The speaker cannot be opened ({why})."),
-        (SpeechError::Voice(why), true) => format!("Die Stimme ist ausgefallen ({why})."),
-        (SpeechError::Voice(why), false) => format!("The voice failed ({why})."),
-    }
 }
 
 /// The record of the summary with the kept mark in it. `None` without a record (recording the

@@ -36,5 +36,5 @@ fn main() {
     // The demo's profile lived in the temp directory for this run only.
     #[cfg(feature = "demo")]
     state::state().discard_demo();
-    kaiwa_speech::shutdown();
+    kaiwa_backend::ears::shutdown();
 }
