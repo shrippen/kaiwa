@@ -128,6 +128,7 @@ impl Backend {
             };
             journal::record(self, &event, now).map_err(|e| match e {
                 SettingError::NotSaved(e) | SettingError::NotApplied(e) => e,
+                SettingError::Spare => anyhow::anyhow!("a review never refuses on a spare"),
             })?;
             self.store.item(text).map_err(anyhow::Error::from)
         })

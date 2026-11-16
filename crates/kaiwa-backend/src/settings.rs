@@ -132,6 +132,10 @@ impl Backend {
             key: key.into(),
             value: value.into(),
         };
+        // Refused before the journal: a refused change is no event.
+        if self.spare && key == "keepRecordings" {
+            return Err(SettingError::Spare);
+        }
         if DEVICE_SETTINGS.contains(&key) {
             return self.change_setting(key, value, now);
         }
@@ -164,9 +168,6 @@ impl Backend {
     }
 
     fn edit_profile(&self, key: &str, value: &str, now: Moment) -> Result<(), SettingError> {
-        if self.spare && key == "keepRecordings" {
-            return Err(SettingError::Spare);
-        }
         let p = self
             .store
             .update_profile(|p| {
