@@ -25,6 +25,8 @@ pub mod qobject {
         #[qproperty(bool, finished)]
         #[qproperty(QString, summary)]
         #[qproperty(QString, error)]
+        /// A save or load that failed, for the page to show (like `KaiwaApp.notice`).
+        #[qproperty(QString, notice)]
         /// KanteTalkButton.State: 0 ready, 1 listening, 2 thinking, 3 speaking, 4 error.
         #[qproperty(i32, talk_state, cxx_name = "talkState")]
         #[qproperty(f64, level)]
@@ -226,6 +228,7 @@ pub struct ConversationRust {
     finished: bool,
     summary: QString,
     error: QString,
+    notice: QString,
     talk_state: i32,
     level: f64,
     speech_error: QString,
@@ -390,6 +393,7 @@ impl qobject::Conversation {
         let done = guard.done();
         let summary = summary_json(&guard.summary(), &lang).to_string();
         // Keep the state after every turn; record the session once it is done.
+        let mut failed: Vec<String> = Vec::new();
         let recorded = {
             let st = state();
             match session_id {
@@ -405,19 +409,21 @@ impl qobject::Conversation {
                     {
                         Ok(r) => {
                             if let Err(e) = st.track_grammar(&guard, end) {
-                                eprintln!("kaiwa: {e:#}");
+                                failed.push(format!("{e:#}"));
                             }
-                            Some(recorded_json(&r, &guard, st.store.profile().ok(), &lang))
+                            let profile = st.store.profile();
+                            let profile = profile.inspect_err(|e| failed.push(e.to_string()));
+                            Some(recorded_json(&r, &guard, profile.ok(), &lang))
                         }
                         Err(e) => {
-                            eprintln!("kaiwa: {e}");
+                            failed.push(e.to_string());
                             None
                         }
                     }
                 }
                 Some(id) if !done => {
                     if let Err(e) = st.store.save_session(id, &guard.snapshot()) {
-                        eprintln!("kaiwa: {e}");
+                        failed.push(e.to_string());
                     }
                     None
                 }
@@ -425,6 +431,7 @@ impl qobject::Conversation {
             }
         };
         drop(guard);
+        self.as_mut().say_all_unsaved(&failed);
         self.as_mut()
             .set_goals(QString::from(&Value::Array(goals).to_string()));
         if let Some(r) = recorded {
@@ -439,17 +446,21 @@ impl qobject::Conversation {
     fn start_placement(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().placement = Some(Placement::default());
         self.as_mut().set_placement_ask(false);
+        // Cleared here, not per stage: a failure booked at the end of a stage stays shown.
+        self.as_mut().set_notice(QString::default());
         self.begin_stage(0);
     }
 
     /// Plays stage `i` of the placement ([`placement::stage_session`]), nothing stored.
     fn begin_stage(mut self: Pin<&mut Self>, i: usize) {
         let id = STAGES[i].0;
+        let mut failed = Vec::new();
         let prepared = {
             let st = state();
-            let profile = st.store.profile().unwrap_or_default();
+            let profile = or_default(st.store.profile(), &mut failed);
             st.scenarios.get(id).cloned().map(|s| (s, profile))
         };
+        self.as_mut().say_all_unsaved(&failed);
         let Some((scenario, profile)) = prepared else {
             return;
         };
@@ -526,12 +537,17 @@ impl qobject::Conversation {
             .filter(|(s, _)| *s != Skill::Pronunciation)
             .map(|(_, w)| w)
             .collect();
-        if let Err(e) = state().store.set_placement(model) {
-            eprintln!("kaiwa: {e}");
+        let saved = state().store.set_placement(model);
+        if let Err(e) = saved {
+            self.as_mut().say_unsaved(&e.to_string());
         }
         let minutes = (p.results.len() as u32 * TURNS_PER_STAGE).div_ceil(2);
         // The skip the result offers (/LF215/); none for a beginner.
-        let offer = views::placement_offer(&state()).unwrap_or_default();
+        let offered = views::placement_offer(&state());
+        let offer = offered.unwrap_or_else(|e| {
+            self.as_mut().say_unsaved(&e.to_string());
+            Default::default()
+        });
         let skip = (!offer.units.is_empty())
             .then(|| json!({ "last": offer.units.last(), "title": offer.title }));
         let r = json!({
@@ -545,10 +561,11 @@ impl qobject::Conversation {
         self.as_mut().set_placing(false);
     }
 
-    fn skip_placement(self: Pin<&mut Self>, last: &QString) -> bool {
+    fn skip_placement(mut self: Pin<&mut Self>, last: &QString) -> bool {
         // Only the offer that ends at `last`, once (a second click changes nothing).
-        views::take_placement_skip(&state(), &last.to_string()).unwrap_or_else(|e| {
-            eprintln!("kaiwa: {e}");
+        let taken = views::take_placement_skip(&state(), &last.to_string());
+        taken.unwrap_or_else(|e| {
+            self.as_mut().say_unsaved(&e.to_string());
             false
         })
     }
@@ -564,8 +581,9 @@ impl qobject::Conversation {
     ) {
         // The cost limit holds from the first call of every talk: a new one, one continued
         // and the placement (/LF714/).
-        if let Err(e) = state().arm_brake(now()) {
-            eprintln!("kaiwa: {e}");
+        let armed = state().arm_brake(now());
+        if let Err(e) = armed {
+            self.as_mut().say_unsaved(&e.to_string());
         }
         let title = session.scenario.title.get(&lang).to_string();
         let scenario = session.scenario.id.clone();
@@ -582,11 +600,10 @@ impl qobject::Conversation {
             .clone()
             .unwrap_or_else(|| "jf_tebukuro".into());
         let opening = (log.len() == 1).then(|| session.opening().to_string());
-        let sound = state()
-            .store
-            .profile()
-            .map(|p| (p.louder, p.clear, p.hands_free))
-            .unwrap_or_default();
+        let mut failed = Vec::new();
+        let read = state().store.profile();
+        let sound = or_default(read.map(|p| (p.louder, p.clear, p.hands_free)), &mut failed);
+        self.as_mut().say_all_unsaved(&failed);
         self.as_mut().set_louder(sound.0);
         self.as_mut().set_clear(sound.1);
         self.as_mut().set_hands_free(sound.2);
@@ -671,12 +688,32 @@ impl qobject::Conversation {
         kaiwa_backend::talk::turn_of(&self.log, usize::try_from(log_index).ok()?)
     }
 
-    fn save(&self) {
-        if let (Some(session), Some(id)) = (&self.session, self.session_id)
-            && let Ok(s) = session.lock()
-            && let Err(e) = state().store.save_session(id, &s.snapshot())
-        {
-            eprintln!("kaiwa: {e}");
+    /// Tells the learner a save or load failed (it was only logged before). The page shows
+    /// `notice` as the settings page does; it is cleared when the next talk begins.
+    fn say_unsaved(mut self: Pin<&mut Self>, e: &str) {
+        let msg = match self.lang == "de" {
+            true => format!("Das Profil ließ sich nicht lesen oder schreiben: {e}"),
+            false => format!("The profile could not be read or written: {e}"),
+        };
+        self.as_mut().set_notice(QString::from(&msg));
+    }
+
+    fn say_all_unsaved(mut self: Pin<&mut Self>, failed: &[String]) {
+        for e in failed {
+            self.as_mut().say_unsaved(e);
+        }
+    }
+
+    fn save(mut self: Pin<&mut Self>) {
+        let saved = match (&self.session, self.session_id) {
+            (Some(session), Some(id)) => session
+                .lock()
+                .ok()
+                .map(|s| state().store.save_session(id, &s.snapshot())),
+            _ => None,
+        };
+        if let Some(Err(e)) = saved {
+            self.as_mut().say_unsaved(&e.to_string());
         }
     }
 
@@ -712,15 +749,16 @@ impl qobject::Conversation {
         let Some((scenario, learner, c)) = found else {
             return;
         };
-        if let Err(e) = state().store.add_dispute(&kaiwa_store::Dispute {
+        let kept = state().store.add_dispute(&kaiwa_store::Dispute {
             at: now(),
             scenario,
             learner,
             original: c.original,
             better: c.better.clone(),
             explanation: c.explanation,
-        }) {
-            eprintln!("kaiwa: {e}");
+        });
+        if let Err(e) = kept {
+            self.as_mut().say_unsaved(&e.to_string());
         }
         if let Some(e) = self.as_mut().rust_mut().log.get_mut(log_index as usize)
             && let Some(list) = e["corrections"].as_array_mut()
@@ -740,7 +778,7 @@ impl qobject::Conversation {
             return;
         };
         if !*self.finished() || self.placement.is_some() {
-            self.save();
+            self.as_mut().save();
             return;
         }
         let lang = self.lang.clone();
@@ -749,9 +787,9 @@ impl qobject::Conversation {
         let r = match st.correct_talk(id, &s) {
             Ok(r) => r,
             Err(e) => {
-                eprintln!("kaiwa: {e:#}");
+                self.as_mut().say_unsaved(&format!("{e:#}"));
                 drop(s);
-                self.save();
+                self.as_mut().save();
                 // The record stays (a later talk was recorded, or this one has no record to
                 // redo): the page says so instead of promising a correction. Without a record
                 // there is nothing to say.
@@ -761,7 +799,9 @@ impl qobject::Conversation {
                 return;
             }
         };
-        let recorded = recorded_json(&r, &s, st.store.profile().ok(), &lang);
+        let profile = st.store.profile();
+        let profile = profile.inspect_err(|e| self.as_mut().say_unsaved(&e.to_string()));
+        let recorded = recorded_json(&r, &s, profile.ok(), &lang);
         let summary = summary_json(&s.summary(), &lang);
         drop(s);
         self.as_mut()
@@ -771,17 +811,26 @@ impl qobject::Conversation {
     }
 
     fn resume(mut self: Pin<&mut Self>) {
+        self.as_mut().set_notice(QString::default());
         self.as_mut().rust_mut().placement = None;
         self.as_mut().set_placing(false);
+        let mut failed = Vec::new();
         let found = {
             let st = state();
-            let profile = st.store.profile().unwrap_or_default();
-            st.store.open_session().ok().flatten().and_then(|row| {
-                let state = st.store.session_state(row.id).ok()?;
+            let profile = or_default(st.store.profile(), &mut failed);
+            or_default(st.store.open_session(), &mut failed).and_then(|row| {
+                let state = match st.store.session_state(row.id) {
+                    Ok(state) => state,
+                    Err(e) => {
+                        failed.push(e.to_string());
+                        return None;
+                    }
+                };
                 let scenario = st.scenarios.get(&state.scenario)?.clone();
                 Some((row.id, state, scenario, profile.ui_lang))
             })
         };
+        self.as_mut().say_all_unsaved(&failed);
         let Some((id, state, scenario, lang)) = found else {
             return;
         };
@@ -794,13 +843,15 @@ impl qobject::Conversation {
     }
 
     fn start(mut self: Pin<&mut Self>, scenario: &QString) {
+        self.as_mut().set_notice(QString::default());
         self.as_mut().rust_mut().placement = None;
         self.as_mut().set_placing(false);
         let wanted = scenario.to_string();
+        let mut failed = Vec::new();
         let prepared = {
             let st = state();
-            let profile = st.store.profile().unwrap_or_default();
-            let learning = st.store.learning().unwrap_or_default();
+            let profile = or_default(st.store.profile(), &mut failed);
+            let learning = or_default(st.store.learning(), &mut failed);
             let id = if wanted.is_empty() {
                 st.curriculum
                     .next_scenario(&learning.course)
@@ -810,6 +861,7 @@ impl qobject::Conversation {
             };
             st.scenarios.get(&id).cloned().map(|s| (s, profile))
         };
+        self.as_mut().say_all_unsaved(&failed);
         let Some((scenario, profile)) = prepared else {
             return;
         };
@@ -822,7 +874,10 @@ impl qobject::Conversation {
                 return;
             }
         };
-        let id = state().store.begin_session(&session.snapshot(), now()).ok();
+        let begun = state().store.begin_session(&session.snapshot(), now());
+        let id = begun
+            .inspect_err(|e| self.as_mut().say_unsaved(&e.to_string()))
+            .ok();
         let log = vec![json!({ "who": "character", "markup": opening })];
         self.begin(session, id, demo, log, profile.ui_lang);
     }
@@ -907,8 +962,8 @@ impl qobject::Conversation {
                         playback::enhance(&mut samples, rate, louder, clear);
                         speaker.player.play(&samples, rate);
                         // The first sound of the reply: the response time (/LL010/).
-                        if let Some(t) = speech_end.take() {
-                            book_latency(t);
+                        if let Some(e) = speech_end.take().and_then(book_latency) {
+                            let _ = thread.queue(move |mut q| q.as_mut().say_unsaved(&e));
                         }
                     }
                     Some(Err(e)) => eprintln!("kaiwa: {e}"),
@@ -999,16 +1054,20 @@ impl qobject::Conversation {
     /// Takes the offered pause; it only ever makes the pause longer.
     fn take_longer_pause(mut self: Pin<&mut Self>) {
         let secs = *self.longer_pause() as f32;
+        let mut failed = None;
         if secs > 0.0 {
             let st = state();
-            if let Ok(mut p) = st.store.profile()
-                && secs > p.end_pause_secs
-            {
-                p.end_pause_secs = secs;
-                if let Err(e) = st.store.set_profile(&p) {
-                    eprintln!("kaiwa: {e}");
+            match st.store.profile() {
+                Ok(mut p) if secs > p.end_pause_secs => {
+                    p.end_pause_secs = secs;
+                    failed = st.store.set_profile(&p).err().map(|e| e.to_string());
                 }
+                Ok(_) => {}
+                Err(e) => failed = Some(e.to_string()),
             }
+        }
+        if let Some(e) = failed {
+            self.as_mut().say_unsaved(&e);
         }
         self.as_mut().rust_mut().cut_offs.reset();
         self.as_mut().set_longer_pause(0.0);
@@ -1021,15 +1080,16 @@ impl qobject::Conversation {
     }
 
     fn set_sound(mut self: Pin<&mut Self>, louder: bool, clear: bool) {
-        {
+        let saved = {
             let st = state();
-            if let Ok(mut p) = st.store.profile() {
+            st.store.profile().and_then(|mut p| {
                 p.louder = louder;
                 p.clear = clear;
-                if let Err(e) = st.store.set_profile(&p) {
-                    eprintln!("kaiwa: {e}");
-                }
-            }
+                st.store.set_profile(&p)
+            })
+        };
+        if let Err(e) = saved {
+            self.as_mut().say_unsaved(&e.to_string());
         }
         self.as_mut().set_louder(louder);
         self.as_mut().set_clear(clear);
@@ -1068,7 +1128,7 @@ impl qobject::Conversation {
                     let kind = if aid == 0 { Aid::Repeat } else { Aid::Slow };
                     s.aid(kind, line);
                 }
-                self.save();
+                self.as_mut().save();
                 self.as_mut().interrupt();
                 let speed = self.speed() * if aid == 0 { 1.0 } else { 0.7 };
                 self.speak_at(&markup, speed, false);
@@ -1094,8 +1154,9 @@ impl qobject::Conversation {
                             e.remove("translating");
                         }
                         // What the translation cost (/LF714/), not only with the next turn.
-                        if let Err(e) = state().book_costs(now(), false) {
-                            eprintln!("kaiwa: {e}");
+                        let booked = state().book_costs(now(), false);
+                        if let Err(e) = booked {
+                            q.as_mut().say_unsaved(&e.to_string());
                         }
                         match result {
                             Some(Ok(text)) => {
@@ -1106,7 +1167,7 @@ impl qobject::Conversation {
                                 if let Some(e) = q.as_mut().rust_mut().log.get_mut(i) {
                                     e["translation"] = json!(text);
                                 }
-                                q.save();
+                                q.as_mut().save();
                                 q.as_mut().publish_turns();
                             }
                             Some(Err(kaiwa_ai::AiError::NoFixture)) => {
@@ -1173,7 +1234,7 @@ impl qobject::Conversation {
         QString::from(&v.to_string())
     }
 
-    fn remember(self: Pin<&mut Self>, log_index: i32, word: i32) -> bool {
+    fn remember(mut self: Pin<&mut Self>, log_index: i32, word: i32) -> bool {
         let Some(w) = self.line_word(log_index, word) else {
             return false;
         };
@@ -1189,7 +1250,7 @@ impl qobject::Conversation {
         match kaiwa_backend::lookup::remember(&st, &text, unit.as_deref(), now()) {
             Ok(added) => added,
             Err(e) => {
-                eprintln!("kaiwa: {e:#}");
+                self.as_mut().say_unsaved(&format!("{e:#}"));
                 false
             }
         }
@@ -1292,7 +1353,9 @@ impl qobject::Conversation {
         if *self.talk_state() != READY || *self.busy() || *self.finished() {
             return;
         }
-        let microphone = state().store.profile().ok().and_then(|p| p.microphone);
+        let read = state().store.profile();
+        let read = read.inspect_err(|e| self.as_mut().say_unsaved(&e.to_string()));
+        let microphone = read.ok().and_then(|p| p.microphone);
         match Capture::start_on(microphone.as_deref()) {
             Ok(c) => {
                 let turn_end = self.hands_free.then(|| {
@@ -1452,8 +1515,9 @@ impl qobject::Conversation {
         // Kept only with the opt-in, for the chosen days (/LF712/).
         if let Some(id) = self.session_id {
             let turn = kaiwa_backend::talk::turns(&self.log);
-            if let Err(e) = state().keep_recording(id, turn, &rec.samples, rec.sample_rate, now()) {
-                eprintln!("kaiwa: {e:#}");
+            let kept = state().keep_recording(id, turn, &rec.samples, rec.sample_rate, now());
+            if let Err(e) = kept {
+                self.as_mut().say_unsaved(&format!("{e:#}"));
             }
         }
         self.as_mut().set_talk_state(THINKING);
@@ -1607,8 +1671,9 @@ impl qobject::Conversation {
                         q.as_mut().set_error(QString::default());
                         q.as_mut().speak_reply(&outcome.reply);
                         // Without a voice the reply's text is the answer.
-                        if let Some(t) = q.as_mut().rust_mut().speech_end.take() {
-                            book_latency(t);
+                        if let Some(e) = q.as_mut().rust_mut().speech_end.take().and_then(book_latency)
+                        {
+                            q.as_mut().say_unsaved(&e);
                         }
                     }
                     Err(e) => {
@@ -1636,8 +1701,9 @@ impl qobject::Conversation {
                 q.as_mut().publish_turns();
                 q.as_mut().publish_goals();
                 // The cost brake: book what the turn cost (/LF714/).
-                if let Err(e) = state().book_costs(now(), *q.finished()) {
-                    eprintln!("kaiwa: {e}");
+                let booked = state().book_costs(now(), *q.finished());
+                if let Err(e) = booked {
+                    q.as_mut().say_unsaved(&e.to_string());
                 }
                 // Without a voice nothing is spoken: listen again right away.
                 q.as_mut().listen_again();
@@ -1657,7 +1723,7 @@ impl qobject::Conversation {
         };
         let step = session.lock().expect("session lock").help();
         // Kept at once: help used after the last turn is there when the talk is continued.
-        self.save();
+        self.as_mut().save();
         if let Some(step) = step {
             self.as_mut().set_help_text(QString::from(&step.text));
             self.as_mut().set_help_level(i32::from(step.level));
@@ -1742,12 +1808,19 @@ fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &st
     });
 }
 
-/// Keeps a response time on the device (/LL010/).
-fn book_latency(since: std::time::Instant) {
+/// Keeps a response time on the device (/LL010/); the failure, if any, as text.
+fn book_latency(since: std::time::Instant) -> Option<String> {
     let ms = u32::try_from(since.elapsed().as_millis()).unwrap_or(u32::MAX);
-    if let Err(e) = state().add_latency(ms) {
-        eprintln!("kaiwa: {e:#}");
-    }
+    state().add_latency(ms).err().map(|e| format!("{e:#}"))
+}
+
+/// The value of a store read; a failure is noted in `failed` (for `say_unsaved`) and the
+/// default stands in.
+fn or_default<T: Default, E: std::fmt::Display>(r: Result<T, E>, failed: &mut Vec<String>) -> T {
+    r.unwrap_or_else(|e| {
+        failed.push(e.to_string());
+        T::default()
+    })
 }
 
 /// Loads the mora check (/LF320/). Without its model there are no hints; the settings say where
