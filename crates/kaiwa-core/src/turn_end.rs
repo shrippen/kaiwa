@@ -6,6 +6,15 @@
 
 /// The pauses the settings offer (/LF101/), shortest first.
 pub const PAUSE_STEPS: [f32; 4] = [1.2, 2.0, 3.0, 5.0];
+/// The pause a new profile starts with: the shortest step.
+pub const DEFAULT_PAUSE: f32 = PAUSE_STEPS[0];
+/// The longest step.
+const MAX_PAUSE: f32 = PAUSE_STEPS[PAUSE_STEPS.len() - 1];
+
+/// Holds `secs` between the shortest and the longest step.
+pub fn clamp_pause(secs: f32) -> f32 {
+    secs.clamp(DEFAULT_PAUSE, MAX_PAUSE)
+}
 
 /// Speech must last this long before a pause can end the turn (a cough or a click does not).
 const MIN_SPEECH_SECS: f64 = 0.25;
@@ -28,7 +37,7 @@ pub struct EndOfTurn {
 impl EndOfTurn {
     pub fn new(pause_secs: f32) -> Self {
         Self {
-            pause: f64::from(pause_secs.clamp(1.2, 5.0)),
+            pause: f64::from(clamp_pause(pause_secs)),
             floor: None,
             spoken: 0.0,
             quiet: 0.0,
@@ -176,6 +185,14 @@ mod tests {
             }
         }
         ended
+    }
+
+    #[test]
+    fn a_pause_is_held_between_the_first_and_the_last_step() {
+        assert_eq!(clamp_pause(0.1), PAUSE_STEPS[0]);
+        assert_eq!(clamp_pause(60.0), PAUSE_STEPS[PAUSE_STEPS.len() - 1]);
+        assert_eq!(clamp_pause(3.0), 3.0);
+        assert_eq!(DEFAULT_PAUSE, PAUSE_STEPS[0]);
     }
 
     #[test]

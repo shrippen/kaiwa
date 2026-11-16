@@ -218,7 +218,7 @@ impl Default for Profile {
             feedback: Amount::Little,
             feedback_source: FeedbackSource::Default,
             script: Script::Furigana,
-            end_pause_secs: 1.2,
+            end_pause_secs: kaiwa_core::turn_end::DEFAULT_PAUSE,
             keep_recordings_days: None,
             style: 0,
             placed: false,
