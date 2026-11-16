@@ -22,7 +22,7 @@ crates/kaiwa-backend/src/views.rs	path	ccn=17
 crates/kaiwa-backend/src/views.rs	stats	length=92
 crates/kaiwa-backend/src/views.rs	tutor_view	ccn=24 nesting=6
 crates/kaiwa-backend/src/views.rs	week	ccn=19 length=82
-crates/kaiwa-core/src/curriculum.rs	-	lines=844
+crates/kaiwa-core/src/curriculum.rs	-	lines=843
 crates/kaiwa-core/src/difficulty.rs	target	ccn=24
 crates/kaiwa-core/src/difficulty.rs	word	ccn=16
 crates/kaiwa-core/src/difficulty.rs	words	ccn=32
