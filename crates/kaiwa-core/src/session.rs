@@ -437,16 +437,6 @@ impl Session {
         &self.scenario.opening
     }
 
-    /// The character's last line (plain text).
-    pub fn last_line(&self) -> &str {
-        self.messages
-            .iter()
-            .rev()
-            .find(|m| m.role == kaiwa_ai::Role::Assistant)
-            .map(|m| m.content.as_str())
-            .unwrap_or_default()
-    }
-
     /// The goals the session plays: all of the scenario's, or as many as the difficulty allows
     /// when the session was given one (/LF211/).
     pub fn goals(&self) -> &[Goal] {
@@ -1205,9 +1195,10 @@ mod tests {
             s.translate(&opening).unwrap(),
             "Freut mich. Ich bin Tanaka. Wie heißen Sie?"
         );
-        s.turn("マラです。よろしくおねがいします。", Input::Spoken)
-            .unwrap();
-        let line = s.last_line().to_string();
+        let line = s
+            .turn("マラです。よろしくおねがいします。", Input::Spoken)
+            .unwrap()
+            .reply;
         assert_eq!(
             s.translate(&line).unwrap(),
             "Sie sind Mara. Freut mich. Woher kommen Sie?"

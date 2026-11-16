@@ -39,12 +39,6 @@ pub enum Voice {
     Off,
 }
 
-/// Whether a recording may be recognised now: a turn (typed or spoken) still running owns
-/// the conversation, a second one would reorder the log.
-pub fn may_recognize(busy: bool) -> bool {
-    !busy
-}
-
 /// What the character could not say yet because the voice was not there: a reply that came
 /// early, and whether the opening was said (a reload after the idle time must not say it
 /// again).
@@ -192,11 +186,5 @@ mod tests {
         d.reply_early("こんにちは");
         assert_eq!(d.voice_ready(3, false, Voice::Off), Owed::Nothing);
         assert_eq!(d.voice_ready(3, false, Voice::Ready), Owed::Nothing, "gone");
-    }
-
-    #[test]
-    fn no_recognition_while_a_turn_runs() {
-        assert!(!may_recognize(true));
-        assert!(may_recognize(false));
     }
 }
