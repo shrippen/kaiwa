@@ -11,6 +11,7 @@ use anyhow::Result;
 use kaiwa_ai::mock::MockProvider;
 use kaiwa_ai::secrets::KeyStore;
 use kaiwa_backend::Backend;
+use kaiwa_backend::flow::Talk;
 use kaiwa_core::Amount;
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::Curriculum;
@@ -54,8 +55,8 @@ pub(crate) fn temp_dir(name: &str) -> TempDir {
     TempDir(d)
 }
 
-fn session(root: &Path) -> Result<Session> {
-    talk::open(root, "n5-02-jikoshoukai", Amount::Little)
+fn session() -> Result<Session> {
+    talk::open("n5-02-jikoshoukai", Amount::Little)
 }
 
 fn curriculum(root: &Path) -> Result<Curriculum> {
@@ -67,7 +68,7 @@ fn three_sessions(root: &Path, path: &Path) -> Result<Backend> {
     let store = Backend::open_at(path.to_path_buf(), false)?;
     let c = curriculum(root)?;
     for d in 0..3 {
-        let mut s = session(root)?;
+        let mut s = session()?;
         let id = store.seed().begin_session(&s.snapshot(), at(d, 9 * 3600))?;
         for t in ["マラです。よろしくおねがいします。", "コーヒーを好きです。"]
         {
@@ -96,7 +97,7 @@ fn files_under(dir: &Path) -> Vec<PathBuf> {
 
 pub fn check(id: &str, root: &Path) -> Option<Outcome> {
     let r = match id {
-        "mara_resume" => resume(root),
+        "mara_resume" => resume(),
         "lena_export" => export(root),
         "lena_import" => import(root),
         "lena_delete" => delete(root),
@@ -187,7 +188,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     let c = curriculum(root)?;
     let now = at(3, 19 * 3600);
     let talk = |b: &Backend, day: i64| -> Result<()> {
-        let mut s = session(root)?;
+        let mut s = session()?;
         let id = b.seed().begin_session(&s.snapshot(), at(day, 9 * 3600))?;
         for t in ["マラです。よろしくおねがいします。", "コーヒーを好きです。"]
         {
@@ -391,7 +392,7 @@ fn srs_keigo(root: &Path) -> Result<Option<String>> {
     let dir = temp_dir("srs-keigo");
     let store = Backend::open_at(dir.join("emi.kaiwa"), false)?;
     // Emi wants much feedback: style and register corrections are shown.
-    let mut s = talk::open(root, "n4-13-uketsuke", Amount::Much)?;
+    let mut s = talk::open("n4-13-uketsuke", Amount::Much)?;
     let id = store.seed().begin_session(&s.snapshot(), at(0, 9 * 3600))?;
     s.turn(
         "ミュラーと申します。二時に小野様とお約束しています。",
@@ -452,19 +453,19 @@ impl kaiwa_ai::ChatProvider for Local {
 /// model (PC) mid-course changes nothing in the learner model, the regulator or the course,
 /// and the stored model names no provider. Latency and provider are all that differ.
 fn local_switch(root: &Path) -> Result<Option<String>> {
-    let sc = talk::scenario(root, "n5-02-jikoshoukai")?;
-    let mock = || talk::recorded(root, "n5-02-jikoshoukai");
+    let sc = talk::scenario("n5-02-jikoshoukai")?;
+    let mock = || talk::recorded("n5-02-jikoshoukai");
     let c = curriculum(root)?;
     let course = |name: &str, switch: bool| -> Result<(Backend, TempDir)> {
         let dir = temp_dir(name);
         let store = Backend::open_at(dir.join("p.kaiwa"), false)?;
         for d in 0..4 {
             let provider: Arc<dyn kaiwa_ai::ChatProvider> = if switch && d >= 2 {
-                Arc::new(Local(mock()?))
+                Arc::new(Local(mock()))
             } else {
-                Arc::new(mock()?)
+                Arc::new(mock())
             };
-            let mut s = Session::new(sc.clone(), provider, Amount::Little, "de");
+            let mut s = talk::start(sc.clone(), provider, Amount::Little, "de");
             let id = store.seed().begin_session(&s.snapshot(), at(d, 9 * 3600))?;
             for t in [
                 "マラです。よろしくおねがいします。",
@@ -505,12 +506,12 @@ fn local_switch(root: &Path) -> Result<Option<String>> {
 }
 
 /// /LF121/: an interrupted session is offered and continues at the next unanswered goal.
-fn resume(root: &Path) -> Result<Option<String>> {
+fn resume() -> Result<Option<String>> {
     let dir = temp_dir("resume");
     let path = dir.join("mara.kaiwa");
     {
         let store = Backend::open_at(path.clone(), false)?;
-        let mut s = session(root)?;
+        let mut s = session()?;
         let id = store
             .seed()
             .begin_session(&s.snapshot(), at(0, 8 * 3600 + 40 * 60))?;
@@ -524,12 +525,10 @@ fn resume(root: &Path) -> Result<Option<String>> {
         // The plasmoid closes in the middle of the character's answer: nothing more is saved.
     }
     let store = Backend::open_at(path.clone(), false)?;
-    let Some(open) = store.seed().open_session()? else {
+    let Some(opened) = Talk::resume(&store, at(0, 9 * 3600))? else {
         return Ok(Some("the interrupted session is not offered".into()));
     };
-    let state = store.seed().session_state(open.id)?;
-    let s = session(root)?;
-    let restored = Session::restore(s.scenario.clone(), Arc::new(MockProvider::default()), state);
+    let restored = opened.talk.session();
     let goal = restored.current_goal().map(|g| g.id.clone());
     Ok(match goal.as_deref() {
         Some("work") => None,
@@ -581,12 +580,15 @@ fn import(root: &Path) -> Result<Option<String>> {
     let store = three_sessions(root, &dir.join("lena.kaiwa"))?;
     // V-04: the month's costs travel with the export.
     store.seed().set_state_value("cost.2026-10", &a_month())?;
-    let json = store.seed().export(at(3, 9 * 3600))?;
-    if store.seed().import(&json).is_ok() {
+    let file = store.export_to(&dir.join("lena.json").to_string_lossy(), at(3, 9 * 3600))?;
+    let target = file.to_string_lossy();
+    let json: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&file)?)?;
+    if store.import_from(&target).is_ok() {
         return Ok(Some("a profile with data took an import".into()));
     }
     let new = Backend::open_at(dir.join("new.kaiwa"), false)?;
-    new.seed().import(&json)?;
+    new.import_from(&target)
+        .map_err(|e| anyhow::anyhow!("{e:?}"))?;
     let back = new.seed().export(at(3, 9 * 3600))?;
     if json["costs"]["2026-10"]["cents"] != 60.0 {
         return Ok(Some("the export holds no costs".into()));
@@ -633,7 +635,7 @@ fn fast(root: &Path) -> Result<Option<String>> {
     let path = dir.join("lena.kaiwa");
     {
         let store = Store::open(&path)?;
-        let s = session(root)?;
+        let s = session()?;
         let state = s.snapshot();
         store.batch(|st| {
             for n in 0..10_000 {

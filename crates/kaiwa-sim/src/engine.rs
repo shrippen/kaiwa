@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use kaiwa_ai::mock::MockProvider;
+use kaiwa_backend::flow::Talk;
 use kaiwa_backend::voice::{self, Pace};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum};
 use kaiwa_core::difficulty::{Difficulty, Knob, learner_says};
@@ -22,8 +23,8 @@ use serde_json::Value;
 use crate::run::Outcome;
 use crate::talk;
 
-fn session(root: &Path, scenario: &str) -> Result<Session> {
-    talk::open(root, scenario, Amount::Little)
+fn session(scenario: &str) -> Result<Session> {
+    talk::open(scenario, Amount::Little)
 }
 
 /// The persona's placement (/LF200/), played against the simulated learner: each stage gives
@@ -85,15 +86,15 @@ fn persona(root: &Path, id: &str) -> Result<Value> {
 
 pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
     let r = match id {
-        "jonas_xp_fair" => xp_fair(root),
-        "jonas_scenario_stuck" => stuck(root),
-        "jonas_typed_marked" => typed(root),
+        "jonas_xp_fair" => xp_fair(),
+        "jonas_scenario_stuck" => stuck(),
+        "jonas_typed_marked" => typed(),
         "hinnerk_no_hearts" => no_hearts(root),
         "selin_settings_split" => settings_split(p),
         "hinnerk_tts_slow" => tts_slow(root, p),
         "selin_profile_visible" => profile_visible(p),
-        "theo_dispute" => dispute(root),
-        "emi_misrecognition" => misrecognition(root),
+        "theo_dispute" => dispute(),
+        "emi_misrecognition" => misrecognition(),
         "emi_skip" => skip(root, p),
         "emi_skip_once" => skip_once(p),
         "emi_feedback_level" => feedback_level(root, p),
@@ -101,10 +102,10 @@ pub fn check(id: &str, root: &Path, p: &Value) -> Option<Outcome> {
         "selin_win_mixed" => mixed(),
         "selin_profile_split" => profile_split(p),
         "emi_ceiling" => ceiling(p),
-        "selin_casual_ok" => casual_ok(root),
+        "selin_casual_ok" => casual_ok(),
         "theo_free_talk" => free_talk(p),
         "jonas_cost_limit" => cost_limit(),
-        "jonas_analysis_gaps" => analysis_gaps(root),
+        "jonas_analysis_gaps" => analysis_gaps(),
         "hinnerk_no_cutoff" => crate::hands_free::slow_speaker(p),
         _ => return None,
     };
@@ -269,14 +270,13 @@ impl kaiwa_ai::ChatProvider for Gappy {
 /// turn says that the analysis is incomplete; a correction that could be read is shown and
 /// goes into the review; and the turn is no evidence for the level, neither as a mistake nor
 /// as a flawless turn. With a whole analysis the same sentence counts.
-fn analysis_gaps(root: &Path) -> Result<Option<String>> {
+fn analysis_gaps() -> Result<Option<String>> {
     let scenario = "n5-02-jikoshoukai";
     let said = "コーヒーを好きです。";
     let gappy = |extra: bool| -> Result<Session> {
-        let sc = talk::scenario(root, scenario)?;
-        let recorded = talk::recorded(root, scenario)?;
-        Ok(Session::new(
-            sc,
+        let recorded = talk::recorded(scenario);
+        Ok(talk::start(
+            talk::scenario(scenario)?,
             Arc::new(Gappy { recorded, extra }),
             Amount::Little,
             "de",
@@ -284,7 +284,7 @@ fn analysis_gaps(root: &Path) -> Result<Option<String>> {
     };
     let mut found = Vec::new();
     // The whole analysis: one mistake, counted.
-    let mut whole = session(root, scenario)?;
+    let mut whole = session(scenario)?;
     let out = whole.turn(said, Input::Spoken)?;
     if out.incomplete || whole.stats().turns != 1 || whole.stats().mistakes.is_empty() {
         found.push("a whole analysis does not count as one turn with a mistake".to_string());
@@ -508,8 +508,8 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
 
 /// /LF603/: one-word answers, rōmaji, repeats and reading out help earn at most half the XP of
 /// a normally spoken session, and the summary says why.
-fn xp_fair(root: &Path) -> Result<Option<String>> {
-    let mut mara = session(root, "n5-06-eki")?;
+fn xp_fair() -> Result<Option<String>> {
+    let mut mara = session("n5-06-eki")?;
     let examples: Vec<String> = mara
         .scenario
         .goals
@@ -519,7 +519,7 @@ fn xp_fair(root: &Path) -> Result<Option<String>> {
     for e in &examples {
         mara.turn(e, Input::Spoken)?;
     }
-    let mut jonas = session(root, "n5-06-eki")?;
+    let mut jonas = session("n5-06-eki")?;
     jonas.turn("はい", Input::Spoken)?;
     jonas.turn("いいですね", Input::Spoken)?;
     jonas.turn(&romaji::to_kana("kyouto made"), Input::Typed)?;
@@ -539,8 +539,8 @@ fn xp_fair(root: &Path) -> Result<Option<String>> {
 }
 
 /// /LF213/: after three evasive answers the task gets easier (help with a sentence start).
-fn stuck(root: &Path) -> Result<Option<String>> {
-    let mut s = session(root, "n5-06-eki")?;
+fn stuck() -> Result<Option<String>> {
+    let mut s = session("n5-06-eki")?;
     s.turn("はい", Input::Spoken)?;
     s.turn("いいですね", Input::Spoken)?;
     let third = s.turn("ええと", Input::Spoken)?;
@@ -552,12 +552,12 @@ fn stuck(root: &Path) -> Result<Option<String>> {
 }
 
 /// /LF120/: typed turns are marked and add no speaking time; rōmaji is shown as kana.
-fn typed(root: &Path) -> Result<Option<String>> {
+fn typed() -> Result<Option<String>> {
     let kana = romaji::to_kana("kyouto made onegaishimasu");
     if romaji::has_romaji(&kana) {
         return Ok(Some(format!("rōmaji left in {kana}")));
     }
-    let mut s = session(root, "n5-06-eki")?;
+    let mut s = session("n5-06-eki")?;
     s.turn(&kana, Input::Typed)?;
     let st = s.stats();
     if st.typed_turns != 1 || st.speaking_secs != 0 {
@@ -571,7 +571,7 @@ fn typed(root: &Path) -> Result<Option<String>> {
 
 /// /LF606/: ten mistakes in a row lock nothing; the next right answer still counts.
 fn no_hearts(root: &Path) -> Result<Option<String>> {
-    let mut s = session(root, "n5-02-jikoshoukai")?;
+    let mut s = session("n5-02-jikoshoukai")?;
     for _ in 0..10 {
         s.turn("コーヒーを好きです。", Input::Spoken)?;
     }
@@ -650,21 +650,19 @@ fn profile_visible(p: &Value) -> Result<Option<String>> {
 }
 
 /// /LF307/, /LD060/: a dispute is stored, the correction stays marked, it no longer counts.
-fn dispute(root: &Path) -> Result<Option<String>> {
+fn dispute() -> Result<Option<String>> {
     let b = kaiwa_backend::TempBackend::new("dispute", false)?;
-    let mut s = session(root, "n5-02-jikoshoukai")?;
-    s.turn("コーヒーを好きです。", Input::Spoken)?;
-    let c = s
-        .dispute(0, "コーヒーが好きです")
+    let now = kaiwa_backend::now();
+    let mut talk = Talk::unstored(&b, session("n5-02-jikoshoukai")?, false, now).talk;
+    talk.session_mut()
+        .turn("コーヒーを好きです。", Input::Spoken)?;
+    let marked = talk
+        .dispute(&b, 0, "コーヒーが好きです")
         .context("no correction to dispute")?;
-    b.seed().add_dispute(&kaiwa_store::Dispute {
-        at: kaiwa_core::Moment::new(0, 0),
-        scenario: s.scenario.id.clone(),
-        learner: "コーヒーを好きです。".into(),
-        original: c.original,
-        better: c.better,
-        explanation: c.explanation,
-    })?;
+    if !marked.failed.is_empty() {
+        return Ok(Some("not stored".into()));
+    }
+    let s = talk.session();
     let t = &s.turns()[0];
     if b.seed().disputes()?.len() != 1 {
         return Ok(Some("not stored".into()));
@@ -675,7 +673,7 @@ fn dispute(root: &Path) -> Result<Option<String>> {
     if !s.stats().mistakes.is_empty() {
         return Ok(Some("still counted as a mistake".into()));
     }
-    marked_after_the_end(root, Mark::Dispute)
+    marked_after_the_end(Mark::Dispute)
 }
 
 /// How the last turn is marked on the summary.
@@ -687,9 +685,9 @@ enum Mark {
 
 /// V-05, /LF113/, /LF307/: the talk ends on a turn with a mistake and is recorded; marking
 /// that turn on the summary takes its mistake out of the learner model and the review.
-fn marked_after_the_end(root: &Path, how: Mark) -> Result<Option<String>> {
+fn marked_after_the_end(how: Mark) -> Result<Option<String>> {
     let b = kaiwa_backend::TempBackend::new("marked-after-the-end", false)?;
-    let mut s = session(root, "n5-02-jikoshoukai")?;
+    let mut s = session("n5-02-jikoshoukai")?;
     let begun = kaiwa_backend::now();
     let id = b.seed().begin_session(&s.snapshot(), begun)?;
     for (text, input) in [
@@ -724,8 +722,8 @@ fn marked_after_the_end(root: &Path, how: Mark) -> Result<Option<String>> {
 }
 
 /// /LF113/: a turn marked as misrecognised adds no mistake to the learner model.
-fn misrecognition(root: &Path) -> Result<Option<String>> {
-    let mut s = session(root, "n5-02-jikoshoukai")?;
+fn misrecognition() -> Result<Option<String>> {
+    let mut s = session("n5-02-jikoshoukai")?;
     s.turn("コーヒーを好きです。", Input::Spoken)?;
     s.mark_misrecognized(0);
     let e = s.evidence();
@@ -735,7 +733,7 @@ fn misrecognition(root: &Path) -> Result<Option<String>> {
     if s.summary().review.iter().any(|r| r.contains("が好き")) {
         return Ok(Some("the correction still goes into the review".into()));
     }
-    marked_after_the_end(root, Mark::Misrecognized)
+    marked_after_the_end(Mark::Misrecognized)
 }
 
 /// /LF215/, T-08: the offer on the path is about the unit Emi is in, taking it skips that one
@@ -949,8 +947,8 @@ fn ceiling(p: &Value) -> Result<Option<String>> {
 
 /// /LF303/: between friends the plain form is right: a register correction that only asks
 /// for politeness is no mistake there (the recorded tutor flags it anyway, on purpose).
-fn casual_ok(root: &Path) -> Result<Option<String>> {
-    let mut s = session(root, "n5-09-tomodachi")?;
+fn casual_ok() -> Result<Option<String>> {
+    let mut s = session("n5-09-tomodachi")?;
     let out = s.turn("うん、行く！", Input::Spoken)?;
     if !s.stats().mistakes.is_empty() {
         return Ok(Some(format!("counted: {:?}", s.stats().mistakes)));

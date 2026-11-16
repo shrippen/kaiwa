@@ -106,7 +106,7 @@ const SCENARIOS: &[&str] = &[
 ];
 
 /// What the recorded tutor says to a sentence it has no answer for.
-#[cfg(any(test, feature = "demo", feature = "sim"))]
+#[cfg(any(test, feature = "demo"))]
 const RECORDED_FALLBACK: &str = "すみません、もう一度お願いします。";
 
 #[cfg(any(test, feature = "demo"))]
@@ -272,6 +272,25 @@ pub fn fixtures(scenario: &str) -> Option<&'static str> {
         .iter()
         .find(|(id, _)| *id == scenario)
         .map(|(_, f)| *f)
+}
+
+/// The tutor that replays the recorded answers of `scenario`, with the fallback reply; one
+/// without recordings answers the fallback only. The demo's tutor and `kaiwa-sim` both use it.
+#[cfg(any(test, feature = "demo"))]
+pub fn recorded_tutor(scenario: &str) -> MockProvider {
+    fixtures(scenario)
+        .and_then(|f| MockProvider::from_json(f).ok())
+        .unwrap_or_default()
+        .with_fallback(RECORDED_FALLBACK)
+}
+
+/// The scenario `id` as the backend ships it, without a profile.
+#[cfg(any(test, feature = "demo"))]
+pub fn bundled_scenario(id: &str) -> Option<Scenario> {
+    SCENARIOS
+        .iter()
+        .filter_map(|j| Scenario::from_json(j).ok())
+        .find(|s| s.id == id)
 }
 
 /// The profile with the curriculum and the scenarios: what the app and `kaiwad` work on.
@@ -523,11 +542,7 @@ impl Backend {
         }
         #[cfg(any(test, feature = "demo"))]
         {
-            let mock = fixtures(scenario)
-                .and_then(|f| MockProvider::from_json(f).ok())
-                .unwrap_or_default()
-                .with_fallback(RECORDED_FALLBACK);
-            (Arc::new(mock), true)
+            (Arc::new(recorded_tutor(scenario)), true)
         }
         #[cfg(not(any(test, feature = "demo")))]
         {

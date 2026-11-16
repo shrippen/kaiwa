@@ -1,35 +1,36 @@
-//! The one place where the simulation opens a talk on recorded tutor answers (AUDIT.md
-//! finding 6): the scenario from `data/scenarios`, the answers from `qa/fixtures`, and the
-//! backend's recorded tutor with its fallback reply.
+//! Where the simulation starts a talk on recorded tutor answers (AUDIT.md finding 6): the
+//! scenario and the recorded tutor come from `kaiwa-backend`, the same ones the demo build
+//! uses, and every such talk is made by [`start`]. Talks with another tutor (`days.rs`, the
+//! free talk in `engine.rs`) do not come through here.
 
-use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
+use kaiwa_ai::ChatProvider;
 use kaiwa_ai::mock::MockProvider;
-use kaiwa_backend::seed::recorded_tutor;
 use kaiwa_core::{Amount, Scenario, Session};
 
-/// The scenario `id` from the data directory.
-pub fn scenario(root: &Path, id: &str) -> Result<Scenario> {
-    let path = root.join(format!("data/scenarios/{id}.json"));
-    let json = std::fs::read_to_string(&path).with_context(|| path.display().to_string())?;
-    Ok(Scenario::from_json(&json)?)
+/// The scenario `id`, as the backend ships it.
+pub fn scenario(id: &str) -> Result<Scenario> {
+    kaiwa_backend::bundled_scenario(id).with_context(|| format!("no scenario {id}"))
 }
 
-/// The recorded answers in `qa/fixtures/{name}.json`.
-pub fn recorded(root: &Path, name: &str) -> Result<MockProvider> {
-    let path = root.join(format!("qa/fixtures/{name}.json"));
-    let json = std::fs::read_to_string(&path).with_context(|| path.display().to_string())?;
-    recorded_tutor(&json)
+/// The recorded answers of scenario `id`, with the backend's fallback reply.
+pub fn recorded(id: &str) -> MockProvider {
+    kaiwa_backend::recorded_tutor(id)
+}
+
+/// A talk on `scenario` with `provider`.
+pub fn start(
+    scenario: Scenario,
+    provider: Arc<dyn ChatProvider>,
+    amount: Amount,
+    lang: &str,
+) -> Session {
+    Session::new(scenario, provider, amount, lang)
 }
 
 /// A German talk on scenario `id` against its recorded answers.
-pub fn open(root: &Path, id: &str, amount: Amount) -> Result<Session> {
-    Ok(Session::new(
-        scenario(root, id)?,
-        Arc::new(recorded(root, id)?),
-        amount,
-        "de",
-    ))
+pub fn open(id: &str, amount: Amount) -> Result<Session> {
+    Ok(start(scenario(id)?, Arc::new(recorded(id)), amount, "de"))
 }
