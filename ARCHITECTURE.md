@@ -93,7 +93,12 @@ A change that needs more places than its row lists is a finding for the next aud
   kinds, the lookup's words. Found after `AUDIT.md` finding 7 was fixed.
 - `kaiwa-sim` sets up and reads test state through the backend's `seed` (feature `sim`,
   only the sim turns it on) and still depends on `kaiwa-store`, `kaiwa-core`, `kaiwa-ai`
-  and `kaiwa-lang` directly for its own checks. Rest of finding 6.
+  and `kaiwa-lang` directly for its own checks. Talks on
+  recorded answers start in `talk.rs` from the backend's scenario and recorded tutor; the
+  free-talk check in `engine.rs` and the day simulation (`days.rs`) still build a `Session`
+  with their own tutor. The load-time check (`fast`, `profile.rs`) still opens a profile in
+  `kaiwa-store`: it needs `batch` and a timed load. The dispute check reads the QA list
+  through `seed`, which no backend command offers. Rest of finding 6.
 - Microphone, recognition, voice and downloads are backend types (`ears`, `voice`,
   `models`), but the app holds them and drives when to load, listen, speak and unload. For
   `kaiwad` (M4) that flow still has to move into the backend.

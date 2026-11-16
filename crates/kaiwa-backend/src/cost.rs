@@ -1,8 +1,8 @@
 //! The cost brake in the profile (Lastenheft /LF714/): the month's estimated cost of a cloud
-//! tutor, booked from the process meter (`kaiwa_ai::cost`) after every turn, the average per
+//! tutor, booked from the backend's meter (`kaiwa_ai::cost`) after every turn, the average per
 //! session, and the limit the learner sets. A local tutor costs nothing and shows no costs.
 
-use kaiwa_ai::cost::{Spent, meter};
+use kaiwa_ai::cost::Spent;
 use kaiwa_core::clock::Moment;
 use kaiwa_store::COST_STATE_PREFIX;
 use serde_json::{Value, json};
@@ -24,7 +24,7 @@ impl Backend {
 
     /// Books what the meter counted since the last booking; `session_ended` counts a session.
     pub fn book_costs(&self, now: Moment, session_ended: bool) -> anyhow::Result<Month> {
-        self.book(meter().take(), now, session_ended)
+        self.book(self.meter.take(), now, session_ended)
     }
 
     fn book(&self, spent: Spent, now: Moment, session_ended: bool) -> anyhow::Result<Month> {
@@ -45,7 +45,8 @@ impl Backend {
     pub fn arm_brake(&self, now: Moment) -> anyhow::Result<()> {
         let limit = self.store.profile()?.cost_limit_cents;
         let spent = self.month_cost(now)?.cents;
-        meter().set_budget(limit.map(|l| (f64::from(l) - spent).max(0.0)));
+        self.meter
+            .set_budget(limit.map(|l| (f64::from(l) - spent).max(0.0)));
         Ok(())
     }
 
@@ -113,19 +114,15 @@ impl Backend {
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
+mod tests {
     use super::*;
 
     fn backend(name: &str) -> crate::TempBackend {
         crate::TempBackend::new(name, false).unwrap()
     }
 
-    /// The meter is the process's; tests that set its budget take turns.
-    pub(crate) static METER: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
     #[test]
     fn a_new_limit_brakes_or_frees_at_once() {
-        let _turn = METER.lock().unwrap_or_else(|e| e.into_inner());
         let b = backend("cost-limit");
         let now = Moment::new(1_791_100_000, 120);
         let spent = Spent {
@@ -134,21 +131,20 @@ pub(crate) mod tests {
             unknown_calls: 0,
         };
         b.book(spent, now, false).unwrap();
-        assert!(!meter().exhausted(), "no limit, no brake");
+        assert!(!b.meter().exhausted(), "no limit, no brake");
 
         b.set_cost_limit(Some(50), now).unwrap();
-        assert!(meter().exhausted(), "a limit below the spent cents holds");
+        assert!(b.meter().exhausted(), "a limit below the spent cents holds");
 
         b.set_cost_limit(Some(100), now).unwrap();
-        assert!(!meter().exhausted(), "a raised limit frees the next turn");
+        assert!(!b.meter().exhausted(), "a raised limit frees the next turn");
 
         b.set_cost_limit(None, now).unwrap();
-        assert!(!meter().exhausted());
+        assert!(!b.meter().exhausted());
     }
 
     #[test]
     fn a_brake_that_cannot_arm_is_not_applied_but_the_limit_is_saved() {
-        let _turn = METER.lock().unwrap_or_else(|e| e.into_inner());
         let b = backend("cost-unarmed");
         let now = Moment::new(1_791_100_000, 120);
         // The month's row holds a string, not a month: the brake cannot read what is spent.
@@ -167,7 +163,6 @@ pub(crate) mod tests {
 
     #[test]
     fn the_month_adds_up_and_the_limit_brakes() {
-        let _turn = METER.lock().unwrap_or_else(|e| e.into_inner());
         let b = backend("cost");
         let now = Moment::new(1_791_100_000, 120);
         let mut p = b.store.profile().unwrap();
@@ -185,7 +180,7 @@ pub(crate) mod tests {
         assert!(v["text"].as_str().unwrap().contains("0,60 €"), "{v}");
         b.book(spent, now, true).unwrap();
         assert!(b.over_budget(now).unwrap());
-        assert!(meter().exhausted(), "the meter refuses further calls");
+        assert!(b.meter().exhausted(), "the meter refuses further calls");
         // Talks with a tutor on this computer cost nothing and do not thin out the average.
         let local = Spent {
             cents: 0.0,
@@ -198,12 +193,11 @@ pub(crate) mod tests {
         let next = Moment::new(1_791_100_000 + 31 * 86_400, 120);
         assert!(!b.over_budget(next).unwrap());
         b.arm_brake(next).unwrap();
-        assert!(!meter().exhausted());
+        assert!(!b.meter().exhausted());
     }
 
     #[test]
     fn an_import_keeps_the_months_costs_and_the_brake() {
-        let _turn = METER.lock().unwrap_or_else(|e| e.into_inner());
         let a = backend("cost-export");
         let now = Moment::new(1_791_100_000, 120);
         a.set_cost_limit(Some(100), now).unwrap();
@@ -229,6 +223,6 @@ pub(crate) mod tests {
             b.over_budget(now).unwrap(),
             "60 imported + 40 booked reach 100"
         );
-        assert!(meter().exhausted());
+        assert!(b.meter().exhausted());
     }
 }

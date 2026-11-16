@@ -66,7 +66,7 @@ QtObject {
     function dispute(index) { record("dispute", [index]) }
     function markMisrecognized(index) { record("markMisrecognized", [index]) }
     function finishPlacement() { record("finishPlacement", []) }
-    function skipPlacement() { record("skipPlacement", []) }
+    function takePlacementOffer() { record("takePlacementOffer", []) }
     function takeLongerPause() { record("takeLongerPause", []) }
     function declineLongerPause() { record("declineLongerPause", []) }
     property string lookupAnswer: "{\"found\":false}"

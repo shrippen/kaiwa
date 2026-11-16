@@ -229,7 +229,7 @@ impl Backend {
     }
 
     /// The learner leaves the placement out (/LF200/).
-    pub fn skip_placement(&self) -> anyhow::Result<()> {
+    pub fn leave_out_placement(&self) -> anyhow::Result<()> {
         self.store.update_profile(|p| p.placed = true)?;
         Ok(())
     }
@@ -484,7 +484,7 @@ mod tests {
     fn skipping_the_placement_marks_it_done() {
         let b = backend("placed");
         assert!(!b.store.profile().unwrap().placed);
-        b.skip_placement().unwrap();
+        b.leave_out_placement().unwrap();
         assert!(b.store.profile().unwrap().placed);
     }
 

@@ -114,8 +114,8 @@ pub mod qobject {
 
         /// Starts at zero without the placement (/LF200/).
         #[qinvokable]
-        #[cxx_name = "skipPlacement"]
-        fn skip_placement(self: Pin<&mut KaiwaApp>);
+        #[cxx_name = "leaveOutPlacement"]
+        fn leave_out_placement(self: Pin<&mut KaiwaApp>);
 
         /// Downloads the model in directory `dir`, after the learner asked for it (F-08,
         /// /LL401/).
@@ -534,7 +534,7 @@ impl qobject::KaiwaApp {
 
     fn skip_unit(mut self: Pin<&mut Self>, unit: &QString) {
         // Only the unit the offer is about, once per offer (review #86).
-        let taken = views::take_skip(&state(), &unit.to_string());
+        let taken = kaiwa_backend::skips::take_skip(&state(), &unit.to_string());
         if let Err(e) = taken {
             self.as_mut().say_unreadable(&e);
         }
@@ -602,8 +602,8 @@ impl qobject::KaiwaApp {
         self.as_mut().refresh();
     }
 
-    fn skip_placement(mut self: Pin<&mut Self>) {
-        let edited = state().skip_placement();
+    fn leave_out_placement(mut self: Pin<&mut Self>) {
+        let edited = state().leave_out_placement();
         if let Err(e) = edited {
             self.as_mut().say_unreadable(&e);
             return;

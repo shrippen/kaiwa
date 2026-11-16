@@ -507,20 +507,9 @@ impl Curriculum {
             Some("n4") => level >= at("n3"),
             _ => false,
         };
-        let keigo_ok = m.level(Skill::Register) >= at("keigo_basic");
         self.units
             .iter()
-            .take_while(|u| ready(u) && (keigo_ok || !keigo(u)))
-            .filter(|u| !self.unit_done(u, p))
-            .map(|u| u.id.clone())
-            .collect()
-    }
-
-    /// Units not done yet, in path order: the skip offer (/LF215/) lets the learner choose up to
-    /// which one, after a short check conversation.
-    pub fn skippable(&self, p: &CourseProgress) -> Vec<String> {
-        self.units
-            .iter()
+            .take_while(|u| ready(u) && m.may_skip(|| keigo(u)))
             .filter(|u| !self.unit_done(u, p))
             .map(|u| u.id.clone())
             .collect()

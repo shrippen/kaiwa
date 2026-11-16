@@ -457,7 +457,7 @@ mod tests {
     #[test]
     fn without_a_keyring_home_the_missing_key_names_only_the_variable() {
         let env = |k: &str| (k == "KAIWA_PROVIDER").then(|| "anthropic".to_string());
-        let Err(e) = crate::provider_from(&Keys::env_only(), env) else {
+        let Err(e) = crate::provider_from(&Keys::env_only(), Arc::default(), env) else {
             panic!("no key, no tutor");
         };
         assert!(e.contains("ANTHROPIC_API_KEY"), "{e}");
@@ -465,7 +465,7 @@ mod tests {
 
         // A profile with a keyring home may use either.
         let keys = home("a", &Arc::default());
-        let Err(e) = crate::provider_from(&keys, env) else {
+        let Err(e) = crate::provider_from(&keys, Arc::default(), env) else {
             panic!("no key, no tutor");
         };
         assert!(e.contains("keyring"), "{e}");

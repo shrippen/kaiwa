@@ -30,6 +30,7 @@ pub mod reminder;
 pub mod seed;
 pub mod settings;
 pub mod short;
+pub mod skips;
 pub mod summary;
 pub mod transfer;
 mod trouble;
@@ -106,6 +107,10 @@ const SCENARIOS: &[&str] = &[
     include_str!("../../../data/scenarios/frei-ryokou.json"),
     include_str!("../../../data/scenarios/frei-mainichi.json"),
 ];
+
+/// What the recorded tutor says to a sentence it has no answer for.
+#[cfg(any(test, feature = "demo"))]
+const RECORDED_FALLBACK: &str = "すみません、もう一度お願いします。";
 
 #[cfg(any(test, feature = "demo"))]
 const FIXTURES: &[(&str, &str)] = &[
@@ -272,6 +277,25 @@ pub fn fixtures(scenario: &str) -> Option<&'static str> {
         .map(|(_, f)| *f)
 }
 
+/// The tutor that replays the recorded answers of `scenario`, with the fallback reply; one
+/// without recordings answers the fallback only. The demo's tutor and `kaiwa-sim` both use it.
+#[cfg(any(test, feature = "demo"))]
+pub fn recorded_tutor(scenario: &str) -> MockProvider {
+    fixtures(scenario)
+        .and_then(|f| MockProvider::from_json(f).ok())
+        .unwrap_or_default()
+        .with_fallback(RECORDED_FALLBACK)
+}
+
+/// The scenario `id` as the backend ships it, without a profile.
+#[cfg(any(test, feature = "demo"))]
+pub fn bundled_scenario(id: &str) -> Option<Scenario> {
+    SCENARIOS
+        .iter()
+        .filter_map(|j| Scenario::from_json(j).ok())
+        .find(|s| s.id == id)
+}
+
 /// The profile with the curriculum and the scenarios: what the app and `kaiwad` work on.
 pub struct Backend {
     pub(crate) store: Store,
@@ -284,6 +308,8 @@ pub struct Backend {
     pub demo_data: bool,
     /// The keys of this profile ([`kaiwa_ai::secrets::KeyHome`]).
     keys: kaiwa_ai::secrets::Keys,
+    /// What the cloud tutor costs: shared with the providers this backend builds.
+    meter: Arc<kaiwa_ai::cost::Meter>,
     /// What went wrong in the background; [`Backend::take_troubles`].
     troubles: Mutex<Vec<Trouble>>,
     /// Running on the stand-in for a profile that could not be opened ([`Backend::is_spare`]).
@@ -400,6 +426,7 @@ impl Backend {
         Ok(Backend {
             store: db,
             keys,
+            meter: Arc::default(),
             path,
             curriculum,
             grammar_matcher: grammar.matcher(),
@@ -533,6 +560,13 @@ impl Backend {
             .unwrap_or_default()
     }
 
+    /// What this profile's cloud tutor has cost since the last booking; only tests and the
+    /// simulation read it, a front end sees costs through the views.
+    #[cfg(any(test, feature = "sim"))]
+    pub fn meter(&self) -> &Arc<kaiwa_ai::cost::Meter> {
+        &self.meter
+    }
+
     /// The keys of this profile.
     pub(crate) fn keys(&self) -> &kaiwa_ai::secrets::Keys {
         &self.keys
@@ -549,22 +583,24 @@ impl Backend {
         move |k: &str| tutor.lookup(|k| std::env::var(k).ok())(k)
     }
 
+    /// Whether the settings or the environment name a tutor that can be built.
+    pub(crate) fn tutor_set_up(&self) -> bool {
+        kaiwa_ai::provider_from(&self.keys, self.meter.clone(), self.tutor_env())
+            .is_ok_and(|p| p.is_some())
+    }
+
     /// The tutor for a conversation in `scenario`: the one set up in the settings (or the
     /// environment). Without one, a demo build replays the recorded answers (`true`); any other
     /// build says that no tutor is set up.
     pub fn provider(&self, scenario: &str) -> (Arc<dyn ChatProvider>, bool) {
-        match kaiwa_ai::provider_from(&self.keys, self.tutor_env()) {
+        match kaiwa_ai::provider_from(&self.keys, self.meter.clone(), self.tutor_env()) {
             Ok(Some(p)) => return (p, false),
             Ok(None) => {}
             Err(e) => eprintln!("kaiwa: {e}"),
         }
         #[cfg(any(test, feature = "demo"))]
         {
-            let mock = fixtures(scenario)
-                .and_then(|f| MockProvider::from_json(f).ok())
-                .unwrap_or_default()
-                .with_fallback("すみません、もう一度お願いします。");
-            (Arc::new(mock), true)
+            (Arc::new(recorded_tutor(scenario)), true)
         }
         #[cfg(not(any(test, feature = "demo")))]
         {
@@ -634,6 +670,15 @@ mod tests {
     use kaiwa_core::{Amount, Input};
 
     use super::*;
+
+    /// `recorded_tutor` falls back quietly; a broken recording must fail here instead of
+    /// letting a persona check run against the fallback only.
+    #[test]
+    fn every_recording_reads_as_a_tutor() {
+        for (id, json) in FIXTURES {
+            assert!(MockProvider::from_json(json).is_ok(), "{id}");
+        }
+    }
 
     /// V-05: the last turn ends the talk with a mistake; marking it afterwards takes the
     /// mistake out of the learner model, the grammar points and the review.
