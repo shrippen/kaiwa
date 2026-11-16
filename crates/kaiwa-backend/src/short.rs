@@ -33,8 +33,12 @@ fn line(o: &TurnOutcome) -> Vec<String> {
 impl ShortTalk {
     /// Starts the next scenario on the path with two goals, or continues the open session.
     pub fn start(b: &Backend, now: Moment) -> anyhow::Result<Self> {
+        let opened = Talk::open_or_next(b, now, Length::Short)?;
+        if let Some(e) = opened.failed.into_iter().next() {
+            return Err(e);
+        }
         Ok(Self {
-            talk: Talk::open_or_next(b, now, Length::Short)?,
+            talk: opened.talk,
             counted: now,
         })
     }
@@ -73,10 +77,16 @@ impl ShortTalk {
         let input = if typed { Input::Typed } else { Input::Spoken };
         self.talk.spend(Talk::sitting(self.counted, now));
         self.counted = now;
-        let turned = self.talk.say(b, text, input, now)?;
+        let Some(mut turned) = self.talk.say(b, text, input, now)? else {
+            anyhow::bail!("nothing to say, or the talk is over");
+        };
         let o = &turned.outcome;
         let mut recorded = Value::Null;
-        if let Some(r) = turned.kept? {
+        // A failure with nothing booked is the error; with a record it is shown beside it.
+        if turned.recorded.is_none() && !turned.failed.is_empty() {
+            return Err(turned.failed.swap_remove(0));
+        }
+        if let Some(r) = &turned.recorded {
             recorded = json!({ "minutes": r.day.speaking_secs / 60, "newItems": r.new_items });
             // XP only with gamification (/LF605/).
             if b.store.profile()?.gamification {
@@ -90,6 +100,15 @@ impl ShortTalk {
         // T-11: the tutor's analysis of this turn had gaps; the turn does not count for the level.
         v["incomplete"] = json!(o.incomplete);
         v["recorded"] = recorded;
+        if !turned.failed.is_empty() {
+            v["failed"] = json!(
+                turned
+                    .failed
+                    .iter()
+                    .map(|e| format!("{e:#}"))
+                    .collect::<Vec<_>>()
+            );
+        }
         Ok(v)
     }
 }
