@@ -13,6 +13,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use anyhow::{Context, Result};
+use kaiwa_core::booking::book_talk;
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum, NodeState};
 use kaiwa_core::difficulty::{Difficulty, KNOBS, Regulator};
@@ -462,9 +463,6 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
             }
             xp += XP_GOAL * st.goals_met;
             let success = st.success();
-            if st.goals_met == goals {
-                course.complete(&scenario, success);
-            }
             // Two new words of the unit per session go into the review (the app takes them
             // from the analysis).
             if let Some(u) = curriculum.unit_of(&scenario) {
@@ -479,28 +477,18 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
             }
 
             // The model learns from the session; the regulator moves one knob at most.
-            let mut ev = Evidence {
-                mistakes: st.mistakes.clone(),
-                turns: st.turns,
-                ..Default::default()
-            };
-            ev.at_level.insert(
-                Skill::Listening,
-                (lis, f64::from(st.understood_unaided) / f64::from(st.turns)),
-            );
-            ev.at_level.insert(
-                Skill::Speaking,
-                (con, f64::from(clean) / f64::from(st.turns)),
-            );
-            if st.goals_met > 0 {
-                ev.at_level.insert(
-                    Skill::Fluency,
-                    (con, f64::from(st.goals_unaided) / f64::from(st.goals_met)),
-                );
-            }
+            let ev = evidence_of(&st, (lis, con), clean);
             let levels_before = levels_of(&learner);
-            learner.update(&ev);
-            let change = regulator.after_session(success, &learner);
+            let change = book_talk(
+                &mut learner,
+                &mut regulator,
+                &mut course,
+                &ev,
+                &scenario,
+                success,
+                st.goals_met == goals,
+            )
+            .change;
 
             // The truth learns from practice, with diminishing returns per session: about a
             // tenth of a level per week of short daily sessions.
@@ -568,6 +556,30 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
         last_day,
         texts,
     })
+}
+
+/// What a simulated session shows the model: listening at `lis`, speaking and fluency at `con`.
+fn evidence_of(st: &kaiwa_core::Stats, (lis, con): (f64, f64), clean: u32) -> Evidence {
+    let mut ev = Evidence {
+        mistakes: st.mistakes.clone(),
+        turns: st.turns,
+        ..Default::default()
+    };
+    ev.at_level.insert(
+        Skill::Listening,
+        (lis, f64::from(st.understood_unaided) / f64::from(st.turns)),
+    );
+    ev.at_level.insert(
+        Skill::Speaking,
+        (con, f64::from(clean) / f64::from(st.turns)),
+    );
+    if st.goals_met > 0 {
+        ev.at_level.insert(
+            Skill::Fluency,
+            (con, f64::from(st.goals_unaided) / f64::from(st.goals_met)),
+        );
+    }
+    ev
 }
 
 /// The model's level per skill, as a day record keeps it (/LF604/).
