@@ -12,10 +12,22 @@ use crate::Backend;
 
 const GOAL_MIN_MINUTES: u32 = 1;
 const GOAL_MAX_MINUTES: u32 = 120;
+/// The daily goals the settings offer, in minutes; inside the limits above, which also hold
+/// a value an import or an older profile brings.
+pub(crate) const GOAL_STEPS: [u32; 5] = [3, 5, 10, 15, 20];
 /// The highest style: 0 system, 1 Kante, 2 Kante Light.
 const STYLE_MAX: u8 = 2;
 const LANG_EN: &str = "en";
 const LANG_DE: &str = "de";
+
+/// The text sizes as the page gets them: f32 1.6 would become 1.600000023841858 in JSON, so
+/// they are rounded to hundredths like the profile's own `textScale`.
+pub(crate) fn text_scale_steps() -> Vec<f64> {
+    kaiwa_store::TEXT_SCALE_STEPS
+        .iter()
+        .map(|s| (f64::from(*s) * 100.0).round() / 100.0)
+        .collect()
+}
 
 /// The "yes" a switch is stored with.
 fn on(value: &str) -> bool {
@@ -58,7 +70,10 @@ fn apply_look(p: &mut Profile, key: &str, value: &str) -> bool {
         "name" => p.name = value.to_string(),
         "textScale" => {
             if let Ok(s) = value.parse::<f32>() {
-                p.text_scale = s.clamp(1.0, kaiwa_store::TEXT_SCALE_MAX);
+                p.text_scale = s.clamp(
+                    kaiwa_store::TEXT_SCALE_STEPS[0],
+                    kaiwa_store::TEXT_SCALE_MAX,
+                );
             }
         }
         _ => return false,
@@ -277,6 +292,39 @@ mod tests {
         assert_eq!(set(&b, "style", "7").style, 2);
         assert_eq!(set(&b, "style", "1").style, 1);
         assert_eq!(set(&b, "style", "x").style, 0);
+    }
+
+    #[test]
+    fn the_profile_view_carries_the_steps_and_the_limits_match_them() {
+        let b = backend("steps");
+        let v = crate::views::profile(&b).unwrap();
+        assert_eq!(v["textScaleSteps"], json!([1.0, 1.25, 1.5, 1.6]));
+        assert_eq!(v["goalSteps"], json!([3, 5, 10, 15, 20]));
+        assert_eq!(v["unloadSteps"], json!([5, 10, 30, null]));
+
+        // The ends of the lists are the limits.
+        let scales = v["textScaleSteps"].as_array().unwrap();
+        let (first, last) = (&scales[0], &scales[scales.len() - 1]);
+        assert_eq!(
+            set(&b, "textScale", "0.2").text_scale,
+            first.as_f64().unwrap() as f32
+        );
+        assert_eq!(
+            set(&b, "textScale", "9").text_scale,
+            last.as_f64().unwrap() as f32
+        );
+        assert_eq!(set(&b, "goal", "3").daily_goal, DailyGoal::Minutes(3));
+        let goals = GOAL_STEPS;
+        assert!(
+            goals
+                .iter()
+                .all(|g| (GOAL_MIN_MINUTES..=GOAL_MAX_MINUTES).contains(g))
+        );
+
+        // A new profile starts on a step, and the view shows it.
+        assert!(kaiwa_store::UNLOAD_STEPS.contains(&kaiwa_store::DEFAULT_UNLOAD));
+        assert_eq!(v["unloadAfter"], json!(kaiwa_store::DEFAULT_UNLOAD));
+        assert!(goals.contains(&5) && v["goal"]["value"] == json!(5));
     }
 
     #[test]

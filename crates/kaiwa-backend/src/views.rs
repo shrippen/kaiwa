@@ -644,6 +644,9 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "costLimit": p.cost_limit_cents,
         "moraHints": p.mora_hints,
         "unloadAfter": p.unload_after_min,
+        "unloadSteps": kaiwa_store::UNLOAD_STEPS,
+        "goalSteps": crate::settings::GOAL_STEPS,
+        "textScaleSteps": crate::settings::text_scale_steps(),
         "handsFree": p.hands_free,
         // A pause that runs today, with the day it ends on (T-08).
         "pausedUntil": st.store.paused_until(crate::now().day())?.map(|d| {

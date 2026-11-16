@@ -72,10 +72,20 @@ fn is_month_key(key: &str) -> bool {
         && (b"01".as_slice()..=b"12".as_slice()).contains(&&b[5..7])
 }
 
+/// The text sizes the settings offer (/LL202/); the profile page shows them as they are.
+pub const TEXT_SCALE_STEPS: [f32; 4] = [1.0, 1.25, 1.5, 1.6];
+
 /// The largest text size the app offers (/LL202/; owner, 10.11.2026: 160 % for now). Above
 /// it the profile page no longer fits a small laptop's window (`tools/font-160.sh`). A profile
 /// that holds more is shown and started at this size.
-pub const TEXT_SCALE_MAX: f32 = 1.6;
+pub const TEXT_SCALE_MAX: f32 = TEXT_SCALE_STEPS[TEXT_SCALE_STEPS.len() - 1];
+
+/// The idle times the settings offer for unloading the speech models, in minutes; `None`
+/// keeps them (/LL012/).
+pub const UNLOAD_STEPS: [Option<u32>; 4] = [Some(5), Some(10), Some(30), None];
+
+/// What a new profile unloads after: one of `UNLOAD_STEPS`.
+pub const DEFAULT_UNLOAD: Option<u32> = UNLOAD_STEPS[1];
 
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
@@ -161,7 +171,7 @@ pub struct Profile {
     #[serde(default)]
     pub clear: bool,
     /// Unload the speech models after this many idle minutes; `None` keeps them (/LL012/).
-    #[serde(default = "ten_minutes")]
+    #[serde(default = "default_unload")]
     pub unload_after_min: Option<u32>,
     /// Hands-free: the turn ends after the pause, listening starts again by itself (/LF100/).
     #[serde(default)]
@@ -205,8 +215,8 @@ fn one() -> f32 {
     1.0
 }
 
-fn ten_minutes() -> Option<u32> {
-    Some(10)
+fn default_unload() -> Option<u32> {
+    DEFAULT_UNLOAD
 }
 
 impl Default for Profile {
@@ -228,7 +238,7 @@ impl Default for Profile {
             mora_hints: true,
             louder: false,
             clear: false,
-            unload_after_min: ten_minutes(),
+            unload_after_min: default_unload(),
             hands_free: false,
             text_scale: 1.0,
             tutor: kaiwa_ai::Tutor::default(),
