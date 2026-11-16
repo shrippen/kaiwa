@@ -98,8 +98,6 @@ A change that needs more places than its row lists is a finding for the next aud
   command yet. `AUDIT.md` finding 7.
 - The placement runs in the app, not as a flow in the backend; the page's conversation log
   is built in the app and read back by the backend. Findings 4 and 5.
-- The summary after a talk is put together in three places (backend, app, short talk).
-  Finding 1.
 - Some failures to load are only logged: the main pages, an unreadable profile on them,
   arming the cost brake after a new limit, purging old recordings on opening. Finding 2.
 - The settings page keeps its own lists for text size, daily goal and unloading time.
