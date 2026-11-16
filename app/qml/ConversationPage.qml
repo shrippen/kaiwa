@@ -610,8 +610,7 @@ Kirigami.ScrollablePage {
     // While the tutor thinks the button does nothing, so the key does nothing. The focus goes
     // to the talk button, so releasing the key ends a held turn there. With the focus on a
     // button or chip the key talks too; Enter presses those.
-    // app/qml/tests/tst_space.qml holds this block word for word and tries it (mara_ptt
-    // checks that the two are the same).
+    // app/qml/tests/tst_space.qml tries this page's block as it stands (mara_ptt runs it).
     Shortcut {
         sequence: "Space"
         autoRepeat: false

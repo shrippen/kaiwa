@@ -100,9 +100,12 @@ A change that needs more places than its row lists is a finding for the next aud
   short talk, and the two differ. Finding 6.
 - What a finished talk changes is written twice in the store and a third time in
   `kaiwa-sim`'s day simulation. Finding 4.
-- Error kinds are named in the core and again, differently, in the backend's views; pause
-  steps stand at five places. Findings 1 and 3.
-- Some persona checks search for text in source files. Finding 8.
+- Error kinds are named in the core and again, differently, in the backend's views.
+  Finding 1.
+- Some persona checks still read source text: scans of all pages for strings, names,
+  handlers and gamification text, the palette's colours, the voice's pace in
+  `app/src/conversation.rs` and the one file that downloads. What a page does is checked in
+  QML tests (`app/qml/tests`). Finding 8.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
   then the app is the only front end and runs the backend in its own process. On that
   branch `kaiwad` drives microphone and recognition itself; M4 moves that into the

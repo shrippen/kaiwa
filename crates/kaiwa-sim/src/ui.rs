@@ -21,8 +21,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "hinnerk_targets" => targets(root),
         "theo_keyboard" => keyboard(root),
         "lena_download_announced" => download_announced(root),
-        "mara_ptt" => push_to_talk(root),
-        "lena_suggest_smaller" => suggest_smaller(root),
+        "lena_suggest_smaller" => suggest_smaller(),
         "mara_word_lookup" => word_lookup(root),
         "hinnerk_plain_words" => plain_words(root),
         _ => return None,
@@ -382,21 +381,6 @@ fn blocks<'a>(src: &'a str, types: &[&str]) -> Vec<(usize, String, &'a str)> {
     out
 }
 
-/// /LL201/ (static part; the AT-SPI tree follows with the gui mode): every control of the
-/// app has a name for assistive technology:
-/// a visible text, or an Accessible.name (text fields always need the latter). The Kante
-/// controls give the role; KanteSegmented names each segment from its model.
-/// The talk button on the conversation page names all five states in words (ready,
-/// listening, thinking, speaking, error), never only by colour.
-fn talk_titles(root: &Path) -> Result<Option<String>> {
-    let page = std::fs::read_to_string(root.join("app/qml/ConversationPage.qml"))?;
-    let Some(line) = page.lines().find(|l| l.trim_start().starts_with("titles:")) else {
-        return Ok(Some("the talk button has no titles".into()));
-    };
-    let n = line.matches("page.t(").count();
-    Ok((n != 5).then(|| format!("the talk button names {n} of 5 states")))
-}
-
 /// WCAG contrast of two "#rrggbb" colours.
 fn contrast(a: &str, b: &str) -> Option<f64> {
     let lum = |hex: &str| -> Option<f64> {
@@ -418,24 +402,14 @@ fn contrast(a: &str, b: &str) -> Option<f64> {
     Some((x.max(y) + 0.05) / (x.min(y) + 0.05))
 }
 
-/// /LL202/, /LL203/ from the source: the talk button is at least 48 units high, names every
-/// state, and the text roles of Kante (dark) and Kante Light reach WCAG AA (4.5:1) on the
-/// ground, the label on the accent too. The System style follows the platform theme and
-/// needs the GUI mode, as do font scaling and overlaps.
+/// /LL202/, /LL203/: the text roles of Kante (dark) and Kante Light, read from the palette,
+/// reach WCAG AA (4.5:1) on the ground, the label on the accent too. That the talk button is
+/// at least 48 units high and names every state is tried by `tst_space.qml` (see [`crate::qml`]).
+/// The System style follows the platform theme and needs the GUI mode, as do font scaling and
+/// overlaps.
 fn targets(root: &Path) -> Result<Option<String>> {
     let palette = std::fs::read_to_string(root.join("app/qml/Kante/KantePalette.qml"))?;
-    let talk = std::fs::read_to_string(root.join("app/qml/Kante/KanteTalkButton.qml"))?;
     let mut found = Vec::new();
-    let height = regex::Regex::new(r"heightLarge: (\d+)")?
-        .captures(&palette)
-        .and_then(|c| c[1].parse::<u32>().ok())
-        .unwrap_or(0);
-    if height < 48 || !talk.contains("implicitHeight: Math.max(KanteStyle.heightLarge") {
-        found.push(format!("talk button below 48 ({height})"));
-    }
-    if let Some(why) = talk_titles(root)? {
-        found.push(why);
-    }
     let color = regex::Regex::new(r#"readonly property color (\w+): "(#[0-9a-fA-F]{6})""#)?;
     for theme in ["dark", "light"] {
         let start = palette
@@ -478,8 +452,9 @@ fn targets(root: &Path) -> Result<Option<String>> {
 
 /// /LL010/ for Lena: response times over 3 s in the median bring a suggestion (a smaller
 /// model or a cloud tutor) in the settings, and nothing in the profile changes by itself.
-/// Measuring the times needs the audio mode.
-fn suggest_smaller(root: &Path) -> Result<Option<String>> {
+/// That the settings page shows the suggestion is tried by `tst_latency.qml` (see
+/// [`crate::qml`]). Measuring the times needs the audio mode.
+fn suggest_smaller() -> Result<Option<String>> {
     let b = demo("latency", "de")?;
     let before = b.store.profile()?;
     for ms in [3400, 3900, 4200, 3600, 5100, 3300] {
@@ -493,95 +468,15 @@ fn suggest_smaller(root: &Path) -> Result<Option<String>> {
     if b.store.profile()? != before {
         found.push("the profile changed by itself".into());
     }
-    let page = std::fs::read_to_string(root.join("app/qml/SettingsPage.qml"))?;
-    if !page.contains("lat.suggestion") {
-        found.push("the settings do not show the suggestion".into());
-    }
     Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
-/// /LF100/ from the source: the talk button starts and ends a recording by click and by the
-/// space bar (pressed and released), the page wires both to the conversation, the space bar
-/// reaches the button from anywhere on the page (the button's own keys work only with the
-/// focus on it, and nothing gives it the focus: the check was green while space did nothing),
-/// and every state has a name. What the shortcut does is tried by `app/qml/tests/tst_space.qml`
-/// (`tools/qml-tests.sh`, needs Qt, not part of this check); here only that the page has the
-/// block the test tries. Recording itself needs the audio mode; the keys in the running app
-/// are step 3.1a of the local test.
-fn push_to_talk(root: &Path) -> Result<Option<String>> {
-    let talk = std::fs::read_to_string(root.join("app/qml/Kante/KanteTalkButton.qml"))?;
-    let page = std::fs::read_to_string(root.join("app/qml/ConversationPage.qml"))?;
-    let mut found = Vec::new();
-    for (what, needle) in [
-        ("space pressed", "Keys.onPressed"),
-        ("space released", "Keys.onReleased"),
-        ("space key", "Qt.Key_Space"),
-        ("talk started", "talkStarted()"),
-        ("talk ended", "talkEnded()"),
-    ] {
-        if !talk.contains(needle) {
-            found.push(format!("the talk button lacks {what}"));
-        }
-    }
-    for needle in [
-        "onTalkStarted: conv.startTalk()",
-        "onTalkEnded: conv.stopTalk()",
-    ] {
-        if !page.contains(needle) {
-            found.push(format!("the page lacks {needle}"));
-        }
-    }
-    // The page's shortcut for the space bar, when it is on included, is the block that
-    // `app/qml/tests/tst_space.qml` tries (tools/qml-tests.sh): a change to one without the
-    // other shows here.
-    let test = std::fs::read_to_string(root.join("app/qml/tests/tst_space.qml"))?;
-    let shortcut = |source: &str| -> Option<String> {
-        let from = source.find("    Shortcut {\n        sequence: \"Space\"")?;
-        let len = source[from..].find("\n    }\n")?;
-        Some(source[from..from + len].to_string())
-    };
-    match (shortcut(&page), shortcut(&test)) {
-        (None, _) => found.push("the page has no shortcut for the space bar".into()),
-        (_, None) => found.push("tst_space.qml has no shortcut for the space bar".into()),
-        (Some(p), Some(t)) if p != t => found.push(
-            "the page's shortcut for the space bar is not the one tst_space.qml tries".into(),
-        ),
-        (Some(p), _) if !p.contains("talk.press()") => found
-            .push("the page's shortcut for the space bar does not press the talk button".into()),
-        _ => {}
-    }
-    if let Some(why) = talk_titles(root)? {
-        found.push(why);
-    }
-    Ok((!found.is_empty()).then(|| found.join("; ")))
-}
-
-/// /LL401/, F-08 from the source: the settings name source, licence and size of each model
-/// before its download button, the download starts only from that button, and no other code
-/// of the app downloads anything.
+/// /LL401/, F-08: no other code of the app than `app.rs` downloads anything, read from the
+/// sources (the egress of the running app is `lena_app_egress`). That the settings name
+/// source, licence and size of each model before its download button, and that the download
+/// starts only from that button, is tried by `tst_models.qml` (see [`crate::qml`]).
 fn download_announced(root: &Path) -> Result<Option<String>> {
-    let page = std::fs::read_to_string(root.join("app/qml/SettingsPage.qml"))?;
     let mut found = Vec::new();
-    for field in [
-        "modelData.origin",
-        "modelData.licence",
-        "modelData.downloadMB",
-    ] {
-        if !page.contains(field) {
-            found.push(format!("the model row does not show {field}"));
-        }
-    }
-    let calls: Vec<&str> = page
-        .lines()
-        .filter(|l| l.contains("downloadModel("))
-        .collect();
-    if calls.is_empty()
-        || calls
-            .iter()
-            .any(|l| !l.trim_start().starts_with("onClicked:"))
-    {
-        found.push(format!("downloadModel outside a button: {calls:?}"));
-    }
     let mut callers = Vec::new();
     for dir in ["app/src", "app/qml"] {
         for e in std::fs::read_dir(root.join(dir))? {
@@ -664,8 +559,9 @@ fn keyboard(root: &Path) -> Result<Option<String>> {
 /// /LF112/: in the character's line プロデューサーですか。… (recorded answer of the self
 /// introduction) プロデューサー is a word of its own; the lookup in the dictionary excerpt shows
 /// reading, meaning and part of speech, and the word goes into the review once, marked as from
-/// the lookup. From the source: the line's words are clickable (KanteRubyText `interactive`),
-/// and the popup can say the word and take it over. Hearing it needs the audio mode.
+/// the lookup. That a word of a line is looked up on the page and the popup can say it and
+/// take it over is tried by `tst_lookup.qml` (see [`crate::qml`]). Hearing it needs the audio
+/// mode.
 fn word_lookup(root: &Path) -> Result<Option<String>> {
     use kaiwa_backend::lookup;
     let fixtures: Value = serde_json::from_str(&std::fs::read_to_string(
@@ -756,21 +652,13 @@ fn word_lookup(root: &Path) -> Result<Option<String>> {
     if !from_lookup {
         found.push("the review item is not marked as from the lookup".into());
     }
-    let page = std::fs::read_to_string(root.join("app/qml/ConversationPage.qml"))?;
-    for needle in [
-        "interactive: true",
-        "onWordActivated",
-        "conv.lookup(",
-        "conv.sayWord(",
-        "conv.remember(",
-    ] {
-        if !page.contains(needle) {
-            found.push(format!("the conversation page has no {needle}"));
-        }
-    }
     Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
+/// /LL201/ (static part; the AT-SPI tree follows with the gui mode): every control of the
+/// app has a name for assistive technology:
+/// a visible text, or an Accessible.name (text fields always need the latter). The Kante
+/// controls give the role; KanteSegmented names each segment from its model.
 fn a11y_names(root: &Path) -> Result<Option<String>> {
     const NAMED_BY_TEXT: &[&str] = &[
         "KanteButton",

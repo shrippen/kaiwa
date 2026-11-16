@@ -412,15 +412,6 @@ impl Regulator {
     pub fn took_skip(&mut self) {
         self.skip_taken = self.success.len();
     }
-
-    /// Moving success over the last `n` sessions.
-    pub fn moving_success(&self, n: usize) -> Option<f64> {
-        if self.success.is_empty() {
-            return None;
-        }
-        let last: Vec<f64> = self.success.iter().rev().take(n).copied().collect();
-        Some(last.iter().sum::<f64>() / last.len() as f64)
-    }
 }
 
 /// Inside a session: two turns in a row not understood → easier at once (/LF213/).

@@ -10,6 +10,7 @@ mod days;
 mod engine;
 mod hands_free;
 mod profile;
+mod qml;
 mod review;
 mod run;
 mod trace;
