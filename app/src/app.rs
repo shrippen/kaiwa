@@ -487,6 +487,7 @@ impl qobject::KaiwaApp {
         let Ok(skill) = serde_json::from_value::<Skill>(json!(skill.to_string())) else {
             return;
         };
+        self.as_mut().set_notice(QString::default());
         let saved = {
             let st = state();
             st.store.learning().and_then(|mut l| {

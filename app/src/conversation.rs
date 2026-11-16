@@ -411,7 +411,9 @@ impl qobject::Conversation {
                             if let Err(e) = st.track_grammar(&guard, end) {
                                 failed.push(format!("{e:#}"));
                             }
-                            Some(recorded_json(&r, &guard, st.store.profile().ok(), &lang))
+                            let profile = st.store.profile();
+                            let profile = profile.inspect_err(|e| failed.push(e.to_string()));
+                            Some(recorded_json(&r, &guard, profile.ok(), &lang))
                         }
                         Err(e) => {
                             failed.push(e.to_string());
@@ -449,6 +451,7 @@ impl qobject::Conversation {
 
     /// Plays stage `i` of the placement ([`placement::stage_session`]), nothing stored.
     fn begin_stage(mut self: Pin<&mut Self>, i: usize) {
+        self.as_mut().set_notice(QString::default());
         let id = STAGES[i].0;
         let mut failed = Vec::new();
         let prepared = {
@@ -596,11 +599,10 @@ impl qobject::Conversation {
             .clone()
             .unwrap_or_else(|| "jf_tebukuro".into());
         let opening = (log.len() == 1).then(|| session.opening().to_string());
-        let sound = state()
-            .store
-            .profile()
-            .map(|p| (p.louder, p.clear, p.hands_free))
-            .unwrap_or_default();
+        let mut failed = Vec::new();
+        let read = state().store.profile();
+        let sound = or_default(read.map(|p| (p.louder, p.clear, p.hands_free)), &mut failed);
+        self.as_mut().say_all_unsaved(&failed);
         self.as_mut().set_louder(sound.0);
         self.as_mut().set_clear(sound.1);
         self.as_mut().set_hands_free(sound.2);
@@ -630,7 +632,6 @@ impl qobject::Conversation {
         self.as_mut().set_demo(demo);
         self.as_mut().set_finished(false);
         self.as_mut().set_error(QString::default());
-        self.as_mut().set_notice(QString::default());
         self.as_mut().set_help_text(QString::default());
         self.as_mut().set_help_level(0);
         self.as_mut().publish_turns();
@@ -797,7 +798,9 @@ impl qobject::Conversation {
                 return;
             }
         };
-        let recorded = recorded_json(&r, &s, st.store.profile().ok(), &lang);
+        let profile = st.store.profile();
+        let profile = profile.inspect_err(|e| self.as_mut().say_unsaved(&e.to_string()));
+        let recorded = recorded_json(&r, &s, profile.ok(), &lang);
         let summary = summary_json(&s.summary(), &lang);
         drop(s);
         self.as_mut()
@@ -807,6 +810,7 @@ impl qobject::Conversation {
     }
 
     fn resume(mut self: Pin<&mut Self>) {
+        self.as_mut().set_notice(QString::default());
         self.as_mut().rust_mut().placement = None;
         self.as_mut().set_placing(false);
         let mut failed = Vec::new();
@@ -814,7 +818,13 @@ impl qobject::Conversation {
             let st = state();
             let profile = or_default(st.store.profile(), &mut failed);
             or_default(st.store.open_session(), &mut failed).and_then(|row| {
-                let state = st.store.session_state(row.id).ok()?;
+                let state = match st.store.session_state(row.id) {
+                    Ok(state) => state,
+                    Err(e) => {
+                        failed.push(e.to_string());
+                        return None;
+                    }
+                };
                 let scenario = st.scenarios.get(&state.scenario)?.clone();
                 Some((row.id, state, scenario, profile.ui_lang))
             })
@@ -832,6 +842,7 @@ impl qobject::Conversation {
     }
 
     fn start(mut self: Pin<&mut Self>, scenario: &QString) {
+        self.as_mut().set_notice(QString::default());
         self.as_mut().rust_mut().placement = None;
         self.as_mut().set_placing(false);
         let wanted = scenario.to_string();
@@ -1341,7 +1352,9 @@ impl qobject::Conversation {
         if *self.talk_state() != READY || *self.busy() || *self.finished() {
             return;
         }
-        let microphone = state().store.profile().ok().and_then(|p| p.microphone);
+        let read = state().store.profile();
+        let read = read.inspect_err(|e| self.as_mut().say_unsaved(&e.to_string()));
+        let microphone = read.ok().and_then(|p| p.microphone);
         match Capture::start_on(microphone.as_deref()) {
             Ok(c) => {
                 let turn_end = self.hands_free.then(|| {

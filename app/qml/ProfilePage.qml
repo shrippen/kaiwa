@@ -82,6 +82,17 @@ QQC2.ScrollView {
             }
         }
 
+        QQC2.Label {
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            visible: page.kaiwa.notice.length > 0
+            text: page.kaiwa.notice
+            wrapMode: Text.Wrap
+            font: KanteStyle.defaultFont
+            color: KanteStyle.textColor
+        }
+
         // Grammar points (/LF201/): how many sit, which are still practised, with explanations.
         KanteSectionLabel {
             Layout.leftMargin: KanteStyle.unit(18)
