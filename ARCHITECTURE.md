@@ -75,7 +75,7 @@ Qt app today and, from M4, the service `kaiwad` with the Plasma widget.
 | Content: a scenario, a lesson, grammar | `data/` and, where a journey covers it, a persona in `qa/personas`. No code. |
 | A learning rule (difficulty, review, points, path) | `kaiwa-core` with its tests; a persona journey in `qa/`. |
 | A kind of correction or another list the learner sees | The one list in `kaiwa-core`; the view in `kaiwa-backend` passes it on. |
-| A setting | Stored in the profile (`kaiwa-store`, with a migration if the shape changes); its limits and effects as a backend command; the settings view; `app/qml/SettingsPage.qml`. |
+| A setting | Stored in the profile (`kaiwa-store`, with a migration if the shape changes); its limits and effects as a backend command; the settings view; `app/qml/SettingsPage.qml` or one of its tiles (`app/qml/Settings*.qml`). |
 | A page or a part of one | Its content as a view in `kaiwa-backend`; the page in `app/qml`; a QML test (`tools/qml-tests.sh`). |
 | A step in the conversation | The flow in `kaiwa-backend`; the app only gets a new signal or field. |
 | A tutor provider | `kaiwa-ai`: provider, preset, a test against a recorded payload. |
