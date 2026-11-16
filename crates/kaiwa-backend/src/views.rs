@@ -75,8 +75,7 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         })
         .collect();
     // No tutor and no recordings (a package without a tutor set up): say so first (Q-15).
-    let needs_tutor = !crate::DEMO
-        && !kaiwa_ai::provider_from(st.keys(), st.tutor_env()).is_ok_and(|p| p.is_some());
+    let needs_tutor = !crate::DEMO && !st.tutor_set_up();
     Ok(json!({
         "free": free,
         "needsTutor": needs_tutor,
@@ -630,7 +629,7 @@ pub fn tutor_view(st: &Backend, lang: &str) -> Value {
     let env = st.tutor_env();
     let provider = env("KAIWA_PROVIDER").unwrap_or_default();
     let overridden = std::env::var("KAIWA_PROVIDER").is_ok_and(|v| !v.is_empty());
-    let ready = kaiwa_ai::provider_from(st.keys(), st.tutor_env()).is_ok_and(|p| p.is_some());
+    let ready = st.tutor_set_up();
     let de = lang != "en";
     let p = preset(&provider);
     let missing_key = p.is_some_and(|p| p.needs_key()) && st.keys().key(&provider, &env).is_none();

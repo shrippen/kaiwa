@@ -431,13 +431,6 @@ mod tests {
             .expect("may say")
     }
 
-    // The tests arm the process's meter, as the cost tests read it.
-    fn meter() -> std::sync::MutexGuard<'static, ()> {
-        crate::cost::tests::METER
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-    }
-
     #[test]
     fn the_next_scenario_is_the_paths_or_self_introduction() {
         let b = backend("flow-next");
@@ -457,7 +450,6 @@ mod tests {
 
     #[test]
     fn a_new_talk_is_stored_and_saved_after_a_turn() {
-        let _m = meter();
         let b = backend("flow-save");
         let now = Moment::new(1_791_100_000, 120);
         let mut t = open(&b, SCENARIO, now, Length::Short);
@@ -474,7 +466,6 @@ mod tests {
     #[test]
     fn a_sitting_counts_at_most_an_hour() {
         // A window left open overnight books an hour, not the night.
-        let _m = meter();
         let b = backend("flow-sitting");
         let now = Moment::new(1_791_100_000, 120);
         let mut t = open(&b, SCENARIO, now, Length::Short);
@@ -495,7 +486,6 @@ mod tests {
 
     #[test]
     fn a_finished_talk_is_recorded_with_its_spent_time_on_its_day() {
-        let _m = meter();
         let b = backend("flow-record");
         let began = evening();
         let end = began.plus_secs(2 * 3600);
@@ -519,7 +509,6 @@ mod tests {
 
     #[test]
     fn an_open_talk_is_continued() {
-        let _m = meter();
         let b = backend("flow-resume");
         let now = Moment::new(1_791_100_000, 120);
         assert!(Talk::resume(&b, now).unwrap().is_none());
@@ -541,7 +530,6 @@ mod tests {
 
     #[test]
     fn an_unstored_talk_saves_nothing() {
-        let _m = meter();
         let b = backend("flow-unstored");
         let now = Moment::new(1_791_100_000, 120);
         let (session, demo) = b
@@ -566,7 +554,6 @@ mod tests {
 
     #[test]
     fn a_failed_correction_still_saves_the_marks() {
-        let _m = meter();
         let b = backend("flow-superseded");
         let now = Moment::new(1_791_100_000, 120);
         let mut first = open(&b, SCENARIO, now, Length::Short);
@@ -587,7 +574,6 @@ mod tests {
 
     #[test]
     fn a_dispute_is_listed_and_corrects_the_record() {
-        let _m = meter();
         let b = backend("flow-dispute");
         let now = Moment::new(1_791_100_000, 120);
         let mut t = open(&b, SCENARIO, now, Length::Short);
@@ -620,7 +606,6 @@ mod tests {
 
     #[test]
     fn a_talk_opens_when_the_brake_cannot_be_armed() {
-        let _m = meter();
         let b = backend("flow-brake");
         let now = Moment::new(1_791_100_000, 120);
         break_costs(&b, now);
@@ -633,7 +618,6 @@ mod tests {
 
     #[test]
     fn a_booked_finish_survives_a_failed_cost_booking() {
-        let _m = meter();
         let b = backend("flow-booked");
         let now = Moment::new(1_791_100_000, 120);
         let mut t = open(&b, SCENARIO, now, Length::Short);
@@ -653,7 +637,6 @@ mod tests {
 
     #[test]
     fn nothing_is_said_empty_or_after_the_end() {
-        let _m = meter();
         let b = backend("flow-guard");
         let now = Moment::new(1_791_100_000, 120);
         let mut t = open(&b, SCENARIO, now, Length::Short);
@@ -669,7 +652,6 @@ mod tests {
 
     #[test]
     fn a_change_outside_a_turn_is_saved_on_request() {
-        let _m = meter();
         let b = backend("flow-save-outside");
         let now = Moment::new(1_791_100_000, 120);
         let mut t = open(&b, SCENARIO, now, Length::Short);

@@ -306,6 +306,8 @@ pub struct Backend {
     pub demo_data: bool,
     /// The keys of this profile ([`kaiwa_ai::secrets::KeyHome`]).
     keys: kaiwa_ai::secrets::Keys,
+    /// What the cloud tutor costs: shared with the providers this backend builds.
+    meter: Arc<kaiwa_ai::cost::Meter>,
     /// Why expired recordings stayed when the profile opened; [`Backend::take_unpurged`].
     unpurged: Option<anyhow::Error>,
 }
@@ -411,6 +413,7 @@ impl Backend {
         let mut st = Backend {
             store: db,
             keys,
+            meter: Arc::default(),
             path,
             curriculum,
             grammar_matcher: grammar.matcher(),
@@ -516,6 +519,13 @@ impl Backend {
             .unwrap_or_default()
     }
 
+    /// What this profile's cloud tutor has cost since the last booking; only tests and the
+    /// simulation read it, a front end sees costs through the views.
+    #[cfg(any(test, feature = "sim"))]
+    pub fn meter(&self) -> &Arc<kaiwa_ai::cost::Meter> {
+        &self.meter
+    }
+
     /// The keys of this profile.
     pub(crate) fn keys(&self) -> &kaiwa_ai::secrets::Keys {
         &self.keys
@@ -532,11 +542,17 @@ impl Backend {
         move |k: &str| tutor.lookup(|k| std::env::var(k).ok())(k)
     }
 
+    /// Whether the settings or the environment name a tutor that can be built.
+    pub(crate) fn tutor_set_up(&self) -> bool {
+        kaiwa_ai::provider_from(&self.keys, self.meter.clone(), self.tutor_env())
+            .is_ok_and(|p| p.is_some())
+    }
+
     /// The tutor for a conversation in `scenario`: the one set up in the settings (or the
     /// environment). Without one, a demo build replays the recorded answers (`true`); any other
     /// build says that no tutor is set up.
     pub fn provider(&self, scenario: &str) -> (Arc<dyn ChatProvider>, bool) {
-        match kaiwa_ai::provider_from(&self.keys, self.tutor_env()) {
+        match kaiwa_ai::provider_from(&self.keys, self.meter.clone(), self.tutor_env()) {
             Ok(Some(p)) => return (p, false),
             Ok(None) => {}
             Err(e) => eprintln!("kaiwa: {e}"),

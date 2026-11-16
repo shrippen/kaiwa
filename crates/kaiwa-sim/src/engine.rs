@@ -138,19 +138,20 @@ impl kaiwa_ai::transport::Transport for Billing {
 /// (I-06); at his limit the cloud tutor stops answering and the local one goes on; local talks
 /// cost nothing and do not thin out the cost per talk; the next month starts at zero.
 fn cost_limit() -> Result<Option<String>> {
-    use kaiwa_ai::cost::{Metered, meter};
+    use kaiwa_ai::cost::Metered;
     use kaiwa_ai::transport::Transport;
-    // The meter is the process's: one run of this check at a time.
-    static ONE: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    let _one = ONE.lock().unwrap_or_else(|e| e.into_inner());
     let b = kaiwa_backend::TempBackend::new("sim-cost", false)?;
     let now = kaiwa_core::Day::from_ymd(2026, 10, 20)
         .start(120)
         .plus_secs(8 * 3600);
-    let (cloud, local) = (Metered::new(Billing, true), Metered::new(Billing, false));
+    let meter = || b.meter().clone();
+    let (cloud, local) = (
+        Metered::new(Billing, meter(), true),
+        Metered::new(Billing, meter(), false),
+    );
     let call = |t: &Metered<Billing>| t.post_json("u", &[], &Value::Null);
     let mut found = Vec::new();
-    meter().take();
+    b.meter().take();
 
     // No limit until he sets one: a talk of 20 calls goes through.
     if b.profile()?.cost_limit_cents.is_some() {
@@ -233,8 +234,6 @@ fn cost_limit() -> Result<Option<String>> {
     if b.month_cost(next)?.cents != 0.0 || b.over_budget(next)? || call(&cloud).is_err() {
         found.push("the new month does not start at zero".into());
     }
-    meter().take();
-    meter().set_budget(None);
     Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
