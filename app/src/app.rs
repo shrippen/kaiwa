@@ -259,21 +259,34 @@ impl qobject::KaiwaApp {
 
     /// Tells the learner a page or the profile could not be loaded; what the page shows is
     /// then empty or the defaults.
-    fn say_unloaded(mut self: Pin<&mut Self>, e: &anyhow::Error) {
+    fn say_unloaded(self: Pin<&mut Self>, e: &anyhow::Error) {
         let msg = match self.lang().to_string() == "de" {
             true => format!("Das Profil ließ sich nicht vollständig laden: {e:#}"),
             false => format!("The profile could not be loaded completely: {e:#}"),
         };
-        self.as_mut().set_notice(QString::from(&msg));
+        self.add_notice(&msg);
     }
 
     /// Tells the learner expired recordings stayed when the profile opened (/LF712/).
-    fn say_unpurged(mut self: Pin<&mut Self>, e: &anyhow::Error) {
+    fn say_unpurged(self: Pin<&mut Self>, e: &anyhow::Error) {
         let msg = match self.lang().to_string() == "de" {
             true => format!("Abgelaufene Aufnahmen ließen sich nicht löschen: {e}"),
             false => format!("Expired recordings could not be deleted: {e}"),
         };
-        self.as_mut().set_notice(QString::from(&msg));
+        self.add_notice(&msg);
+    }
+
+    /// Adds `msg` below what the notice already says (an action's own message stays), once.
+    fn add_notice(mut self: Pin<&mut Self>, msg: &str) {
+        let old = self.notice().to_string();
+        if old.contains(msg) {
+            return;
+        }
+        let new = match old.is_empty() {
+            true => msg.to_string(),
+            false => format!("{old}\n{msg}"),
+        };
+        self.as_mut().set_notice(QString::from(&new));
     }
 
     fn refresh(mut self: Pin<&mut Self>) {
@@ -340,13 +353,8 @@ impl qobject::KaiwaApp {
         self.as_mut().set_models(q(&models_json(&lang)));
         self.as_mut().set_lang(QString::from(&lang));
         self.as_mut().set_gamification(gam);
-        // What an action just said is more precise than a failed load; keep it.
-        if !self.notice().is_empty() {
-            return;
-        }
         if let Some(e) = failed {
             self.as_mut().say_unloaded(&e);
-            return;
         }
         if let Some(e) = unpurged {
             self.as_mut().say_unpurged(&e);
