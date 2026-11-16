@@ -100,7 +100,6 @@ A change that needs more places than its row lists is a finding for the next aud
   short talk, and the two differ. Finding 6.
 - `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
   `turn_xp`. Rest of finding 4.
-- A failed save in a conversation is only logged. Finding 5.
 - Some persona checks still read source text: scans of all pages for strings, names,
   handlers and gamification text, the palette's colours, the voice's pace in
   `app/src/conversation.rs` and the one file that downloads. What a page does is checked in
