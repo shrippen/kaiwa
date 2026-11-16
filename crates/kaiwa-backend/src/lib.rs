@@ -105,6 +105,10 @@ const SCENARIOS: &[&str] = &[
     include_str!("../../../data/scenarios/frei-mainichi.json"),
 ];
 
+/// What the recorded tutor says to a sentence it has no answer for.
+#[cfg(any(test, feature = "demo", feature = "sim"))]
+const RECORDED_FALLBACK: &str = "すみません、もう一度お願いします。";
+
 #[cfg(any(test, feature = "demo"))]
 const FIXTURES: &[(&str, &str)] = &[
     (
@@ -522,7 +526,7 @@ impl Backend {
             let mock = fixtures(scenario)
                 .and_then(|f| MockProvider::from_json(f).ok())
                 .unwrap_or_default()
-                .with_fallback("すみません、もう一度お願いします。");
+                .with_fallback(RECORDED_FALLBACK);
             (Arc::new(mock), true)
         }
         #[cfg(not(any(test, feature = "demo")))]

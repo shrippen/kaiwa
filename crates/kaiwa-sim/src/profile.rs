@@ -10,14 +10,15 @@ use std::time::Instant;
 use anyhow::Result;
 use kaiwa_ai::mock::MockProvider;
 use kaiwa_ai::secrets::KeyStore;
+use kaiwa_core::Amount;
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::Curriculum;
 use kaiwa_core::session::{Input, Session};
 use kaiwa_core::srs::{Item, ItemKind, Source};
-use kaiwa_core::{Amount, Scenario};
 use kaiwa_store::{Store, delete_profile};
 
 use crate::run::Outcome;
+use crate::talk;
 
 fn at(day: i64, secs: i64) -> Moment {
     Day::from_ymd(2026, 10, 5)
@@ -53,14 +54,7 @@ pub(crate) fn temp_dir(name: &str) -> TempDir {
 }
 
 fn session(root: &Path) -> Result<Session> {
-    let sc = Scenario::from_json(&std::fs::read_to_string(
-        root.join("data/scenarios/n5-02-jikoshoukai.json"),
-    )?)?;
-    let mock = MockProvider::from_json(&std::fs::read_to_string(
-        root.join("qa/fixtures/n5-02-jikoshoukai.json"),
-    )?)?
-    .with_fallback("すみません、もう一度お願いします。");
-    Ok(Session::new(sc, Arc::new(mock), Amount::Little, "de"))
+    talk::open(root, "n5-02-jikoshoukai", Amount::Little)
 }
 
 fn curriculum(root: &Path) -> Result<Curriculum> {
@@ -394,14 +388,8 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
 fn srs_keigo(root: &Path) -> Result<Option<String>> {
     let dir = temp_dir("srs-keigo");
     let store = Store::open(&dir.join("emi.kaiwa"))?;
-    let sc = Scenario::from_json(&std::fs::read_to_string(
-        root.join("data/scenarios/n4-13-uketsuke.json"),
-    )?)?;
-    let mock = MockProvider::from_json(&std::fs::read_to_string(
-        root.join("qa/fixtures/n4-13-uketsuke.json"),
-    )?)?;
     // Emi wants much feedback: style and register corrections are shown.
-    let mut s = Session::new(sc, Arc::new(mock), Amount::Much, "de");
+    let mut s = talk::open(root, "n4-13-uketsuke", Amount::Much)?;
     let id = store.begin_session(&s.snapshot(), at(0, 9 * 3600))?;
     s.turn(
         "ミュラーと申します。二時に小野様とお約束しています。",
@@ -462,13 +450,8 @@ impl kaiwa_ai::ChatProvider for Local {
 /// model (PC) mid-course changes nothing in the learner model, the regulator or the course,
 /// and the stored model names no provider. Latency and provider are all that differ.
 fn local_switch(root: &Path) -> Result<Option<String>> {
-    let sc = Scenario::from_json(&std::fs::read_to_string(
-        root.join("data/scenarios/n5-02-jikoshoukai.json"),
-    )?)?;
-    let fixtures = std::fs::read_to_string(root.join("qa/fixtures/n5-02-jikoshoukai.json"))?;
-    let mock = || -> Result<MockProvider> {
-        Ok(MockProvider::from_json(&fixtures)?.with_fallback("すみません、もう一度お願いします。"))
-    };
+    let sc = talk::scenario(root, "n5-02-jikoshoukai")?;
+    let mock = || talk::recorded(root, "n5-02-jikoshoukai");
     let c = curriculum(root)?;
     let course = |name: &str, switch: bool| -> Result<(Store, TempDir)> {
         let dir = temp_dir(name);

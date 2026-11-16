@@ -19,11 +19,12 @@ use std::time::Duration;
 
 use anyhow::{Context, Result, bail};
 use kaiwa_ai::Severity;
-use kaiwa_ai::mock::MockProvider;
 use kaiwa_core::session::HelpStep;
 use kaiwa_core::{Amount, Input, Scenario, Session, Summary, TurnOutcome, norm};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+use crate::talk;
 
 #[derive(Debug, Deserialize)]
 pub struct Script {
@@ -154,12 +155,7 @@ pub fn play(root: &Path, persona: &Value, script: &Script, live: bool) -> Result
             .map_err(anyhow::Error::msg)?
             .context("--live needs KAIWA_PROVIDER (see app/README.md)")?
     } else {
-        let fixtures_path = root.join(format!("qa/fixtures/{}.json", script.fixtures));
-        let fixtures = std::fs::read_to_string(&fixtures_path)
-            .with_context(|| fixtures_path.display().to_string())?;
-        Arc::new(
-            MockProvider::from_json(&fixtures)?.with_fallback("すみません、もう一度お願いします。"),
-        )
+        Arc::new(talk::recorded(root, &script.fixtures)?)
     };
     play_with(root, persona, script, provider, live)
 }
@@ -172,11 +168,7 @@ pub fn play_with(
     provider: Arc<dyn kaiwa_ai::ChatProvider>,
     live: bool,
 ) -> Result<Run> {
-    let scenario_path = root.join(format!("data/scenarios/{}.json", script.scenario));
-    let scenario = Scenario::from_json(
-        &std::fs::read_to_string(&scenario_path)
-            .with_context(|| scenario_path.display().to_string())?,
-    )?;
+    let scenario = talk::scenario(root, &script.scenario)?;
     let amount = amount_of(persona);
     let mut session = Session::new(
         scenario.clone(),
@@ -777,6 +769,7 @@ pub fn run_persona_with(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kaiwa_ai::mock::MockProvider;
     use std::path::PathBuf;
 
     fn root() -> PathBuf {

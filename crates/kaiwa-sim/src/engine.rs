@@ -16,21 +16,14 @@ use kaiwa_core::learner::{LearnerModel, Skill, level_index};
 use kaiwa_core::placement::{Placement, Reading, STAGES, StageResult, TURNS_PER_STAGE};
 use kaiwa_core::romaji;
 use kaiwa_core::session::{Input, Session};
-use kaiwa_core::{Amount, Regulator, Scenario};
+use kaiwa_core::{Amount, Regulator};
 use serde_json::Value;
 
 use crate::run::Outcome;
+use crate::talk;
 
 fn session(root: &Path, scenario: &str) -> Result<Session> {
-    let sc = Scenario::from_json(
-        &std::fs::read_to_string(root.join(format!("data/scenarios/{scenario}.json")))
-            .with_context(|| scenario.to_string())?,
-    )?;
-    let mock = MockProvider::from_json(&std::fs::read_to_string(
-        root.join(format!("qa/fixtures/{scenario}.json")),
-    )?)?
-    .with_fallback("すみません、もう一度お願いします。");
-    Ok(Session::new(sc, Arc::new(mock), Amount::Little, "de"))
+    talk::open(root, scenario, Amount::Little)
 }
 
 /// The persona's placement (/LF200/), played against the simulated learner: each stage gives
@@ -280,13 +273,8 @@ fn analysis_gaps(root: &Path) -> Result<Option<String>> {
     let scenario = "n5-02-jikoshoukai";
     let said = "コーヒーを好きです。";
     let gappy = |extra: bool| -> Result<Session> {
-        let sc = Scenario::from_json(&std::fs::read_to_string(
-            root.join(format!("data/scenarios/{scenario}.json")),
-        )?)?;
-        let recorded = MockProvider::from_json(&std::fs::read_to_string(
-            root.join(format!("qa/fixtures/{scenario}.json")),
-        )?)?
-        .with_fallback("すみません、もう一度お願いします。");
+        let sc = talk::scenario(root, scenario)?;
+        let recorded = talk::recorded(root, scenario)?;
         Ok(Session::new(
             sc,
             Arc::new(Gappy { recorded, extra }),

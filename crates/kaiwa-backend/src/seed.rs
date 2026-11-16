@@ -6,6 +6,7 @@
 //! store, this module names each thing the simulation may set or read. It exists only
 //! with the feature `sim`, which no front end enables; a package never contains it.
 
+use kaiwa_ai::mock::MockProvider;
 use kaiwa_core::Session;
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::Curriculum;
@@ -15,6 +16,12 @@ use kaiwa_core::srs::Item;
 use kaiwa_store::{Learning, Profile, Recorded, Result, SessionRow, Today};
 
 use crate::Backend;
+
+/// The recorded tutor answers in `fixtures` (JSON), with the fallback reply the demo's tutor
+/// has: the tutor of a talk without a provider.
+pub fn recorded_tutor(fixtures: &str) -> anyhow::Result<MockProvider> {
+    Ok(MockProvider::from_json(fixtures)?.with_fallback(crate::RECORDED_FALLBACK))
+}
 
 impl Backend {
     /// The rows of this profile, for test setup.
