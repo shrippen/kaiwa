@@ -99,8 +99,6 @@ A change that needs more places than its row lists is a finding for the next aud
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
   command yet. `AUDIT.md` finding 7.
 - The page's conversation log is built in the app and read back by the backend. Finding 5.
-- The settings page keeps its own lists for text size, daily goal and unloading time.
-  Finding 3.
 - `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
   `turn_xp`. `AUDIT.md`, "Seit dem letzten Audit", finding 4.
 - Some persona checks still read source text: scans of all pages for strings, names,

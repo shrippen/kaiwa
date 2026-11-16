@@ -79,7 +79,7 @@ QQC2.ScrollView {
             title: page.t("Tagesziel", "Daily goal")
             hint: page.t("Minuten gesprochen pro Tag; Getipptes zählt nicht", "Minutes spoken a day; typing does not count")
             Choice {
-                readonly property var values: [3, 5, 10, 15, 20]
+                readonly property var values: page.p.goalSteps || []
                 model: values.map(function (m) { return m + " min" })
                 shown: Math.max(0, values.indexOf(page.p.goal.value))
                 onActivated: function (i) { page.kaiwa.setSetting("goal", String(values[i])) }
@@ -269,9 +269,9 @@ QQC2.ScrollView {
             hint: page.t("Nach so langer Pause gibt Kaiwa den Speicher der Sprachmodelle frei; beim nächsten Sprechen lädt es sie wieder (ein paar Sekunden)",
                          "After a pause this long Kaiwa frees the memory of the speech models; the next time you speak it loads them again (a few seconds)")
             Choice {
-                readonly property var values: [5, 10, 30, null]
-                model: ["5 min", "10 min", "30 min", page.t("Nie", "Never")]
-                shown: Math.max(0, values.indexOf(page.p.unloadAfter === undefined ? 10 : page.p.unloadAfter))
+                readonly property var values: page.p.unloadSteps || []
+                model: values.map(function (m) { return m === null ? page.t("Nie", "Never") : m + " min" })
+                shown: Math.max(0, values.indexOf(page.p.unloadAfter === undefined ? null : page.p.unloadAfter))
                 onActivated: function (i) { page.kaiwa.setSetting("unloadAfter", values[i] === null ? "" : String(values[i])) }
             }
         }
@@ -325,10 +325,9 @@ QQC2.ScrollView {
             hint: page.t("Vergrößert die ganze Oberfläche mit den Lesehilfen, zusätzlich zur Systemeinstellung; gilt ab dem nächsten Start",
                          "Enlarges the whole interface with the readings, on top of the system setting; from the next start")
             Choice {
-                // Up to 160 % (owner, 10.11.2026; kaiwa_store::TEXT_SCALE_MAX).
-                readonly property var values: [1.0, 1.25, 1.5, 1.6]
-                model: ["100 %", "125 %", "150 %", "160 %"]
-                shown: Math.max(0, values.indexOf(page.p.textScale === undefined ? 1.0 : page.p.textScale))
+                readonly property var values: page.p.textScaleSteps || []
+                model: values.map(function (s) { return Math.round(s * 100) + " %" })
+                shown: Math.max(0, values.indexOf(page.p.textScale))
                 onActivated: function (i) { page.kaiwa.setSetting("textScale", String(values[i])) }
             }
         }
