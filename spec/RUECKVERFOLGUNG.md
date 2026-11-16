@@ -23,16 +23,16 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | app, backend, core, speech, store | geprüft | 1 von 1 automatisch grün: `mara_ptt` |
 | /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_cutoff` |
-| /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
+| /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app, backend | Code | – |
 | /LF104/ | S | Das Mikrofon ist in den Einstellungen wählbar (Standard: das des … | app, backend | Code | – |
 | /LF110/ | M | Die Antworten der KI werden gesprochen (TTS) und als Text angezeigt. | app, backend, core, lang, store | geprüft | 2 von 3 automatisch grün: `mara_listen_tools`, `mara_own_furigana`, `mara_word_lookup` |
-| /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, core, speech | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
+| /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, backend, core, speech | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF112/ | M | Ein Klick auf ein Wort zeigt Lesung, Bedeutung und Wortart und spielt … | app, backend, core, lang, store | geprüft | 1 von 1 automatisch grün: `mara_word_lookup` |
 | /LF113/ | M | Das Transkript der eigenen Äußerung wird angezeigt (was die KI … | app, backend, core | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
 | /LF114/ | M | Wer feststeckt, bekommt eine Hilfe in drei Stufen: Stichwort → … | core | geprüft | 1 von 1 automatisch grün: `mara_hint_offered` |
 | /LF115/ | M | Es gibt Szenarien mit Rolle, Ort, Ziel und Erfolgsbedingung (z. B. … | core | Code | 0 von 1 automatisch grün: `jonas_follow_up` |
 | /LF116/ | S | Freies Gespräch zu einem gewählten Thema auf dem eigenen Niveau. | app, backend, core | geprüft | 1 von 1 automatisch grün: `theo_free_talk` |
-| /LF117/ | S | KI-Figuren mit festem Charakter, Sprechstil und Stimme (z. B. … | app, core, speech | geprüft | 1 von 1 automatisch grün: `selin_register_flag` |
+| /LF117/ | S | KI-Figuren mit festem Charakter, Sprechstil und Stimme (z. B. … | app, backend, core, speech | geprüft | 1 von 1 automatisch grün: `selin_register_flag` |
 | /LF120/ | M | Tippen statt Sprechen (Kana-IME oder Rōmaji mit Umwandlung). | app, backend, core | geprüft | 1 von 1 automatisch grün: `jonas_typed_marked` |
 | /LF121/ | M | Ein Gespräch lässt sich unterbrechen und später an derselben Stelle … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_resume` |
 | /LF122/ | S | Lernende dürfen in die UI-Sprache wechseln („Wie sagt man …?“). | core | Code | 0 von 2 automatisch grün: `hinnerk_german_word_help`, `mara_codeswitch` |
@@ -40,8 +40,8 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF201/ | M | Das Lernermodell führt getrennte Fähigkeiten: Hörverstehen (Tempo … | app, backend, core, store | geprüft | 2 von 2 automatisch grün: `emi_ceiling`, `selin_profile_split` |
 | /LF202/ | M | Das Lernermodell ist für Lernende einsehbar (Profil-Ansicht in … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `selin_profile_visible` |
 | /LF210/ | M | Der Schwierigkeitsregler zielt auf eine Erfolgsquote von etwa 80 % … | core, store | geprüft | 3 von 3 automatisch grün: `emi_no_baby_talk`, `hinnerk_pace`, `mara_success_band` |
-| /LF211/ | M | Stellgrößen: Anteil unbekannter Wörter (≤ 5 %), Satzlänge … | app, core | geprüft | 2 von 2 automatisch grün: `hinnerk_tts_slow`, `selin_settings_split` |
-| /LF212/ | M | Hilfen (Wiederholung, Zeitlupe, Übersetzung, Hilfe-Stufen) fließen in … | app, core | geprüft | 1 von 1 automatisch grün: `mara_hints_silent` |
+| /LF211/ | M | Stellgrößen: Anteil unbekannter Wörter (≤ 5 %), Satzlänge … | app, backend, core | geprüft | 2 von 2 automatisch grün: `hinnerk_tts_slow`, `selin_settings_split` |
+| /LF212/ | M | Hilfen (Wiederholung, Zeitlupe, Übersetzung, Hilfe-Stufen) fließen in … | app, backend, core | geprüft | 1 von 1 automatisch grün: `mara_hints_silent` |
 | /LF213/ | M | Die Anpassung wirkt innerhalb einer Sitzung (sofort leichter nach … | core | geprüft | 1 von 1 automatisch grün: `jonas_scenario_stuck` |
 | /LF214/ | M | Die Schwierigkeit steigt schrittweise: Pro Sitzung ändert sich … | core | geprüft | 2 von 2 automatisch grün: `hinnerk_pace`, `mara_gradual` |
 | /LF215/ | S | Starke Unterforderung (z. B. Erfolg ≥ 95 % über drei Sitzungen) führt … | app, backend, core | geprüft | 2 von 2 automatisch grün: `emi_skip`, `emi_skip_once` |
@@ -101,7 +101,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL201/ | M | Screenreader: Alle Bedienelemente haben Accessible-Namen und -Rollen … | – | geprüft | 1 von 1 automatisch grün: `hinnerk_a11y_names` |
 | /LL202/ | M | Die Schriftgröße folgt dem System und ist zusätzlich in der App … | app, core, store | geprüft | 2 von 2 automatisch grün: `hinnerk_font`, `hinnerk_targets` |
 | /LL203/ | M | Kontraste erreichen WCAG AA in System, Kante und Kante Light. | – | geprüft | 1 von 1 automatisch grün: `hinnerk_targets` |
-| /LL204/ | S | Untertitel für alles Gesprochene. | app, speech, store | geprüft | 1 von 1 automatisch grün: `hinnerk_tts_slow` |
+| /LL204/ | S | Untertitel für alles Gesprochene. | app, backend, speech, store | geprüft | 1 von 1 automatisch grün: `hinnerk_tts_slow` |
 | /LL300/ | M | Keine Dark Patterns: keine künstliche Verknappung, keine Schuld- oder … | backend, core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
 | /LL301/ | M | Die GUI wird aus Kante erzeugt (siehe Kap. 8). | app | Code | 0 von 1 automatisch grün: `selin_win_style` |
 | /LL302/ | M | Die KI-Figuren bleiben im Lernkontext. | core | Code | 0 von 1 automatisch grün: `jonas_inappropriate` |

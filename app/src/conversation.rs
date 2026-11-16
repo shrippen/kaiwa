@@ -206,14 +206,11 @@ use kaiwa_backend::ears::{
 use kaiwa_backend::flow::{self, Length, Talk};
 use kaiwa_backend::log::Log;
 use kaiwa_backend::placing::{self, Next, Placing, Stage};
+use kaiwa_backend::voice::{self, Debt, Enhance, Line, Owed, Pace, Said, Speaker};
 use kaiwa_core::Input;
 use kaiwa_core::session::Aid;
-use kaiwa_speech::SpeechError;
-use kaiwa_speech::Synthesizer;
-use kaiwa_speech::models::{KANA_CTC_URL, kokoro_dir, models_dir};
+use kaiwa_speech::models::{KANA_CTC_URL, models_dir};
 use kaiwa_speech::mora;
-use kaiwa_speech::playback::{self, Player};
-use kaiwa_speech::tts::{self, SpeechCache, Voice};
 use serde_json::{Value, json};
 
 use crate::state::{now, state};
@@ -277,18 +274,11 @@ pub struct ConversationRust {
     /// turn is still being recognised, or after a microphone error).
     quiet: Arc<AtomicU64>,
     /// What this conversation already said, so "again" plays at once (/LF111/).
-    said: Arc<Mutex<SpeechCache>>,
+    said: Said,
     /// The voice of this conversation's character (/LF117/); a loaded voice switches to it.
     voice_name: String,
     /// What the voice owes the talk while it loads: an early reply, the opening once.
-    debt: kaiwa_backend::talk::Debt,
-}
-
-/// The interim voice and the speaker it plays through.
-#[derive(Clone)]
-struct Speaker {
-    voice: Arc<Mutex<dyn Synthesizer>>,
-    player: Arc<Player>,
+    debt: Debt,
 }
 
 const READY: i32 = 0;
@@ -296,9 +286,6 @@ const LISTENING: i32 = 1;
 const THINKING: i32 = 2;
 const SPEAKING: i32 = 3;
 const ERROR: i32 = 4;
-
-/// The voice's pace without a session: a little below Kokoro's normal one.
-const SPEED: f32 = 0.9;
 
 impl qobject::Conversation {
     fn publish_turns(mut self: Pin<&mut Self>) {
@@ -464,9 +451,7 @@ impl qobject::Conversation {
             rust.sitting = Some(std::time::Instant::now());
             rust.last_use = Some(std::time::Instant::now());
             // Another conversation: nothing said before counts.
-            if let Ok(mut c) = rust.said.lock() {
-                c.clear();
-            }
+            rust.said.clear();
             // A new conversation loads what is missing itself (below).
             rust.unloaded = false;
             rust.debt.reset();
@@ -508,9 +493,9 @@ impl qobject::Conversation {
             // Speak the opening of the new scenario.
             if let Some(o) = opening {
                 let voice = if self.speaker.is_some() && *self.voice_on() {
-                    kaiwa_backend::talk::Voice::Ready
+                    voice::Voice::Ready
                 } else {
-                    kaiwa_backend::talk::Voice::Off
+                    voice::Voice::Off
                 };
                 self.as_mut().rust_mut().debt.opening_said(voice);
                 self.as_mut().speak(&o);
@@ -724,23 +709,20 @@ impl qobject::Conversation {
     /// Says a line of the character (furigana markup) sentence by sentence; the first plays
     /// while the next is made. The talk button shows "speaks" until the speaker is quiet.
     fn speak(self: Pin<&mut Self>, markup: &str) {
-        let speed = self.speed();
+        let speed = self.speed(Pace::Normal);
         self.speak_at(markup, speed, false);
     }
 
     /// The reply to a spoken turn: its first sound books the response time (/LL010/).
     fn speak_reply(self: Pin<&mut Self>, markup: &str) {
-        let speed = self.speed();
+        let speed = self.speed(Pace::Normal);
         self.speak_at(markup, speed, true);
     }
 
-    /// The pace the difficulty sets, 0.7 to 1.1 (/LF211/); eased within the session after
-    /// two misses.
-    fn speed(&self) -> f32 {
-        self.talk
-            .as_ref()
-            .and_then(|t| t.lock().ok().map(|t| t.session().difficulty.speed() as f32))
-            .unwrap_or(SPEED)
+    /// The pace of the voice for this talk (/LF211/).
+    fn speed(&self, how: Pace) -> f32 {
+        let talk = self.talk.as_ref().and_then(|t| t.lock().ok());
+        voice::pace(talk.as_ref().map(|t| &t.session().difficulty), how)
     }
 
     fn speak_at(mut self: Pin<&mut Self>, markup: &str, speed: f32, reply: bool) {
@@ -765,42 +747,32 @@ impl qobject::Conversation {
         if *self.talk_state() == READY {
             self.as_mut().set_talk_state(SPEAKING);
         }
-        let text = kaiwa_core::spoken(markup);
-        let (louder, clear) = (*self.louder(), *self.clear());
+        let line = Line {
+            markup: markup.to_string(),
+            voice: self.voice_name.clone(),
+            speed,
+            enhance: Enhance {
+                louder: *self.louder(),
+                clear: *self.clear(),
+            },
+        };
         let mut speech_end = if reply {
             self.as_mut().rust_mut().speech_end.take()
         } else {
             None
         };
         let said = self.said.clone();
-        let name = self.voice_name.clone();
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let still = || current.load(Ordering::SeqCst) == id;
-            for sentence in tts::sentences(&text) {
-                if !still() {
+            // The first sound of the reply: the response time (/LL010/).
+            let mut on_sound = || {
+                let Some(e) = speech_end.take().and_then(book_latency) else {
                     return;
-                }
-                // In the character's own voice (/LF117/); what this conversation said before
-                // plays at once (/LF111/).
-                let audio = tts::sentence(&*speaker.voice, &said, &name, &sentence, speed);
-                match audio {
-                    Some(Ok((samples, rate))) if still() => {
-                        let mut samples = samples.to_vec();
-                        playback::enhance(&mut samples, rate, louder, clear);
-                        speaker.player.play(&samples, rate);
-                        // The first sound of the reply: the response time (/LL010/).
-                        if let Some(e) = speech_end.take().and_then(book_latency) {
-                            let _ = thread.queue(move |mut q| q.as_mut().say_unsaved(&e));
-                        }
-                    }
-                    Some(Err(e)) => eprintln!("kaiwa: {e}"),
-                    _ => {}
-                }
-            }
-            while still() && speaker.player.playing() {
-                std::thread::sleep(Duration::from_millis(50));
-            }
+                };
+                let _ = thread.queue(move |mut q| q.as_mut().say_unsaved(&e));
+            };
+            speaker.say(&said, &line, &still, &mut on_sound);
             let _ = thread.queue(move |mut q| {
                 if q.utterance.load(Ordering::SeqCst) == id {
                     q.quiet.store(id, Ordering::SeqCst);
@@ -827,9 +799,7 @@ impl qobject::Conversation {
             rust.ears.unload();
             rust.speaker = None;
             rust.unloaded = true;
-            if let Ok(mut c) = rust.said.lock() {
-                c.clear();
-            }
+            rust.said.clear();
         }
     }
 
@@ -928,7 +898,7 @@ impl qobject::Conversation {
                 }
                 self.as_mut().save();
                 self.as_mut().interrupt();
-                let speed = self.speed() * if aid == 0 { 1.0 } else { 0.7 };
+                let speed = self.speed(if aid == 0 { Pace::Normal } else { Pace::Slow });
                 self.speak_at(&markup, speed, false);
             }
             2 if !translated => {
@@ -1060,7 +1030,7 @@ impl qobject::Conversation {
         };
         self.as_mut().wake();
         self.as_mut().interrupt();
-        let speed = self.speed();
+        let speed = self.speed(Pace::Normal);
         self.speak_at(&markup, speed, false);
     }
 
@@ -1068,7 +1038,7 @@ impl qobject::Conversation {
         let text = text.to_string();
         self.as_mut().wake();
         self.as_mut().interrupt();
-        let speed = self.speed();
+        let speed = self.speed(Pace::Normal);
         self.speak_at(&text, speed, false);
     }
 
@@ -1076,7 +1046,7 @@ impl qobject::Conversation {
         let id = self.utterance.fetch_add(1, Ordering::SeqCst) + 1;
         self.quiet.store(id, Ordering::SeqCst);
         if let Some(speaker) = &self.speaker {
-            speaker.player.silence();
+            speaker.silence();
         }
         if *self.talk_state() == SPEAKING {
             self.as_mut().set_talk_state(READY);
@@ -1486,51 +1456,40 @@ fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>, lang: &str) {
 /// Loads Kokoro and opens the speaker, then says the opening line.
 fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &str) {
     let lang = lang.to_string();
-    let dir = kokoro_dir();
-    let loaded = Voice::from_dir(&dir, name, 2).and_then(|voice| {
-        Ok(Speaker {
-            voice: Arc::new(Mutex::new(voice)),
-            player: Arc::new(Player::start()?),
-        })
-    });
+    let loaded = Speaker::load(name);
     let _ = thread.queue(move |mut q| {
         q.as_mut().set_speech_ready(true);
-        match loaded {
-        Ok(speaker) => {
-            q.as_mut().rust_mut().speaker = Some(speaker);
-            q.as_mut().set_voice(QString::from("Übergangsstimme"));
-            q.as_mut().set_voice_note(QString::default());
-            let (lines, busy) = (q.log.len(), *q.busy());
-            let voice = if *q.voice_on() {
-                kaiwa_backend::talk::Voice::Ready
-            } else {
-                kaiwa_backend::talk::Voice::Off
-            };
-            match q.as_mut().rust_mut().debt.voice_ready(lines, busy, voice) {
-                // The reply came before the voice did; no listening aid, no response time.
-                kaiwa_backend::talk::Owed::Reply(markup) => q.speak(&markup),
-                kaiwa_backend::talk::Owed::Opening => {
-                    let opening = q.log.opening().to_string();
-                    q.speak(&opening);
-                }
-                // A talk continued, or the models back after the idle time: hands-free
-                // listens without waiting for a click.
-                kaiwa_backend::talk::Owed::Nothing => q.listen_again(),
+        let speaker = match loaded {
+            Ok(speaker) => speaker,
+            Err(e) => {
+                let text = voice::voice_text(&e, &lang);
+                q.as_mut().set_voice_note(QString::from(&text));
+                q.as_mut().rust_mut().debt.forgive();
+                // Without a voice nothing is spoken: hands-free listens right away, in a new
+                // talk, one continued and when the models are back after the idle time.
+                q.as_mut().listen_again();
+                return;
             }
-        }
-        Err(e) => {
-            let text = match (e, lang == "de") {
-                (SpeechError::ModelMissing(_), true) => "Die Figur antwortet ohne Stimme. Die Übergangsstimme Kokoro lässt sich in den Einstellungen unter „Modelle“ laden.".to_string(),
-                (SpeechError::ModelMissing(_), false) => "The character answers without a voice. Download the interim voice Kokoro in the settings under “Models”.".to_string(),
-                (e, true) => format!("Die Figur antwortet ohne Stimme: {}", ears::speech_text(&e, "de")),
-                (e, false) => format!("The character answers without a voice: {}", ears::speech_text(&e, "en")),
-            };
-            q.as_mut().set_voice_note(QString::from(&text));
-            q.as_mut().rust_mut().debt.forgive();
-            // Without a voice nothing is spoken: hands-free listens right away, in a new
-            // talk, one continued and when the models are back after the idle time.
-            q.as_mut().listen_again();
-        }
+        };
+        q.as_mut().rust_mut().speaker = Some(speaker);
+        q.as_mut().set_voice(QString::from("Übergangsstimme"));
+        q.as_mut().set_voice_note(QString::default());
+        let (lines, busy) = (q.log.len(), *q.busy());
+        let on = if *q.voice_on() {
+            voice::Voice::Ready
+        } else {
+            voice::Voice::Off
+        };
+        match q.as_mut().rust_mut().debt.voice_ready(lines, busy, on) {
+            // The reply came before the voice did; no listening aid, no response time.
+            Owed::Reply(markup) => q.speak(&markup),
+            Owed::Opening => {
+                let opening = q.log.opening().to_string();
+                q.speak(&opening);
+            }
+            // A talk continued, or the models back after the idle time: hands-free
+            // listens without waiting for a click.
+            Owed::Nothing => q.listen_again(),
         }
     });
 }

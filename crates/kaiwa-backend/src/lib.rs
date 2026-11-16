@@ -28,9 +28,9 @@ pub mod seed;
 pub mod settings;
 pub mod short;
 pub mod summary;
-pub mod talk;
 pub mod transfer;
 pub mod views;
+pub mod voice;
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

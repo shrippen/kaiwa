@@ -59,7 +59,7 @@ use std::time::Instant;
 use cxx_qt::{CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_backend::ears::{self, Clip, Hands, Mic, Recognition};
-use kaiwa_speech::playback::Player;
+use kaiwa_backend::voice::Playback;
 use serde_json::json;
 
 use crate::state::state;
@@ -84,7 +84,7 @@ pub struct MicTestRust {
     playing: bool,
     mic: Option<(Mic, Instant)>,
     recording: Option<Clip>,
-    player: Option<Player>,
+    player: Option<Playback>,
 }
 
 fn lang() -> String {
@@ -140,7 +140,7 @@ impl qobject::MicTest {
                 self.as_mut().stop();
             }
         }
-        let playing = self.player.as_ref().is_some_and(Player::playing);
+        let playing = self.player.as_ref().is_some_and(Playback::playing);
         if *self.playing() != playing {
             self.as_mut().set_playing(playing);
         }
@@ -210,7 +210,7 @@ impl qobject::MicTest {
             return;
         };
         if self.player.is_none() {
-            match Player::start() {
+            match Playback::open() {
                 Ok(p) => self.as_mut().rust_mut().player = Some(p),
                 Err(e) => {
                     let text = ears::speech_text(&e, &lang());
@@ -223,7 +223,7 @@ impl qobject::MicTest {
         self.as_mut().set_error(QString::default());
         if let Some(p) = &self.player {
             p.silence();
-            p.play(rec.samples(), rec.sample_rate());
+            p.play(&rec);
         }
         self.as_mut().set_playing(true);
     }
