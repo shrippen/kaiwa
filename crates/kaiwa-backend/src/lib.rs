@@ -613,6 +613,15 @@ mod tests {
 
     use super::*;
 
+    /// `recorded_tutor` falls back quietly; a broken recording must fail here instead of
+    /// letting a persona check run against the fallback only.
+    #[test]
+    fn every_recording_reads_as_a_tutor() {
+        for (id, json) in FIXTURES {
+            assert!(MockProvider::from_json(json).is_ok(), "{id}");
+        }
+    }
+
     /// V-05: the last turn ends the talk with a mistake; marking it afterwards takes the
     /// mistake out of the learner model, the grammar points and the review.
     #[test]
