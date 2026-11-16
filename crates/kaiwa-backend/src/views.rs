@@ -637,6 +637,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "feedbackBand": (p.feedback_source == FeedbackSource::Level).then_some(p.feedback),
         "script": match p.script { Script::Furigana => 0, Script::Kana => 1, Script::Hidden => 2 },
         "endPause": p.end_pause_secs,
+        "pauseSteps": kaiwa_core::turn_end::PAUSE_STEPS,
         "keepRecordings": p.keep_recordings_days,
         "style": p.style,
         "reminder": p.reminder,

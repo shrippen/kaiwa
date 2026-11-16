@@ -982,7 +982,7 @@ impl qobject::Conversation {
             .store
             .profile()
             .map(|p| p.end_pause_secs)
-            .unwrap_or(1.2);
+            .unwrap_or(kaiwa_core::turn_end::DEFAULT_PAUSE);
         if let Some(next) = self
             .as_mut()
             .rust_mut()
@@ -1300,7 +1300,7 @@ impl qobject::Conversation {
                         .store
                         .profile()
                         .map(|p| p.end_pause_secs)
-                        .unwrap_or(1.2);
+                        .unwrap_or(kaiwa_core::turn_end::DEFAULT_PAUSE);
                     (
                         kaiwa_core::turn_end::EndOfTurn::new(pause),
                         std::time::Instant::now(),
