@@ -13,6 +13,7 @@ mod profile;
 mod qml;
 mod review;
 mod run;
+mod talk;
 mod trace;
 mod ui;
 mod validate;
