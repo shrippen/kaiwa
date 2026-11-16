@@ -75,7 +75,18 @@ pub fn sources() -> Vec<(String, String, String)> {
 /// already. `{"missing": true}` without the dictionary, `{"found": false}` for a word it
 /// does not know.
 pub fn lookup(backend: &Backend, word: &LineWord, lang: &str) -> Value {
-    lookup_in(&dictionary_path(), backend, word, lang)
+    #[cfg_attr(not(feature = "speech"), allow(unused_mut))]
+    let mut v = lookup_in(&dictionary_path(), backend, word, lang);
+    if v["missing"] != true {
+        return v;
+    }
+
+    // What the download would bring (M-03): offered in the popup, only after a click.
+    #[cfg(feature = "speech")]
+    if let Some(offer) = crate::models::offer(kaiwa_lang::PACKAGE) {
+        v["download"] = offer;
+    }
+    v
 }
 
 /// [`lookup`] in the dictionary at `path`.

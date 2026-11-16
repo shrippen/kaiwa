@@ -13,10 +13,14 @@
 pub mod cost;
 #[cfg(any(test, feature = "demo"))]
 mod demo;
+#[cfg(feature = "speech")]
+pub mod ears;
 pub mod flow;
 pub mod latency;
 pub mod log;
 pub mod lookup;
+#[cfg(feature = "speech")]
+pub mod models;
 pub mod pause;
 pub mod placing;
 pub mod profiles;
@@ -27,9 +31,9 @@ pub mod seed;
 pub mod settings;
 pub mod short;
 pub mod summary;
-pub mod talk;
 pub mod transfer;
 pub mod views;
+pub mod voice;
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

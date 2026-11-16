@@ -139,6 +139,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use cxx_qt::Threading;
 
 use cxx_qt_lib::QString;
+use kaiwa_backend::models::{self, Fetch};
 use kaiwa_backend::settings::{Felt, SettingError};
 use kaiwa_backend::transfer::ImportError;
 use serde_json::json;
@@ -188,49 +189,6 @@ impl Default for KaiwaAppRust {
             stop: Default::default(),
         }
     }
-}
-
-/// The speech models for the settings (F-08: source, size and licence before the download).
-fn models_json(lang: &str) -> serde_json::Value {
-    use kaiwa_speech::download::MODELS;
-    let de = lang == "de";
-    let mb = |b: u64| (b as f64 / 1e6).round() as u64;
-    let rows: Vec<serde_json::Value> = MODELS
-        .iter()
-        .map(|m| {
-            let purpose = match (m.name, de) {
-                ("ReazonSpeech", true) => "Spracherkennung: versteht, was du sagst",
-                ("ReazonSpeech", false) => "Speech recognition: understands what you say",
-                ("Kokoro", true) => "Übergangsstimme der Figur",
-                ("Kokoro", false) => "The character's interim voice",
-                ("kaiwa-data", true) => {
-                    "Wörterbuch: Lesung, Bedeutung und Akzent beim Klick auf ein Wort"
-                }
-                ("kaiwa-data", false) => {
-                    "Dictionary: reading, meaning and accent when you click a word"
-                }
-                ("UniDic", true) => {
-                    "Lesungen: Furigana über deinen eigenen Sätzen und wo der Tutor keine schreibt"
-                }
-                ("UniDic", false) => {
-                    "Readings: furigana over your own sentences and where the tutor writes none"
-                }
-                (_, true) => "Aussprache-Hinweise zu langen Vokalen und っ",
-                (_, false) => "Pronunciation hints on long vowels and っ",
-            };
-            json!({
-                "dir": m.dir,
-                "name": m.name,
-                "purpose": purpose,
-                "licence": m.licence,
-                "origin": m.origin,
-                "downloadMB": mb(m.download_bytes()),
-                "diskMB": mb(m.disk_bytes),
-                "present": m.present(),
-            })
-        })
-        .collect();
-    json!(rows)
 }
 
 fn q(v: &serde_json::Value) -> QString {
@@ -345,12 +303,12 @@ impl qobject::KaiwaApp {
         self.as_mut().set_stats(ok(stats, &mut failed));
         // Where the mora check's model belongs and whether it is there (/LF320/, F-08).
         let profile = profile.map(|mut v| {
-            v["moraModel"] = crate::conversation::mora_model_json();
+            v["moraModel"] = models::mora_model();
             v
         });
         self.as_mut().set_profile(ok(profile, &mut failed));
         self.as_mut().set_privacy(q(&privacy));
-        self.as_mut().set_models(q(&models_json(&lang)));
+        self.as_mut().set_models(q(&models::list(&lang)));
         self.as_mut().set_lang(QString::from(&lang));
         self.as_mut().set_gamification(gam);
         if let Some(e) = failed {
@@ -363,30 +321,20 @@ impl qobject::KaiwaApp {
 
     fn download_model(mut self: Pin<&mut Self>, dir: &QString) {
         let dir = dir.to_string();
-        let Some(model) = kaiwa_speech::download::MODELS
-            .iter()
-            .find(|m| m.dir == dir)
-            .copied()
-        else {
+        let Some(fetch) = Fetch::of(&dir) else {
             return;
         };
         if !self.download().is_empty() {
             return;
         }
-        let total = model.download_bytes();
+        let total = fetch.total;
         self.as_mut()
             .set_download(q(&json!({ "dir": dir, "done": 0, "total": total })));
         self.stop.store(false, Ordering::Relaxed);
         let stop = self.stop.clone();
         let thread = self.qt_thread();
         std::thread::spawn(move || {
-            // At most one progress update per megabyte, so the UI thread keeps up.
-            let last = std::sync::atomic::AtomicU64::new(0);
             let progress = |done: u64| {
-                if done / 1_000_000 == last.load(Ordering::Relaxed) / 1_000_000 && done < total {
-                    return;
-                }
-                last.store(done, Ordering::Relaxed);
                 let dir = dir.clone();
                 let _ = thread.queue(move |mut app| {
                     if !app.download().is_empty() {
@@ -395,30 +343,10 @@ impl qobject::KaiwaApp {
                     }
                 });
             };
-            let result = kaiwa_speech::download::download(&model, &progress, &stop);
+            let outcome = fetch.run(&stop, &progress);
             let _ = thread.queue(move |mut app| {
                 app.as_mut().set_download(QString::default());
-                let de = app.lang().to_string() == "de";
-                let notice = match (result, de) {
-                    (Ok(()), true) => format!("{} ist geladen.", model.name),
-                    (Ok(()), false) => format!("{} is downloaded.", model.name),
-                    (Err(kaiwa_speech::download::DownloadError::Stopped), true) => {
-                        "Download abgebrochen.".to_string()
-                    }
-                    (Err(kaiwa_speech::download::DownloadError::Stopped), false) => {
-                        "Download stopped.".to_string()
-                    }
-                    (Err(kaiwa_speech::download::DownloadError::Stalled(s)), true) => format!(
-                        "{} ließ sich nicht laden: Die Verbindung hat {s} s lang keine Daten geliefert. Versuch es noch einmal.",
-                        model.name
-                    ),
-                    (Err(kaiwa_speech::download::DownloadError::Stalled(s)), false) => format!(
-                        "{} could not be downloaded: the connection gave no data for {s} s. Please try again.",
-                        model.name
-                    ),
-                    (Err(e), true) => format!("{} ließ sich nicht laden: {e}", model.name),
-                    (Err(e), false) => format!("{} could not be downloaded: {e}", model.name),
-                };
+                let notice = outcome.text(&app.lang().to_string());
                 app.as_mut().set_notice(QString::from(&notice));
                 app.as_mut().refresh();
             });

@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use kaiwa_ai::mock::MockProvider;
+use kaiwa_backend::voice::{self, Pace};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum};
 use kaiwa_core::difficulty::{Difficulty, Knob, learner_says};
 use kaiwa_core::learner::{LearnerModel, Skill, level_index};
@@ -616,9 +617,8 @@ fn settings_split(p: &Value) -> Result<Option<String>> {
 }
 
 /// /LF211/, /LL204/: a beginner like Hinnerk starts at 0.8 or slower, the app speaks at the
-/// difficulty's pace. That "louder" and "clear" sit on the conversation page and work is
-/// tried by `tst_sound.qml` (see [`crate::qml`]). The pace of the app's voice is read from its
-/// source: speech has no command in the backend yet, so it cannot be tried without audio.
+/// difficulty's pace (the backend's `voice::pace`; the app's call is read from its source).
+/// "Louder" and "clear" on the conversation page are tried by `tst_sound.qml`.
 fn tts_slow(root: &Path, p: &Value) -> Result<Option<String>> {
     let d = Difficulty::for_learner(&placed(p));
     let mut why = Vec::new();
@@ -626,7 +626,7 @@ fn tts_slow(root: &Path, p: &Value) -> Result<Option<String>> {
         why.push(format!("starts at {}", d.speed()));
     }
     let app = std::fs::read_to_string(root.join("app/src/conversation.rs"))?;
-    if !app.contains("difficulty.speed()") {
+    if voice::pace(Some(&d), Pace::Normal) != d.speed() as f32 || !app.contains("voice::pace(") {
         why.push("the voice ignores the difficulty's pace".into());
     }
     Ok((!why.is_empty()).then(|| why.join(", ")))

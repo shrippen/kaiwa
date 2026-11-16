@@ -2,7 +2,8 @@
 resolver = "3"
 members = ["crates/*", "app"]
 # The app (Qt 6, Kirigami) and kaiwa-speech (sherpa-onnx libraries, ALSA) build in the CI job `qt`;
-# plain `cargo` commands build the rest.
+# plain `cargo` commands build the rest. kaiwa-backend takes kaiwa-speech only with its feature
+# `speech`, which the app turns on.
 default-members = ["crates/kaiwa-ai", "crates/kaiwa-backend", "crates/kaiwa-core", "crates/kaiwa-lang", "crates/kaiwa-sim", "crates/kaiwa-store"]
 # Spikes build on their own (Qt and other toolchains the CI does not have).
 exclude = ["spikes"]
@@ -18,3 +19,4 @@ unsafe_code = "forbid"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
+significant_drop_in_scrutinee = "warn"

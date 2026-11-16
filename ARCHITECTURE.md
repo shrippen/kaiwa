@@ -88,16 +88,15 @@ A change that needs more places than its row lists is a finding for the next aud
 
 ## Known deviations
 
-- The app no longer uses the store, but still depends on `kaiwa-core`, `kaiwa-ai` and
-  `kaiwa-lang` directly, all in `conversation.rs`: input and aid kinds, plain and spoken
-  text for the voice, `turn_end` for the microphone, the tutor's error kinds, the lookup's
-  words, unloading UniDic. `AUDIT.md` finding 7.
+- The app still depends on `kaiwa-core`, `kaiwa-ai` and `kaiwa-lang` directly, all in
+  `conversation.rs`: input and aid kinds, plain text for a translation, the tutor's error
+  kinds, the lookup's words. Found after `AUDIT.md` finding 7 was fixed.
 - `kaiwa-sim` sets up and reads test state through the backend's `seed` (feature `sim`,
   only the sim turns it on) and still depends on `kaiwa-store`, `kaiwa-core`, `kaiwa-ai`
   and `kaiwa-lang` directly for its own checks. Rest of finding 6.
-- The app drives microphone and voice itself: `app/src` uses `kaiwa-speech` directly
-  (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
-  command yet. `AUDIT.md` finding 7.
+- Microphone, recognition, voice and downloads are backend types (`ears`, `voice`,
+  `models`), but the app holds them and drives when to load, listen, speak and unload. For
+  `kaiwad` (M4) that flow still has to move into the backend.
 - Two failures are still only logged: deleting the recordings when all data of a profile
   is wiped (`profiles.rs`, `wipe`), and an unreadable tutor key, which then looks like no
   tutor (`lib.rs`, `provider`). Found in the review of PR 153.
@@ -105,8 +104,8 @@ A change that needs more places than its row lists is a finding for the next aud
   `turn_xp`. `AUDIT.md`, "Seit dem letzten Audit", finding 4.
 - Some persona checks still read source text: scans of all pages for strings, names,
   handlers and gamification text, the palette's colours, the voice's pace in
-  `app/src/conversation.rs` and the one file that downloads. What a page does is checked in
-  QML tests (`app/qml/tests`). `AUDIT.md`, "Seit dem letzten Audit", finding 8.
+  `app/src/conversation.rs` and the one file that downloads (`kaiwa-backend/src/models.rs`).
+  What a page does is checked in QML tests (`app/qml/tests`). `AUDIT.md`, "Seit dem letzten Audit", finding 8.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
   then the app is the only front end and runs the backend in its own process. On that
   branch `kaiwad` drives microphone and recognition itself; M4 moves that into the

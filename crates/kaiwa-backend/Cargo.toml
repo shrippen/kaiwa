@@ -14,6 +14,7 @@ chrono = { version = "0.4.42", default-features = false, features = ["clock", "s
 kaiwa-ai = { path = "../kaiwa-ai" }
 kaiwa-core = { path = "../kaiwa-core" }
 kaiwa-lang = { path = "../kaiwa-lang" }
+kaiwa-speech = { path = "../kaiwa-speech", optional = true }
 kaiwa-store = { path = "../kaiwa-store" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -23,6 +24,9 @@ hound = "3.5.1"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 
 [features]
+# Microphone, voice and their models (`ears`, `models`, `voice::Speaker`): pulls in ALSA and
+# sherpa-onnx, so the app turns it on; `kaiwa-sim` and the plain workspace build go without.
+speech = ["dep:kaiwa-speech"]
 # Screenshots and recorded tutor answers (KAIWA_DEMO). Never in a package.
 demo = []
 # Test setup for `kaiwa-sim` (`seed` module). Never in a front end or a package.

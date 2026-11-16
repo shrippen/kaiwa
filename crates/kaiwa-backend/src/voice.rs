@@ -1,4 +1,42 @@
-//! What the character still owes a voice that was not there yet.
+//! The character's voice (/LF103/, /LF111/, /LF117/, /LL204/, /LF510/): loading it, the pace,
+//! speaking a line sentence by sentence, playing a recording back, and what the voice still
+//! owes the talk while it loads. A front end holds no speaker and no rule of them.
+//!
+//! ```text
+//!  front end ─► Speaker::say ─► Said (cache) ─► Synthesizer ─► enhance ─► Playback
+//!               pace(), Debt     "again" at once   Kokoro        louder/clearer  speaker
+//! ```
+
+use kaiwa_core::difficulty::Difficulty;
+
+#[cfg(feature = "speech")]
+mod speaker;
+#[cfg(feature = "speech")]
+pub use speaker::*;
+
+/// The voice's pace without a session: a little below Kokoro's normal one.
+pub const DEFAULT_PACE: f32 = 0.9;
+/// "Slower" (/LF212/) plays at this share of the pace.
+const SLOW_SHARE: f32 = 0.7;
+
+/// How fast a line is said.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Pace {
+    /// The pace the difficulty sets.
+    Normal,
+    /// The aid "slower".
+    Slow,
+}
+
+/// The pace of the voice, 0.7 to 1.1 (/LF211/): the session's difficulty sets it (eased
+/// within the session after two misses); without a session [`DEFAULT_PACE`].
+pub fn pace(difficulty: Option<&Difficulty>, how: Pace) -> f32 {
+    let base = difficulty.map_or(DEFAULT_PACE, |d| d.speed() as f32);
+    match how {
+        Pace::Normal => base,
+        Pace::Slow => base * SLOW_SHARE,
+    }
+}
 
 /// What a voice that just loaded still has to say.
 #[derive(Debug, PartialEq)]
@@ -144,5 +182,14 @@ mod tests {
         d.reply_early("こんにちは");
         assert_eq!(d.voice_ready(3, false, Voice::Off), Owed::Nothing);
         assert_eq!(d.voice_ready(3, false, Voice::Ready), Owed::Nothing, "gone");
+    }
+
+    #[test]
+    fn the_pace_follows_the_difficulty() {
+        let d = Difficulty::default();
+        assert_eq!(pace(Some(&d), Pace::Normal), d.speed() as f32);
+        assert!(pace(Some(&d), Pace::Slow) < pace(Some(&d), Pace::Normal));
+        assert_eq!(pace(None, Pace::Normal), DEFAULT_PACE);
+        assert_eq!(pace(None, Pace::Slow), DEFAULT_PACE * SLOW_SHARE);
     }
 }
