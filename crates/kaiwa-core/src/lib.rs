@@ -20,7 +20,7 @@ pub mod session;
 pub mod srs;
 pub mod turn_end;
 
-pub use clock::{Clock, Day, Moment};
+pub use clock::{Day, Moment};
 pub use curriculum::{CourseProgress, Curriculum};
 pub use difficulty::{Difficulty, Regulator};
 pub use feedback::Amount;
