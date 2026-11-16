@@ -5,6 +5,7 @@
 //! with streak and XP.
 
 pub mod booking;
+pub mod choices;
 pub mod clock;
 pub mod curriculum;
 pub mod diff;

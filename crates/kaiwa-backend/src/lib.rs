@@ -18,9 +18,12 @@ pub mod latency;
 pub mod log;
 pub mod lookup;
 pub mod pause;
+pub mod placing;
 pub mod profiles;
 pub mod recordings;
 pub mod reminder;
+#[cfg(feature = "sim")]
+pub mod seed;
 pub mod settings;
 pub mod short;
 pub mod summary;
@@ -265,19 +268,34 @@ pub fn fixtures(scenario: &str) -> Option<&'static str> {
 
 /// The profile with the curriculum and the scenarios: what the app and `kaiwad` work on.
 pub struct Backend {
-    pub store: Store,
-    pub path: PathBuf,
-    pub curriculum: Curriculum,
+    pub(crate) store: Store,
+    path: PathBuf,
+    curriculum: Curriculum,
     pub grammar: kaiwa_core::grammar::Catalogue,
     /// The catalogue's patterns, compiled once (grammar points in the learner model).
     pub grammar_matcher: kaiwa_core::grammar::Matcher,
-    pub scenarios: BTreeMap<String, Scenario>,
+    scenarios: BTreeMap<String, Scenario>,
     pub demo_data: bool,
     /// The keys of this profile ([`kaiwa_ai::secrets::KeyHome`]).
     keys: kaiwa_ai::secrets::Keys,
 }
 
 impl Backend {
+    /// The profile's file.
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    /// The curriculum the profile works on.
+    pub fn curriculum(&self) -> &Curriculum {
+        &self.curriculum
+    }
+
+    /// All scenarios by id.
+    pub fn scenarios(&self) -> &BTreeMap<String, Scenario> {
+        &self.scenarios
+    }
+
     /// Whether a scenario with this id exists.
     pub fn has_scenario(&self, id: &str) -> bool {
         self.scenarios.contains_key(id)
