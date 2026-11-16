@@ -174,6 +174,44 @@ impl Backend {
         Ok(())
     }
 
+    /// The profile as stored; the front ends read it here.
+    pub fn profile(&self) -> anyhow::Result<Profile> {
+        Ok(self.store.profile()?)
+    }
+
+    /// The text size the interface starts with: the stored one, never above the maximum.
+    pub fn text_scale(&self) -> f32 {
+        self.store
+            .profile()
+            .map(|p| p.text_scale.min(kaiwa_store::TEXT_SCALE_MAX))
+            .unwrap_or(1.0)
+    }
+
+    /// The learner's pick of "louder" and "clearer" for the tutor's voice.
+    pub fn set_sound(&self, louder: bool, clear: bool) -> anyhow::Result<()> {
+        self.store.update_profile(|p| {
+            p.louder = louder;
+            p.clear = clear;
+        })?;
+        Ok(())
+    }
+
+    /// Takes the pause the app offered after a cut-off turn (/LF101/): it only ever makes
+    /// the end-of-turn pause longer, and stays within the limits of the setting.
+    pub fn take_longer_pause(&self, secs: f32) -> anyhow::Result<()> {
+        let secs = kaiwa_core::turn_end::clamp_pause(secs);
+        if secs <= self.store.profile()?.end_pause_secs {
+            return Ok(());
+        }
+        self.store.update_profile(|p| p.end_pause_secs = secs)?;
+        Ok(())
+    }
+
+    /// Takes the levels a placement measured (/LF200/); mistakes and pronunciation stay.
+    pub fn set_placement(&self, model: kaiwa_core::learner::LearnerModel) -> anyhow::Result<()> {
+        Ok(self.store.set_placement(model)?)
+    }
+
     /// The learner leaves the placement out (/LF200/).
     pub fn skip_placement(&self) -> anyhow::Result<()> {
         self.store.update_profile(|p| p.placed = true)?;
@@ -399,5 +437,63 @@ mod tests {
         assert!(!b.store.profile().unwrap().placed);
         b.skip_placement().unwrap();
         assert!(b.store.profile().unwrap().placed);
+    }
+
+    #[test]
+    fn a_longer_pause_is_taken_a_shorter_one_is_not() {
+        let b = backend("longer-pause");
+        let start = b.profile().unwrap().end_pause_secs;
+
+        b.take_longer_pause(start - 0.1).unwrap();
+        assert_eq!(b.profile().unwrap().end_pause_secs, start);
+
+        b.take_longer_pause(start + 0.5).unwrap();
+        assert_eq!(b.profile().unwrap().end_pause_secs, start + 0.5);
+
+        b.take_longer_pause(start).unwrap();
+        assert_eq!(b.profile().unwrap().end_pause_secs, start + 0.5);
+    }
+
+    #[test]
+    fn a_longer_pause_stays_within_the_limit() {
+        let b = backend("longer-pause-limit");
+        b.take_longer_pause(99.0).unwrap();
+        let top = kaiwa_core::turn_end::clamp_pause(99.0);
+        assert_eq!(b.profile().unwrap().end_pause_secs, top);
+    }
+
+    #[test]
+    fn the_sound_is_stored() {
+        let b = backend("sound");
+        b.set_sound(true, false).unwrap();
+        let p = b.profile().unwrap();
+        assert!(p.louder && !p.clear);
+
+        b.set_sound(false, true).unwrap();
+        let p = b.profile().unwrap();
+        assert!(!p.louder && p.clear);
+    }
+
+    #[test]
+    fn the_placement_is_stored() {
+        let b = backend("placement");
+        let mut model = b.store.learning().unwrap().model;
+        model.set(Skill::Speaking, 3.0);
+
+        b.set_placement(model).unwrap();
+        let stored = b.store.learning().unwrap().model.level(Skill::Speaking);
+        assert_eq!(stored, 3.0);
+    }
+
+    #[test]
+    fn the_profile_is_read_and_the_text_scale_is_capped() {
+        let b = backend("profile-read");
+        set(&b, "name", "Mika");
+        assert_eq!(b.profile().unwrap().name, "Mika");
+
+        b.store
+            .update_profile(|p| p.text_scale = kaiwa_store::TEXT_SCALE_MAX + 1.0)
+            .unwrap();
+        assert_eq!(b.text_scale(), kaiwa_store::TEXT_SCALE_MAX);
     }
 }

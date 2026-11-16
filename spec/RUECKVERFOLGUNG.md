@@ -21,7 +21,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LD050/ | M | Sprachdaten | app, backend, lang | Code | – |
 | /LD060/ | S | Widersprüche | core, store | Code | – |
 | /LF100/ | M | Sprechen per Push-to-Talk (Taste, Klick, Tastenkürzel) und per … | app, core, speech, store | geprüft | 1 von 1 automatisch grün: `mara_ptt` |
-| /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_no_cutoff` |
+| /LF101/ | M | Die Sprechpause, nach der ein Zug als beendet gilt, ist einstellbar … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF102/ | M | Zögern und Füllwörter (えーと, あの) brechen den Zug nicht ab und werden … | core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_cutoff` |
 | /LF103/ | S | Unterbrechen: Fällt man der KI ins Wort, verstummt die TTS, und der … | app | Code | – |
 | /LF104/ | S | Das Mikrofon ist in den Einstellungen wählbar (Standard: das des … | app | Code | – |

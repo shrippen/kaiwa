@@ -22,7 +22,6 @@ kaiwa-backend = { path = "../crates/kaiwa-backend" }
 kaiwa-core = { path = "../crates/kaiwa-core" }
 kaiwa-lang = { path = "../crates/kaiwa-lang" }
 kaiwa-speech = { path = "../crates/kaiwa-speech" }
-kaiwa-store = { path = "../crates/kaiwa-store" }
 chrono = { version = "0.4.42", default-features = false, features = ["clock", "std"] }
 hound = "3.5.1"
 serde = { version = "1", features = ["derive"] }
