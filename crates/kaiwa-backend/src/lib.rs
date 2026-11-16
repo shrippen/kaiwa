@@ -17,6 +17,7 @@ pub mod flow;
 pub mod latency;
 pub mod lookup;
 pub mod pause;
+pub mod placing;
 pub mod profiles;
 pub mod recordings;
 pub mod reminder;

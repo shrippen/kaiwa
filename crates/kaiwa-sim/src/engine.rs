@@ -952,7 +952,7 @@ fn ceiling(p: &Value) -> Result<Option<String>> {
     if m.level(Skill::ReadingKanji) != 3.0 {
         why.push(format!("kanji {}", m.level(Skill::ReadingKanji)));
     }
-    let minutes = (pl.results.len() as u32 * TURNS_PER_STAGE).div_ceil(2);
+    let minutes = pl.minutes();
     if minutes > 8 {
         why.push(format!("{minutes} min"));
     }
