@@ -30,6 +30,7 @@ pub mod reminder;
 pub mod seed;
 pub mod settings;
 pub mod short;
+pub mod skips;
 pub mod summary;
 pub mod transfer;
 pub mod views;

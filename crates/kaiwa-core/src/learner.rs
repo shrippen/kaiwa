@@ -179,6 +179,14 @@ impl LearnerModel {
         self.skills.get(&s).copied().unwrap_or(0.0)
     }
 
+    /// Whether a skip offer may take the learner into or over a unit; `keigo` says whether the
+    /// unit has keigo. No offer leads there on easy talks in plain form while the register
+    /// lacks it (/LF215/).
+    pub fn may_skip(&self, keigo: impl FnOnce() -> bool) -> bool {
+        let ready = self.level(Skill::Register) >= level_index("keigo_basic").unwrap_or(f64::MAX);
+        ready || !keigo()
+    }
+
     pub fn set(&mut self, s: Skill, v: f64) {
         self.skills.insert(s, v.clamp(0.0, s.max()));
     }
