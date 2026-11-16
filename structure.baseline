@@ -6,7 +6,7 @@ exclude	spikes/s03-stt/*
 exclude	spikes/s04-tts/*
 exclude	spikes/s06-moren/*
 exclude	spikes/s07-pitch/*
-app/qml/ConversationPage.qml	-	lines=974
+app/qml/ConversationPage.qml	-	lines=973
 app/src/app.rs	refresh	length=90
 app/src/app.rs	set_setting	ccn=35 length=111
 app/src/conversation.rs	-	lines=1929
@@ -49,10 +49,10 @@ crates/kaiwa-lang/src/words.rs	joins	ccn=16
 crates/kaiwa-lang/src/words.rs	words	ccn=21 length=83
 crates/kaiwa-lang/tests/levels.rs	help_sentences_stay_at_their_units_level	ccn=19 length=96 nesting=7
 crates/kaiwa-lang/tests/lookup.rs	content_words_are_in_the_dictionary	nesting=5
-crates/kaiwa-sim/src/days.rs	-	lines=1167
+crates/kaiwa-sim/src/days.rs	-	lines=1177
 crates/kaiwa-sim/src/days.rs	check	ccn=66 length=213
 crates/kaiwa-sim/src/days.rs	progress_views	ccn=54 length=210
-crates/kaiwa-sim/src/days.rs	simulate	ccn=55 length=407 nesting=5
+crates/kaiwa-sim/src/days.rs	simulate	ccn=51 length=392 nesting=5
 crates/kaiwa-sim/src/engine.rs	-	lines=975
 crates/kaiwa-sim/src/engine.rs	analysis_gaps	ccn=40 length=103
 crates/kaiwa-sim/src/engine.rs	check	ccn=24
@@ -92,9 +92,9 @@ crates/kaiwa-speech/src/g2p/numbers.rs	below_10000	ccn=20
 crates/kaiwa-speech/src/mora.rs	-	lines=875
 crates/kaiwa-speech/src/mora.rs	from_dir	ccn=17
 crates/kaiwa-speech/src/mora.rs	variants	ccn=28 length=93
-crates/kaiwa-store/src/lib.rs	-	lines=1471
-crates/kaiwa-store/src/lib.rs	correct_in	ccn=24 length=106
+crates/kaiwa-store/src/lib.rs	-	lines=1475
+crates/kaiwa-store/src/lib.rs	correct_in	ccn=22 length=100
 crates/kaiwa-store/src/lib.rs	import	ccn=49 length=84
-crates/kaiwa-store/src/lib.rs	record_on	ccn=20 length=101
+crates/kaiwa-store/src/lib.rs	record_on	ccn=16 length=93
 crates/kaiwa-store/src/tests.rs	-	lines=1172
 crates/kaiwa-store/src/tests.rs	recording_a_session_feeds_model_path_review_and_day	length=110
