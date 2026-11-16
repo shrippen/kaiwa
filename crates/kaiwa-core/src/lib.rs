@@ -4,6 +4,7 @@
 //! learner model, the difficulty regulator, the curriculum, spaced repetition and the daily goal
 //! with streak and XP.
 
+pub mod booking;
 pub mod clock;
 pub mod curriculum;
 pub mod diff;

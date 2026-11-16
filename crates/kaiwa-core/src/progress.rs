@@ -54,6 +54,27 @@ pub struct DayRecord {
 }
 
 impl DayRecord {
+    /// A talk of the day: `levels_before` is kept if it is the day's first, `done` counts a
+    /// finished scenario.
+    pub fn add_talk(
+        &mut self,
+        levels_before: BTreeMap<Skill, f64>,
+        speaking_secs: u32,
+        typed_turns: u32,
+        xp: u32,
+        done: bool,
+    ) {
+        if self.levels_at_start.is_empty() {
+            self.levels_at_start = levels_before;
+        }
+        self.speaking_secs += speaking_secs;
+        self.typed_turns += typed_turns;
+        self.xp += xp;
+        if done {
+            self.scenarios_done += 1;
+        }
+    }
+
     pub fn met(&self, goal: DailyGoal) -> bool {
         let DailyGoal::Minutes(m) = goal;
         self.speaking_secs >= m * 60
@@ -402,6 +423,20 @@ mod tests {
         assert_eq!(s.days, 2);
         assert!(!s.today_met);
         assert!(s.freezes_used.is_empty());
+    }
+
+    #[test]
+    fn a_talk_adds_to_the_day_and_keeps_the_first_levels() {
+        let mut rec = DayRecord::default();
+        let first = BTreeMap::from([(Skill::Speaking, 1.0)]);
+        let later = BTreeMap::from([(Skill::Speaking, 2.0)]);
+
+        rec.add_talk(first.clone(), 60, 1, 20, true);
+        rec.add_talk(later, 30, 2, 5, false);
+
+        assert_eq!(rec.levels_at_start, first);
+        assert_eq!((rec.speaking_secs, rec.typed_turns), (90, 3));
+        assert_eq!((rec.xp, rec.scenarios_done), (25, 1));
     }
 
     #[test]

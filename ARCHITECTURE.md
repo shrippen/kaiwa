@@ -96,10 +96,8 @@ A change that needs more places than its row lists is a finding for the next aud
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
   command yet. Not in `AUDIT.md` so far; finding 6 proposes to leave microphone and
   voice in the app, this file replaces that part.
-- What a finished talk changes is written twice in the store and a third time in
-  `kaiwa-sim`'s day simulation. Finding 4.
-- Error kinds are named in the core and again, differently, in the backend's views.
-  Finding 1.
+- `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
+  `turn_xp`. Rest of finding 4.
 - Some persona checks still read source text: scans of all pages for strings, names,
   handlers and gamification text, the palette's colours, the voice's pace in
   `app/src/conversation.rs` and the one file that downloads. What a page does is checked in
