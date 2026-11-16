@@ -18,6 +18,9 @@ use kaiwa_store::{Dispute, Recorded};
 
 use crate::Backend;
 
+mod aids;
+pub use aids::{Fetched, Hear, Heard, Helped, Translated, Translation, VoiceState};
+
 /// The scenario when the path is played through.
 const FALLBACK: &str = "n5-02-jikoshoukai";
 
@@ -40,6 +43,8 @@ pub struct Talk {
     began: Moment,
     demo: bool,
     finished: bool,
+    /// A turn is with the tutor ([`Talk::ask`] until it is taken or failed).
+    asking: bool,
 }
 
 /// A talk that opened, with what went wrong on the way: the brake not armed, the talk not
@@ -112,6 +117,7 @@ impl Talk {
             began: now,
             demo,
             finished: false,
+            asking: false,
         };
         Ok(Some(Opened { talk, failed }))
     }
@@ -160,6 +166,7 @@ impl Talk {
             began: now,
             demo,
             finished: false,
+            asking: false,
         };
         Ok(Opened { talk, failed })
     }
@@ -172,6 +179,7 @@ impl Talk {
             began: now,
             demo,
             finished: false,
+            asking: false,
         };
         let failed = b.arm_brake(now).err().into_iter().collect();
         Opened { talk, failed }
@@ -179,11 +187,6 @@ impl Talk {
 
     pub fn session(&self) -> &Session {
         &self.session
-    }
-
-    /// For what happens outside a turn: help, aids, a translation. Save it with [`Talk::save`].
-    pub fn session_mut(&mut self) -> &mut Session {
-        &mut self.session
     }
 
     pub fn id(&self) -> Option<i64> {
@@ -227,8 +230,10 @@ impl Talk {
         Ok(())
     }
 
-    /// What the tutor is asked about `text`; run it outside any lock.
-    pub fn ask(&self, text: &str) -> Asking {
+    /// What the tutor is asked about `text`; run it outside any lock. No aid counts until
+    /// the answer is taken ([`Talk::take`]) or the call failed ([`Talk::failed_call`]).
+    pub fn ask(&mut self, text: &str) -> Asking {
+        self.asking = true;
         self.session.ask(text)
     }
 
@@ -262,7 +267,8 @@ impl Talk {
 
     /// The tutor did not answer: books the cost and keeps the state. What failed on top of
     /// that is returned; a front end that runs the call itself ([`Talk::ask`]) calls this.
-    pub fn failed_call(&self, b: &Backend, now: Moment) -> Vec<anyhow::Error> {
+    pub fn failed_call(&mut self, b: &Backend, now: Moment) -> Vec<anyhow::Error> {
+        self.asking = false;
         let booked = b.book_costs(now, false).err();
         booked.into_iter().chain(self.save(b).err()).collect()
     }
@@ -278,6 +284,7 @@ impl Talk {
         answer: Answer,
         now: Moment,
     ) -> Turned {
+        self.asking = false;
         let outcome = self.session.take(text, input, answer);
         let mut failed = Vec::new();
         let recorded = self.keep(b, now, &mut failed);
@@ -656,7 +663,7 @@ mod tests {
         let now = Moment::new(1_791_100_000, 120);
         let mut t = open(&b, SCENARIO, now, Length::Short);
         say(&b, &mut t, "はい", now);
-        t.session_mut().spend(42);
+        t.spend(42);
 
         t.save(&b).unwrap();
 

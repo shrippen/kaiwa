@@ -29,7 +29,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF111/ | M | Jede KI-Äußerung lässt sich wiederholen, langsamer abspielen (0,7×) … | ai, app, backend, core, speech | geprüft | 1 von 1 automatisch grün: `mara_listen_tools` |
 | /LF112/ | M | Ein Klick auf ein Wort zeigt Lesung, Bedeutung und Wortart und spielt … | app, backend, core, lang, store | geprüft | 1 von 1 automatisch grün: `mara_word_lookup` |
 | /LF113/ | M | Das Transkript der eigenen Äußerung wird angezeigt (was die KI … | app, backend, core | geprüft | 1 von 2 automatisch grün: `emi_misrecognition`, `jonas_noise` |
-| /LF114/ | M | Wer feststeckt, bekommt eine Hilfe in drei Stufen: Stichwort → … | core | geprüft | 1 von 1 automatisch grün: `mara_hint_offered` |
+| /LF114/ | M | Wer feststeckt, bekommt eine Hilfe in drei Stufen: Stichwort → … | backend, core | geprüft | 1 von 1 automatisch grün: `mara_hint_offered` |
 | /LF115/ | M | Es gibt Szenarien mit Rolle, Ort, Ziel und Erfolgsbedingung (z. B. … | core | Code | 0 von 1 automatisch grün: `jonas_follow_up` |
 | /LF116/ | S | Freies Gespräch zu einem gewählten Thema auf dem eigenen Niveau. | app, backend, core | geprüft | 1 von 1 automatisch grün: `theo_free_talk` |
 | /LF117/ | S | KI-Figuren mit festem Charakter, Sprechstil und Stimme (z. B. … | app, backend, core, speech | geprüft | 1 von 1 automatisch grün: `selin_register_flag` |

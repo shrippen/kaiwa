@@ -653,8 +653,7 @@ fn dispute() -> Result<Option<String>> {
     let b = kaiwa_backend::TempBackend::new("dispute", false)?;
     let now = kaiwa_backend::now();
     let mut talk = Talk::unstored(&b, session("n5-02-jikoshoukai")?, false, now).talk;
-    talk.session_mut()
-        .turn("コーヒーを好きです。", Input::Spoken)?;
+    talk.say(&b, "コーヒーを好きです。", Input::Spoken, now)?;
     let marked = talk
         .dispute(&b, 0, "コーヒーが好きです")
         .context("no correction to dispute")?;
