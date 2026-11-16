@@ -205,7 +205,7 @@ use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::learner::Skill;
 use kaiwa_core::placement::{self, Placement, Reading, STAGES, Step, TURNS_PER_STAGE};
 use kaiwa_core::session::{Aid, SessionState};
-use kaiwa_core::{Input, Scenario, Session, Summary};
+use kaiwa_core::{Input, Scenario, Summary};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
 use kaiwa_speech::g2p::G2p;
@@ -747,7 +747,7 @@ impl qobject::Conversation {
             let talk = talk.lock().expect("talk lock");
             let shown = marked.recorded.as_ref().map(|r| {
                 let summary = summary_json(&talk.session().summary(), &lang);
-                (recorded_view(r, talk.session(), &lang), summary)
+                (state().recorded_view(r, talk.session(), &lang), summary)
             });
             (talk.finished(), shown)
         };
@@ -1559,7 +1559,7 @@ impl qobject::Conversation {
                             let shown = turned
                                 .recorded
                                 .as_ref()
-                                .map(|r| recorded_view(r, t.session(), &q.lang));
+                                .map(|r| state().recorded_view(r, t.session(), &q.lang));
                             Ok((turned, shown))
                         }
                         Err(e) => Err((e, t.failed_call(&state(), now()))),
@@ -1899,33 +1899,6 @@ fn keep_mark(recorded: &str) -> Option<String> {
     }
     recorded["markKept"] = json!(true);
     Some(recorded.to_string())
-}
-
-/// The summary of a recorded talk, and why the profile could not be read if it could not:
-/// the page then shows the summary with the defaults and says so.
-fn recorded_view(r: &kaiwa_backend::Recorded, s: &Session, lang: &str) -> (Value, Option<String>) {
-    let profile = state().profile();
-    let unread = profile.as_ref().err().map(|e| e.to_string());
-    (recorded_json(r, s, profile.ok(), lang), unread)
-}
-
-/// What the end of the session did, in words (/LF310/, /LF603/, /LF605/).
-fn recorded_json(
-    r: &kaiwa_backend::Recorded,
-    s: &Session,
-    profile: Option<kaiwa_backend::Profile>,
-    lang: &str,
-) -> Value {
-    let gamification = profile.map(|p| p.gamification).unwrap_or(true);
-    let change = r.change.as_ref().map(|c| c.words(lang));
-    json!({
-        "xp": if gamification { Some(r.xp) } else { None },
-        "xpWhy": if gamification { s.summary().xp.explain(lang) } else { Vec::new() },
-        "change": change,
-        "newItems": r.new_items,
-        "scenarioDone": r.scenario_done,
-        "minutes": r.day.speaking_secs / 60,
-    })
 }
 
 #[cfg(test)]

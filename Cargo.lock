@@ -1854,6 +1854,7 @@ dependencies = [
  "kaiwa-core",
  "kaiwa-lang",
  "kaiwa-store",
+ "rusqlite",
  "serde",
  "serde_json",
 ]

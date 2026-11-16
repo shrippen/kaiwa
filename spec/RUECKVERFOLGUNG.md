@@ -57,7 +57,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF305/ | M | Recast: Die KI greift Fehler im Gespräch natürlich auf, indem sie die … | core | geprüft | 1 von 1 automatisch grün: `selin_recast` |
 | /LF306/ | M | Nur Fehler mit dem Schweregrad *verhindert Verständnis* unterbrechen … | core | geprüft | 1 von 1 automatisch grün: `mara_little_feedback` |
 | /LF307/ | S | Lernende können einem Vorschlag widersprechen („Das ist korrekt“). | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `theo_dispute` |
-| /LF310/ | M | Sitzungsbilanz: erreichte Ziele, die drei wichtigsten Verbesserungen … | app, core | geprüft | 1 von 1 automatisch grün: `mara_summary` |
+| /LF310/ | M | Sitzungsbilanz: erreichte Ziele, die drei wichtigsten Verbesserungen … | app, backend, core | geprüft | 1 von 1 automatisch grün: `mara_summary` |
 | /LF320/ | S | Aussprache-Feedback für die Moren-Struktur: Langvokale (おばさん/おばあさん) … | app, speech, store | Code | 0 von 1 automatisch grün: `mara_mora_hint` |
 | /LF321/ | S | Pitch-Akzent: Soll- und Ist-Kontur eines Wortes oder Satzes als Kurve. | – | offen | 0 von 2 automatisch grün: `theo_pitch_detect`, `theo_pitch_no_nitpick` |
 | /LF330/ | S | Nachsprechen und Shadowing: Satz hören, nachsprechen, eigene Aufnahme … | – | offen | 0 von 1 automatisch grün: `theo_compare` |
@@ -76,7 +76,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF600/ | M | Lernpfad mit Einheiten, Szenarien und Wiederholungsknoten. | app, backend, core | geprüft | 1 von 1 automatisch grün: `mara_path` |
 | /LF601/ | M | Tagesziel in Minuten Sprechzeit, selbst wählbar (Standard 5 min). | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_daily_goal` |
 | /LF602/ | M | Serie (Tage mit erreichtem Tagesziel), mit Freeze (zwei pro Monat … | app, backend, core, store | geprüft | 5 von 5 automatisch grün: `jonas_freeze`, `jonas_midnight`, `jonas_sick_pause`, `jonas_timezone`, `mara_comeback` |
-| /LF603/ | S | XP für Sprechzeit, erreichte Ziele und Wiederholungen. | app, core | geprüft | 1 von 1 automatisch grün: `jonas_xp_fair` |
+| /LF603/ | S | XP für Sprechzeit, erreichte Ziele und Wiederholungen. | app, backend, core | geprüft | 1 von 1 automatisch grün: `jonas_xp_fair` |
 | /LF604/ | S | Wochenrückblick: Sprechzeit, neue Wörter, Fortschritt pro Fähigkeit. | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_progress` |
 | /LF605/ | M | Gamification lässt sich ganz abschalten (keine XP, keine Serie, nur … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_gamification_off` |
 | /LF606/ | M | Es gibt keine Herzen, Leben oder Sperren nach Fehlern. | core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_hearts` |
