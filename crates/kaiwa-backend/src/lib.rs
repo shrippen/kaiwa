@@ -13,11 +13,13 @@
 pub mod cost;
 #[cfg(any(test, feature = "demo"))]
 mod demo;
+#[cfg(feature = "speech")]
 pub mod ears;
 pub mod flow;
 pub mod latency;
 pub mod log;
 pub mod lookup;
+#[cfg(feature = "speech")]
 pub mod models;
 pub mod pause;
 pub mod placing;
