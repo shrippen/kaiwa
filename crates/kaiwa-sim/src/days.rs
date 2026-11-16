@@ -913,18 +913,18 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
     use kaiwa_ai::{Correction, CorrectionKind, Severity};
     let b = kaiwa_backend::Backend::open_at(path.to_path_buf(), false)?;
     for (d, r) in &run.records {
-        b.store.put_day(*d, r)?;
+        b.seed().put_day(*d, r)?;
     }
     for i in &run.items {
-        b.store.put_item(i)?;
+        b.seed().put_item(i)?;
     }
-    let mut learning = b.store.learning()?;
+    let mut learning = b.seed().learning()?;
     learning.model = run.learner.clone();
-    b.store.set_learning(&learning)?;
+    b.seed().set_learning(&learning)?;
     let provider: std::sync::Arc<dyn kaiwa_ai::ChatProvider> =
         std::sync::Arc::new(kaiwa_ai::mock::MockProvider::default());
     for s in &run.sessions {
-        let Some(sc) = b.scenarios.get(&s.scenario) else {
+        let Some(sc) = b.scenarios().get(&s.scenario) else {
             return Ok(Some(format!("no scenario {}", s.scenario)));
         };
         let session = kaiwa_core::Session::new(
@@ -967,7 +967,7 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
             });
         }
         let ended = s.start.plus_secs((s.minutes * 60.0) as i64);
-        b.store
+        b.seed()
             .put_finished_session(&state, s.start, ended, s.success)?;
     }
     // The evening of the last day, in the run's last time zone.

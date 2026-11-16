@@ -201,11 +201,9 @@ use std::time::Duration;
 use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_backend::flow::{self, Length, Talk};
-use kaiwa_core::feedback::{Shown, kind_word, severity_word};
-use kaiwa_core::learner::Skill;
-use kaiwa_core::placement::{self, Placement, Reading, STAGES, Step, TURNS_PER_STAGE};
+use kaiwa_backend::placing::{self, Next, Placing, Stage};
 use kaiwa_core::session::{Aid, SessionState};
-use kaiwa_core::{Input, Scenario, Summary};
+use kaiwa_core::{Input, Scenario};
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::{Capture, Recording};
 use kaiwa_speech::g2p::G2p;
@@ -217,7 +215,7 @@ use kaiwa_speech::tts::{self, SpeechCache, Voice};
 use kaiwa_speech::{Synthesizer, Transcriber};
 use serde_json::{Value, json};
 
-use crate::state::{now, state, views};
+use crate::state::{now, state};
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -259,7 +257,7 @@ pub struct ConversationRust {
     placing: bool,
     stage: QString,
     placement_ask: bool,
-    placement: Option<Placement>,
+    placement: Option<Placing>,
     lang: String,
     /// Since when the time in this talk has not been added to the session.
     sitting: Option<std::time::Instant>,
@@ -315,30 +313,6 @@ const MIN_CHECKED_SECS: f32 = 0.5;
 /// The voice's pace without a session: a little below Kokoro's normal one.
 const SPEED: f32 = 0.9;
 
-fn shown_json(s: &Shown, lang: &str) -> Value {
-    json!({
-        "tier": s.tier,
-        "tierText": if s.correction.also_possible { if lang == "de" { "Auch möglich" } else { "Also possible" } } else { severity_word(s.correction.severity, lang) },
-        "meta": kind_word(s.correction.kind, lang),
-        "parts": s.parts,
-        "better": s.correction.better,
-        "explanation": s.correction.explanation,
-        "interrupts": s.interrupts,
-    })
-}
-
-fn summary_json(s: &Summary, lang: &str) -> Value {
-    json!({
-        "goalsMet": s.goals_met.len(),
-        "goalsTotal": s.goals_total,
-        "top": s.top.iter().map(|x| shown_json(x, lang)).collect::<Vec<_>>(),
-        "review": s.review,
-        "spoken": s.spoken_turns,
-        "typed": s.typed_turns,
-        "helps": s.helps_used,
-    })
-}
-
 impl qobject::Conversation {
     fn publish_turns(mut self: Pin<&mut Self>) {
         // Every line as words to look up (/LF112/, Kante 1.33), once per line: the
@@ -379,13 +353,8 @@ impl qobject::Conversation {
         let (goals, done, summary) = {
             let talk = talk.lock().expect("talk lock");
             let session = talk.session();
-            let met = session.summary().goals_met;
-            let goals: Vec<Value> = session
-                .goals()
-                .iter()
-                .map(|g| json!({ "id": g.id, "text": g.text.get(&lang), "done": met.contains(&g.id) }))
-                .collect();
-            let summary = summary_json(&session.summary(), &lang).to_string();
+            let goals = kaiwa_backend::summary::goals_view(session, &lang);
+            let summary = kaiwa_backend::summary::summary_view(session, &lang).to_string();
             (goals, session.done(), summary)
         };
         self.as_mut()
@@ -410,37 +379,30 @@ impl qobject::Conversation {
     }
 
     fn start_placement(mut self: Pin<&mut Self>) {
-        self.as_mut().rust_mut().placement = Some(Placement::default());
         self.as_mut().set_placement_ask(false);
         // Cleared here, not per stage: a failure booked at the end of a stage stays shown.
         self.as_mut().set_notice(QString::default());
-        self.begin_stage(0);
+        let started = Placing::start(&state(), now());
+        match started {
+            Ok((placing, stage)) => {
+                self.as_mut().rust_mut().placement = Some(placing);
+                self.begin_stage(stage);
+            }
+            Err(e) => {
+                self.as_mut().rust_mut().placement = None;
+                self.as_mut().say_unsaved(&format!("{e:#}"));
+            }
+        }
     }
 
-    /// Plays stage `i` of the placement ([`placement::stage_session`]), nothing stored.
-    fn begin_stage(mut self: Pin<&mut Self>, i: usize) {
-        let id = STAGES[i].0;
-        let mut failed = Vec::new();
-        let prepared = {
-            let st = state();
-            let profile = or_default(st.profile(), &mut failed);
-            st.scenario(id).map(|s| (s, profile))
-        };
-        let Some((scenario, profile)) = prepared else {
-            self.as_mut().say_all_unsaved(&failed);
-            return;
-        };
-        self.as_mut().rust_mut().lang = profile.ui_lang.clone();
-        self.as_mut().say_all_unsaved(&failed);
-        let (provider, demo) = state().provider(&scenario.id);
-        let log = vec![json!({ "who": "character", "markup": scenario.opening.clone() })];
-        let session =
-            placement::stage_session(scenario, provider, profile.feedback, &profile.ui_lang, i);
-        let lang = profile.ui_lang;
-        let opened = Talk::unstored(&state(), session, demo, now());
-        self.as_mut().say_all_failed(&opened.failed);
-        self.as_mut().begin(opened.talk, log, lang.clone());
-        let word = if lang == "en" {
+    /// Shows the stage the placement opened.
+    fn begin_stage(mut self: Pin<&mut Self>, stage: Stage) {
+        self.as_mut().rust_mut().lang = stage.lang.clone();
+        self.as_mut().say_all_failed(&stage.opened.failed);
+        let log = vec![json!({ "who": "character", "markup": stage.opening })];
+        self.as_mut()
+            .begin(stage.opened.talk, log, stage.lang.clone());
+        let word = if stage.lang == "en" {
             "Placement"
         } else {
             "Einstufung"
@@ -448,92 +410,56 @@ impl qobject::Conversation {
         let title = format!("{word} · {}", self.title());
         self.as_mut().set_title(QString::from(&title));
         self.as_mut()
-            .set_stage(QString::from(&format!("{}/{}", i + 1, STAGES.len())));
+            .set_stage(QString::from(&format!("{}/{}", stage.index + 1, stage.of)));
         self.as_mut().set_placing(true);
     }
 
-    /// After a turn of the placement: the stage ends after its turns (or its goals), then the
-    /// next stage follows while the learner keeps up.
+    /// After a turn of the placement ([`Placing::after_turn`]).
     fn placement_step(mut self: Pin<&mut Self>) {
-        if self.placement.is_none() {
-            return;
-        }
         let Some(talk) = self.talk.clone() else {
             return;
         };
-        let step = {
+        let next = {
             let mut rust = self.as_mut().rust_mut();
             let Some(p) = rust.placement.as_mut() else {
                 return;
             };
-            p.after_turn(talk.lock().expect("talk lock").session())
+            let talk = talk.lock().expect("talk lock");
+            p.after_turn(&state(), talk.session(), now())
         };
-        match step {
-            Step::Go => {}
-            Step::Next(i) => self.begin_stage(i),
-            Step::Over => {
+        match next {
+            Ok(Next::Go) => {}
+            Ok(Next::Stage(stage)) => self.begin_stage(*stage),
+            Ok(Next::Over) => {
                 self.as_mut().set_placement_ask(true);
                 self.as_mut().set_finished(true);
             }
-            // T-11: too many turns the tutor analysed with gaps. Nothing is asked and nothing
-            // stored: the level stays what it was, and the page says why.
-            Step::Unjudged => {
+            Ok(Next::Unjudged(result)) => {
                 self.as_mut().rust_mut().placement = None;
-                let r = json!({ "placement": [], "unjudged": true });
-                self.as_mut().set_recorded(QString::from(&r.to_string()));
+                self.as_mut()
+                    .set_recorded(QString::from(&result.to_string()));
                 self.as_mut().set_placing(false);
                 self.as_mut().set_finished(true);
             }
+            Err(e) => self.as_mut().say_unsaved(&format!("{e:#}")),
         }
     }
 
     fn finish_placement(mut self: Pin<&mut Self>, kana: i32, kanji: i32) {
-        let Some(mut p) = self.as_mut().rust_mut().placement.take() else {
+        let Some(placing) = self.as_mut().rust_mut().placement.take() else {
             return;
         };
-        let reading = |i: i32| match i {
-            2 => Reading::Fluent,
-            1 => Reading::Some,
-            _ => Reading::None,
-        };
-        p.kana = reading(kana);
-        p.kanji = reading(kanji);
-        // The store keeps what a talk does not show (pronunciation) and the history.
-        let model = p.result();
-        let lang = self.lang.clone();
-        let words: Vec<String> = model
-            .describe(&lang)
-            .into_iter()
-            .filter(|(s, _)| *s != Skill::Pronunciation)
-            .map(|(_, w)| w)
-            .collect();
-        let saved = state().set_placement(model);
-        if let Err(e) = saved {
-            self.as_mut().say_unsaved(&e.to_string());
-        }
-        let minutes = (p.results.len() as u32 * TURNS_PER_STAGE).div_ceil(2);
-        // The skip the result offers (/LF215/); none for a beginner.
-        let offered = views::placement_offer(&state());
-        let offer = offered.unwrap_or_else(|e| {
-            self.as_mut().say_unsaved(&e.to_string());
-            Default::default()
-        });
-        let skip = (!offer.units.is_empty())
-            .then(|| json!({ "last": offer.units.last(), "title": offer.title }));
-        let r = json!({
-            "placement": words,
-            "stages": p.results.len(),
-            "minutes": minutes,
-            "skip": skip,
-        });
-        self.as_mut().set_recorded(QString::from(&r.to_string()));
+        let done = placing.finish(&state(), placing::reading(kana), placing::reading(kanji));
+        self.as_mut().say_all_failed(&done.failed);
+        self.as_mut()
+            .set_recorded(QString::from(&done.result.to_string()));
         self.as_mut().set_placement_ask(false);
         self.as_mut().set_placing(false);
     }
 
     fn skip_placement(mut self: Pin<&mut Self>, last: &QString) -> bool {
         // Only the offer that ends at `last`, once (a second click changes nothing).
-        let taken = views::take_placement_skip(&state(), &last.to_string());
+        let taken = placing::skip(&state(), &last.to_string());
         taken.unwrap_or_else(|e| {
             self.as_mut().say_unsaved(&e.to_string());
             false
@@ -746,7 +672,7 @@ impl qobject::Conversation {
         let (finished, shown) = {
             let talk = talk.lock().expect("talk lock");
             let shown = marked.recorded.as_ref().map(|r| {
-                let summary = summary_json(&talk.session().summary(), &lang);
+                let summary = kaiwa_backend::summary::summary_view(talk.session(), &lang);
                 (state().recorded_view(r, talk.session(), &lang), summary)
             });
             (talk.finished(), shown)
@@ -1412,7 +1338,7 @@ impl qobject::Conversation {
             self.as_mut().set_talk_state(ERROR);
             return;
         };
-        if !kaiwa_backend::talk::may_recognize(*self.busy()) {
+        if *self.busy() {
             return;
         }
         // No voice in it (no microphone, muted, wrong input): say so instead of letting the
@@ -1645,7 +1571,13 @@ impl qobject::Conversation {
 
 /// The learner's line of the log with what the tutor made of it.
 fn show_outcome(turn: &mut Value, outcome: &kaiwa_core::TurnOutcome, lang: &str) {
-    turn["corrections"] = Value::Array(outcome.shown.iter().map(|x| shown_json(x, lang)).collect());
+    turn["corrections"] = Value::Array(
+        outcome
+            .shown
+            .iter()
+            .map(|x| kaiwa_backend::summary::shown_view(x, lang))
+            .collect(),
+    );
     turn["pending"] = json!(false);
     turn["incomplete"] = json!(outcome.incomplete);
     // The tutor's furigana replace the dictionary's (ADR-004).
@@ -1876,7 +1808,7 @@ fn log_of(scenario: &Scenario, state: &SessionState, lang: &str) -> Vec<Value> {
         let corrections: Vec<Value> = shown
             .iter()
             .map(|x| {
-                let mut v = shown_json(x, lang);
+                let mut v = kaiwa_backend::summary::shown_view(x, lang);
                 v["disputed"] = json!(t.disputed.contains(&x.correction.better));
                 v
             })

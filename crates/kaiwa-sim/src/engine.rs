@@ -158,7 +158,7 @@ fn cost_limit() -> Result<Option<String>> {
     meter().take();
 
     // No limit until he sets one: a talk of 20 calls goes through.
-    if b.store.profile()?.cost_limit_cents.is_some() {
+    if b.profile()?.cost_limit_cents.is_some() {
         found.push("a limit is preset".into());
     }
     b.arm_brake(now)?;
@@ -196,9 +196,9 @@ fn cost_limit() -> Result<Option<String>> {
 
     // His own limit, a little above what the month cost so far: the cloud tutor stops there.
     let limit = (first / 100.0).ceil() as u32 * 100 + 200;
-    let mut profile = b.store.profile()?;
+    let mut profile = b.profile()?;
     profile.cost_limit_cents = Some(limit);
-    b.store.set_profile(&profile)?;
+    b.seed().set_profile(&profile)?;
     b.arm_brake(now)?;
     let mut refused = false;
     for _ in 0..40 {
@@ -414,9 +414,9 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
     // Offered on the start page, in both languages, none of them a scenario of the path.
     let mut topics = Vec::new();
     for lang in ["de", "en"] {
-        let mut profile = b.store.profile()?;
+        let mut profile = b.profile()?;
         profile.ui_lang = lang.into();
-        b.store.set_profile(&profile)?;
+        b.seed().set_profile(&profile)?;
         let today = kaiwa_backend::views::today(&b, now)?;
         let free: Vec<(String, String)> = today["free"]
             .as_array()
@@ -434,7 +434,7 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
             if topic.is_empty() || topic.contains(':') {
                 found.push(format!("{id}: topic {topic:?} ({lang})"));
             }
-            if b.curriculum.unit_of(id).is_some() {
+            if b.curriculum().unit_of(id).is_some() {
                 found.push(format!("{id} is a scenario of the path"));
             }
         }
@@ -450,14 +450,14 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
     let Some((id, _)) = topics[0].first().cloned() else {
         return Ok(Some(found.join("; ")));
     };
-    let scenario = b.scenarios.get(&id).cloned().with_context(|| id.clone())?;
+    let scenario = b.scenario(&id).with_context(|| id.clone())?;
 
     // His level: the profile holds his placement, and a talk started the way the app starts
     // it (`Backend::new_talk`) names the level of his `start_level.speaking` to the
     // character. So does the same talk continued later.
     let model = simulate_placement(p).result();
     let own = model.level(Skill::Speaking);
-    b.store.set_placement(model.clone())?;
+    b.set_placement(model.clone())?;
     let want = match p["start_level"]["speaking"].as_str().unwrap_or_default() {
         "none" | "a0" | "n5_low" | "n5" => "N5",
         "n4_low" | "n4" => "N4",
@@ -491,8 +491,8 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
 
     // Outside the path: free talks with every goal reached, more often than a scenario of the
     // path needs to count as done, leave the path as it was; the day counts them.
-    let before = b.store.learning()?.course;
-    let next = b.curriculum.next_scenario(&before);
+    let before = b.seed().learning()?.course;
+    let next = b.curriculum().next_scenario(&before);
     for k in 0..=i64::from(kaiwa_core::curriculum::COMPLETIONS) {
         let s = talk()?;
         if !s.done() {
@@ -500,17 +500,17 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
             break;
         }
         let start = now.plus_secs(k * 900);
-        let sid = b.store.begin_session(&s.snapshot(), start)?;
-        b.store
-            .record(sid, &s, start, start.plus_secs(300), Some(&b.curriculum))?;
+        let sid = b.seed().begin_session(&s.snapshot(), start)?;
+        b.seed()
+            .record(sid, &s, start, start.plus_secs(300), Some(b.curriculum()))?;
     }
-    let after = b.store.learning()?.course;
-    if b.curriculum.next_scenario(&after) != next
-        || b.curriculum.path(&after, "de") != b.curriculum.path(&before, "de")
+    let after = b.seed().learning()?.course;
+    if b.curriculum().next_scenario(&after) != next
+        || b.curriculum().path(&after, "de") != b.curriculum().path(&before, "de")
     {
         found.push("free talks moved the learning path".into());
     }
-    let day = b.store.day(now.day())?;
+    let day = b.seed().day(now.day())?;
     if day.speaking_secs == 0 || day.scenarios_done == 0 {
         found.push(format!("the day does not count the free talks: {day:?}"));
     }
@@ -703,7 +703,7 @@ fn marked_after_the_end(root: &Path, how: Mark) -> Result<Option<String>> {
     let b = kaiwa_backend::TempBackend::new("marked-after-the-end", false)?;
     let mut s = session(root, "n5-02-jikoshoukai")?;
     let begun = kaiwa_backend::now();
-    let id = b.store.begin_session(&s.snapshot(), begun)?;
+    let id = b.seed().begin_session(&s.snapshot(), begun)?;
     for (text, input) in [
         ("マラです。よろしくおねがいします。", Input::Spoken),
         ("ドイツのハンブルクから来ました。", Input::Spoken),
@@ -713,9 +713,9 @@ fn marked_after_the_end(root: &Path, how: Mark) -> Result<Option<String>> {
         s.turn(text, input)?;
     }
     let end = begun.plus_secs(300);
-    b.store.record(id, &s, begun, end, Some(&b.curriculum))?;
+    b.seed().record(id, &s, begun, end, Some(b.curriculum()))?;
     b.track_grammar(&s, end)?;
-    if !b.store.learning()?.model.errors.contains_key("particle") {
+    if !b.seed().learning()?.model.errors.contains_key("particle") {
         return Ok(Some("the mistake was never recorded".into()));
     }
 
@@ -727,10 +727,10 @@ fn marked_after_the_end(root: &Path, how: Mark) -> Result<Option<String>> {
         return Ok(Some("the mark after the end is refused".into()));
     }
     b.correct_talk(id, &s)?;
-    if b.store.learning()?.model.errors.contains_key("particle") {
+    if b.seed().learning()?.model.errors.contains_key("particle") {
         return Ok(Some("the mistake stays in the learner model".into()));
     }
-    Ok(b.store
+    Ok(b.seed()
         .item("コーヒーが好きです")?
         .map(|_| "the review item stays".into()))
 }
@@ -756,13 +756,13 @@ fn skip_once(p: &Value) -> Result<Option<String>> {
     use kaiwa_backend::views::{skip_offer, take_skip};
     let b = kaiwa_backend::TempBackend::new("skip-once", false)?;
     let easy = |n: usize| -> Result<()> {
-        let mut l = b.store.learning()?;
+        let mut l = b.seed().learning()?;
         l.regulator.success.extend(vec![0.97; n]);
-        Ok(b.store.set_learning(&l)?)
+        Ok(b.seed().set_learning(&l)?)
     };
-    let mut l = b.store.learning()?;
+    let mut l = b.seed().learning()?;
     l.model = placed(p);
-    b.store.set_learning(&l)?;
+    b.seed().set_learning(&l)?;
     if skip_offer(&b)?.is_some() {
         return Ok(Some("an offer before any talk".into()));
     }
@@ -770,14 +770,14 @@ fn skip_once(p: &Value) -> Result<Option<String>> {
     let Some(first) = skip_offer(&b)? else {
         return Ok(Some("no offer after three easy talks".into()));
     };
-    if first.id != b.curriculum.units[0].id {
+    if first.id != b.curriculum().units[0].id {
         return Ok(Some(format!("the offer is about {}", first.id)));
     }
     // Two clicks, and a click for another unit: one unit is skipped.
     take_skip(&b, &first.id)?;
     take_skip(&b, &first.id)?;
-    take_skip(&b, &b.curriculum.units[1].id)?;
-    let skipped = b.store.learning()?.course.skipped_units;
+    take_skip(&b, &b.curriculum().units[1].id)?;
+    let skipped = b.seed().learning()?.course.skipped_units;
     if skipped.len() != 1 {
         return Ok(Some(format!("skipped on one offer: {skipped:?}")));
     }
@@ -786,7 +786,7 @@ fn skip_once(p: &Value) -> Result<Option<String>> {
         return Ok(Some("a new offer after two talks".into()));
     }
     easy(1)?;
-    if skip_offer(&b)?.is_none_or(|u| u.id != b.curriculum.units[1].id) {
+    if skip_offer(&b)?.is_none_or(|u| u.id != b.curriculum().units[1].id) {
         return Ok(Some(
             "no offer for the next unit after three new talks".into(),
         ));
@@ -794,19 +794,19 @@ fn skip_once(p: &Value) -> Result<Option<String>> {
     // Up to the keigo path, not into it.
     let keigo = |u: &kaiwa_core::curriculum::Unit| {
         u.scenarios.iter().any(|s| {
-            b.scenarios
+            b.scenarios()
                 .get(s)
                 .is_some_and(|s| s.register == kaiwa_core::scenario::Register::Keigo)
         })
     };
-    let Some(k) = b.curriculum.units.iter().position(keigo) else {
+    let Some(k) = b.curriculum().units.iter().position(keigo) else {
         return Ok(Some("no keigo unit on the path".into()));
     };
-    let mut l = b.store.learning()?;
-    for u in &b.curriculum.units[..k] {
+    let mut l = b.seed().learning()?;
+    for u in &b.curriculum().units[..k] {
         l.course.skipped_units.insert(u.id.clone());
     }
-    b.store.set_learning(&l)?;
+    b.seed().set_learning(&l)?;
     Ok(skip_offer(&b)?.map(|u| format!("the keigo unit {} is offered", u.id)))
 }
 
@@ -817,9 +817,9 @@ fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
     use kaiwa_backend::views::{placement_offer, take_placement_skip};
     let b = kaiwa_backend::TempBackend::new("skip-placement", false)?;
     let place = |p: &Value| -> Result<()> {
-        let mut l = b.store.learning()?;
+        let mut l = b.seed().learning()?;
         l.model = placed(p);
-        Ok(b.store.set_learning(&l)?)
+        Ok(b.seed().set_learning(&l)?)
     };
     place(&persona(root, "mara")?)?;
     if !placement_offer(&b)?.units.is_empty() {
@@ -834,16 +834,16 @@ fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
         return Ok(Some("the offer could not be taken".into()));
     }
     // The path goes on right after the skipped units, at the first keigo unit.
-    let c = &b.curriculum;
+    let c = &b.curriculum();
     let Some(k) = c.units.iter().position(|u| &u.id == last) else {
         return Ok(Some(format!("the offer ends at unknown {last}")));
     };
     let Some(next) = c.units.get(k + 1) else {
         return Ok(Some("nothing left after the offer".into()));
     };
-    let lang = b.store.profile()?.ui_lang;
+    let lang = b.profile()?.ui_lang;
     let current = c
-        .path(&b.store.learning()?.course, &lang)
+        .path(&b.seed().learning()?.course, &lang)
         .into_iter()
         .find(|u| u.state == kaiwa_core::curriculum::NodeState::Current);
     if current.as_ref().is_none_or(|u| u.id != next.id) {
@@ -854,7 +854,7 @@ fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
         )));
     }
     let keigo = next.scenarios.iter().any(|s| {
-        b.scenarios
+        b.scenarios()
             .get(s)
             .is_some_and(|s| s.register == kaiwa_core::scenario::Register::Keigo)
     });
@@ -869,8 +869,8 @@ fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
 /// (native) to much, Mara's (n5) to little, until the learner picks one herself.
 fn feedback_level(root: &Path, p: &Value) -> Result<Option<String>> {
     let amount_after = |b: &kaiwa_backend::TempBackend, p: &Value| -> Result<Amount> {
-        b.store.set_placement(placed(p))?;
-        Ok(b.store.profile()?.feedback)
+        b.set_placement(placed(p))?;
+        Ok(b.profile()?.feedback)
     };
     let b = kaiwa_backend::TempBackend::new("feedback-level", false)?;
     let got = amount_after(&b, &persona(root, "mara")?)?;
@@ -883,7 +883,7 @@ fn feedback_level(root: &Path, p: &Value) -> Result<Option<String>> {
         return Ok(Some(format!("a native speaker's placement gives {got:?}")));
     }
     // After her pick, a new placement leaves it.
-    b.store.set_feedback(Amount::Normal)?;
+    b.seed().set_feedback(Amount::Normal)?;
     let got = amount_after(&b, &persona(root, "mara")?)?;
     Ok((got != Amount::Normal).then(|| format!("a placement changed her pick to {got:?}")))
 }
@@ -952,7 +952,7 @@ fn ceiling(p: &Value) -> Result<Option<String>> {
     if m.level(Skill::ReadingKanji) != 3.0 {
         why.push(format!("kanji {}", m.level(Skill::ReadingKanji)));
     }
-    let minutes = (pl.results.len() as u32 * TURNS_PER_STAGE).div_ceil(2);
+    let minutes = pl.minutes();
     if minutes > 8 {
         why.push(format!("{minutes} min"));
     }

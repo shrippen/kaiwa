@@ -190,7 +190,16 @@ impl Placement {
     /// Minutes the placement takes at most (about 30 s per turn), with a tutor whose
     /// analyses are whole.
     pub fn max_minutes() -> u32 {
-        (STAGES.len() as u32 * TURNS_PER_STAGE).div_ceil(2)
+        Self::minutes_of(STAGES.len())
+    }
+
+    /// Minutes the stages played so far took (about 30 s per turn).
+    pub fn minutes(&self) -> u32 {
+        Self::minutes_of(self.results.len())
+    }
+
+    fn minutes_of(stages: usize) -> u32 {
+        (stages as u32 * TURNS_PER_STAGE).div_ceil(2)
     }
 
     /// The level a skill showed: the highest stage passed, plus how far the next one went.
@@ -468,6 +477,17 @@ mod tests {
         let m = p.result();
         assert!(m.level(Skill::Listening) >= 6.5);
         assert!(Placement::max_minutes() <= 8);
+        assert_eq!(p.minutes(), Placement::max_minutes());
+    }
+
+    #[test]
+    fn minutes_follow_the_stages_played() {
+        let mut p = Placement::default();
+        assert_eq!(p.minutes(), 0);
+        p.add(stage(1.5, 1.0, 1.0));
+        assert_eq!(p.minutes(), 2);
+        p.add(stage(3.0, 0.0, 0.0));
+        assert_eq!(p.minutes(), 4);
     }
 
     #[test]
