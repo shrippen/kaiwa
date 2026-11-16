@@ -4,10 +4,11 @@
 
 use kaiwa_ai::cost::{Spent, meter};
 use kaiwa_core::clock::Moment;
-use kaiwa_store::{COST_STATE_PREFIX, StoreError};
+use kaiwa_store::COST_STATE_PREFIX;
 use serde_json::{Value, json};
 
 use crate::Backend;
+use crate::settings::SettingError;
 
 pub use kaiwa_store::CostMonth as Month;
 
@@ -49,12 +50,11 @@ impl Backend {
     }
 
     /// Stores the limit and re-arms the brake at once (/LF714/).
-    pub fn set_cost_limit(&self, limit: Option<u32>, now: Moment) -> Result<(), StoreError> {
-        self.store.update_profile(|p| p.cost_limit_cents = limit)?;
-        if let Err(e) = self.arm_brake(now) {
-            eprintln!("kaiwa: {e:#}");
-        }
-        Ok(())
+    pub fn set_cost_limit(&self, limit: Option<u32>, now: Moment) -> Result<(), SettingError> {
+        self.store
+            .update_profile(|p| p.cost_limit_cents = limit)
+            .map_err(|e| SettingError::NotSaved(e.into()))?;
+        self.arm_brake(now).map_err(SettingError::NotApplied)
     }
 
     /// Whether the limit is reached (a new talk with a cloud tutor would be refused).
@@ -144,6 +144,25 @@ pub(crate) mod tests {
 
         b.set_cost_limit(None, now).unwrap();
         assert!(!meter().exhausted());
+    }
+
+    #[test]
+    fn a_brake_that_cannot_arm_is_not_applied_but_the_limit_is_saved() {
+        let _turn = METER.lock().unwrap_or_else(|e| e.into_inner());
+        let b = backend("cost-unarmed");
+        let now = Moment::new(1_791_100_000, 120);
+        // The month's row holds a string, not a month: the brake cannot read what is spent.
+        let db = rusqlite::Connection::open(&b.path).unwrap();
+        db.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, '\"unreadable\"')",
+            [format!("state.{}", key(now))],
+        )
+        .unwrap();
+
+        let r = b.set_cost_limit(Some(50), now);
+
+        assert!(matches!(r, Err(SettingError::NotApplied(_))), "{r:?}");
+        assert_eq!(b.store.profile().unwrap().cost_limit_cents, Some(50));
     }
 
     #[test]

@@ -417,12 +417,13 @@ fn heat_scale(de: bool) -> Vec<String> {
 
 /// A view as the pages read it. A view that failed is empty text, not "null": each page parses
 /// only non-empty text and otherwise keeps its own defaults, so it shows empty instead of
-/// throwing on `null.heat`.
-pub fn text(r: anyhow::Result<serde_json::Value>) -> String {
+/// throwing on `null.heat`. The first failure goes to `failed` for the caller to tell the
+/// learner.
+pub fn text(r: anyhow::Result<serde_json::Value>, failed: &mut Option<anyhow::Error>) -> String {
     match r {
         Ok(v) => v.to_string(),
         Err(e) => {
-            eprintln!("kaiwa: {e:#}");
+            failed.get_or_insert(e);
             String::new()
         }
     }
@@ -1427,8 +1428,23 @@ mod tests {
     #[test]
     fn a_failed_view_leaves_the_page_its_defaults() {
         // ProfilePage: `kaiwa.stats.length > 0 ? JSON.parse(kaiwa.stats) : ({ heat: [] })`.
-        assert_eq!(text(Err(anyhow::anyhow!("database is locked"))), "");
-        assert_eq!(text(Ok(json!({ "heat": [] }))), r#"{"heat":[]}"#);
+        let mut failed = None;
+        assert_eq!(
+            text(Ok(json!({ "heat": [] })), &mut failed),
+            r#"{"heat":[]}"#
+        );
+        assert!(failed.is_none());
+
+        assert_eq!(
+            text(Err(anyhow::anyhow!("database is locked")), &mut failed),
+            ""
+        );
+        let first = failed.as_ref().map(|e| e.to_string());
+        assert_eq!(first.as_deref(), Some("database is locked"));
+
+        // The first failure stays; a later one does not replace it.
+        text(Err(anyhow::anyhow!("another")), &mut failed);
+        assert_eq!(failed.unwrap().to_string(), "database is locked");
     }
 
     #[test]

@@ -257,12 +257,27 @@ impl qobject::KaiwaApp {
         self.as_mut().set_notice(QString::from(&msg));
     }
 
+    /// Tells the learner a page or the profile could not be loaded; what the page shows is
+    /// then empty or the defaults.
+    fn say_unloaded(mut self: Pin<&mut Self>, e: &anyhow::Error) {
+        let msg = match self.lang().to_string() == "de" {
+            true => format!("Das Profil ließ sich nicht vollständig laden: {e:#}"),
+            false => format!("The profile could not be loaded completely: {e:#}"),
+        };
+        self.as_mut().set_notice(QString::from(&msg));
+    }
+
     fn refresh(mut self: Pin<&mut Self>) {
         let now = now();
         let unit = self.review_unit().to_string();
+        let mut failed;
         let (today, path, review, scope, learner, stats, profile, lang, gam, privacy) = {
-            let st = state();
-            let p = st.profile().unwrap_or_default();
+            let mut st = state();
+            failed = st.take_open_failure();
+            let p = st.profile().unwrap_or_else(|e| {
+                failed.get_or_insert(e);
+                Default::default()
+            });
             let privacy = views::privacy(&st, &p.ui_lang);
             (
                 views::today(&st, now),
@@ -283,12 +298,17 @@ impl qobject::KaiwaApp {
                 privacy,
             )
         };
-        let ok = |r: anyhow::Result<serde_json::Value>| QString::from(&views::text(r));
-        self.as_mut().set_today(ok(today));
-        self.as_mut().set_path(ok(path));
-        self.as_mut().set_review(ok(review));
+        let ok = |r: anyhow::Result<serde_json::Value>, failed: &mut Option<anyhow::Error>| {
+            QString::from(&views::text(r, failed))
+        };
+        self.as_mut().set_today(ok(today, &mut failed));
+        self.as_mut().set_path(ok(path, &mut failed));
+        self.as_mut().set_review(ok(review, &mut failed));
         // The unit is done: back to all due items.
-        let scope = scope.unwrap_or_default();
+        let scope = scope.unwrap_or_else(|e| {
+            failed.get_or_insert(e);
+            serde_json::Value::Null
+        });
         if scope.is_null() {
             self.as_mut().set_review_unit(QString::default());
         }
@@ -298,18 +318,21 @@ impl qobject::KaiwaApp {
             q(&scope)
         };
         self.as_mut().set_review_scope(scope);
-        self.as_mut().set_learner(ok(learner));
-        self.as_mut().set_stats(ok(stats));
+        self.as_mut().set_learner(ok(learner, &mut failed));
+        self.as_mut().set_stats(ok(stats, &mut failed));
         // Where the mora check's model belongs and whether it is there (/LF320/, F-08).
         let profile = profile.map(|mut v| {
             v["moraModel"] = crate::conversation::mora_model_json();
             v
         });
-        self.as_mut().set_profile(ok(profile));
+        self.as_mut().set_profile(ok(profile, &mut failed));
         self.as_mut().set_privacy(q(&privacy));
         self.as_mut().set_models(q(&models_json(&lang)));
         self.as_mut().set_lang(QString::from(&lang));
         self.as_mut().set_gamification(gam);
+        if let Some(e) = failed {
+            self.as_mut().say_unloaded(&e);
+        }
     }
 
     fn download_model(mut self: Pin<&mut Self>, dir: &QString) {
@@ -506,7 +529,10 @@ impl qobject::KaiwaApp {
 
     fn skip_unit(mut self: Pin<&mut Self>, unit: &QString) {
         // Only the unit the offer is about, once per offer (review #86).
-        let _ = views::take_skip(&state(), &unit.to_string());
+        let taken = views::take_skip(&state(), &unit.to_string());
+        if let Err(e) = taken {
+            self.as_mut().say_unreadable(&e);
+        }
         self.as_mut().refresh();
     }
 

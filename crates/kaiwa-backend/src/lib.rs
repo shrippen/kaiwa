@@ -274,6 +274,8 @@ pub struct Backend {
     pub demo_data: bool,
     /// The keys of this profile ([`kaiwa_ai::secrets::KeyHome`]).
     keys: kaiwa_ai::secrets::Keys,
+    /// What failed while the profile opened and is not fatal; [`Backend::take_open_failure`].
+    open_failure: Option<anyhow::Error>,
 }
 
 impl Backend {
@@ -359,7 +361,7 @@ impl Backend {
             .iter()
             .map(|j| Scenario::from_json(j).map(|s| (s.id.clone(), s)))
             .collect::<Result<_, _>>()?;
-        let st = Backend {
+        let mut st = Backend {
             store: db,
             keys,
             path,
@@ -368,16 +370,24 @@ impl Backend {
             grammar,
             scenarios,
             demo_data: demo,
+            open_failure: None,
         };
         #[cfg(any(test, feature = "demo"))]
         if demo && fresh {
             demo::seed(&st)?;
         }
         // Recordings past their days go when the profile opens (/LF712/).
-        if let Err(e) = st.purge_recordings(now()) {
-            eprintln!("kaiwa: {e:#}");
-        }
+        st.open_failure = st
+            .purge_recordings(now())
+            .err()
+            .map(|e| e.context("expired recordings could not be deleted"));
         Ok(st)
+    }
+
+    /// What went wrong while the profile opened without stopping it (expired recordings that
+    /// stayed); once, for the front end to tell the learner.
+    pub fn take_open_failure(&mut self) -> Option<anyhow::Error> {
+        self.open_failure.take()
     }
 }
 

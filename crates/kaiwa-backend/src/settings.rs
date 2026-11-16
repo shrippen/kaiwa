@@ -115,8 +115,7 @@ impl Backend {
         match key {
             // The brake follows the new limit at once (/LF714/).
             "costLimit" => {
-                self.set_cost_limit(value.parse().ok(), now)
-                    .map_err(|e| SettingError::NotSaved(e.into()))?;
+                self.set_cost_limit(value.parse().ok(), now)?;
             }
             // The pick is the learner's: a placement leaves it (V-02).
             "feedback" => {
