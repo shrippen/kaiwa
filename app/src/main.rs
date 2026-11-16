@@ -10,6 +10,7 @@ mod app;
 mod conversation;
 mod mic;
 mod state;
+mod util;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 

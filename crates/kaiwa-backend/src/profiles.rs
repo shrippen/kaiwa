@@ -8,7 +8,7 @@ use kaiwa_ai::secrets::KeyError;
 use kaiwa_store::{Store, profiles_in};
 use serde_json::{Value, json};
 
-use crate::Backend;
+use crate::{Backend, Trouble};
 
 const CURRENT: &str = "current";
 const DEFAULT: &str = "default.kaiwa";
@@ -88,7 +88,7 @@ impl Backend {
         // The emptied profile keeps the language the page is in.
         let lang = self.store.profile().map(|p| p.ui_lang).ok();
         if let Err(e) = self.delete_recordings() {
-            eprintln!("kaiwa: {e:#}");
+            self.trouble(Trouble::RecordingsKept(e));
         }
 
         // Close the file before removing it. Whether removing works or not, the file is opened
@@ -101,7 +101,7 @@ impl Backend {
         // The profile's keys go with it (V-01). A keyring that refuses does not stop the
         // deletion.
         if let Err(e) = self.keys.remove_all() {
-            eprintln!("kaiwa: the keyring kept keys of this profile: {e}");
+            self.trouble(Trouble::KeysKept(e));
         }
         self.store = Store::open(&self.path)?;
         deleted?;
@@ -168,11 +168,11 @@ impl Backend {
             return;
         }
         if let Err(e) = self.keys.migrate() {
-            eprintln!("kaiwa: the keys stay where they are: {e}");
+            self.trouble(Trouble::KeysUnmoved(e));
             return;
         }
         if let Err(e) = std::fs::write(&marker, b"") {
-            eprintln!("kaiwa: {e}");
+            self.trouble(Trouble::KeysUnmoved(e.to_string()));
         }
     }
 

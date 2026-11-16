@@ -15,12 +15,13 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+pub use kaiwa_speech::SpeechError;
+use kaiwa_speech::Transcriber;
 use kaiwa_speech::capture::{self, Capture, Recording, Verdict};
 use kaiwa_speech::g2p::G2p;
 use kaiwa_speech::models::{models_dir, reazonspeech_dir};
 use kaiwa_speech::mora::{self, Checker, Hint, Kind};
 use kaiwa_speech::stt::Recognizer;
-use kaiwa_speech::{SpeechError, Transcriber};
 
 use crate::Backend;
 use crate::log::{MoraKind, MoraNote};
@@ -254,21 +255,18 @@ impl Moras {
     }
 
     /// The hint for a spoken turn: only shortenings, only in sentences, at most one (/LF320/;
-    /// K-01, K-02, J-05). Empty when nothing is found or the check fails.
-    pub fn check(&self, clip: &Clip, text: &str) -> Vec<MoraNote> {
+    /// K-01, K-02, J-05). Empty when nothing is found; the error when the check fails.
+    pub fn check(&self, clip: &Clip, text: &str) -> Result<Vec<MoraNote>, SpeechError> {
         let Ok(mut c) = self.0.lock() else {
-            return Vec::new();
+            return Ok(Vec::new());
         };
         let Some(words) = c.g2p.pronounced_words(text) else {
-            return Vec::new();
+            return Ok(Vec::new());
         };
-        match c.checker.hints(clip.samples(), clip.sample_rate(), &words) {
-            Ok(hints) => hints.iter().map(mora_note).collect(),
-            Err(e) => {
-                eprintln!("kaiwa: {e}");
-                Vec::new()
-            }
-        }
+        let hints = c
+            .checker
+            .hints(clip.samples(), clip.sample_rate(), &words)?;
+        Ok(hints.iter().map(mora_note).collect())
     }
 }
 
