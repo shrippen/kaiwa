@@ -438,7 +438,7 @@ Kirigami.ScrollablePage {
                 // "Los geht's" stays the one primary action.
                 onClicked: {
                     // Gone only when it took: a failure leaves the offer to try again.
-                    page.skipTaken = conv.skipPlacement(page.recorded.skip.last)
+                    page.skipTaken = conv.takePlacementOffer(page.recorded.skip.last)
                 }
             }
             KanteButton {
