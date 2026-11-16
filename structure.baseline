@@ -16,7 +16,7 @@ app/src/conversation.rs	submit	length=92
 crates/kaiwa-ai/src/privacy.rs	flows	length=84
 crates/kaiwa-backend/src/demo.rs	seed	ccn=29 length=200
 crates/kaiwa-backend/src/reminder.rs	reminder	ccn=21
-crates/kaiwa-backend/src/views.rs	-	lines=1541
+crates/kaiwa-backend/src/views.rs	-	lines=1540
 crates/kaiwa-backend/src/views.rs	key_view	ccn=17
 crates/kaiwa-backend/src/views.rs	path	ccn=17
 crates/kaiwa-backend/src/views.rs	stats	length=92
@@ -51,10 +51,10 @@ crates/kaiwa-sim/src/days.rs	-	lines=1177
 crates/kaiwa-sim/src/days.rs	check	ccn=66 length=213
 crates/kaiwa-sim/src/days.rs	progress_views	ccn=54 length=210
 crates/kaiwa-sim/src/days.rs	simulate	ccn=51 length=392 nesting=5
-crates/kaiwa-sim/src/engine.rs	-	lines=975
+crates/kaiwa-sim/src/engine.rs	-	lines=974
 crates/kaiwa-sim/src/engine.rs	analysis_gaps	ccn=40 length=103
 crates/kaiwa-sim/src/engine.rs	check	ccn=24
-crates/kaiwa-sim/src/engine.rs	cost_limit	ccn=45 length=100
+crates/kaiwa-sim/src/engine.rs	cost_limit	ccn=45 length=99
 crates/kaiwa-sim/src/engine.rs	free_talk	ccn=37 length=112
 crates/kaiwa-sim/src/engine.rs	marked_after_the_end	ccn=16
 crates/kaiwa-sim/src/engine.rs	skip	ccn=20

@@ -75,7 +75,9 @@ pub fn analysis_schema() -> serde_json::Value {
 /// none is configured. The key comes from the environment only, never from the keyring. See
 /// [`provider_from`].
 pub fn provider_from_env() -> Result<Option<std::sync::Arc<dyn ChatProvider>>, String> {
-    provider_from(&secrets::Keys::env_only(), |k| std::env::var(k).ok())
+    provider_from(&secrets::Keys::env_only(), Default::default(), |k| {
+        std::env::var(k).ok()
+    })
 }
 
 /// The tutor named by `env` (the settings with the environment on top, [`Tutor::lookup`]);
@@ -87,6 +89,7 @@ pub fn provider_from_env() -> Result<Option<std::sync::Arc<dyn ChatProvider>>, S
 ///   KAIWA_PROVIDER=custom      KAIWA_MODEL=…  KAIWA_OPENAI_BASE=…  [KAIWA_API_KEY=…]
 pub fn provider_from(
     keys: &secrets::Keys,
+    meter: std::sync::Arc<cost::Meter>,
     env: impl Fn(&str) -> Option<String>,
 ) -> Result<Option<std::sync::Arc<dyn ChatProvider>>, String> {
     let env = |k: &str| env(k).filter(|v| !v.is_empty());
@@ -119,7 +122,7 @@ pub fn provider_from(
                 api_key: a.api_key,
                 reply_model: a.reply_model,
                 analysis_model: a.analysis_model,
-                transport: cost::Metered::new(a.transport, true),
+                transport: cost::Metered::new(a.transport, meter, true),
             })))
         }
         presets::Api::OpenAi => {
@@ -135,7 +138,7 @@ pub fn provider_from(
                 api_key: key.unwrap_or_default(),
                 reply_model: o.reply_model,
                 analysis_model: o.analysis_model,
-                transport: cost::Metered::new(o.transport, cloud),
+                transport: cost::Metered::new(o.transport, meter, cloud),
             })))
         }
     }

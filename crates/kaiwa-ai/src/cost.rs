@@ -3,11 +3,11 @@
 //!
 //! [`Metered`] wraps the transport of a provider: it reads the usage of every answer (Anthropic
 //! `input_tokens`/`output_tokens`, OpenAI `prompt_tokens`/`completion_tokens`) into the
-//! process-wide [`meter`], and refuses a cloud call once the budget is spent ([`AiError::Budget`]).
+//! [`Meter`] its owner passes in, and refuses a cloud call once the budget is spent ([`AiError::Budget`]).
 //! The profile keeps the month's total; the app books the meter into it after each turn.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use serde::Deserialize;
 use serde_json::Value;
@@ -119,12 +119,6 @@ impl Meter {
     }
 }
 
-/// The meter of this process.
-pub fn meter() -> &'static Meter {
-    static M: OnceLock<Meter> = OnceLock::new();
-    M.get_or_init(Meter::default)
-}
-
 /// Tokens of an answer: (input, output).
 pub fn usage(answer: &Value) -> Option<(u64, u64)> {
     let u = &answer["usage"];
@@ -138,16 +132,16 @@ pub fn usage(answer: &Value) -> Option<(u64, u64)> {
 /// A transport that meters and brakes (see the module).
 pub struct Metered<T: Transport> {
     pub inner: T,
-    pub meter: &'static Meter,
+    pub meter: Arc<Meter>,
     /// The server is outside this computer: its calls cost money.
     pub cloud: bool,
 }
 
 impl<T: Transport> Metered<T> {
-    pub fn new(inner: T, cloud: bool) -> Self {
+    pub fn new(inner: T, meter: Arc<Meter>, cloud: bool) -> Self {
         Self {
             inner,
-            meter: meter(),
+            meter,
             cloud,
         }
     }
@@ -194,14 +188,14 @@ mod tests {
 
     #[test]
     fn metered_calls_count_and_brake() {
-        let m: &'static Meter = Box::leak(Box::default());
+        let m: Arc<Meter> = Arc::default();
         let t = Metered {
             inner: FakeTransport::new(json!({
                 "model": "claude-sonnet-5-5",
                 "usage": { "input_tokens": 2000, "output_tokens": 300 },
                 "content": []
             })),
-            meter: m,
+            meter: m.clone(),
             cloud: true,
         };
         t.post_json("u", &[], &json!({})).unwrap();
@@ -219,7 +213,7 @@ mod tests {
                 "model": "qwen3:14b",
                 "usage": { "prompt_tokens": 2000, "completion_tokens": 300 }
             })),
-            meter: m,
+            meter: m.clone(),
             cloud: false,
         };
         assert!(local.post_json("u", &[], &json!({})).is_ok());
