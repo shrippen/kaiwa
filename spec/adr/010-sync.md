@@ -37,7 +37,7 @@ Das Profil ist eine SQLite-Datei. Lernstand (`learning`), Karten (`items`) und T
 ## Schritte
 
 1. Diese ADR; Tabelle `events` mit Geräte-Id; `Event` im Kern; `journal::apply` für Wiederholung und Einstellung; Test „Faltung = live“.
-2. Gespräche als Ereignisse über `Session::restore`; Gesprächs-Id als Text; Export `kaiwa-export/4`.
+2. Gespräche als Ereignisse über `Session::restore`; Gesprächs-Id als Text; Export `kaiwa-export/4` mit dem Journal (es sind Daten des Lernenden, /LF710/), Schema in `spec/export.schema.json`.
 3. Die übrigen Ereignisse; danach schreibt nichts mehr am Journal vorbei.
 4. `Backend::merge` und Beitritt, mit zwei Profilen getestet: beide üben am selben Tag getrennt, danach sind beide gleich und die Tageszähler die Summe.
 5. Baustein `kaiwa-sync` mit Ordner, Speicher und `age`; `Backend::sync_now`; `jonas_sync` in `kaiwa-sim` über einen Ordner. Ändert die Schichten in `ARCHITECTURE.md`: der Eigentümer bestätigt.
@@ -46,6 +46,7 @@ Das Profil ist eine SQLite-Datei. Lernstand (`learning`), Karten (`items`) und T
 ## Risiken
 
 - Ein Schreibweg ohne Ereignis: Faltung und Live-Zustand laufen auseinander. Der Test aus Schritt 1 zeigt es.
+- Ereignis schreiben und anwenden sind noch zwei Transaktionen. Scheitert das Anwenden, steht das Ereignis trotzdem im Journal und zählt beim Neufalten mit. Vor Schritt 4 laufen beide in einer Transaktion (ein Savepoint, weil die Befehle ihre eigene öffnen).
 - Geräte mit verschiedenem Programmstand falten verschieden: Formatversion, siehe oben.
 - Eine falsch gehende Uhr verschiebt die Reihenfolge; das Ergebnis bleibt auf allen Geräten gleich, kann aber überraschen.
 - Die Korrektur nach dem Ende (V-05) ersetzt im Journal das beendete Gespräch; die gespeicherte Aufzeichnung davor kann dann entfallen. Eigener Schritt.

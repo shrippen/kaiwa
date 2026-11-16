@@ -29,7 +29,7 @@ pub(crate) fn record(b: &Backend, event: &Event, at: Moment) -> Result<(), Setti
 }
 
 /// Does what `event` says, through the commands live use.
-pub fn apply(b: &Backend, event: &Event, at: Moment) -> Result<(), SettingError> {
+pub(crate) fn apply(b: &Backend, event: &Event, at: Moment) -> Result<(), SettingError> {
     match event {
         Event::Review { text, grade } => {
             // A card that is gone changes nothing, as live.
@@ -97,11 +97,19 @@ mod tests {
         live.set_setting("goal", "15", T0.plus_secs(2 * day))
             .unwrap();
 
+        // The settings that do not go through the profile edit, and the one that purges.
+        live.set_setting("costLimit", "500", T0.plus_secs(2 * day))
+            .unwrap();
+        live.set_setting("feedback", "much", T0.plus_secs(2 * day))
+            .unwrap();
+        live.set_setting("keepRecordings", "30", T0.plus_secs(2 * day))
+            .unwrap();
+
         // Device settings change the profile but stay out of the journal.
         live.set_setting("handsFree", "true", T0).unwrap();
         live.set_setting("unloadAfter", "10", T0).unwrap();
         let events = live.store.events().unwrap();
-        assert_eq!(events.len(), 7);
+        assert_eq!(events.len(), 10);
         assert!(events.iter().all(|e| !matches!(
             &e.event,
             Event::Setting { key, .. } if DEVICE_SETTINGS.contains(&key.as_str())
