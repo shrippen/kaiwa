@@ -98,34 +98,6 @@ impl Day {
     }
 }
 
-/// Where "now" comes from.
-pub trait Clock: Send + Sync {
-    fn now(&self) -> Moment;
-}
-
-/// A clock that only moves when told to (tests, `kaiwa-sim`).
-#[derive(Debug)]
-pub struct ManualClock(std::sync::Mutex<Moment>);
-
-impl ManualClock {
-    pub fn new(at: Moment) -> Self {
-        Self(std::sync::Mutex::new(at))
-    }
-    pub fn set(&self, at: Moment) {
-        *self.0.lock().unwrap_or_else(|e| e.into_inner()) = at;
-    }
-    pub fn advance(&self, secs: i64) {
-        let mut m = self.0.lock().unwrap_or_else(|e| e.into_inner());
-        *m = m.plus_secs(secs);
-    }
-}
-
-impl Clock for ManualClock {
-    fn now(&self) -> Moment {
-        *self.0.lock().unwrap_or_else(|e| e.into_inner())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

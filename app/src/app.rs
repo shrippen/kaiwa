@@ -415,7 +415,7 @@ impl qobject::KaiwaApp {
                     }
                     "endPause" => {
                         if let Ok(s) = value.parse::<f32>() {
-                            p.end_pause_secs = s.clamp(1.2, 5.0);
+                            p.end_pause_secs = kaiwa_core::turn_end::clamp_pause(s);
                         }
                     }
                     "style" => p.style = value.parse().unwrap_or(0).min(2),

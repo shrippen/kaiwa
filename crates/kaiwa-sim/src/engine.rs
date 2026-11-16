@@ -616,7 +616,9 @@ fn settings_split(p: &Value) -> Result<Option<String>> {
 }
 
 /// /LF211/, /LL204/: a beginner like Hinnerk starts at 0.8 or slower, the app speaks at the
-/// difficulty's pace, and "louder" and "clear" sit on the conversation page itself.
+/// difficulty's pace. That "louder" and "clear" sit on the conversation page and work is
+/// tried by `tst_sound.qml` (see [`crate::qml`]). The pace of the app's voice is read from its
+/// source: speech has no command in the backend yet, so it cannot be tried without audio.
 fn tts_slow(root: &Path, p: &Value) -> Result<Option<String>> {
     let d = Difficulty::for_learner(&placed(p));
     let mut why = Vec::new();
@@ -626,15 +628,6 @@ fn tts_slow(root: &Path, p: &Value) -> Result<Option<String>> {
     let app = std::fs::read_to_string(root.join("app/src/conversation.rs"))?;
     if !app.contains("difficulty.speed()") {
         why.push("the voice ignores the difficulty's pace".into());
-    }
-    let page = std::fs::read_to_string(root.join("app/qml/ConversationPage.qml"))?;
-    for (word, call) in [
-        ("Lauter", "conv.setSound(checked, conv.clear)"),
-        ("Klar", "conv.setSound(conv.louder, checked)"),
-    ] {
-        if !page.contains(&format!("page.t(\"{word}\"")) || !page.contains(call) {
-            why.push(format!("no '{word}' on the conversation page"));
-        }
     }
     Ok((!why.is_empty()).then(|| why.join(", ")))
 }

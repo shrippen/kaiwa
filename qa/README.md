@@ -43,7 +43,7 @@ persona.json ──▶ Lernenden-Agent ──▶ Äußerung (Text) ──┬─[
    - `text` ruft die Headless-API auf, schnell, für CI.
    - `audio` erzeugt die Äußerung mit einer TTS-Stimme nach `speech.voice_hint`, verändert Tempo und Pausen, mischt Störgeräusche auf `snr_db` und gibt sie in die echte STT-Pipeline.
    - `gui` bedient App und Plasmoid über den Accessibility-Baum (AT-SPI, z. B. [selenium-webdriver-at-spi](https://invent.kde.org/sdk/selenium-webdriver-at-spi)) und speist Audio über ein virtuelles PipeWire-Mikrofon ein.
-3. **Zeit:** `sim_days` läuft mit einer beschleunigten Uhr (Kern-API `Clock`), die Sitzungen folgen `learning.sessions` und `breaks`.
+3. **Zeit:** `sim_days` läuft mit einer beschleunigten Uhr, die Sitzungen folgen `learning.sessions` und `breaks`.
 4. **Prüfregeln:** `checks[].assert` ist die lesbare Regel, ihre Maschinenform steht in `crates/kaiwa-sim/checks/<id>.rs`. `never` gilt während des ganzen Laufs.
 5. **Determinismus:** fester Seed pro Lauf. In der CI werden die Antworten der Anbieter aus Fixtures abgespielt, nächtlich laufen sie live gegen lokale Modelle und einen Cloud-Anbieter.
 

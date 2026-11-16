@@ -39,10 +39,17 @@ fn temp(name: &str) -> PathBuf {
     dir.join("test.kaiwa")
 }
 
+fn schema_version(s: &Store) -> usize {
+    let v: i64 =
+        s.db.pragma_query_value(None, "user_version", |r| r.get(0))
+            .unwrap();
+    v as usize
+}
+
 #[test]
 fn a_new_profile_has_defaults_and_the_schema() {
     let s = Store::in_memory().unwrap();
-    assert_eq!(s.schema_version().unwrap(), MIGRATIONS.len());
+    assert_eq!(schema_version(&s), MIGRATIONS.len());
     let p = s.profile().unwrap();
     assert_eq!(p.daily_goal, DailyGoal::Minutes(5));
     assert_eq!(p.feedback, Amount::Little);
@@ -533,7 +540,7 @@ fn migration_2_moves_old_unit_ids_to_path_order() {
     )
     .unwrap();
     let store = Store::init(db).unwrap();
-    assert_eq!(store.schema_version().unwrap(), super::MIGRATIONS.len());
+    assert_eq!(schema_version(&store), super::MIGRATIONS.len());
     let l: String = store
         .db
         .query_row("SELECT value FROM learning", [], |r| r.get(0))

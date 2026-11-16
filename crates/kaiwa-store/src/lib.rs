@@ -219,7 +219,7 @@ impl Default for Profile {
             feedback: Amount::Little,
             feedback_source: FeedbackSource::Default,
             script: Script::Furigana,
-            end_pause_secs: 1.2,
+            end_pause_secs: kaiwa_core::turn_end::DEFAULT_PAUSE,
             keep_recordings_days: None,
             style: 0,
             placed: false,
@@ -581,13 +581,6 @@ impl Store {
         Ok(out)
     }
 
-    pub fn schema_version(&self) -> Result<usize> {
-        let v: i64 = self
-            .db
-            .pragma_query_value(None, "user_version", |r| r.get(0))?;
-        Ok(v as usize)
-    }
-
     fn get_json<T: for<'de> Deserialize<'de>>(&self, sql: &str, key: &str) -> Result<Option<T>> {
         let v: Option<String> = self
             .db
@@ -840,15 +833,6 @@ impl Store {
             .query_map(params![limit as i64], Self::row)?
             .collect::<rusqlite::Result<_>>()?;
         Ok(rows)
-    }
-
-    /// Drops an unfinished session the learner does not want to continue.
-    pub fn discard_session(&self, id: i64) -> Result<()> {
-        self.db.execute(
-            "DELETE FROM sessions WHERE id = ?1 AND finished = 0",
-            params![id],
-        )?;
-        Ok(())
     }
 
     /// Ends a session: learner model, regulator, path, review items and the day (/LF201/,

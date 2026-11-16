@@ -104,11 +104,6 @@ pub fn flows(env: impl Fn(&str) -> Option<String>, lang: &str) -> Vec<Flow> {
     ]
 }
 
-/// The flows for this process's environment.
-pub fn flows_from_env(lang: &str) -> Vec<Flow> {
-    flows(|k| std::env::var(k).ok(), lang)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
