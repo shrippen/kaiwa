@@ -33,7 +33,7 @@ crates/kaiwa-core/src/feedback.rs	kind_word	ccn=19
 crates/kaiwa-core/src/learner.rs	describe_level	ccn=36 nesting=6
 crates/kaiwa-core/src/progress.rs	streak	nesting=5
 crates/kaiwa-core/src/romaji.rs	word_to_kana	ccn=18
-crates/kaiwa-core/src/session.rs	-	lines=1326
+crates/kaiwa-core/src/session.rs	-	lines=1321
 crates/kaiwa-core/src/session.rs	take	length=90
 crates/kaiwa-lang/examples/excerpt.rs	main	ccn=34 length=102
 crates/kaiwa-lang/examples/levels.rs	main	ccn=38 length=136
@@ -96,9 +96,9 @@ crates/kaiwa-speech/src/g2p/numbers.rs	below_10000	ccn=20
 crates/kaiwa-speech/src/mora.rs	-	lines=875
 crates/kaiwa-speech/src/mora.rs	from_dir	ccn=17
 crates/kaiwa-speech/src/mora.rs	variants	ccn=28 length=93
-crates/kaiwa-store/src/lib.rs	-	lines=1487
+crates/kaiwa-store/src/lib.rs	-	lines=1471
 crates/kaiwa-store/src/lib.rs	correct_in	ccn=24 length=106
 crates/kaiwa-store/src/lib.rs	import	ccn=49 length=84
 crates/kaiwa-store/src/lib.rs	record_on	ccn=20 length=101
-crates/kaiwa-store/src/tests.rs	-	lines=1165
+crates/kaiwa-store/src/tests.rs	-	lines=1172
 crates/kaiwa-store/src/tests.rs	recording_a_session_feeds_model_path_review_and_day	length=110

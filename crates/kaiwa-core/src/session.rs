@@ -887,11 +887,6 @@ impl Session {
         );
         e
     }
-
-    /// The learner's turns so far (for the transcript and `kaiwa-sim`).
-    pub fn learner_turns(&self) -> impl Iterator<Item = &str> {
-        self.turns.iter().map(|t| t.learner.as_str())
-    }
 }
 
 /// Plain forms between friends are right (/LF303/): in a casual scenario a register
