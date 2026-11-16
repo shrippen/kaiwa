@@ -1853,6 +1853,7 @@ dependencies = [
  "kaiwa-ai",
  "kaiwa-core",
  "kaiwa-lang",
+ "kaiwa-speech",
  "kaiwa-store",
  "rusqlite",
  "serde",
