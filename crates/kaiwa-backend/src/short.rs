@@ -5,7 +5,6 @@
 //! way round).
 
 use kaiwa_core::clock::Moment;
-use kaiwa_core::difficulty::Knob;
 use kaiwa_core::session::Input;
 use kaiwa_core::srs::{Grade, Item};
 use kaiwa_core::{Session, TurnOutcome};
@@ -14,13 +13,13 @@ use serde_json::{Value, json};
 use kaiwa_store::Result as StoreResult;
 
 use crate::Backend;
+use crate::flow::{Length, Talk};
 
-/// A short talk in progress.
+/// A short talk in progress: the talk flow with two goals.
 pub struct ShortTalk {
-    pub session: Session,
-    pub id: Option<i64>,
-    pub started: Moment,
-    pub demo: bool,
+    talk: Talk,
+    /// When the time spent in the talk was last counted.
+    counted: Moment,
 }
 
 /// One correction in one line (/LF503/): "wrong → right".
@@ -34,50 +33,23 @@ fn line(o: &TurnOutcome) -> Vec<String> {
 impl ShortTalk {
     /// Starts the next scenario on the path with two goals, or continues the open session.
     pub fn start(b: &Backend, now: Moment) -> anyhow::Result<Self> {
-        if let Some(row) = b.store.open_session()? {
-            let state = b.store.session_state(row.id)?;
-            if let Some(sc) = b.scenarios.get(&state.scenario).cloned() {
-                // Continued as the app continues it (the learner's level for a free talk).
-                let (session, demo) = b.continued_talk(sc, state)?;
-                return Ok(Self {
-                    session,
-                    id: Some(row.id),
-                    started: now,
-                    demo,
-                });
-            }
+        let opened = Talk::open_or_next(b, now, Length::Short)?;
+        if let Some(e) = opened.failed.into_iter().next() {
+            return Err(e);
         }
-        let profile = b.store.profile()?;
-        let learning = b.store.learning()?;
-        let id = b
-            .curriculum
-            .next_scenario(&learning.course)
-            .unwrap_or_else(|| "n5-01-aisatsu".into());
-        let sc = b
-            .scenarios
-            .get(&id)
-            .cloned()
-            .ok_or_else(|| anyhow::anyhow!("no scenario {id}"))?;
-        let (p, demo) = b.provider(&sc.id);
-        b.arm_brake(now)?;
-        let mut d = learning.regulator.difficulty.clone();
-        d.set(Knob::Goals, 0);
-        let grammar = b.unit_grammar(&sc.id);
-        let session = Session::new(sc, p, profile.feedback, &profile.ui_lang)
-            .with_difficulty(d)
-            .with_grammar(grammar);
-        let id = b.store.begin_session(&session.snapshot(), now).ok();
         Ok(Self {
-            session,
-            id,
-            started: now,
-            demo,
+            talk: opened.talk,
+            counted: now,
         })
+    }
+
+    pub fn session(&self) -> &Session {
+        self.talk.session()
     }
 
     /// The talk as the plasmoid shows it.
     pub fn view(&self) -> Value {
-        let s = &self.session;
+        let s = self.talk.session();
         let lang = s.lang.as_str();
         let met = s.summary().goals_met;
         let last = s.turns().last();
@@ -90,7 +62,7 @@ impl ShortTalk {
             "turns": s.turns().len(),
             "last": last.map(|t| t.reply.clone()),
             "done": s.done(),
-            "demo": self.demo,
+            "demo": self.talk.demo(),
         })
     }
 
@@ -102,38 +74,41 @@ impl ShortTalk {
         typed: bool,
         now: Moment,
     ) -> anyhow::Result<Value> {
-        let text = if typed && kaiwa_core::romaji::has_romaji(text) {
-            kaiwa_core::romaji::to_kana(text)
-        } else {
-            text.trim().to_string()
-        };
         let input = if typed { Input::Typed } else { Input::Spoken };
-        let o = self.session.turn(&text, input)?;
-        b.book_costs(now, self.session.done())?;
+        self.talk.spend(Talk::sitting(self.counted, now));
+        self.counted = now;
+        let Some(mut turned) = self.talk.say(b, text, input, now)? else {
+            anyhow::bail!("nothing to say, or the talk is over");
+        };
+        let o = &turned.outcome;
         let mut recorded = Value::Null;
-        if let Some(id) = self.id {
-            if self.session.done() {
-                let r =
-                    b.store
-                        .record(id, &self.session, self.started, now, Some(&b.curriculum))?;
-                b.track_grammar(&self.session, now)?;
-                recorded = json!({ "minutes": r.day.speaking_secs / 60, "newItems": r.new_items });
-                // XP only with gamification (/LF605/).
-                if b.store.profile()?.gamification {
-                    recorded["xp"] = json!(r.xp);
-                }
-                self.id = None;
-            } else {
-                b.store.save_session(id, &self.session.snapshot())?;
+        // A failure with nothing booked is the error; with a record it is shown beside it.
+        if turned.recorded.is_none() && !turned.failed.is_empty() {
+            return Err(turned.failed.swap_remove(0));
+        }
+        if let Some(r) = &turned.recorded {
+            recorded = json!({ "minutes": r.day.speaking_secs / 60, "newItems": r.new_items });
+            // XP only with gamification (/LF605/).
+            if b.store.profile()?.gamification {
+                recorded["xp"] = json!(r.xp);
             }
         }
         let mut v = self.view();
-        v["said"] = json!(text);
+        v["said"] = json!(turned.said);
         v["reply"] = json!(o.reply);
-        v["corrections"] = json!(line(&o));
+        v["corrections"] = json!(line(o));
         // T-11: the tutor's analysis of this turn had gaps; the turn does not count for the level.
         v["incomplete"] = json!(o.incomplete);
         v["recorded"] = recorded;
+        if !turned.failed.is_empty() {
+            v["failed"] = json!(
+                turned
+                    .failed
+                    .iter()
+                    .map(|e| format!("{e:#}"))
+                    .collect::<Vec<_>>()
+            );
+        }
         Ok(v)
     }
 }
@@ -218,21 +193,21 @@ mod tests {
         let b = backend("short");
         let now = Moment::new(1_791_100_000, 120);
         let mut t = ShortTalk::start(&b, now).unwrap();
-        assert_eq!(t.session.goals().len(), 2);
+        assert_eq!(t.session().goals().len(), 2);
         assert!(
-            !t.session.grammar().is_empty(),
+            !t.session().grammar().is_empty(),
             "the tutor knows the unit's grammar"
         );
         let v = t.say(&b, "はい", true, now).unwrap();
         assert_eq!(v["turns"], 1);
         // The app finds the same session open (/LF507/).
         let open = b.store.open_session().unwrap().expect("open session");
-        assert_eq!(Some(open.id), t.id);
+        assert_eq!(Some(open.id), t.talk.id());
         let again = ShortTalk::start(&b, now).unwrap();
-        assert_eq!(again.session.turns().len(), 1);
+        assert_eq!(again.session().turns().len(), 1);
         assert_eq!(
-            again.session.grammar(),
-            t.session.grammar(),
+            again.session().grammar(),
+            t.session().grammar(),
             "also after a restore"
         );
     }

@@ -95,7 +95,7 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           tools/sync-kante.sh ../Kante
           git diff --exit-code -- app/qml
-      - name: QML tests (the space bar as talk key, /LF100/)
+      - name: QML tests (the pages in app/qml/tests)
         run: tools/qml-tests.sh
       - name: Speech crate (microphone, ReazonSpeech; the model test skips without a model)
         run: cargo test --locked -p kaiwa-speech
@@ -122,7 +122,7 @@ jobs:
           ! grep -E 'qrc:.*(Error|Unable|is not|TypeError|ReferenceError)' /tmp/app.log
       # U-03 (owner, 11.11.2026): hinnerk_narrow, hinnerk_font, lena_idle_memory (PSS, U-01) and
       # lena_app_egress (strace) against a release build with the demo.
-      - name: App checks (533 px, 160 %, idle memory, no egress)
+      - name: App checks (533 px, 160 %, idle memory, no egress, QML page checks)
         run: |
           cargo build --locked --release -p kaiwa-app --features demo
           cargo run --locked -q -p kaiwa-sim -- run --app target/release/kaiwa

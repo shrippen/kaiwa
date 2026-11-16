@@ -24,6 +24,7 @@ QtObject {
     function help() { record("help", []) }
     property string helpText: ""
     property string error: ""
+    property string notice: ""
     property string grammar: ""
     property string scenario: ""
     property string stage: ""

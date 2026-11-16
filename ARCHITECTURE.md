@@ -88,17 +88,14 @@ A change that needs more places than its row lists is a finding for the next aud
 
 ## Known deviations
 
-- The app reaches past the backend: it uses the store at about 30 places (26 in
+- The app reaches past the backend: it uses the store at about 20 places (17 in
   `conversation.rs`, the rest profile reads in `app.rs`, `main.rs`, `mic.rs`) and depends on
-  `kaiwa-store`, `kaiwa-core`, `kaiwa-ai` and `kaiwa-lang` directly. Settings and profile
-  actions are backend commands (`settings`, `transfer`, `profiles`). `kaiwa-sim` depends on
+  `kaiwa-store`, `kaiwa-core`, `kaiwa-ai` and `kaiwa-lang` directly. `kaiwa-sim` depends on
   the same four crates. `AUDIT.md` finding 7.
 - The app drives microphone and voice itself: `app/src` uses `kaiwa-speech` directly
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
   command yet. Not in `AUDIT.md` so far; finding 6 proposes to leave microphone and
   voice in the app, this file replaces that part.
-- The conversation flow exists twice, in `app/src/conversation.rs` and in the backend's
-  short talk, and the two differ. Finding 6.
 - `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
   `turn_xp`. Rest of finding 4.
 - Some persona checks still read source text: scans of all pages for strings, names,
