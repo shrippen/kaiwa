@@ -102,8 +102,6 @@ A change that needs more places than its row lists is a finding for the next aud
   Finding 1.
 - Some failures to load are only logged: the main pages, an unreadable profile on them,
   arming the cost brake after a new limit, purging old recordings on opening. Finding 2.
-- The settings page keeps its own lists for text size, daily goal and unloading time.
-  Finding 3.
 - `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
   `turn_xp`. `AUDIT.md`, "Seit dem letzten Audit", finding 4.
 - Some persona checks still read source text: scans of all pages for strings, names,
