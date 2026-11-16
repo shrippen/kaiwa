@@ -12,7 +12,7 @@ use kaiwa_core::srs::{Item, ItemKind, Source};
 use kaiwa_lang::{Dictionary, LineWord, Words, annotate, dictionary_path};
 use serde_json::{Value, json};
 
-use crate::Backend;
+use crate::{Backend, models};
 
 /// The segmenter, loaded once (IPADIC is in the binary).
 pub fn words() -> &'static Words {
@@ -75,7 +75,16 @@ pub fn sources() -> Vec<(String, String, String)> {
 /// already. `{"missing": true}` without the dictionary, `{"found": false}` for a word it
 /// does not know.
 pub fn lookup(backend: &Backend, word: &LineWord, lang: &str) -> Value {
-    lookup_in(&dictionary_path(), backend, word, lang)
+    let mut v = lookup_in(&dictionary_path(), backend, word, lang);
+    if v["missing"] != true {
+        return v;
+    }
+
+    // What the download would bring (M-03): offered in the popup, only after a click.
+    if let Some(offer) = models::offer(kaiwa_lang::PACKAGE) {
+        v["download"] = offer;
+    }
+    v
 }
 
 /// [`lookup`] in the dictionary at `path`.

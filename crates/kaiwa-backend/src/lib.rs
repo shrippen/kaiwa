@@ -18,6 +18,7 @@ pub mod flow;
 pub mod latency;
 pub mod log;
 pub mod lookup;
+pub mod models;
 pub mod pause;
 pub mod placing;
 pub mod profiles;

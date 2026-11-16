@@ -1837,7 +1837,6 @@ dependencies = [
  "kaiwa-backend",
  "kaiwa-core",
  "kaiwa-lang",
- "kaiwa-speech",
  "serde",
  "serde_json",
 ]

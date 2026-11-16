@@ -209,8 +209,6 @@ use kaiwa_backend::placing::{self, Next, Placing, Stage};
 use kaiwa_backend::voice::{self, Debt, Enhance, Line, Owed, Pace, Said, Speaker};
 use kaiwa_core::Input;
 use kaiwa_core::session::Aid;
-use kaiwa_speech::models::{KANA_CTC_URL, models_dir};
-use kaiwa_speech::mora;
 use serde_json::{Value, json};
 
 use crate::state::{now, state};
@@ -970,23 +968,7 @@ impl qobject::Conversation {
         };
         let lang = self.lang.clone();
         let st = state();
-        let mut v = kaiwa_backend::lookup::lookup(&st, &w, &lang);
-        if v["missing"] == true {
-            // What the download would bring (M-03): offered in the popup, only after a click.
-            if let Some(m) = kaiwa_speech::download::MODELS
-                .iter()
-                .find(|m| m.dir == kaiwa_lang::PACKAGE)
-            {
-                v["download"] = json!({
-                    "dir": m.dir,
-                    "name": m.name,
-                    "licence": m.licence,
-                    "origin": m.origin,
-                    "downloadMB": (m.download_bytes() as f64 / 1e6).round(),
-                    "diskMB": (m.disk_bytes as f64 / 1e6).round(),
-                });
-            }
-        }
+        let v = kaiwa_backend::lookup::lookup(&st, &w, &lang);
         QString::from(&v.to_string())
     }
 
@@ -1510,7 +1492,7 @@ fn or_default<T: Default, E: std::fmt::Display>(r: Result<T, E>, failed: &mut Ve
 }
 
 /// Loads the mora check (/LF320/). Without its model there are no hints; the settings say where
-/// it comes from (`mora_model_json`).
+/// it comes from (`models::mora_model`).
 fn load_mora(thread: &CxxQtThread<qobject::Conversation>) {
     match Moras::load() {
         Ok(check) => {
@@ -1519,19 +1501,6 @@ fn load_mora(thread: &CxxQtThread<qobject::Conversation>) {
         Err(e) if ears::model_missing(&e) => {}
         Err(e) => eprintln!("kaiwa: mora check: {e}"),
     }
-}
-
-/// The mora check's model for the settings: whether it is there, where it goes and where it
-/// comes from (F-08: source, size and licence before any download).
-pub fn mora_model_json() -> Value {
-    let dir = models_dir().join(mora::MODEL);
-    json!({
-        "present": dir.join("model.int8.onnx").exists() || dir.join("model.onnx").exists(),
-        "dir": dir.display().to_string(),
-        "url": KANA_CTC_URL,
-        "size": "356 MB",
-        "licence": "Apache-2.0",
-    })
 }
 
 /// The record of the summary with the kept mark in it. `None` without a record (recording the

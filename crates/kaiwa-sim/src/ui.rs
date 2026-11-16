@@ -471,29 +471,35 @@ fn suggest_smaller() -> Result<Option<String>> {
     Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
-/// /LL401/, F-08: no other code of the app than `app.rs` downloads anything, read from the
-/// sources (the egress of the running app is `lena_app_egress`). That the settings name
-/// source, licence and size of each model before its download button, and that the download
-/// starts only from that button, is tried by `tst_models.qml` (see [`crate::qml`]).
+/// The one file that downloads.
+const MODELS_RS: &str = "crates/kaiwa-backend/src/models.rs";
+
+/// /LL401/, F-08: no other code than the backend's `models.rs` downloads anything (the app
+/// only asks it to), read from the sources (the egress of the running app is
+/// `lena_app_egress`). That the settings name source, licence and size of each model before
+/// its download button, and that the download starts only from that button, is tried by
+/// `tst_models.qml` (see [`crate::qml`]).
 fn download_announced(root: &Path) -> Result<Option<String>> {
     let mut found = Vec::new();
     let mut callers = Vec::new();
-    for dir in ["app/src", "app/qml"] {
+    for dir in ["app/src", "app/qml", "crates/kaiwa-backend/src"] {
         for e in std::fs::read_dir(root.join(dir))? {
             let path = e?.path();
             let src = std::fs::read_to_string(&path).unwrap_or_default();
             if src.contains("download::download(") || src.contains("ureq::") {
                 callers.push(
-                    path.file_name()
-                        .unwrap_or_default()
-                        .to_string_lossy()
+                    path.strip_prefix(root)
+                        .unwrap_or(&path)
+                        .display()
                         .to_string(),
                 );
             }
         }
     }
-    if callers != ["app.rs"] {
-        found.push(format!("downloads from {callers:?}, expected only app.rs"));
+    if callers != [MODELS_RS] {
+        found.push(format!(
+            "downloads from {callers:?}, expected only {MODELS_RS}"
+        ));
     }
     Ok((!found.is_empty()).then(|| found.join("; ")))
 }
