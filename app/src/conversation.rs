@@ -530,8 +530,9 @@ impl qobject::Conversation {
 
     /// Tells the learner why there are no pronunciation hints; the talk goes on without.
     fn say_mora_failed(mut self: Pin<&mut Self>, e: &ears::SpeechError, when: MoraFailure) {
-        let msg = ears::mora_text(e, when, &self.lang);
-        self.as_mut().set_notice(QString::from(&msg));
+        eprintln!("kaiwa: mora check: {e}");
+        self.as_mut()
+            .set_notice(QString::from(ears::mora_text(when, &self.lang)));
     }
 
     fn say_all_unsaved(mut self: Pin<&mut Self>, failed: &[String]) {

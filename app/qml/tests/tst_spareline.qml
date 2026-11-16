@@ -34,7 +34,7 @@ Item {
             verify(line.visible)
 
             app.lang = "en"
-            verify(line.text.indexOf("nothing you do now is saved") > 0)
+            verify(line.text.indexOf("Nothing you do now is saved") >= 0)
             app.lang = "de"
         }
     }

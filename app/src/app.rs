@@ -192,8 +192,8 @@ impl Default for KaiwaAppRust {
     }
 }
 
-const SPARE_DE: &str = "Das Profil ließ sich nicht öffnen, das geht gerade nicht. Lösche alle Daten oder wähle ein anderes Profil.";
-const SPARE_EN: &str = "The profile could not be opened, so this is not possible now. Delete all data or pick another profile.";
+const SPARE_DE: &str = "Das Profil ließ sich nicht öffnen, das geht gerade nicht. Lösche es in den Einstellungen („Profil löschen …“) oder wähle ein anderes Profil.";
+const SPARE_EN: &str = "The profile could not be opened, so this is not possible now. Delete it in the settings (“Delete profile …”) or pick another profile.";
 
 fn q(v: &serde_json::Value) -> QString {
     QString::from(&v.to_string())

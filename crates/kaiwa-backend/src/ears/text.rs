@@ -11,22 +11,18 @@ pub enum MoraFailure {
     Check,
 }
 
-/// Why there are no pronunciation hints, in the UI language; speaking goes on either way.
-pub fn mora_text(e: &SpeechError, when: MoraFailure, lang: &str) -> String {
-    let de = lang == "de";
-    match (when, de) {
-        (MoraFailure::Check, true) => {
-            format!("Die Aussprachehinweise fehlen, die Prüfung ist ausgefallen: {e}")
+/// Why there are no pronunciation hints, in the UI language; speaking goes on either way. The
+/// error itself is English and stays in the log.
+pub fn mora_text(when: MoraFailure, lang: &str) -> &'static str {
+    match (when, lang == "de") {
+        (MoraFailure::Check, true) => "Die Aussprachehinweise fehlen, die Prüfung ist ausgefallen.",
+        (MoraFailure::Check, false) => "Pronunciation hints are missing, the check failed.",
+        (MoraFailure::Load, true) => {
+            "Die Aussprachehinweise fehlen, das Modell ist beschädigt. Lade es in den Einstellungen unter „Modelle“ neu herunter; Sprechen geht weiter."
         }
-        (MoraFailure::Check, false) => {
-            format!("Pronunciation hints are missing, the check failed: {e}")
+        (MoraFailure::Load, false) => {
+            "Pronunciation hints are missing, the model is damaged. Download it again in the settings under “Models”; speaking still works."
         }
-        (MoraFailure::Load, true) => format!(
-            "Die Aussprachehinweise fehlen, das Modell ist beschädigt ({e}). Lade es in den Einstellungen unter „Modelle“ neu herunter; Sprechen geht weiter."
-        ),
-        (MoraFailure::Load, false) => format!(
-            "Pronunciation hints are missing, the model is damaged ({e}). Download it again in the settings under “Models”; speaking still works."
-        ),
     }
 }
 
