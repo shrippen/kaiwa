@@ -471,6 +471,19 @@ fn suggest_smaller() -> Result<Option<String>> {
     Ok((!found.is_empty()).then(|| found.join("; ")))
 }
 
+/// Every file below `dir`, subfolders included (a download may sit in `voice/` or `ears/`).
+fn files_below(dir: &Path, files: &mut Vec<std::path::PathBuf>) -> Result<()> {
+    for e in std::fs::read_dir(dir)? {
+        let path = e?.path();
+        if path.is_dir() {
+            files_below(&path, files)?;
+            continue;
+        }
+        files.push(path);
+    }
+    Ok(())
+}
+
 /// The one file that downloads.
 const MODELS_RS: &str = "crates/kaiwa-backend/src/models.rs";
 
@@ -483,8 +496,9 @@ fn download_announced(root: &Path) -> Result<Option<String>> {
     let mut found = Vec::new();
     let mut callers = Vec::new();
     for dir in ["app/src", "app/qml", "crates/kaiwa-backend/src"] {
-        for e in std::fs::read_dir(root.join(dir))? {
-            let path = e?.path();
+        let mut files = Vec::new();
+        files_below(&root.join(dir), &mut files)?;
+        for path in files {
             let src = std::fs::read_to_string(&path).unwrap_or_default();
             if src.contains("download::download(") || src.contains("ureq::") {
                 callers.push(
