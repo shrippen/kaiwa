@@ -139,6 +139,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use cxx_qt::Threading;
 
 use cxx_qt_lib::QString;
+use kaiwa_backend::settings::Felt;
 use kaiwa_backend::transfer::ImportError;
 use serde_json::json;
 
@@ -380,7 +381,8 @@ impl qobject::KaiwaApp {
 
     fn nudge(mut self: Pin<&mut Self>, skill: &QString, up: bool) {
         self.as_mut().set_notice(QString::default());
-        let saved = state().nudge(&skill.to_string(), up);
+        let felt = if up { Felt::TooEasy } else { Felt::TooHard };
+        let saved = state().nudge(&skill.to_string(), felt);
         if let Err(e) = saved {
             self.as_mut().say_unreadable(&e);
         }

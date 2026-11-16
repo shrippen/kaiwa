@@ -91,6 +91,13 @@ fn apply_rest(p: &mut Profile, key: &str, value: &str) {
     }
 }
 
+/// How a skill felt to the learner, for [`Backend::nudge`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Felt {
+    TooEasy,
+    TooHard,
+}
+
 impl Backend {
     /// Changes one setting: goal, gamification, feedback, script, endPause, style, uiLang,
     /// reminder, unloadAfter, costLimit, moraHints, handsFree, textScale, keepRecordings,
@@ -130,9 +137,10 @@ impl Backend {
         Ok(())
     }
 
-    /// "I know this already" (`up`) or "too hard" for a skill (/LF202/); an unknown skill
-    /// changes nothing.
-    pub fn nudge(&self, skill: &str, up: bool) -> anyhow::Result<()> {
+    /// "I know this already" or "too hard" for a skill (/LF202/); an unknown skill changes
+    /// nothing.
+    pub fn nudge(&self, skill: &str, felt: Felt) -> anyhow::Result<()> {
+        let up = felt == Felt::TooEasy;
         let Ok(skill) = serde_json::from_value::<Skill>(json!(skill)) else {
             return Ok(());
         };
@@ -325,7 +333,7 @@ mod tests {
     fn too_easy_lifts_the_skill_and_the_speed() {
         let b = backend("nudge");
         let before = b.store.learning().unwrap();
-        b.nudge("listening", true).unwrap();
+        b.nudge("listening", Felt::TooEasy).unwrap();
         let after = b.store.learning().unwrap();
         assert!(after.model.level(Skill::Listening) > before.model.level(Skill::Listening));
         assert_eq!(
@@ -335,7 +343,7 @@ mod tests {
         assert_eq!(after.model.corrections_by_learner, 1);
 
         // An unknown skill is ignored.
-        b.nudge("juggling", true).unwrap();
+        b.nudge("juggling", Felt::TooEasy).unwrap();
         assert_eq!(b.store.learning().unwrap().model.corrections_by_learner, 1);
     }
 
