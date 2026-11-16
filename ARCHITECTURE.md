@@ -102,7 +102,6 @@ A change that needs more places than its row lists is a finding for the next aud
   `kaiwa-sim`'s day simulation. Finding 4.
 - Error kinds are named in the core and again, differently, in the backend's views; pause
   steps stand at five places. Findings 1 and 3.
-- A failed save in a conversation is only logged. Finding 5.
 - Some persona checks search for text in source files. Finding 8.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
   then the app is the only front end and runs the backend in its own process. On that

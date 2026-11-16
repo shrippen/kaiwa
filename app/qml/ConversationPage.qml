@@ -353,6 +353,13 @@ Kirigami.ScrollablePage {
             title: page.t("Keine Antwort", "No answer")
             text: conv.error
         }
+        KanteCallout {
+            Layout.fillWidth: true
+            visible: conv.notice.length > 0
+            kind: KanteCallout.Kind.Danger
+            title: page.t("Nicht gespeichert", "Not saved")
+            text: conv.notice
+        }
 
         // ── Placement: reading, then the result (/LF200/, /LF201/) ──
         ColumnLayout {

@@ -487,14 +487,17 @@ impl qobject::KaiwaApp {
         let Ok(skill) = serde_json::from_value::<Skill>(json!(skill.to_string())) else {
             return;
         };
-        {
+        let saved = {
             let st = state();
-            if let Ok(mut l) = st.store.learning() {
+            st.store.learning().and_then(|mut l| {
                 // "Too easy" for listening lifts the speed one step at once (Selin, /LF202/).
                 let (model, regulator) = (&mut l.model, &mut l.regulator);
                 kaiwa_core::difficulty::learner_says(model, regulator, skill, up);
-                let _ = st.store.set_learning(&l);
-            }
+                st.store.set_learning(&l)
+            })
+        };
+        if let Err(e) = saved {
+            self.as_mut().say_unreadable(&e);
         }
         self.as_mut().refresh();
     }
