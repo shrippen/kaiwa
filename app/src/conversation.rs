@@ -315,9 +315,6 @@ const MIN_CHECKED_SECS: f32 = 0.5;
 /// The voice's pace without a session: a little below Kokoro's normal one.
 const SPEED: f32 = 0.9;
 
-/// The longest time one count adds to a talk.
-const MAX_SITTING_SECS: u64 = 3600;
-
 fn shown_json(s: &Shown, lang: &str) -> Value {
     json!({
         "tier": s.tier,
@@ -409,7 +406,7 @@ impl qobject::Conversation {
         // Whole seconds; the rest stays for the next time.
         let secs = since.elapsed().as_secs();
         self.as_mut().rust_mut().sitting = Some(since + Duration::from_secs(secs));
-        talk.spend(secs.min(MAX_SITTING_SECS) as u32);
+        talk.spend(u32::try_from(secs).unwrap_or(u32::MAX));
     }
 
     fn start_placement(mut self: Pin<&mut Self>) {
@@ -732,6 +729,15 @@ impl qobject::Conversation {
         self.as_mut().publish_turns();
     }
 
+    /// Shows a recorded talk's summary, and that the profile could not be read if so.
+    fn show_recorded(mut self: Pin<&mut Self>, (recorded, unread): (Value, Option<String>)) {
+        if let Some(e) = unread {
+            self.as_mut().say_unsaved(&e);
+        }
+        self.as_mut()
+            .set_recorded(QString::from(&recorded.to_string()));
+    }
+
     /// Shows a kept mark. On the summary (V-05) the mark corrected the recorded talk: its
     /// record, the learner model and the review, and the summary shows the corrected result.
     fn show_marked(mut self: Pin<&mut Self>, talk: &Arc<Mutex<Talk>>, marked: flow::Marked) {
@@ -740,12 +746,8 @@ impl qobject::Conversation {
         let (finished, shown) = {
             let talk = talk.lock().expect("talk lock");
             let shown = marked.recorded.as_ref().map(|r| {
-                let profile = state().store.profile();
                 let summary = summary_json(&talk.session().summary(), &lang);
-                (
-                    recorded_json(r, talk.session(), profile.ok(), &lang),
-                    summary,
-                )
+                (recorded_view(r, talk.session(), &lang), summary)
             });
             (talk.finished(), shown)
         };
@@ -758,8 +760,7 @@ impl qobject::Conversation {
             }
             return;
         };
-        self.as_mut()
-            .set_recorded(QString::from(&recorded.to_string()));
+        self.as_mut().show_recorded(recorded);
         self.as_mut()
             .set_summary(QString::from(&summary.to_string()));
     }
@@ -1582,11 +1583,10 @@ impl qobject::Conversation {
                         Ok(answer) => {
                             q.as_mut().spend_sitting(&mut t);
                             let turned = t.take(&state(), &text, input, answer, now());
-                            let shown = turned.recorded.as_ref().map(|r| {
-                                let profile = state().store.profile();
-                                let lang = q.lang.clone();
-                                recorded_json(r, t.session(), profile.ok(), &lang)
-                            });
+                            let shown = turned
+                                .recorded
+                                .as_ref()
+                                .map(|r| recorded_view(r, t.session(), &q.lang));
                             Ok((turned, shown))
                         }
                         Err(e) => Err((e, t.failed_call(&state(), now()))),
@@ -1607,8 +1607,8 @@ impl qobject::Conversation {
                         }
                         q.as_mut().set_error(QString::default());
                         q.as_mut().say_all_failed(&turned.failed);
-                        if let Some(r) = shown {
-                            q.as_mut().set_recorded(QString::from(&r.to_string()));
+                        if let Some(shown) = shown {
+                            q.as_mut().show_recorded(shown);
                         }
                         q.as_mut().speak_reply(&outcome.reply);
                         // Without a voice the reply's text is the answer.
@@ -1926,6 +1926,14 @@ fn keep_mark(recorded: &str) -> Option<String> {
     }
     recorded["markKept"] = json!(true);
     Some(recorded.to_string())
+}
+
+/// The summary of a recorded talk, and why the profile could not be read if it could not:
+/// the page then shows the summary with the defaults and says so.
+fn recorded_view(r: &kaiwa_store::Recorded, s: &Session, lang: &str) -> (Value, Option<String>) {
+    let profile = state().store.profile();
+    let unread = profile.as_ref().err().map(|e| e.to_string());
+    (recorded_json(r, s, profile.ok(), lang), unread)
 }
 
 /// What the end of the session did, in words (/LF310/, /LF603/, /LF605/).

@@ -22,7 +22,7 @@ use crate::Backend;
 const FALLBACK: &str = "n5-02-jikoshoukai";
 
 /// The longest sitting that counts as time spent in one go.
-const MAX_SITTING_SECS: i64 = 3600;
+const MAX_SITTING_SECS: u32 = 3600;
 
 /// How many goals a talk plays.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -199,14 +199,15 @@ impl Talk {
         self.finished
     }
 
-    /// Time the learner spent in the talk, counted into its record.
+    /// Time the learner spent in the talk, counted into its record: at most an hour per
+    /// sitting, for a window left open.
     pub fn spend(&mut self, secs: u32) {
-        self.session.spend(secs);
+        self.session.spend(secs.min(MAX_SITTING_SECS));
     }
 
     /// Seconds from `since` to `now` as a sitting counts, at most an hour.
     pub fn sitting(since: Moment, now: Moment) -> u32 {
-        let secs = (now.unix - since.unix).clamp(0, MAX_SITTING_SECS);
+        let secs = (now.unix - since.unix).clamp(0, i64::from(MAX_SITTING_SECS));
         u32::try_from(secs).unwrap_or(0)
     }
 
@@ -468,6 +469,18 @@ mod tests {
         let turned = t.say(&b, "はい", Input::Typed, now).unwrap().unwrap();
         assert!(turned.recorded.is_none() && turned.failed.is_empty());
         assert_eq!(b.store.session_state(id).unwrap().turns.len(), 1);
+    }
+
+    #[test]
+    fn a_sitting_counts_at_most_an_hour() {
+        // A window left open overnight books an hour, not the night.
+        let _m = meter();
+        let b = backend("flow-sitting");
+        let now = Moment::new(1_791_100_000, 120);
+        let mut t = open(&b, SCENARIO, now, Length::Short);
+        t.spend(8 * 3600);
+        t.spend(60);
+        assert_eq!(t.session().spent_secs(), 3600 + 60);
     }
 
     #[test]
