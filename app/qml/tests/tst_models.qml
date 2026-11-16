@@ -34,9 +34,9 @@ Item {
 
             const button = Tree.find(row, i => i.text === "Herunterladen" && i.clicked !== undefined)
             verify(button !== null, "no download button")
-            // Scrolled to the button, as a learner would.
-            const flick = page.contentItem
-            flick.contentY = button.mapToItem(flick.contentItem, 0, 0).y - 100
+            // Scrolled to the button below the sticky header, as a learner would.
+            const flick = Tree.find(page, i => i.flickableDirection === Flickable.VerticalFlick)
+            flick.contentY = button.mapToItem(flick.contentItem, 0, 0).y - 250
             mouseClick(button)
             compare(JSON.stringify(kaiwa.last("downloadModel")), JSON.stringify(["asr"]))
         }
