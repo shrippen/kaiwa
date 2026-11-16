@@ -100,8 +100,7 @@ A change that needs more places than its row lists is a finding for the next aud
   short talk, and the two differ. Finding 6.
 - What a finished talk changes is written twice in the store and a third time in
   `kaiwa-sim`'s day simulation. Finding 4.
-- Error kinds are named in the core and again, differently, in the backend's views; pause
-  steps stand at five places. Findings 1 and 3.
+- Pause steps stand at five places. Finding 3.
 - A failed save in a conversation is only logged. Finding 5.
 - Some persona checks search for text in source files. Finding 8.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until

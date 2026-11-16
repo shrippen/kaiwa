@@ -20,24 +20,14 @@ fn scenario_title(st: &Backend, id: &str, lang: &str) -> String {
         .unwrap_or_else(|| id.to_string())
 }
 
+/// The word for a stored kind string, from the core's list; unknown kinds read "other".
 fn kind_word(kind: &str, de: bool) -> &'static str {
-    match (kind, de) {
-        ("particle", true) => "Partikeln",
-        ("particle", false) => "Particles",
-        ("counter", true) => "Zählwörter",
-        ("counter", false) => "Counters",
-        ("tense", true) => "Zeitformen",
-        ("tense", false) => "Tenses",
-        ("register", true) => "Höflichkeit",
-        ("register", false) => "Politeness",
-        ("word_order", true) => "Wortstellung",
-        ("word_order", false) => "Word order",
-        ("conjugation", true) => "Konjugation",
-        ("conjugation", false) => "Conjugation",
-        ("word_choice", true) => "Wortwahl",
-        ("word_choice", false) => "Word choice",
-        (_, true) => "Sonstiges",
-        (_, false) => "Other",
+    let parsed = serde_json::from_value::<kaiwa_ai::CorrectionKind>(Value::from(kind));
+    match (parsed, de) {
+        (Ok(k), true) => kaiwa_core::feedback::kind_word(k, "de"),
+        (Ok(k), false) => kaiwa_core::feedback::kind_word(k, "en"),
+        (Err(_), true) => "Sonstiges",
+        (Err(_), false) => "Other",
     }
 }
 
@@ -216,7 +206,7 @@ fn review_rows(st: &Backend, due: &[kaiwa_core::srs::Item]) -> anyhow::Result<Va
                     // The character's line to answer: a mini conversation (/LF230/).
                     // The line it answered, with furigana over every kanji like in the talk.
                     "cue": i.cue.as_deref().map(|c| kaiwa_lang::complete(crate::lookup::words(), c)),
-                    // What the correction was about, in words (Höflichkeit, Partikeln …).
+                    // What the correction was about, in words (Register, Partikel …).
                     "practises": match &i.source {
                         kaiwa_core::srs::Source::Correction { kind } => kind_word(kind, de),
                         _ => "",
@@ -1368,7 +1358,7 @@ mod tests {
             .find(|x| x["kind"] == "particle")
             .expect("particles")
             .clone();
-        assert_eq!(particle["text"], "Partikeln: etwa gleich oft", "{particle}");
+        assert_eq!(particle["text"], "Partikel: etwa gleich oft", "{particle}");
     }
 
     #[test]
