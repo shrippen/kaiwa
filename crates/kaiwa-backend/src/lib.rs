@@ -32,6 +32,7 @@ pub mod settings;
 pub mod short;
 pub mod summary;
 pub mod transfer;
+pub mod trouble;
 pub mod views;
 pub mod voice;
 
