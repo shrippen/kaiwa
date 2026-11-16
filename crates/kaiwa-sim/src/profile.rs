@@ -10,14 +10,17 @@ use std::time::Instant;
 use anyhow::Result;
 use kaiwa_ai::mock::MockProvider;
 use kaiwa_ai::secrets::KeyStore;
+use kaiwa_backend::Backend;
+use kaiwa_backend::flow::Talk;
+use kaiwa_core::Amount;
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::Curriculum;
 use kaiwa_core::session::{Input, Session};
 use kaiwa_core::srs::{Item, ItemKind, Source};
-use kaiwa_core::{Amount, Scenario};
 use kaiwa_store::{Store, delete_profile};
 
 use crate::run::Outcome;
+use crate::talk;
 
 fn at(day: i64, secs: i64) -> Moment {
     Day::from_ymd(2026, 10, 5)
@@ -52,15 +55,8 @@ pub(crate) fn temp_dir(name: &str) -> TempDir {
     TempDir(d)
 }
 
-fn session(root: &Path) -> Result<Session> {
-    let sc = Scenario::from_json(&std::fs::read_to_string(
-        root.join("data/scenarios/n5-02-jikoshoukai.json"),
-    )?)?;
-    let mock = MockProvider::from_json(&std::fs::read_to_string(
-        root.join("qa/fixtures/n5-02-jikoshoukai.json"),
-    )?)?
-    .with_fallback("すみません、もう一度お願いします。");
-    Ok(Session::new(sc, Arc::new(mock), Amount::Little, "de"))
+fn session() -> Result<Session> {
+    talk::open("n5-02-jikoshoukai", Amount::Little)
 }
 
 fn curriculum(root: &Path) -> Result<Curriculum> {
@@ -68,18 +64,20 @@ fn curriculum(root: &Path) -> Result<Curriculum> {
 }
 
 /// Three sessions in a profile on disk, like Lena's journey.
-fn three_sessions(root: &Path, path: &Path) -> Result<Store> {
-    let store = Store::open(path)?;
+fn three_sessions(root: &Path, path: &Path) -> Result<Backend> {
+    let store = Backend::open_at(path.to_path_buf(), false)?;
     let c = curriculum(root)?;
     for d in 0..3 {
-        let mut s = session(root)?;
-        let id = store.begin_session(&s.snapshot(), at(d, 9 * 3600))?;
+        let mut s = session()?;
+        let id = store.seed().begin_session(&s.snapshot(), at(d, 9 * 3600))?;
         for t in ["マラです。よろしくおねがいします。", "コーヒーを好きです。"]
         {
             s.turn(t, Input::Spoken)?;
-            store.save_session(id, &s.snapshot())?;
+            store.seed().save_session(id, &s.snapshot())?;
         }
-        store.record(id, &s, at(d, 9 * 3600), at(d, 9 * 3600 + 400), Some(&c))?;
+        store
+            .seed()
+            .record(id, &s, at(d, 9 * 3600), at(d, 9 * 3600 + 400), Some(&c))?;
     }
     Ok(store)
 }
@@ -99,7 +97,7 @@ fn files_under(dir: &Path) -> Vec<PathBuf> {
 
 pub fn check(id: &str, root: &Path) -> Option<Outcome> {
     let r = match id {
-        "mara_resume" => resume(root),
+        "mara_resume" => resume(),
         "lena_export" => export(root),
         "lena_import" => import(root),
         "lena_delete" => delete(root),
@@ -124,7 +122,6 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
 /// on day 13 and 14 carries the streak on to 12. Missing day 13 after ending it costs a
 /// freeze on that day, not the streak, and not one for the paused days before.
 fn sick_pause() -> Result<Option<String>> {
-    use kaiwa_backend::Backend;
     use kaiwa_core::progress::DayRecord;
 
     let practise = |b: &Backend, day: i64| {
@@ -186,12 +183,12 @@ fn sick_pause() -> Result<Option<String>> {
 /// with exactly one in use; the profile chosen last is the one the app opens next time; a
 /// name cannot leave the profiles' directory.
 fn own_profile(root: &Path) -> Result<Option<String>> {
-    use kaiwa_backend::{Backend, profiles, views};
+    use kaiwa_backend::{profiles, views};
     let dir = temp_dir("own-profile");
     let c = curriculum(root)?;
     let now = at(3, 19 * 3600);
     let talk = |b: &Backend, day: i64| -> Result<()> {
-        let mut s = session(root)?;
+        let mut s = session()?;
         let id = b.seed().begin_session(&s.snapshot(), at(day, 9 * 3600))?;
         for t in ["マラです。よろしくおねがいします。", "コーヒーを好きです。"]
         {
@@ -393,28 +390,22 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
 /// answers stands in for the interview, which has no scenario yet.
 fn srs_keigo(root: &Path) -> Result<Option<String>> {
     let dir = temp_dir("srs-keigo");
-    let store = Store::open(&dir.join("emi.kaiwa"))?;
-    let sc = Scenario::from_json(&std::fs::read_to_string(
-        root.join("data/scenarios/n4-13-uketsuke.json"),
-    )?)?;
-    let mock = MockProvider::from_json(&std::fs::read_to_string(
-        root.join("qa/fixtures/n4-13-uketsuke.json"),
-    )?)?;
+    let store = Backend::open_at(dir.join("emi.kaiwa"), false)?;
     // Emi wants much feedback: style and register corrections are shown.
-    let mut s = Session::new(sc, Arc::new(mock), Amount::Much, "de");
-    let id = store.begin_session(&s.snapshot(), at(0, 9 * 3600))?;
+    let mut s = talk::open("n4-13-uketsuke", Amount::Much)?;
+    let id = store.seed().begin_session(&s.snapshot(), at(0, 9 * 3600))?;
     s.turn(
         "ミュラーと申します。二時に小野様とお約束しています。",
         Input::Spoken,
     )?;
-    store.record(
+    store.seed().record(
         id,
         &s,
         at(0, 9 * 3600),
         at(0, 9 * 3600 + 300),
         Some(&curriculum(root)?),
     )?;
-    let due = store.due(at(1, 9 * 3600), 10)?;
+    let due = store.seed().due(at(1, 9 * 3600), 10)?;
     let Some(item) = due.iter().find(|i| i.text == "お約束しております") else {
         return Ok(Some(format!(
             "the humble form is not due the next day: {:?}",
@@ -462,25 +453,20 @@ impl kaiwa_ai::ChatProvider for Local {
 /// model (PC) mid-course changes nothing in the learner model, the regulator or the course,
 /// and the stored model names no provider. Latency and provider are all that differ.
 fn local_switch(root: &Path) -> Result<Option<String>> {
-    let sc = Scenario::from_json(&std::fs::read_to_string(
-        root.join("data/scenarios/n5-02-jikoshoukai.json"),
-    )?)?;
-    let fixtures = std::fs::read_to_string(root.join("qa/fixtures/n5-02-jikoshoukai.json"))?;
-    let mock = || -> Result<MockProvider> {
-        Ok(MockProvider::from_json(&fixtures)?.with_fallback("すみません、もう一度お願いします。"))
-    };
+    let sc = talk::scenario("n5-02-jikoshoukai")?;
+    let mock = || talk::recorded("n5-02-jikoshoukai");
     let c = curriculum(root)?;
-    let course = |name: &str, switch: bool| -> Result<(Store, TempDir)> {
+    let course = |name: &str, switch: bool| -> Result<(Backend, TempDir)> {
         let dir = temp_dir(name);
-        let store = Store::open(&dir.join("p.kaiwa"))?;
+        let store = Backend::open_at(dir.join("p.kaiwa"), false)?;
         for d in 0..4 {
             let provider: Arc<dyn kaiwa_ai::ChatProvider> = if switch && d >= 2 {
-                Arc::new(Local(mock()?))
+                Arc::new(Local(mock()))
             } else {
-                Arc::new(mock()?)
+                Arc::new(mock())
             };
-            let mut s = Session::new(sc.clone(), provider, Amount::Little, "de");
-            let id = store.begin_session(&s.snapshot(), at(d, 9 * 3600))?;
+            let mut s = talk::start(sc.clone(), provider, Amount::Little, "de");
+            let id = store.seed().begin_session(&s.snapshot(), at(d, 9 * 3600))?;
             for t in [
                 "マラです。よろしくおねがいします。",
                 "コーヒーを好きです。",
@@ -488,7 +474,9 @@ fn local_switch(root: &Path) -> Result<Option<String>> {
             ] {
                 s.turn(t, Input::Spoken)?;
             }
-            store.record(id, &s, at(d, 9 * 3600), at(d, 9 * 3600 + 400), Some(&c))?;
+            store
+                .seed()
+                .record(id, &s, at(d, 9 * 3600), at(d, 9 * 3600 + 400), Some(&c))?;
         }
         Ok((store, dir))
     };
@@ -496,7 +484,7 @@ fn local_switch(root: &Path) -> Result<Option<String>> {
         course("switch-cloud", false)?,
         course("switch-local", true)?,
     );
-    let (a, b) = (cloud.learning()?, switched.learning()?);
+    let (a, b) = (cloud.seed().learning()?, switched.seed().learning()?);
     let mut found = Vec::new();
     if a.model != b.model {
         found.push("the learner model differs after the switch".to_string());
@@ -518,29 +506,29 @@ fn local_switch(root: &Path) -> Result<Option<String>> {
 }
 
 /// /LF121/: an interrupted session is offered and continues at the next unanswered goal.
-fn resume(root: &Path) -> Result<Option<String>> {
+fn resume() -> Result<Option<String>> {
     let dir = temp_dir("resume");
     let path = dir.join("mara.kaiwa");
     {
-        let store = Store::open(&path)?;
-        let mut s = session(root)?;
-        let id = store.begin_session(&s.snapshot(), at(0, 8 * 3600 + 40 * 60))?;
+        let store = Backend::open_at(path.clone(), false)?;
+        let mut s = session()?;
+        let id = store
+            .seed()
+            .begin_session(&s.snapshot(), at(0, 8 * 3600 + 40 * 60))?;
         for t in [
             "マラです。よろしくおねがいします。",
             "ドイツのハンブルクから来ました。",
         ] {
             s.turn(t, Input::Spoken)?;
-            store.save_session(id, &s.snapshot())?;
+            store.seed().save_session(id, &s.snapshot())?;
         }
         // The plasmoid closes in the middle of the character's answer: nothing more is saved.
     }
-    let store = Store::open(&path)?;
-    let Some(open) = store.open_session()? else {
+    let store = Backend::open_at(path.clone(), false)?;
+    let Some(opened) = Talk::resume(&store, at(0, 9 * 3600))? else {
         return Ok(Some("the interrupted session is not offered".into()));
     };
-    let state = store.session_state(open.id)?;
-    let s = session(root)?;
-    let restored = Session::restore(s.scenario.clone(), Arc::new(MockProvider::default()), state);
+    let restored = opened.talk.session();
     let goal = restored.current_goal().map(|g| g.id.clone());
     Ok(match goal.as_deref() {
         Some("work") => None,
@@ -557,8 +545,8 @@ fn a_month() -> serde_json::Value {
 fn export(root: &Path) -> Result<Option<String>> {
     let dir = temp_dir("export");
     let store = three_sessions(root, &dir.join("lena.kaiwa"))?;
-    store.set_state_value("cost.2026-10", &a_month())?;
-    let json = store.export(at(3, 9 * 3600))?;
+    store.seed().set_state_value("cost.2026-10", &a_month())?;
+    let json = store.seed().export(at(3, 9 * 3600))?;
     let text = serde_json::to_string_pretty(&json)?;
     let parsed: serde_json::Value = serde_json::from_str(&text)?;
     let schema: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(
@@ -591,14 +579,17 @@ fn import(root: &Path) -> Result<Option<String>> {
     let dir = temp_dir("import");
     let store = three_sessions(root, &dir.join("lena.kaiwa"))?;
     // V-04: the month's costs travel with the export.
-    store.set_state_value("cost.2026-10", &a_month())?;
-    let json = store.export(at(3, 9 * 3600))?;
-    if store.import(&json).is_ok() {
+    store.seed().set_state_value("cost.2026-10", &a_month())?;
+    let file = store.export_to(&dir.join("lena.json").to_string_lossy(), at(3, 9 * 3600))?;
+    let target = file.to_string_lossy();
+    let json: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&file)?)?;
+    if store.import_from(&target).is_ok() {
         return Ok(Some("a profile with data took an import".into()));
     }
-    let new = Store::open(&dir.join("new.kaiwa"))?;
-    new.import(&json)?;
-    let back = new.export(at(3, 9 * 3600))?;
+    let new = Backend::open_at(dir.join("new.kaiwa"), false)?;
+    new.import_from(&target)
+        .map_err(|e| anyhow::anyhow!("{e:?}"))?;
+    let back = new.seed().export(at(3, 9 * 3600))?;
     if json["costs"]["2026-10"]["cents"] != 60.0 {
         return Ok(Some("the export holds no costs".into()));
     }
@@ -624,7 +615,7 @@ fn delete(root: &Path) -> Result<Option<String>> {
 fn no_audio(root: &Path) -> Result<Option<String>> {
     let dir = temp_dir("audio");
     let store = three_sessions(root, &dir.join("lena.kaiwa"))?;
-    if store.profile()?.keep_recordings_days.is_some() {
+    if store.seed().profile()?.keep_recordings_days.is_some() {
         return Ok(Some("recordings are kept by default".into()));
     }
     let audio: Vec<PathBuf> = files_under(&dir)
@@ -644,7 +635,7 @@ fn fast(root: &Path) -> Result<Option<String>> {
     let path = dir.join("lena.kaiwa");
     {
         let store = Store::open(&path)?;
-        let s = session(root)?;
+        let s = session()?;
         let state = s.snapshot();
         store.batch(|st| {
             for n in 0..10_000 {

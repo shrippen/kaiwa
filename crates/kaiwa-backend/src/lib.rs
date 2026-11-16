@@ -105,6 +105,10 @@ const SCENARIOS: &[&str] = &[
     include_str!("../../../data/scenarios/frei-mainichi.json"),
 ];
 
+/// What the recorded tutor says to a sentence it has no answer for.
+#[cfg(any(test, feature = "demo"))]
+const RECORDED_FALLBACK: &str = "すみません、もう一度お願いします。";
+
 #[cfg(any(test, feature = "demo"))]
 const FIXTURES: &[(&str, &str)] = &[
     (
@@ -268,6 +272,25 @@ pub fn fixtures(scenario: &str) -> Option<&'static str> {
         .iter()
         .find(|(id, _)| *id == scenario)
         .map(|(_, f)| *f)
+}
+
+/// The tutor that replays the recorded answers of `scenario`, with the fallback reply; one
+/// without recordings answers the fallback only. The demo's tutor and `kaiwa-sim` both use it.
+#[cfg(any(test, feature = "demo"))]
+pub fn recorded_tutor(scenario: &str) -> MockProvider {
+    fixtures(scenario)
+        .and_then(|f| MockProvider::from_json(f).ok())
+        .unwrap_or_default()
+        .with_fallback(RECORDED_FALLBACK)
+}
+
+/// The scenario `id` as the backend ships it, without a profile.
+#[cfg(any(test, feature = "demo"))]
+pub fn bundled_scenario(id: &str) -> Option<Scenario> {
+    SCENARIOS
+        .iter()
+        .filter_map(|j| Scenario::from_json(j).ok())
+        .find(|s| s.id == id)
 }
 
 /// The profile with the curriculum and the scenarios: what the app and `kaiwad` work on.
@@ -535,11 +558,7 @@ impl Backend {
         }
         #[cfg(any(test, feature = "demo"))]
         {
-            let mock = fixtures(scenario)
-                .and_then(|f| MockProvider::from_json(f).ok())
-                .unwrap_or_default()
-                .with_fallback("すみません、もう一度お願いします。");
-            (Arc::new(mock), true)
+            (Arc::new(recorded_tutor(scenario)), true)
         }
         #[cfg(not(any(test, feature = "demo")))]
         {
@@ -609,6 +628,15 @@ mod tests {
     use kaiwa_core::{Amount, Input};
 
     use super::*;
+
+    /// `recorded_tutor` falls back quietly; a broken recording must fail here instead of
+    /// letting a persona check run against the fallback only.
+    #[test]
+    fn every_recording_reads_as_a_tutor() {
+        for (id, json) in FIXTURES {
+            assert!(MockProvider::from_json(json).is_ok(), "{id}");
+        }
+    }
 
     /// V-05: the last turn ends the talk with a mistake; marking it afterwards takes the
     /// mistake out of the learner model, the grammar points and the review.
