@@ -42,28 +42,31 @@ Kirigami.ApplicationWindow {
     // With --check-text the screenshot mode says which texts of the page do not fit: elided,
     // wider than their place, or beyond the window's right edge (hinnerk_font, /LL202/;
     // tools/font-160.sh runs it at 160 % and reads the lines). Text fields are left out:
-    // their text scrolls.
-    function unfitTexts(item, found) {
+    // their text scrolls. So are texts in a bar that scrolls sideways (a tab bar), for the
+    // window's edge only: what is past it is reached by scrolling.
+    function unfitTexts(item, found, sideways) {
         if (!item || item.visible === false)
             return found
         if (typeof item.text === "string" && item.text.length > 0 && item.cursorPosition === undefined
                 && item.contentWidth !== undefined) {
             var what = item.truncated === true ? "elided"
                 : item.contentWidth > item.width + 1 ? "wider than its place"
-                : item.mapToItem(null, item.width, 0).x > root.width + 1 ? "beyond the window"
+                : !sideways && item.mapToItem(null, item.width, 0).x > root.width + 1 ? "beyond the window"
                 : ""
             if (what.length > 0)
                 found.push(what + ": " + item.text.replace(/\s+/g, " ").substring(0, 60))
         }
+        var inBar = sideways === true
+            || (item.flickableDirection !== undefined && (item.flickableDirection & Flickable.HorizontalFlick) !== 0)
         var kids = item.children || []
         for (var i = 0; i < kids.length; i++)
-            unfitTexts(kids[i], found)
+            unfitTexts(kids[i], found, inBar)
         return found
     }
     function checkText(item) {
         if (!kaiwa.demoBuild || args.indexOf("--check-text") < 0)
             return
-        var found = unfitTexts(item, [])
+        var found = unfitTexts(item, [], false)
         for (var i = 0; i < found.length; i++)
             console.log("kaiwa-text: " + found[i])
         console.log("kaiwa-text-checked: " + found.length)
