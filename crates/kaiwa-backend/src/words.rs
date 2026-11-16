@@ -94,6 +94,8 @@ pub fn trouble(t: &Trouble, lang: &str) -> String {
         (Trouble::KeysMarkerLost(e), false) => {
             format!("The old keys moved, but noting it failed; the next start tries again: {e}")
         }
+        (Trouble::TutorUnready(e), true) => format!("Der Tutor ist nicht bereit: {e}"),
+        (Trouble::TutorUnready(e), false) => format!("The tutor is not ready: {e}"),
         (Trouble::KeysUnmoved(e), true) => {
             format!("Die alten Schlüssel blieben, wo sie waren: {e}")
         }
@@ -286,6 +288,13 @@ mod tests {
             trouble(&t, "en"),
             "The old keys stayed where they were: locked"
         );
+    }
+
+    #[test]
+    fn an_unready_tutor_says_what_is_missing() {
+        let t = Trouble::TutorUnready("needs a key".into());
+        assert_eq!(trouble(&t, "de"), "Der Tutor ist nicht bereit: needs a key");
+        assert_eq!(trouble(&t, "en"), "The tutor is not ready: needs a key");
     }
 
     #[test]

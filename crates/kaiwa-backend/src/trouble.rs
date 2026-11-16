@@ -23,6 +23,8 @@ pub enum Trouble {
     /// The keys moved, but the note that says so could not be written: the next start tries
     /// again.
     KeysMarkerLost(String),
+    /// The tutor the settings or the environment name cannot be built (no key, model or base).
+    TutorUnready(String),
 }
 
 impl Backend {
@@ -152,6 +154,9 @@ mod tests {
         b.provider("n5-01-aisatsu");
 
         let troubles = b.take_troubles();
-        assert!(!troubles.is_empty(), "the unready tutor was only logged");
+        assert!(
+            matches!(troubles.as_slice(), [Trouble::TutorUnready(_)]),
+            "the unready tutor was only logged"
+        );
     }
 }

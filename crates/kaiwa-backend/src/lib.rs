@@ -597,7 +597,10 @@ impl Backend {
         match kaiwa_ai::provider_from(&self.keys, self.meter.clone(), self.tutor_env()) {
             Ok(Some(p)) => return (p, false),
             Ok(None) => {}
-            Err(e) => eprintln!("kaiwa: {e}"),
+            Err(e) => {
+                eprintln!("kaiwa: {e}");
+                self.trouble(Trouble::TutorUnready(e));
+            }
         }
         #[cfg(any(test, feature = "demo"))]
         {
