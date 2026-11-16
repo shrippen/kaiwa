@@ -98,8 +98,9 @@ A change that needs more places than its row lists is a finding for the next aud
 - The app drives microphone and voice itself: `app/src` uses `kaiwa-speech` directly
   (`app.rs`, `conversation.rs`, `mic.rs`, `main.rs`), and the backend has no speech
   command yet. `AUDIT.md` finding 7.
-- Some failures to load are only logged: the main pages, an unreadable profile on them,
-  arming the cost brake after a new limit, purging old recordings on opening. Finding 2.
+- Two failures are still only logged: deleting the recordings when all data of a profile
+  is wiped (`profiles.rs`, `wipe`), and an unreadable tutor key, which then looks like no
+  tutor (`lib.rs`, `provider`). Found in the review of PR 153.
 - `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
   `turn_xp`. `AUDIT.md`, "Seit dem letzten Audit", finding 4.
 - Some persona checks still read source text: scans of all pages for strings, names,

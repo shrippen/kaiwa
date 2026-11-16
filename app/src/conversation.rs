@@ -828,7 +828,15 @@ impl qobject::Conversation {
     }
 
     fn idle(mut self: Pin<&mut Self>) {
-        let Some(minutes) = state().profile().ok().and_then(|p| p.unload_after_min) else {
+        let profile = state().profile();
+        let minutes = match profile {
+            Ok(p) => p.unload_after_min,
+            Err(e) => {
+                self.as_mut().say_unsaved(&format!("{e:#}"));
+                return;
+            }
+        };
+        let Some(minutes) = minutes else {
             return;
         };
         let quiet = *self.talk_state() == READY && !*self.busy() && self.capture.is_none();
