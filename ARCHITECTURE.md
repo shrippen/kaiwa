@@ -100,8 +100,6 @@ A change that needs more places than its row lists is a finding for the next aud
   is built in the app and read back by the backend. Findings 4 and 5.
 - The summary after a talk is put together in three places (backend, app, short talk).
   Finding 1.
-- Some failures to load are only logged: the main pages, an unreadable profile on them,
-  arming the cost brake after a new limit, purging old recordings on opening. Finding 2.
 - The settings page keeps its own lists for text size, daily goal and unloading time.
   Finding 3.
 - `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
