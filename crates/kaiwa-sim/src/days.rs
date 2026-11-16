@@ -498,17 +498,15 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
 
             let spoken_share = 1.0 - f64::from(typed) / f64::from(turns);
             let rec = records.entry(at.day()).or_default();
-            if rec.levels_at_start.is_empty() {
-                rec.levels_at_start = levels_before;
-            }
             rec.goal = Some(goal);
-            rec.speaking_secs += (minutes * 60.0 * spoken_share).round() as u32;
-            rec.typed_turns += typed;
             rec.reviews_done += reviews;
-            rec.xp += xp;
-            if st.goals_met == goals {
-                rec.scenarios_done += 1;
-            }
+            rec.add_talk(
+                levels_before,
+                (minutes * 60.0 * spoken_share).round() as u32,
+                typed,
+                xp,
+                st.goals_met == goals,
+            );
             last_practice = Some(at.plus_secs((minutes * 60.0) as i64));
             sessions.push(SimSession {
                 sim_day,

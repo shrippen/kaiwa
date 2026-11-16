@@ -923,21 +923,19 @@ impl Store {
         let speaking = (wall * spoken_share).round() as u32;
         let xp = summary.xp.xp;
         let mut rec = self.day(day)?;
-        if rec.levels_at_start.is_empty() {
-            rec.levels_at_start = levels_before;
-        }
         // The goal of the day, for the streak later (/LF602/). A talk that ends after
         // midnight counts for the day it began, which keeps the goal it had: a goal chosen
         // after midnight is today's.
         if rec.goal.is_none() || day == ended.day() {
             rec.goal = Some(self.profile()?.daily_goal);
         }
-        rec.speaking_secs += speaking;
-        rec.typed_turns += stats.typed_turns;
-        rec.xp += xp;
-        if scenario_done || s.done() {
-            rec.scenarios_done += 1;
-        }
+        rec.add_talk(
+            levels_before,
+            speaking,
+            stats.typed_turns,
+            xp,
+            scenario_done || s.done(),
+        );
         self.put_day(day, &rec)?;
         self.set_learning(&l)?;
         self.db.execute(
