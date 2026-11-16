@@ -832,6 +832,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn stored_kinds_read_with_the_core_words() {
+        // Kinds the old list lacked now have their own word; unknown stays "other".
+        assert_eq!(kind_word("omission", true), "Auslassung");
+        assert_eq!(kind_word("loanword", false), "Loanword");
+        assert_eq!(kind_word("word_order", true), "Satzstellung");
+        assert_eq!(kind_word("nonsense", true), "Sonstiges");
+        assert_eq!(kind_word("nonsense", false), "Other");
+    }
+
+    #[test]
     fn a_profile_outside_the_profiles_dir_says_the_key_is_the_environments() {
         // TempBackend lives in a temporary directory: no keyring home.
         let b = crate::TempBackend::new("key-env-only", false).unwrap();
