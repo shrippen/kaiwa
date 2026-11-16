@@ -15,6 +15,7 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+use kaiwa_core::booking::book_talk;
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum};
 use kaiwa_core::difficulty::{Change, Difficulty, Regulator};
@@ -245,6 +246,23 @@ pub struct Learning {
     /// Each grammar point's state by catalogue id (/LF201/): used, wrong, last day.
     #[serde(default)]
     pub grammar: std::collections::BTreeMap<String, kaiwa_core::grammar::PointState>,
+}
+
+impl Learning {
+    /// What the finished talk `s` changes here, by the core's one rule: the regulator's
+    /// change and whether the scenario is done in the course.
+    fn book(&mut self, s: &Session, success: f64) -> (Option<Change>, bool) {
+        let b = book_talk(
+            &mut self.model,
+            &mut self.regulator,
+            &mut self.course,
+            &s.evidence(),
+            &s.scenario.id,
+            success,
+            s.done(),
+        );
+        (b.change, b.scenario_done)
+    }
 }
 
 /// A session as listed (without its full state).
@@ -852,13 +870,7 @@ impl Store {
             .iter()
             .map(|k| (*k, l.model.level(*k)))
             .collect();
-        l.model.update(&s.evidence());
-        let change = if stats.turns > 0 {
-            l.regulator.after_session(success, &l.model)
-        } else {
-            None
-        };
-        let scenario_done = s.done() && l.course.complete(&s.scenario.id, success);
+        let (change, scenario_done) = l.book(s, success);
 
         let unit = curriculum
             .and_then(|c| c.unit_of(&s.scenario.id))
@@ -895,21 +907,19 @@ impl Store {
         let speaking = (wall * spoken_share).round() as u32;
         let xp = summary.xp.xp;
         let mut rec = self.day(day)?;
-        if rec.levels_at_start.is_empty() {
-            rec.levels_at_start = levels_before;
-        }
         // The goal of the day, for the streak later (/LF602/). A talk that ends after
         // midnight counts for the day it began, which keeps the goal it had: a goal chosen
         // after midnight is today's.
         if rec.goal.is_none() || day == ended.day() {
             rec.goal = Some(self.profile()?.daily_goal);
         }
-        rec.speaking_secs += speaking;
-        rec.typed_turns += stats.typed_turns;
-        rec.xp += xp;
-        if scenario_done || s.done() {
-            rec.scenarios_done += 1;
-        }
+        rec.add_talk(
+            levels_before,
+            speaking,
+            stats.typed_turns,
+            xp,
+            scenario_done || s.done(),
+        );
         self.put_day(day, &rec)?;
         self.set_learning(&l)?;
         self.db.execute(
@@ -990,13 +1000,7 @@ impl Store {
         let stats = s.stats();
         let success = stats.success();
         let mut l = recording.learning.clone();
-        l.model.update(&s.evidence());
-        let change = if stats.turns > 0 {
-            l.regulator.after_session(success, &l.model)
-        } else {
-            None
-        };
-        let scenario_done = s.done() && l.course.complete(&s.scenario.id, success);
+        let (change, scenario_done) = l.book(s, success);
         retrack(&mut l, ended);
         self.set_learning(&l)?;
 
