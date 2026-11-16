@@ -16,7 +16,6 @@ use serde_json::{Value, json};
 
 use crate::Backend;
 use crate::flow::{Opened, Talk};
-use crate::views;
 
 /// A placement in progress.
 pub struct Placing {
@@ -62,11 +61,6 @@ pub fn reading(answer: i32) -> Reading {
         1 => Reading::Some,
         _ => Reading::None,
     }
-}
-
-/// The skip the result offers, taken once, only the offer that ends at `last` (/LF215/).
-pub fn skip(b: &Backend, last: &str) -> anyhow::Result<bool> {
-    views::take_placement_skip(b, last)
 }
 
 impl Placing {
@@ -146,7 +140,7 @@ impl Placing {
             failed.push(e);
         }
 
-        let offer = views::placement_offer(b).unwrap_or_else(|e| {
+        let offer = crate::skips::placement_offer(b).unwrap_or_else(|e| {
             failed.push(e);
             Default::default()
         });
@@ -293,6 +287,6 @@ mod tests {
     #[test]
     fn an_unknown_skip_changes_nothing() {
         let b = backend("placing-skip");
-        assert!(!skip(&b, "no-such-unit").unwrap());
+        assert!(!crate::skips::take_placement_skip(&b, "no-such-unit").unwrap());
     }
 }

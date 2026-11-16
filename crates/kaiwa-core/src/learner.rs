@@ -179,6 +179,12 @@ impl LearnerModel {
         self.skills.get(&s).copied().unwrap_or(0.0)
     }
 
+    /// Whether the register is far enough for units with keigo: no skip offer leads into or
+    /// over keigo on easy talks in plain form (/LF215/).
+    pub fn keigo_ready(&self) -> bool {
+        self.level(Skill::Register) >= level_index("keigo_basic").unwrap_or(f64::MAX)
+    }
+
     pub fn set(&mut self, s: Skill, v: f64) {
         self.skills.insert(s, v.clamp(0.0, s.max()));
     }

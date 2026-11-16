@@ -70,7 +70,7 @@ QQC2.ScrollView {
             }
             KanteButton {
                 text: page.t("Bei null anfangen", "Start at zero")
-                onClicked: page.kaiwa.skipPlacement()
+                onClicked: page.kaiwa.leaveOutPlacement()
             }
         }
 

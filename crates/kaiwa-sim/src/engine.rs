@@ -753,7 +753,7 @@ fn misrecognition(root: &Path) -> Result<Option<String>> {
 /// /LF215/, T-08: the offer on the path is about the unit Emi is in, taking it skips that one
 /// unit and uses the offer up (three new easy talks bring the next), and it stops before keigo.
 fn skip_once(p: &Value) -> Result<Option<String>> {
-    use kaiwa_backend::views::{skip_offer, take_skip};
+    use kaiwa_backend::skips::{skip_offer, take_skip};
     let b = kaiwa_backend::TempBackend::new("skip-once", false)?;
     let easy = |n: usize| -> Result<()> {
         let mut l = b.seed().learning()?;
@@ -814,7 +814,7 @@ fn skip_once(p: &Value) -> Result<Option<String>> {
 /// unit with a keigo scenario, n4-13); taking it leaves that unit as the current one. A
 /// beginner is offered nothing.
 fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
-    use kaiwa_backend::views::{placement_offer, take_placement_skip};
+    use kaiwa_backend::skips::{placement_offer, take_placement_skip};
     let b = kaiwa_backend::TempBackend::new("skip-placement", false)?;
     let place = |p: &Value| -> Result<()> {
         let mut l = b.seed().learning()?;

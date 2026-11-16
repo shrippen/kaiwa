@@ -79,8 +79,8 @@ pub mod qobject {
 
         /// Take the skip the placement result offers, up to the unit `last` (/LF215/).
         #[qinvokable]
-        #[cxx_name = "skipPlacement"]
-        fn skip_placement(self: Pin<&mut Conversation>, last: &QString) -> bool;
+        #[cxx_name = "takePlacementOffer"]
+        fn take_placement_offer(self: Pin<&mut Conversation>, last: &QString) -> bool;
 
         /// Continue the session that was interrupted (/LF121/).
         #[qinvokable]
@@ -405,9 +405,9 @@ impl qobject::Conversation {
         self.as_mut().set_placing(false);
     }
 
-    fn skip_placement(mut self: Pin<&mut Self>, last: &QString) -> bool {
+    fn take_placement_offer(mut self: Pin<&mut Self>, last: &QString) -> bool {
         // Only the offer that ends at `last`, once (a second click changes nothing).
-        let taken = placing::skip(&state(), &last.to_string());
+        let taken = kaiwa_backend::skips::take_placement_skip(&state(), &last.to_string());
         taken.unwrap_or_else(|e| {
             self.as_mut().say_unsaved(&e.to_string());
             false
