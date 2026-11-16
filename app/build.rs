@@ -16,6 +16,7 @@ fn main() {
         "qml/Choice.qml",
         "qml/MainTabs.qml",
         "qml/NoticeLine.qml",
+        "qml/SpareLine.qml",
         "qml/leave.js",
         "qml/record.js",
     ]))

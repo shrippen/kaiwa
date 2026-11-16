@@ -35,6 +35,8 @@ pub enum KeyError {
     Empty,
     /// The profile has no keyring home ([`KeyHome::EnvOnly`]).
     EnvOnly,
+    /// The profile could not be opened; its keys stay as they are.
+    Spare,
     /// The keyring refused; its reason.
     Keyring(String),
 }
@@ -44,6 +46,7 @@ impl std::fmt::Display for KeyError {
         match self {
             Self::Empty => f.write_str("empty key"),
             Self::EnvOnly => f.write_str("the profile has no keyring entry"),
+            Self::Spare => f.write_str("the profile could not be opened"),
             Self::Keyring(e) => f.write_str(e),
         }
     }

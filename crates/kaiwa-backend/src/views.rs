@@ -640,6 +640,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "endPause": p.end_pause_secs,
         "pauseSteps": kaiwa_core::turn_end::PAUSE_STEPS,
         "keepRecordings": p.keep_recordings_days,
+        "spare": st.is_spare(),
         "style": p.style,
         "reminder": p.reminder,
         "costLimit": p.cost_limit_cents,
@@ -809,23 +810,7 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
     })
 }
 
-/// Why a key was not stored, in words.
-pub fn key_error(e: &kaiwa_ai::secrets::KeyError, lang: &str) -> String {
-    use kaiwa_ai::secrets::KeyError;
-    let de = lang != "en";
-    match (e, de) {
-        (KeyError::Empty, true) => "Kein Schlüssel eingegeben.".to_string(),
-        (KeyError::Empty, false) => "No key entered.".to_string(),
-        (KeyError::EnvOnly, true) => {
-            "Für dieses Profil speichert Kaiwa keinen Schlüssel im Schlüsselbund; er kommt nur aus der Umgebung.".to_string()
-        }
-        (KeyError::EnvOnly, false) => {
-            "For this profile Kaiwa keeps no key in the keyring; it comes only from the environment.".to_string()
-        }
-        (KeyError::Keyring(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
-        (KeyError::Keyring(e), false) => format!("The keyring refused: {e}"),
-    }
-}
+pub use crate::profiles::key_error;
 
 /// "What leaves the device?" (/LF711/), from `kaiwa_ai::privacy`, for the tutor set up.
 pub fn privacy(st: &Backend, lang: &str) -> Value {

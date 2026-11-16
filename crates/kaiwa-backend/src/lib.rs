@@ -286,6 +286,8 @@ pub struct Backend {
     keys: kaiwa_ai::secrets::Keys,
     /// What went wrong in the background; [`Backend::take_troubles`].
     troubles: Mutex<Vec<Trouble>>,
+    /// Running on the stand-in for a profile that could not be opened ([`Backend::is_spare`]).
+    spare: bool,
 }
 
 impl Backend {
@@ -405,6 +407,7 @@ impl Backend {
             scenarios,
             demo_data: demo,
             troubles: Mutex::new(Vec::new()),
+            spare: false,
         })
     }
 }

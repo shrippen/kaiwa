@@ -192,6 +192,9 @@ impl Default for KaiwaAppRust {
     }
 }
 
+const SPARE_DE: &str = "Das Profil ließ sich nicht öffnen, das geht gerade nicht. Lösche alle Daten oder wähle ein anderes Profil.";
+const SPARE_EN: &str = "The profile could not be opened, so this is not possible now. Delete all data or pick another profile.";
+
 fn q(v: &serde_json::Value) -> QString {
     QString::from(&v.to_string())
 }
@@ -204,6 +207,15 @@ impl qobject::KaiwaApp {
             false => format!("The profile could not be changed, nothing changed: {e}"),
         };
         self.as_mut().set_notice(QString::from(&msg));
+    }
+
+    /// Tells the learner why a change is refused while the stand-in profile runs.
+    fn say_spare(mut self: Pin<&mut Self>) {
+        let msg = match self.lang().to_string() == "de" {
+            true => SPARE_DE,
+            false => SPARE_EN,
+        };
+        self.as_mut().set_notice(QString::from(msg));
     }
 
     /// Tells the learner the setting is saved but its effect failed (today's goal, deleting
@@ -253,6 +265,12 @@ impl qobject::KaiwaApp {
             }
             (Trouble::KeysKept(e), false) => {
                 format!("The keyring kept keys of this profile: {e}")
+            }
+            (Trouble::KeysMarkerLost(e), true) => format!(
+                "Die alten Schlüssel sind umgezogen, aber das Vermerken ist fehlgeschlagen; der nächste Start versucht es noch einmal: {e}"
+            ),
+            (Trouble::KeysMarkerLost(e), false) => {
+                format!("The old keys moved, but noting it failed; the next start tries again: {e}")
             }
             (Trouble::KeysUnmoved(e), true) => {
                 format!("Die alten Schlüssel blieben, wo sie waren: {e}")
@@ -392,6 +410,7 @@ impl qobject::KaiwaApp {
         match edited {
             Err(SettingError::NotSaved(e)) => self.as_mut().say_unreadable(&e),
             Err(SettingError::NotApplied(e)) => self.as_mut().say_unapplied(&e),
+            Err(SettingError::Spare) => self.as_mut().say_spare(),
             Ok(()) => {}
         }
         // Also after a failure: the page shows what the profile now holds.
@@ -500,6 +519,8 @@ impl qobject::KaiwaApp {
         self.as_mut().set_notice(QString::from(&match (result, de) {
             (Ok(()), true) => format!("Importiert aus {file}."),
             (Ok(()), false) => format!("Imported from {file}."),
+            (Err(ImportError::Spare), true) => SPARE_DE.to_string(),
+            (Err(ImportError::Spare), false) => SPARE_EN.to_string(),
             (Err(ImportError::NotEmpty), true) => "Der Import geht nur in ein leeres Profil. Lege oben ein neues Profil an und importiere dort.".to_string(),
             (Err(ImportError::NotEmpty), false) => "An import needs an empty profile. Add a new profile above and import there.".to_string(),
             (Err(ImportError::NotAnExport), true) => format!("{file} ist kein Export von Kaiwa."),
@@ -575,8 +596,7 @@ impl qobject::KaiwaApp {
         let msg = match (result, de) {
             (Ok(()), true) => "Der Schlüssel ist aus dem Schlüsselbund entfernt.".to_string(),
             (Ok(()), false) => "The key is removed from the keyring.".to_string(),
-            (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
-            (Err(e), false) => format!("The keyring refused: {e}"),
+            (Err(e), _) => kaiwa_backend::views::key_error(&e, if de { "de" } else { "en" }),
         };
         self.as_mut().set_notice(QString::from(&msg));
         self.as_mut().refresh();

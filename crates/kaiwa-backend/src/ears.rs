@@ -27,7 +27,7 @@ use crate::Backend;
 use crate::log::{MoraKind, MoraNote};
 use watch::Watch;
 
-pub use text::{recognizer_text, speech_text, test_text};
+pub use text::{MoraFailure, mora_text, recognizer_text, speech_text, test_text};
 pub use watch::{HANDS_FREE_WAIT_SECS, Heard, Offer, Patience};
 
 /// Shorter recordings (a tap) are not checked for a voice.

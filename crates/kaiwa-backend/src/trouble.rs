@@ -20,6 +20,9 @@ pub enum Trouble {
     KeysKept(String),
     /// The keys of before V-01 stayed where they were.
     KeysUnmoved(String),
+    /// The keys moved, but the note that says so could not be written: the next start tries
+    /// again.
+    KeysMarkerLost(String),
 }
 
 impl Backend {
@@ -41,9 +44,16 @@ impl Backend {
             kaiwa_ai::secrets::KeyHome::of(&path, kaiwa_store::keyring_dir().as_deref()),
         );
         let db = Store::in_memory().expect("an empty store in memory opens");
-        let spare = Self::assemble(db, keys, path, false).expect("the built-in data loads");
+        let mut spare = Self::assemble(db, keys, path, false).expect("the built-in data loads");
+        spare.spare = true;
         spare.trouble(Trouble::Unopened(e));
         spare
+    }
+
+    /// Whether this is the stand-in for a profile that could not be opened: it saves nothing,
+    /// so what would reach outside (an import, keys, deleting recordings) is refused.
+    pub fn is_spare(&self) -> bool {
+        self.spare
     }
 
     pub(crate) fn trouble(&self, t: Trouble) {
@@ -81,5 +91,47 @@ mod tests {
         assert!(spare.profile().is_ok());
         assert_eq!(std::fs::read(&file).unwrap(), garbage);
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    fn spare_at(name: &str) -> Backend {
+        let dir = std::env::temp_dir().join(format!("kaiwa-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        Backend::or_spare(dir.join("x.kaiwa"), Err(anyhow::anyhow!("broken")))
+    }
+
+    #[test]
+    fn the_spare_says_so_in_the_profile_view() {
+        let spare = spare_at("spare-view");
+        assert_eq!(crate::views::profile(&spare).unwrap()["spare"], true);
+        let ok = crate::TempBackend::new("spare-view-ok", false).unwrap();
+        assert_eq!(crate::views::profile(&ok).unwrap()["spare"], false);
+    }
+
+    #[test]
+    fn the_spare_refuses_what_would_not_be_kept() {
+        let spare = spare_at("spare-refuses");
+        let now = crate::now();
+
+        let import = spare.import_from("/nonexistent/backup.json");
+        assert!(matches!(import, Err(crate::transfer::ImportError::Spare)));
+
+        let rec = spare.set_setting("keepRecordings", "1", now);
+        assert!(matches!(rec, Err(crate::settings::SettingError::Spare)));
+
+        spare
+            .store
+            .update_profile(|p| p.tutor.provider = "anthropic".into())
+            .unwrap();
+        let store = spare.store_key("sk-x");
+        assert_eq!(store, Some(Err(kaiwa_ai::secrets::KeyError::Spare)));
+        let remove = spare.remove_key();
+        assert_eq!(remove, Some(Err(kaiwa_ai::secrets::KeyError::Spare)));
+    }
+
+    #[test]
+    fn wiping_the_spare_is_the_way_out() {
+        let mut spare = spare_at("spare-wipe");
+        spare.wipe().unwrap();
+        assert!(!spare.is_spare());
     }
 }

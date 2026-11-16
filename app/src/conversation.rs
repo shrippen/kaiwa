@@ -201,7 +201,7 @@ use std::time::Duration;
 use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_backend::ears::{
-    self, Clip, Ears, Hands, Heard, Mic, Moras, Offer, Patience, Recognition,
+    self, Clip, Ears, Hands, Heard, Mic, MoraFailure, Moras, Offer, Patience, Recognition,
 };
 use kaiwa_backend::flow::{self, Length, Talk};
 use kaiwa_backend::log::Log;
@@ -528,15 +528,9 @@ impl qobject::Conversation {
         self.as_mut().set_notice(QString::from(&msg));
     }
 
-    /// Tells the learner the pronunciation check failed; the talk goes on without hints.
-    fn say_mora_failed(mut self: Pin<&mut Self>, e: &ears::SpeechError) {
-        let msg = match self.lang == "de" {
-            true => format!(
-                "Die Aussprachehinweise fehlen: {}",
-                ears::speech_text(e, "de")
-            ),
-            false => format!("No pronunciation hints: {}", ears::speech_text(e, "en")),
-        };
+    /// Tells the learner why there are no pronunciation hints; the talk goes on without.
+    fn say_mora_failed(mut self: Pin<&mut Self>, e: &ears::SpeechError, when: MoraFailure) {
+        let msg = ears::mora_text(e, when, &self.lang);
         self.as_mut().set_notice(QString::from(&msg));
     }
 
@@ -785,11 +779,10 @@ impl qobject::Conversation {
             };
             let failed = speaker.say(&said, &line, &still, &mut on_sound);
             let _ = thread.queue(move |mut q| {
-                // The voice's note stays under the talk, the same text for every sentence.
-                if let Some(e) = failed {
-                    let text = voice::voice_text(&e, &q.lang);
-                    q.as_mut().set_voice_note(QString::from(&text));
-                }
+                // A failed sentence leaves a note until a line plays without one.
+                let note = failed.map(|e| voice::voice_text(&e, &q.lang));
+                q.as_mut()
+                    .set_voice_note(QString::from(&note.unwrap_or_default()));
                 if q.utterance.load(Ordering::SeqCst) == id {
                     q.quiet.store(id, Ordering::SeqCst);
                     if *q.talk_state() == SPEAKING {
@@ -1298,7 +1291,8 @@ impl qobject::Conversation {
             let notes = match check.check(&rec, &text) {
                 Ok(notes) => notes,
                 Err(e) => {
-                    let _ = thread.queue(move |mut q| q.as_mut().say_mora_failed(&e));
+                    let _ = thread
+                        .queue(move |mut q| q.as_mut().say_mora_failed(&e, MoraFailure::Check));
                     return;
                 }
             };
@@ -1517,7 +1511,7 @@ fn load_mora(thread: &CxxQtThread<qobject::Conversation>) {
         }
         Err(e) if ears::model_missing(&e) => {}
         Err(e) => {
-            let _ = thread.queue(move |mut q| q.as_mut().say_mora_failed(&e));
+            let _ = thread.queue(move |mut q| q.as_mut().say_mora_failed(&e, MoraFailure::Load));
         }
     }
 }

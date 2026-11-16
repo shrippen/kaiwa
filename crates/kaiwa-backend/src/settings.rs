@@ -117,6 +117,8 @@ pub enum SettingError {
     NotSaved(anyhow::Error),
     /// The setting is saved, but what it sets off failed (today's goal, deleting recordings).
     NotApplied(anyhow::Error),
+    /// The profile could not be opened; the setting would delete recordings of the real one.
+    Spare,
 }
 
 impl Backend {
@@ -143,6 +145,9 @@ impl Backend {
     }
 
     fn edit_profile(&self, key: &str, value: &str, now: Moment) -> Result<(), SettingError> {
+        if self.spare && key == "keepRecordings" {
+            return Err(SettingError::Spare);
+        }
         let p = self
             .store
             .update_profile(|p| {

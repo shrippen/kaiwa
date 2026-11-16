@@ -3,6 +3,33 @@
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::Verdict;
 
+/// When the pronunciation check failed.
+pub enum MoraFailure {
+    /// Its model could not be loaded.
+    Load,
+    /// It failed on a recording.
+    Check,
+}
+
+/// Why there are no pronunciation hints, in the UI language; speaking goes on either way.
+pub fn mora_text(e: &SpeechError, when: MoraFailure, lang: &str) -> String {
+    let de = lang == "de";
+    match (when, de) {
+        (MoraFailure::Check, true) => {
+            format!("Die Aussprachehinweise fehlen, die Prüfung ist ausgefallen: {e}")
+        }
+        (MoraFailure::Check, false) => {
+            format!("Pronunciation hints are missing, the check failed: {e}")
+        }
+        (MoraFailure::Load, true) => format!(
+            "Die Aussprachehinweise fehlen, das Modell ist beschädigt ({e}). Lade es in den Einstellungen unter „Modelle“ neu herunter; Sprechen geht weiter."
+        ),
+        (MoraFailure::Load, false) => format!(
+            "Pronunciation hints are missing, the model is damaged ({e}). Download it again in the settings under “Models”; speaking still works."
+        ),
+    }
+}
+
 /// What the learner reads when speaking does not work, in the UI language.
 pub fn speech_text(e: &SpeechError, lang: &str) -> String {
     let de = lang == "de";
