@@ -82,7 +82,6 @@ pub struct Run {
     pub translations: Vec<(String, Result<String, String>)>,
     /// The aids the session counted after the translations.
     pub aids: u32,
-    pub root: std::path::PathBuf,
     /// Played against a real tutor (`--live`).
     pub live: bool,
     /// A call to the real tutor failed (a limit, the network): the run stopped there, and every
@@ -97,7 +96,7 @@ pub enum Outcome {
     Fail(String),
     /// Judges the tutor: runs only with `--live` ([`LIVE`]).
     LiveOnly,
-    /// Needs the built app: runs only with `--app` ([`crate::app::APP`]).
+    /// Needs the built app (`--app`, [`crate::app::APP`]) or Qt 6 for QML tests ([`crate::qml`]).
     AppOnly,
     NotAutomated,
 }
@@ -250,7 +249,6 @@ pub fn play_with(
         summary,
         translations,
         aids,
-        root: root.to_path_buf(),
         live,
         tutor_error,
     })
@@ -475,13 +473,6 @@ pub fn check(id: &str, run: &Run) -> Option<Outcome> {
                     run.aids
                 ));
             }
-            let page = std::fs::read_to_string(run.root.join("app/qml/ConversationPage.qml"))
-                .unwrap_or_default();
-            for aid in 0..3 {
-                if !page.contains(&format!("conv.listen(msg.index, {aid})")) {
-                    return fail(format!("the conversation page has no listening aid {aid}"));
-                }
-            }
             Some(Outcome::Pass)
         }
         // /LF301/: every correction shown is a diff that spells out both forms, its
@@ -517,11 +508,6 @@ pub fn check(id: &str, run: &Run) -> Option<Outcome> {
             }
             if seen == 0 {
                 return fail("no correction shown in the journey".into());
-            }
-            let page = std::fs::read_to_string(run.root.join("app/qml/ConversationPage.qml"))
-                .unwrap_or_default();
-            if !page.contains("conv.sayText(modelData.better)") {
-                return fail("the hint card cannot play the better form".into());
             }
             Some(Outcome::Pass)
         }
@@ -773,9 +759,8 @@ pub fn run_persona_with(
                 .and_then(|r| check(cid, r))
                 .or_else(|| crate::engine::check(cid, root, &persona))
                 .or_else(|| crate::profile::check(cid, root))
-                .or_else(|| crate::ui::check(cid, root))
-                .or_else(|| crate::app::pending(cid))
-                .unwrap_or(Outcome::NotAutomated);
+                .or_else(|| crate::ui::check(cid, root));
+            let outcome = crate::qml::finish(cid, root, outcome);
             checks.insert(cid.to_string(), outcome);
         }
         reports.push(JourneyReport {
@@ -1097,10 +1082,11 @@ mod tests {
         }
         // A check by hand stays one; the long journey without a tutor still runs.
         assert_eq!(first.checks["mara_mora_hint"], Outcome::NotAutomated);
-        assert_eq!(
-            first.checks["mara_ptt"],
-            Outcome::Pass,
-            "ui checks run as always"
+        // Pass with Qt 6 installed (QML tests), else app only.
+        assert!(
+            matches!(first.checks["mara_ptt"], Outcome::Pass | Outcome::AppOnly),
+            "ui checks run as always: {:?}",
+            first.checks["mara_ptt"]
         );
         let days = reports
             .iter()
@@ -1124,7 +1110,14 @@ mod tests {
         ] {
             assert_eq!(first.checks[id], Outcome::Pass, "{id}");
         }
-        assert_eq!(first.checks["mara_listen_tools"], Outcome::Pass);
+        assert!(
+            matches!(
+                first.checks["mara_listen_tools"],
+                Outcome::Pass | Outcome::AppOnly
+            ),
+            "{:?}",
+            first.checks["mara_listen_tools"]
+        );
         assert_eq!(
             first.requirements["mara_recall"],
             vec!["/LL111/".to_string()]

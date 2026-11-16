@@ -103,7 +103,10 @@ A change that needs more places than its row lists is a finding for the next aud
 - Error kinds are named in the core and again, differently, in the backend's views.
   Finding 1.
 - A failed save in a conversation is only logged. Finding 5.
-- Some persona checks search for text in source files. Finding 8.
+- Some persona checks still read source text: scans of all pages for strings, names,
+  handlers and gamification text, the palette's colours, the voice's pace in
+  `app/src/conversation.rs` and the one file that downloads. What a page does is checked in
+  QML tests (`app/qml/tests`). Finding 8.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
   then the app is the only front end and runs the backend in its own process. On that
   branch `kaiwad` drives microphone and recognition itself; M4 moves that into the
