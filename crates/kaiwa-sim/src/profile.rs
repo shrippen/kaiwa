@@ -132,7 +132,7 @@ fn sick_pause() -> Result<Option<String>> {
             speaking_secs: 6 * 60,
             ..Default::default()
         };
-        b.store.put_day(at(day, 0).day(), &r)
+        b.seed().put_day(at(day, 0).day(), &r)
     };
     let evening = |day: i64| at(day, 20 * 3600);
 
@@ -150,13 +150,13 @@ fn sick_pause() -> Result<Option<String>> {
             )));
         }
 
-        let ill = b.store.today(evening(12))?.streak;
+        let ill = b.seed().today(evening(12))?.streak;
         if ill.days != 10 || !ill.freezes_used.is_empty() || !ill.ended_on.is_empty() {
             return Ok(Some(format!("ill on day 12: {ill:?}")));
         }
 
         b.end_pause(evening(13).day())?;
-        if b.store.paused_until(evening(13).day())?.is_some() {
+        if b.seed().paused_until(evening(13).day())?.is_some() {
             return Ok(Some("the pause still runs after ending it".into()));
         }
         if practise_on_13 {
@@ -164,7 +164,7 @@ fn sick_pause() -> Result<Option<String>> {
         }
         practise(&b, 14)?;
 
-        let back = b.store.today(evening(14))?.streak;
+        let back = b.seed().today(evening(14))?.streak;
         let (days, freezes) = if practise_on_13 {
             (12, vec![])
         } else {
@@ -192,12 +192,12 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     let now = at(3, 19 * 3600);
     let talk = |b: &Backend, day: i64| -> Result<()> {
         let mut s = session(root)?;
-        let id = b.store.begin_session(&s.snapshot(), at(day, 9 * 3600))?;
+        let id = b.seed().begin_session(&s.snapshot(), at(day, 9 * 3600))?;
         for t in ["マラです。よろしくおねがいします。", "コーヒーを好きです。"]
         {
             s.turn(t, Input::Spoken)?;
         }
-        b.store
+        b.seed()
             .record(id, &s, at(day, 9 * 3600), at(day, 9 * 3600 + 400), Some(&c))?;
         Ok(())
     };
@@ -215,7 +215,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
             "review": views::review(b, now, 50)?,
             "learner": views::learner(b)?,
             "stats": views::stats(b, now)?,
-            "export": b.store.export(now)?,
+            "export": b.seed().export(now)?,
             "cost": b.month_cost(now)?,
         }))
     };
@@ -225,7 +225,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     let keys = std::sync::Arc::new(kaiwa_ai::secrets::MemoryKeys::default());
     let open = |path: PathBuf| Backend::open_with(path, false, keys.clone(), Some(&dir));
     let key_of = |b: &Backend| {
-        let id = b.path.file_stem().map(|s| s.to_string_lossy().to_string());
+        let id = b.path().file_stem().and_then(|s| s.to_str());
         keys.get(&format!("anthropic/{}", id.unwrap_or_default()))
             .ok()
             .flatten()
@@ -233,19 +233,19 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
 
     // Hinnerk: his settings, two talks, a month's cost.
     let hinnerk = open(profiles::current_in(&dir))?;
-    let mut p = hinnerk.store.profile()?;
+    let mut p = hinnerk.profile()?;
     p.name = "Hinnerk".into();
     p.text_scale = 1.6;
     p.gamification = false;
     p.cost_limit_cents = Some(500);
     p.tutor.provider = "anthropic".into();
-    hinnerk.store.set_profile(&p)?;
+    hinnerk.seed().set_profile(&p)?;
     if hinnerk.store_key("sk-hinnerk") != Some(Ok(())) {
         found.push("Hinnerk's key was not stored".into());
     }
     talk(&hinnerk, 0)?;
     talk(&hinnerk, 1)?;
-    hinnerk.store.set_state_value(
+    hinnerk.seed().set_state_value(
         "cost.2026-10",
         &kaiwa_backend::cost::Month {
             cents: 42.0,
@@ -258,7 +258,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     if before["cost"]["cents"] != 42.0 {
         found.push(format!("the month's cost is not his: {}", before["cost"]));
     }
-    let his_file = hinnerk.path.clone();
+    let his_file = hinnerk.path().to_path_buf();
     drop(hinnerk);
 
     // The grandson's own profile: from zero, in the interface's language (English here, to
@@ -268,7 +268,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
         found.push("the new profile is not the one in use".into());
     }
     let ole = open(file.clone())?;
-    let op = ole.store.profile()?;
+    let op = ole.profile()?;
     let fresh = kaiwa_store::Profile::default();
     if op.name != "Ole" || op.ui_lang != "en" {
         found.push(format!("the new profile: {} / {}", op.name, op.ui_lang));
@@ -280,11 +280,11 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     {
         found.push("the new profile took over settings".into());
     }
-    if !ole.store.items()?.is_empty()
-        || !ole.store.days()?.is_empty()
-        || !ole.store.sessions(10)?.is_empty()
+    if !ole.seed().items()?.is_empty()
+        || !ole.seed().days()?.is_empty()
+        || !ole.seed().sessions(10)?.is_empty()
         || ole.month_cost(now)?.cents != 0.0
-        || ole.store.learning()?.course != Default::default()
+        || ole.seed().learning()?.course != Default::default()
     {
         found.push("the new profile does not start from zero".into());
     }
@@ -301,21 +301,21 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
         found.push("not exactly the grandson's profile is marked as in use".into());
     }
     // The same provider, and his grandfather's key is not his.
-    let mut op = ole.store.profile()?;
+    let mut op = ole.profile()?;
     op.tutor.provider = "anthropic".into();
-    ole.store.set_profile(&op)?;
+    ole.seed().set_profile(&op)?;
     if key_of(&ole).is_some() {
         found.push("the new profile sees another profile's key".into());
     }
     // He plays with it: talks, other settings.
     talk(&ole, 2)?;
     talk(&ole, 3)?;
-    let mut op = ole.store.profile()?;
+    let mut op = ole.profile()?;
     op.ui_lang = "de".into();
     op.text_scale = 1.0;
     op.gamification = true;
     op.cost_limit_cents = Some(2000);
-    ole.store.set_profile(&op)?;
+    ole.seed().set_profile(&op)?;
     if ole.store_key("sk-ole") != Some(Ok(())) || key_of(&ole).as_deref() != Some("sk-ole") {
         found.push("the grandson's key was not stored".into());
     }

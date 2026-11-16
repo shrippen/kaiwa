@@ -40,9 +40,9 @@ const NOW: Moment = Moment {
 
 fn demo(name: &str, lang: &str) -> Result<kaiwa_backend::TempBackend> {
     let b = kaiwa_backend::TempBackend::new(&format!("sim-ui-{name}"), true)?;
-    let mut p = b.store.profile()?;
+    let mut p = b.profile()?;
     p.ui_lang = lang.into();
-    b.store.set_profile(&p)?;
+    b.seed().set_profile(&p)?;
     Ok(b)
 }
 
@@ -247,14 +247,14 @@ fn ui_en(root: &Path) -> Result<Option<String>> {
 /// (the sessions' turns) stay.
 fn retention() -> Result<Option<String>> {
     let b = demo("retention", "de")?;
-    let mut p = b.store.profile()?;
+    let mut p = b.profile()?;
     p.keep_recordings_days = Some(7);
-    b.store.set_profile(&p)?;
-    let sessions = b.store.finished_since(0)?;
+    b.seed().set_profile(&p)?;
+    let sessions = b.seed().finished_since(0)?;
     let turns_before: usize = sessions
         .iter()
         .map(|r| {
-            b.store
+            b.seed()
                 .session_state(r.id)
                 .map(|s| s.turns.len())
                 .unwrap_or(0)
@@ -273,11 +273,11 @@ fn retention() -> Result<Option<String>> {
     }
     b.purge_recordings(NOW.plus_secs(8 * 86_400))?;
     let turns_after: usize = b
-        .store
+        .seed()
         .finished_since(0)?
         .iter()
         .map(|r| {
-            b.store
+            b.seed()
                 .session_state(r.id)
                 .map(|s| s.turns.len())
                 .unwrap_or(0)
@@ -295,9 +295,9 @@ fn retention() -> Result<Option<String>> {
 /// meter display sits behind the gamification setting.
 fn gamification_off(root: &Path) -> Result<Option<String>> {
     let b = demo("gamification", "de")?;
-    let mut p = b.store.profile()?;
+    let mut p = b.profile()?;
     p.gamification = false;
-    b.store.set_profile(&p)?;
+    b.seed().set_profile(&p)?;
     let mut found = Vec::new();
     let today = views::today(&b, NOW)?;
     if today["streakNote"].as_str().is_some_and(|s| !s.is_empty()) {
@@ -456,7 +456,7 @@ fn targets(root: &Path) -> Result<Option<String>> {
 /// [`crate::qml`]). Measuring the times needs the audio mode.
 fn suggest_smaller() -> Result<Option<String>> {
     let b = demo("latency", "de")?;
-    let before = b.store.profile()?;
+    let before = b.profile()?;
     for ms in [3400, 3900, 4200, 3600, 5100, 3300] {
         b.add_latency(ms)?;
     }
@@ -465,7 +465,7 @@ fn suggest_smaller() -> Result<Option<String>> {
     if v["slow"] != true || v["suggestion"].as_str().is_none_or(str::is_empty) {
         found.push(format!("no suggestion at a median of {}", v["p50"]));
     }
-    if b.store.profile()? != before {
+    if b.profile()? != before {
         found.push("the profile changed by itself".into());
     }
     Ok((!found.is_empty()).then(|| found.join("; ")))
@@ -645,7 +645,7 @@ fn word_lookup(root: &Path) -> Result<Option<String>> {
         found.push("taken into the review twice".into());
     }
     let from_lookup = b
-        .store
+        .seed()
         .items()?
         .iter()
         .any(|i| i.text == text && i.source == kaiwa_core::srs::Source::Lookup);
