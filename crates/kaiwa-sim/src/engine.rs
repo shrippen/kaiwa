@@ -651,13 +651,13 @@ fn profile_visible(p: &Value) -> Result<Option<String>> {
 
 /// /LF307/, /LD060/: a dispute is stored, the correction stays marked, it no longer counts.
 fn dispute(root: &Path) -> Result<Option<String>> {
-    let store = kaiwa_store::Store::in_memory()?;
+    let b = kaiwa_backend::TempBackend::new("dispute", false)?;
     let mut s = session(root, "n5-02-jikoshoukai")?;
     s.turn("コーヒーを好きです。", Input::Spoken)?;
     let c = s
         .dispute(0, "コーヒーが好きです")
         .context("no correction to dispute")?;
-    store.add_dispute(&kaiwa_store::Dispute {
+    b.seed().add_dispute(&kaiwa_store::Dispute {
         at: kaiwa_core::Moment::new(0, 0),
         scenario: s.scenario.id.clone(),
         learner: "コーヒーを好きです。".into(),
@@ -666,7 +666,7 @@ fn dispute(root: &Path) -> Result<Option<String>> {
         explanation: c.explanation,
     })?;
     let t = &s.turns()[0];
-    if store.disputes()?.len() != 1 {
+    if b.seed().disputes()?.len() != 1 {
         return Ok(Some("not stored".into()));
     }
     if t.corrections.is_empty() || t.disputed.is_empty() {

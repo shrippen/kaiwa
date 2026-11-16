@@ -13,7 +13,7 @@ use kaiwa_core::curriculum::Curriculum;
 use kaiwa_core::progress::DayRecord;
 use kaiwa_core::session::SessionState;
 use kaiwa_core::srs::Item;
-use kaiwa_store::{Learning, Profile, Recorded, Result, SessionRow, Today};
+use kaiwa_store::{Dispute, Learning, Profile, Recorded, Result, SessionRow, Today};
 
 use crate::Backend;
 
@@ -58,6 +58,30 @@ impl Seed<'_> {
         self.0.store.begin_session(state, at)
     }
 
+    pub fn save_session(&self, id: i64, state: &SessionState) -> Result<()> {
+        self.0.store.save_session(id, state)
+    }
+
+    pub fn open_session(&self) -> Result<Option<SessionRow>> {
+        self.0.store.open_session()
+    }
+
+    pub fn profile(&self) -> Result<Profile> {
+        self.0.store.profile()
+    }
+
+    pub fn import(&self, v: &serde_json::Value) -> Result<()> {
+        self.0.store.import(v)
+    }
+
+    pub fn add_dispute(&self, d: &Dispute) -> Result<()> {
+        self.0.store.add_dispute(d)
+    }
+
+    pub fn disputes(&self) -> Result<Vec<Dispute>> {
+        self.0.store.disputes()
+    }
+
     pub fn record(
         &self,
         id: i64,
@@ -99,6 +123,10 @@ impl Seed<'_> {
 
     pub fn item(&self, text: &str) -> Result<Option<Item>> {
         self.0.store.item(text)
+    }
+
+    pub fn due(&self, now: Moment, limit: usize) -> Result<Vec<Item>> {
+        self.0.store.due(now, limit)
     }
 
     pub fn put_item(&self, item: &Item) -> Result<()> {
