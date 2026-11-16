@@ -1404,7 +1404,7 @@ impl qobject::Conversation {
             self.as_mut().set_talk_state(ERROR);
             return;
         };
-        if !kaiwa_backend::talk::may_recognize(*self.busy()) {
+        if *self.busy() {
             return;
         }
         // No voice in it (no microphone, muted, wrong input): say so instead of letting the
