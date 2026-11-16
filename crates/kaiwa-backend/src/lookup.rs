@@ -143,8 +143,7 @@ pub fn lookup_in(path: &Path, backend: &Backend, word: &LineWord, lang: &str) ->
         }),
         Ok(Found::Nothing) => json!({ "text": word.text, "found": false }),
         Err::<_, kaiwa_lang::LangError>(e) => {
-            eprintln!("kaiwa: lookup: {e}");
-            json!({ "text": word.text, "found": false })
+            json!({ "text": word.text, "found": false, "error": e.to_string() })
         }
     }
 }
@@ -267,5 +266,21 @@ mod tests {
         );
         assert_eq!(v["missing"], true);
         assert_eq!(v["text"], "駅");
+    }
+
+    #[test]
+    fn a_broken_dictionary_says_why_instead_of_not_found() {
+        let b = backend("broken-dict");
+        let file = std::env::temp_dir().join(format!("kaiwa-dict-{}.sqlite", std::process::id()));
+        std::fs::copy(excerpt(), &file).unwrap();
+        let db = rusqlite::Connection::open(&file).unwrap();
+        db.execute_batch("DROP TABLE form").unwrap();
+        drop(db);
+
+        let v = lookup_in(&file, &b, &word("駅", 0), "de");
+
+        std::fs::remove_file(&file).unwrap();
+        assert_eq!(v["found"], false);
+        assert!(v["error"].as_str().is_some_and(|e| !e.is_empty()), "{v}");
     }
 }

@@ -92,38 +92,42 @@ impl Speaker {
 
     /// Says `line` sentence by sentence (the first plays while the next is made) and returns
     /// when the speaker is quiet, or `still` turns false (the character moved on). `on_sound`
-    /// runs after each sentence went to the speaker.
+    /// runs after each sentence went to the speaker. A sentence the voice could not make is
+    /// skipped; the first such failure is returned.
     pub fn say(
         &self,
         said: &Said,
         line: &Line,
         still: &dyn Fn() -> bool,
         on_sound: &mut dyn FnMut(),
-    ) {
+    ) -> Option<SpeechError> {
         let player = &self.player;
         let play = |samples: &[f32], rate: u32| {
             player.play(&Clip::new(samples.to_vec(), rate));
             on_sound();
         };
-        render(&*self.voice, said, line, still, play);
+        let failed = render(&*self.voice, said, line, still, play);
         while still() && player.playing() {
             sleep(QUIET_POLL);
         }
+        failed
     }
 }
 
 /// Makes the sentences of `line` one by one and hands each, louder or clearer as set, to
-/// `play`; stops when `still` is false. A sentence made before comes from `said`.
+/// `play`; stops when `still` is false. A sentence made before comes from `said`. A sentence
+/// that fails is skipped; the first failure is returned.
 fn render(
     voice: &Mutex<dyn Synthesizer>,
     said: &Said,
     line: &Line,
     still: &dyn Fn() -> bool,
     mut play: impl FnMut(&[f32], u32),
-) {
+) -> Option<SpeechError> {
+    let mut failed = None;
     for sentence in tts::sentences(&kaiwa_core::spoken(&line.markup)) {
         if !still() {
-            return;
+            return failed;
         }
         // In the character's own voice (/LF117/); what this conversation said before plays at
         // once (/LF111/).
@@ -135,10 +139,13 @@ fn render(
                 playback::enhance(&mut samples, rate, louder, clear);
                 play(&samples, rate);
             }
-            Some(Err(e)) => eprintln!("kaiwa: {e}"),
+            Some(Err(e)) => {
+                failed.get_or_insert(e);
+            }
             _ => {}
         }
     }
+    failed
 }
 
 /// Why the character answers without a voice, in the UI language; a missing model says where
@@ -176,6 +183,43 @@ mod tests {
         fn select(&mut self, _: &str) -> Result<(), SpeechError> {
             Ok(())
         }
+    }
+
+    /// A voice that fails on every sentence.
+    struct Broken;
+
+    impl Synthesizer for Broken {
+        fn speak(&mut self, _: &str, _: f32) -> Result<Vec<f32>, SpeechError> {
+            Err(SpeechError::Voice("no sound".into()))
+        }
+        fn sample_rate(&self) -> u32 {
+            24_000
+        }
+        fn voice(&self) -> &str {
+            "jf_tebukuro"
+        }
+        fn select(&mut self, _: &str) -> Result<(), SpeechError> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn a_voice_that_fails_returns_its_first_failure() {
+        let l = line("はい。いいえ。", Enhance::default());
+        let mut played = 0;
+
+        let failed = render(
+            &Mutex::new(Broken),
+            &Said::default(),
+            &l,
+            &|| true,
+            |_, _| {
+                played += 1;
+            },
+        );
+
+        assert_eq!(played, 0);
+        assert!(matches!(failed, Some(SpeechError::Voice(_))));
     }
 
     fn line(markup: &str, enhance: Enhance) -> Line {

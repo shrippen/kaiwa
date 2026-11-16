@@ -139,6 +139,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use cxx_qt::Threading;
 
 use cxx_qt_lib::QString;
+use kaiwa_backend::Trouble;
 use kaiwa_backend::models::{self, Fetch};
 use kaiwa_backend::settings::{Felt, SettingError};
 use kaiwa_backend::transfer::ImportError;
@@ -191,6 +192,9 @@ impl Default for KaiwaAppRust {
     }
 }
 
+const SPARE_DE: &str = "Das Profil ließ sich nicht öffnen, das geht gerade nicht. Lösche es in den Einstellungen („Profil löschen …“) oder wähle ein anderes Profil.";
+const SPARE_EN: &str = "The profile could not be opened, so this is not possible now. Delete it in the settings (“Delete profile …”) or pick another profile.";
+
 fn q(v: &serde_json::Value) -> QString {
     QString::from(&v.to_string())
 }
@@ -203,6 +207,15 @@ impl qobject::KaiwaApp {
             false => format!("The profile could not be changed, nothing changed: {e}"),
         };
         self.as_mut().set_notice(QString::from(&msg));
+    }
+
+    /// Tells the learner why a change is refused while the stand-in profile runs.
+    fn say_spare(mut self: Pin<&mut Self>) {
+        let msg = match self.lang().to_string() == "de" {
+            true => SPARE_DE,
+            false => SPARE_EN,
+        };
+        self.as_mut().set_notice(QString::from(msg));
     }
 
     /// Tells the learner the setting is saved but its effect failed (today's goal, deleting
@@ -225,11 +238,46 @@ impl qobject::KaiwaApp {
         self.add_notice(&msg);
     }
 
-    /// Tells the learner expired recordings stayed when the profile opened (/LF712/).
-    fn say_unpurged(self: Pin<&mut Self>, e: &anyhow::Error) {
-        let msg = match self.lang().to_string() == "de" {
-            true => format!("Abgelaufene Aufnahmen ließen sich nicht löschen: {e}"),
-            false => format!("Expired recordings could not be deleted: {e}"),
+    /// Tells the learner what went wrong in the background (`Backend::take_troubles`).
+    fn say_trouble(self: Pin<&mut Self>, t: &Trouble) {
+        let de = self.lang().to_string() == "de";
+        let msg = match (t, de) {
+            (Trouble::Unopened(e), true) => format!(
+                "Das Profil ließ sich nicht öffnen, die Datei bleibt unverändert. Alles, was jetzt geschieht, wird nicht gespeichert: {e:#}"
+            ),
+            (Trouble::Unopened(e), false) => format!(
+                "The profile could not be opened; the file is left as it is. Nothing done now is saved: {e:#}"
+            ),
+            (Trouble::Unpurged(e), true) => {
+                format!("Abgelaufene Aufnahmen ließen sich nicht löschen: {e}")
+            }
+            (Trouble::Unpurged(e), false) => {
+                format!("Expired recordings could not be deleted: {e}")
+            }
+            (Trouble::RecordingsKept(e), true) => {
+                format!("Die Aufnahmen ließen sich nicht löschen: {e:#}")
+            }
+            (Trouble::RecordingsKept(e), false) => {
+                format!("The recordings could not be deleted: {e:#}")
+            }
+            (Trouble::KeysKept(e), true) => {
+                format!("Der Schlüsselbund behält Schlüssel dieses Profils: {e}")
+            }
+            (Trouble::KeysKept(e), false) => {
+                format!("The keyring kept keys of this profile: {e}")
+            }
+            (Trouble::KeysMarkerLost(e), true) => format!(
+                "Die alten Schlüssel sind umgezogen, aber das Vermerken ist fehlgeschlagen; der nächste Start versucht es noch einmal: {e}"
+            ),
+            (Trouble::KeysMarkerLost(e), false) => {
+                format!("The old keys moved, but noting it failed; the next start tries again: {e}")
+            }
+            (Trouble::KeysUnmoved(e), true) => {
+                format!("Die alten Schlüssel blieben, wo sie waren: {e}")
+            }
+            (Trouble::KeysUnmoved(e), false) => {
+                format!("The old keys stayed where they were: {e}")
+            }
         };
         self.add_notice(&msg);
     }
@@ -251,10 +299,10 @@ impl qobject::KaiwaApp {
         let now = now();
         let unit = self.review_unit().to_string();
         let mut failed = None;
-        let unpurged;
+        let troubles;
         let (today, path, review, scope, learner, stats, profile, lang, gam, privacy) = {
-            let mut st = state();
-            unpurged = st.take_unpurged();
+            let st = state();
+            troubles = st.take_troubles();
             let p = st.profile().unwrap_or_else(|e| {
                 failed.get_or_insert(e);
                 Default::default()
@@ -314,8 +362,8 @@ impl qobject::KaiwaApp {
         if let Some(e) = failed {
             self.as_mut().say_unloaded(&e);
         }
-        if let Some(e) = unpurged {
-            self.as_mut().say_unpurged(&e);
+        for t in &troubles {
+            self.as_mut().say_trouble(t);
         }
     }
 
@@ -362,6 +410,7 @@ impl qobject::KaiwaApp {
         match edited {
             Err(SettingError::NotSaved(e)) => self.as_mut().say_unreadable(&e),
             Err(SettingError::NotApplied(e)) => self.as_mut().say_unapplied(&e),
+            Err(SettingError::Spare) => self.as_mut().say_spare(),
             Ok(()) => {}
         }
         // Also after a failure: the page shows what the profile now holds.
@@ -470,6 +519,8 @@ impl qobject::KaiwaApp {
         self.as_mut().set_notice(QString::from(&match (result, de) {
             (Ok(()), true) => format!("Importiert aus {file}."),
             (Ok(()), false) => format!("Imported from {file}."),
+            (Err(ImportError::Spare), true) => SPARE_DE.to_string(),
+            (Err(ImportError::Spare), false) => SPARE_EN.to_string(),
             (Err(ImportError::NotEmpty), true) => "Der Import geht nur in ein leeres Profil. Lege oben ein neues Profil an und importiere dort.".to_string(),
             (Err(ImportError::NotEmpty), false) => "An import needs an empty profile. Add a new profile above and import there.".to_string(),
             (Err(ImportError::NotAnExport), true) => format!("{file} ist kein Export von Kaiwa."),
@@ -545,8 +596,7 @@ impl qobject::KaiwaApp {
         let msg = match (result, de) {
             (Ok(()), true) => "Der Schlüssel ist aus dem Schlüsselbund entfernt.".to_string(),
             (Ok(()), false) => "The key is removed from the keyring.".to_string(),
-            (Err(e), true) => format!("Der Schlüsselbund hat abgelehnt: {e}"),
-            (Err(e), false) => format!("The keyring refused: {e}"),
+            (Err(e), _) => kaiwa_backend::views::key_error(&e, if de { "de" } else { "en" }),
         };
         self.as_mut().set_notice(QString::from(&msg));
         self.as_mut().refresh();

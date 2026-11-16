@@ -18,6 +18,8 @@ pub enum ImportError {
     NotAnExport,
     /// The profile has data already; an import goes into a new one.
     NotEmpty,
+    /// The profile could not be opened; nothing an import brings would be kept.
+    Spare,
     /// The import failed and the profile is unchanged.
     Broken(String),
 }
@@ -38,6 +40,9 @@ impl Backend {
 
     /// Reads an export from `target` into this (empty) profile; the file it read.
     pub fn import_from(&self, target: &str) -> Result<PathBuf, ImportError> {
+        if self.spare {
+            return Err(ImportError::Spare);
+        }
         let file = path_of(target);
         let text =
             std::fs::read_to_string(&file).map_err(|e| ImportError::Unreadable(e.to_string()))?;

@@ -33,12 +33,14 @@ pub mod short;
 pub mod skips;
 pub mod summary;
 pub mod transfer;
+mod trouble;
+pub use trouble::Trouble;
 pub mod views;
 pub mod voice;
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use kaiwa_ai::ChatProvider;
 #[cfg(any(test, feature = "demo"))]
@@ -308,8 +310,10 @@ pub struct Backend {
     keys: kaiwa_ai::secrets::Keys,
     /// What the cloud tutor costs: shared with the providers this backend builds.
     meter: Arc<kaiwa_ai::cost::Meter>,
-    /// Why expired recordings stayed when the profile opened; [`Backend::take_unpurged`].
-    unpurged: Option<anyhow::Error>,
+    /// What went wrong in the background; [`Backend::take_troubles`].
+    troubles: Mutex<Vec<Trouble>>,
+    /// Running on the stand-in for a profile that could not be opened ([`Backend::is_spare`]).
+    spare: bool,
 }
 
 impl Backend {
@@ -345,25 +349,15 @@ impl Backend {
 
     /// Opens the default profile, or the demo profile with `KAIWA_DEMO` set.
     pub fn open() -> anyhow::Result<Self> {
-        #[cfg(any(test, feature = "demo"))]
-        let demo_data = std::env::var_os("KAIWA_DEMO").is_some();
-        #[cfg(not(any(test, feature = "demo")))]
-        let demo_data = false;
-        let own_dir = std::env::var_os("KAIWA_PROFILE").is_none() && !demo_data;
-        let path = if let Some(p) = std::env::var_os("KAIWA_PROFILE") {
-            PathBuf::from(p)
-        } else if demo_data {
-            let dir = std::env::temp_dir().join(format!("kaiwa-demo-{}", std::process::id()));
-            let _ = std::fs::remove_dir_all(&dir);
-            dir.join("demo.kaiwa")
-        } else {
-            profiles::current_in(&kaiwa_store::profiles_dir())
-        };
-        let st = Self::open_at(path, demo_data)?;
+        Self::open_start(&Start::read())
+    }
+
+    fn open_start(start: &Start) -> anyhow::Result<Self> {
+        let st = Self::open_at(start.path.clone(), start.demo)?;
 
         // The keys of before V-01 go to the profile open at the first start: one from the
         // profiles directory, not one named by KAIWA_PROFILE or the demo.
-        if own_dir {
+        if start.own_dir {
             st.migrate_keys();
         }
         Ok(st)
@@ -383,12 +377,12 @@ impl Backend {
 
     /// Opens the profile at `path`; `demo` fills a new one with two weeks of history.
     pub fn open_at(path: PathBuf, demo: bool) -> anyhow::Result<Self> {
-        // Tests never touch the real keyring.
-        #[cfg(test)]
-        let store = Arc::new(kaiwa_ai::secrets::MemoryKeys::default());
-        #[cfg(not(test))]
-        let store = Arc::new(kaiwa_ai::secrets::Keyring);
-        Self::open_with(path, demo, store, kaiwa_store::keyring_dir().as_deref())
+        Self::open_with(
+            path,
+            demo,
+            key_store(),
+            kaiwa_store::keyring_dir().as_deref(),
+        )
     }
 
     /// Like [`Backend::open_at`], with the keys in `store` for the profiles in `keyring_dir`
@@ -404,13 +398,32 @@ impl Backend {
         #[cfg_attr(not(any(test, feature = "demo")), allow(unused_variables))]
         let fresh = !path.exists();
         let db = Store::open(&path)?;
+        let st = Self::assemble(db, keys, path, demo)?;
+        #[cfg(any(test, feature = "demo"))]
+        if demo && fresh {
+            demo::seed(&st)?;
+        }
+        // Recordings past their days go when the profile opens (/LF712/).
+        if let Err(e) = st.purge_recordings(now()) {
+            st.trouble(Trouble::Unpurged(e));
+        }
+        Ok(st)
+    }
+
+    /// The backend around an opened store.
+    fn assemble(
+        db: Store,
+        keys: kaiwa_ai::secrets::Keys,
+        path: PathBuf,
+        demo: bool,
+    ) -> anyhow::Result<Self> {
         let curriculum = Curriculum::from_files(CURRICULUM)?;
         let grammar = kaiwa_core::grammar::Catalogue::from_files(GRAMMAR)?;
         let scenarios = SCENARIOS
             .iter()
             .map(|j| Scenario::from_json(j).map(|s| (s.id.clone(), s)))
             .collect::<Result<_, _>>()?;
-        let mut st = Backend {
+        Ok(Backend {
             store: db,
             keys,
             meter: Arc::default(),
@@ -420,21 +433,49 @@ impl Backend {
             grammar,
             scenarios,
             demo_data: demo,
-            unpurged: None,
-        };
-        #[cfg(any(test, feature = "demo"))]
-        if demo && fresh {
-            demo::seed(&st)?;
-        }
-        // Recordings past their days go when the profile opens (/LF712/).
-        st.unpurged = st.purge_recordings(now()).err();
-        Ok(st)
+            troubles: Mutex::new(Vec::new()),
+            spare: false,
+        })
     }
+}
 
-    /// Why expired recordings stayed when the profile opened; once, for the front end to
-    /// tell the learner.
-    pub fn take_unpurged(&mut self) -> Option<anyhow::Error> {
-        self.unpurged.take()
+/// Where the keys live; tests never touch the real keyring.
+fn key_store() -> Arc<dyn kaiwa_ai::secrets::KeyStore> {
+    #[cfg(test)]
+    return Arc::new(kaiwa_ai::secrets::MemoryKeys::default());
+    #[cfg(not(test))]
+    return Arc::new(kaiwa_ai::secrets::Keyring);
+}
+
+/// Which profile the process starts on.
+struct Start {
+    path: PathBuf,
+    demo: bool,
+    /// A profile of the profiles directory, not one named by `KAIWA_PROFILE` or the demo.
+    own_dir: bool,
+}
+
+impl Start {
+    fn read() -> Self {
+        #[cfg(any(test, feature = "demo"))]
+        let demo = std::env::var_os("KAIWA_DEMO").is_some();
+        #[cfg(not(any(test, feature = "demo")))]
+        let demo = false;
+        let own_dir = std::env::var_os("KAIWA_PROFILE").is_none() && !demo;
+        let path = if let Some(p) = std::env::var_os("KAIWA_PROFILE") {
+            PathBuf::from(p)
+        } else if demo {
+            let dir = std::env::temp_dir().join(format!("kaiwa-demo-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            dir.join("demo.kaiwa")
+        } else {
+            profiles::current_in(&kaiwa_store::profiles_dir())
+        };
+        Start {
+            path,
+            demo,
+            own_dir,
+        }
     }
 }
 

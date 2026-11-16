@@ -36,5 +36,16 @@ ConversationTest {
             compare(JSON.stringify(t.conv.last("remember")), JSON.stringify([0, 0]))
             verify(t.button("In der Wiederholung") !== null)
         }
+
+        function test_z_a_dictionary_error_is_shown_instead_of_not_found() {
+            t.conv.lookupAnswer = JSON.stringify({ text: "私", found: false, error: "no such table: form" })
+            const line = t.find(i => i.interactive === true && i.wordActivated !== undefined)
+            line.forceActiveFocus()
+            keyClick(Qt.Key_Return)
+
+            verify(t.find(i => i.text !== undefined && i.visible && String(i.text).indexOf("no such table: form") >= 0) !== null,
+                   "the error text is not shown")
+            verify(t.find(i => i.visible && i.text === "Dieses Wort steht nicht im Wörterbuch.") === null)
+        }
     }
 }
