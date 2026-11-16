@@ -98,19 +98,32 @@ pub enum Felt {
     TooHard,
 }
 
+/// Why a setting did not fully take.
+#[derive(Debug)]
+pub enum SettingError {
+    /// The profile could not be read or written: the setting is as it was.
+    NotSaved(anyhow::Error),
+    /// The setting is saved, but what it sets off failed (today's goal, deleting recordings).
+    NotApplied(anyhow::Error),
+}
+
 impl Backend {
     /// Changes one setting: goal, gamification, feedback, script, endPause, style, uiLang,
     /// reminder, unloadAfter, costLimit, moraHints, handsFree, textScale, keepRecordings,
-    /// name, tutorProvider (a preset id), tutorModel, tutorBase, microphone. An error means
-    /// the profile could not be read or written; it stays as it was or lacks the effect.
-    pub fn set_setting(&self, key: &str, value: &str, now: Moment) -> anyhow::Result<()> {
+    /// name, tutorProvider (a preset id), tutorModel, tutorBase, microphone.
+    pub fn set_setting(&self, key: &str, value: &str, now: Moment) -> Result<(), SettingError> {
         match key {
             // The brake follows the new limit at once (/LF714/).
-            "costLimit" => self.set_cost_limit(value.parse().ok(), now)?,
+            "costLimit" => {
+                self.set_cost_limit(value.parse().ok(), now)
+                    .map_err(|e| SettingError::NotSaved(e.into()))?;
+            }
             // The pick is the learner's: a placement leaves it (V-02).
             "feedback" => {
                 if let Ok(a) = serde_json::from_value(json!(value)) {
-                    self.store.set_feedback(a)?;
+                    self.store
+                        .set_feedback(a)
+                        .map_err(|e| SettingError::NotSaved(e.into()))?;
                 }
             }
             _ => self.edit_profile(key, value, now)?,
@@ -118,21 +131,29 @@ impl Backend {
         Ok(())
     }
 
-    fn edit_profile(&self, key: &str, value: &str, now: Moment) -> anyhow::Result<()> {
-        let p = self.store.update_profile(|p| {
-            if !apply_look(p, key, value) {
-                apply_rest(p, key, value);
-            }
-        })?;
+    fn edit_profile(&self, key: &str, value: &str, now: Moment) -> Result<(), SettingError> {
+        let p = self
+            .store
+            .update_profile(|p| {
+                if !apply_look(p, key, value) {
+                    apply_rest(p, key, value);
+                }
+            })
+            .map_err(|e| SettingError::NotSaved(e.into()))?;
+        let follow = |r: anyhow::Result<()>| r.map_err(SettingError::NotApplied);
 
         // A day already begun is judged by the goal it ends with (/LF602/).
         if key == "goal" {
-            self.store.set_day_goal(now.day(), p.daily_goal)?;
+            follow(
+                self.store
+                    .set_day_goal(now.day(), p.daily_goal)
+                    .map_err(Into::into),
+            )?;
         }
 
         // Turning recordings off (or shortening the days) deletes them now (/LF712/).
         if key == "keepRecordings" {
-            self.purge_recordings(now)?;
+            follow(self.purge_recordings(now).map(|_| ()))?;
         }
         Ok(())
     }
@@ -320,6 +341,25 @@ mod tests {
         assert!(f.exists(), "other settings leave them");
         set(&b, "keepRecordings", "");
         assert!(!f.exists());
+    }
+
+    #[test]
+    fn a_failed_effect_keeps_the_saved_setting() {
+        // The recordings cannot be deleted (their folder is read-only): the setting is
+        // saved all the same, and the error says only the effect failed.
+        use std::os::unix::fs::PermissionsExt;
+        let b = backend("rec-locked");
+        set(&b, "keepRecordings", "30");
+        let f = b
+            .keep_recording(1, 0, &[0.1; 1600], 16_000, T0)
+            .unwrap()
+            .unwrap();
+        let dir = f.parent().unwrap().to_path_buf();
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o500)).unwrap();
+        let r = b.set_setting("keepRecordings", "", T0);
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert!(matches!(r, Err(SettingError::NotApplied(_))), "{r:?}");
+        assert_eq!(b.store.profile().unwrap().keep_recordings_days, None);
     }
 
     #[test]

@@ -139,7 +139,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use cxx_qt::Threading;
 
 use cxx_qt_lib::QString;
-use kaiwa_backend::settings::Felt;
+use kaiwa_backend::settings::{Felt, SettingError};
 use kaiwa_backend::transfer::ImportError;
 use serde_json::json;
 
@@ -243,6 +243,16 @@ impl qobject::KaiwaApp {
         let msg = match self.lang().to_string() == "de" {
             true => format!("Das Profil ließ sich nicht ändern, nichts geändert: {e}"),
             false => format!("The profile could not be changed, nothing changed: {e}"),
+        };
+        self.as_mut().set_notice(QString::from(&msg));
+    }
+
+    /// Tells the learner the setting is saved but its effect failed (today's goal, deleting
+    /// recordings).
+    fn say_unapplied(mut self: Pin<&mut Self>, e: &anyhow::Error) {
+        let msg = match self.lang().to_string() == "de" {
+            true => format!("Gespeichert, aber nicht ganz umgesetzt: {e}"),
+            false => format!("Saved, but not fully applied: {e}"),
         };
         self.as_mut().set_notice(QString::from(&msg));
     }
@@ -372,10 +382,12 @@ impl qobject::KaiwaApp {
 
     fn set_setting(mut self: Pin<&mut Self>, key: &QString, value: &QString) {
         let edited = state().set_setting(&key.to_string(), &value.to_string(), now());
-        if let Err(e) = edited {
-            self.as_mut().say_unreadable(&e);
-            return;
+        match edited {
+            Err(SettingError::NotSaved(e)) => self.as_mut().say_unreadable(&e),
+            Err(SettingError::NotApplied(e)) => self.as_mut().say_unapplied(&e),
+            Ok(()) => {}
         }
+        // Also after a failure: the page shows what the profile now holds.
         self.as_mut().refresh();
     }
 
@@ -514,9 +526,6 @@ impl qobject::KaiwaApp {
 
     fn new_profile(mut self: Pin<&mut Self>, name: &QString) {
         let name = name.to_string();
-        if name.trim().is_empty() {
-            return;
-        }
         self.as_mut().set_answer(QString::default());
         self.as_mut().set_notice(QString::default());
         let result = {
