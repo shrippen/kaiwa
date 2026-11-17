@@ -27,7 +27,8 @@ pub fn start(
     amount: Amount,
     lang: &str,
 ) -> Session {
-    Session::new(scenario, provider, amount, lang)
+    let unit_jlpt = kaiwa_backend::bundled_unit_jlpt(&scenario.id);
+    Session::new(scenario, provider, amount, lang).with_unit_jlpt(unit_jlpt)
 }
 
 /// A German talk on scenario `id` against its recorded answers.

@@ -287,6 +287,8 @@ pub struct Session {
     /// The grammar points of the scenario's unit, for the tutor's instructions; set by the
     /// caller from the curriculum, not part of the saved state.
     grammar: Vec<String>,
+    /// The JLPT level of the scenario's unit, set by the caller like `grammar`.
+    unit_jlpt: Option<String>,
     spent_secs: u32,
     /// The learner's own speaking level on the learner model's scale, for a free talk
     /// (/LF116/); set by the caller from the learner model, not part of the saved state.
@@ -323,6 +325,7 @@ impl Session {
             stuck: 0,
             live: Live::default(),
             grammar: Vec::new(),
+            unit_jlpt: None,
             spent_secs: 0,
             learner_level: None,
             coaching: Coaching::default(),
@@ -337,6 +340,7 @@ impl Session {
             &self.lang,
             &self.difficulty,
             &self.grammar,
+            self.unit_jlpt.as_deref(),
             self.learner_level,
         )
     }
@@ -360,6 +364,13 @@ impl Session {
     /// fits, the analysis knows what the unit practises (/LF211/, ADR-009).
     pub fn with_grammar(mut self, labels: Vec<String>) -> Self {
         self.grammar = labels;
+        self
+    }
+
+    /// The JLPT level of the scenario's unit ([`crate::curriculum::Unit::jlpt`]), which the
+    /// character speaks at (/LF211/).
+    pub fn with_unit_jlpt(mut self, jlpt: Option<String>) -> Self {
+        self.unit_jlpt = jlpt;
         self
     }
 
@@ -405,6 +416,7 @@ impl Session {
             stuck: st.stuck,
             live: st.live,
             grammar: Vec::new(),
+            unit_jlpt: None,
             spent_secs: st.spent_secs,
             learner_level: None,
             coaching: Coaching::default(),

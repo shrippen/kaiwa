@@ -927,7 +927,7 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
         let Some(sc) = b.scenarios().get(&s.scenario) else {
             return Ok(Some(format!("no scenario {}", s.scenario)));
         };
-        let session = kaiwa_core::Session::new(
+        let session = crate::talk::start(
             sc.clone(),
             provider.clone(),
             kaiwa_core::Amount::Little,

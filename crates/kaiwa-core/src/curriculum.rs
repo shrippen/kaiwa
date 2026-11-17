@@ -49,6 +49,14 @@ pub struct Unit {
     pub level: Option<Level>,
 }
 
+impl Unit {
+    /// The JLPT level of the file the unit comes from („N5“), not of its id; none for a unit
+    /// that was not loaded from a level file.
+    pub fn jlpt(&self) -> Option<&str> {
+        self.level.as_ref().map(|l| l.jlpt.as_str())
+    }
+}
+
 /// What a level is oriented on (Q-03): shown as „N4 · A2“, never as a JLPT course.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Level {
@@ -326,8 +334,10 @@ impl Curriculum {
                     return Err(CurriculumError::UnknownGrammar(u.id.clone(), g.clone()));
                 };
                 if first.insert(g.as_str()) {
-                    let level = u.id.split('-').next().unwrap_or_default();
-                    if point.level != level {
+                    let same = u
+                        .jlpt()
+                        .is_some_and(|l| point.level.eq_ignore_ascii_case(l));
+                    if !same {
                         return Err(CurriculumError::GrammarLevel(
                             point.id.clone(),
                             u.id.clone(),
@@ -502,9 +512,9 @@ impl Curriculum {
         use crate::learner::{Skill, level_index};
         let level = m.level(Skill::Speaking).min(m.level(Skill::Listening));
         let at = |name: &str| level_index(name).unwrap_or(f64::MAX);
-        let ready = |u: &Unit| match u.id.split('-').next() {
-            Some("n5") => level >= at("n4"),
-            Some("n4") => level >= at("n3"),
+        let ready = |u: &Unit| match u.jlpt() {
+            Some("N5") => level >= at("n4"),
+            Some("N4") => level >= at("n3"),
             _ => false,
         };
         self.units
@@ -699,6 +709,8 @@ mod bundled {
         c.check().unwrap();
         assert_eq!(c.units[0].id, "n5-01");
         assert_eq!(c.units[1].level.as_ref().unwrap().label(), "N4 · A2");
+        assert_eq!(c.units[1].jlpt(), Some("N4"));
+        assert_eq!(c.units[0].jlpt(), None, "the level comes from the file");
         let alone = Curriculum::from_files(&[n4]).unwrap();
         assert!(matches!(
             alone.check(),
@@ -712,10 +724,11 @@ mod bundled {
     #[test]
     fn grammar_is_introduced_at_its_level() {
         use crate::grammar::{Catalogue, Point};
-        let mut c = Curriculum::from_files(&[r#"{"id":"n5","units":[
+        let mut c =
+            Curriculum::from_files(&[r#"{"id":"n5","level":{"jlpt":"N5","cefr":"A1"},"units":[
             {"id":"n5-01","title":{"de":"b","en":"b"},"can_do":{"de":"b","en":"b"},
              "grammar":["〜ね"],"scenarios":["y"]}]}"#])
-        .unwrap();
+            .unwrap();
         let point = |level: &str| Point {
             id: "ne".into(),
             label: "〜ね".into(),
@@ -780,7 +793,7 @@ mod bundled {
         let covered: BTreeSet<u8> = c
             .units
             .iter()
-            .filter(|u| u.id.starts_with("n5") || u.id.starts_with("n4"))
+            .filter(|u| matches!(u.jlpt(), Some("N5" | "N4")))
             .flat_map(|u| u.topics.iter().copied())
             .collect();
         let missing: Vec<u8> = (1..=13).filter(|t| !covered.contains(t)).collect();
@@ -827,7 +840,8 @@ mod bundled {
             m.set(s, level_index("n4").unwrap());
         }
         let offer = c.placement_skip(&m, &CourseProgress::default(), keigo);
-        assert!(offer.iter().all(|u| u.starts_with("n5")));
+        let n5 = |id: &String| c.unit(id).and_then(Unit::jlpt) == Some("N5");
+        assert!(offer.iter().all(n5));
         assert_eq!(offer.len(), 16);
     }
 

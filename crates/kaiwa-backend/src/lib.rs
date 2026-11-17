@@ -298,6 +298,13 @@ pub fn bundled_scenario(id: &str) -> Option<Scenario> {
         .find(|s| s.id == id)
 }
 
+/// The JLPT level of the unit of scenario `id` as the backend ships it, without a profile.
+#[cfg(any(test, feature = "demo"))]
+pub fn bundled_unit_jlpt(id: &str) -> Option<String> {
+    let curriculum = Curriculum::from_files(CURRICULUM).ok()?;
+    curriculum.unit_of(id)?.jlpt().map(str::to_string)
+}
+
 /// The profile with the curriculum and the scenarios: what the app and `kaiwad` work on.
 pub struct Backend {
     pub(crate) store: Store,
@@ -525,10 +532,12 @@ impl Backend {
         let learning = self.store.learning()?;
         let (provider, demo) = self.provider(&scenario.id);
         let grammar = self.unit_grammar(&scenario.id);
+        let unit_jlpt = self.unit_jlpt(&scenario.id);
         let session =
             kaiwa_core::Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
                 .with_difficulty(learning.regulator.difficulty.clone())
                 .with_grammar(grammar)
+                .with_unit_jlpt(unit_jlpt)
                 .with_learner_level(learning.model.level(kaiwa_core::learner::Skill::Speaking));
         Ok((session, demo))
     }
@@ -547,8 +556,10 @@ impl Backend {
             .level(kaiwa_core::learner::Skill::Speaking);
         let (provider, demo) = self.provider(&scenario.id);
         let grammar = self.unit_grammar(&scenario.id);
+        let unit_jlpt = self.unit_jlpt(&scenario.id);
         let session = kaiwa_core::Session::restore(scenario, provider, state)
             .with_grammar(grammar)
+            .with_unit_jlpt(unit_jlpt)
             .with_learner_level(level);
         Ok((session, demo))
     }
@@ -560,6 +571,12 @@ impl Backend {
             .unit_of(scenario)
             .map(|u| u.grammar.clone())
             .unwrap_or_default()
+    }
+
+    /// The JLPT level of a scenario's unit, for the tutor's instructions; none for free talk.
+    fn unit_jlpt(&self, scenario: &str) -> Option<String> {
+        let unit = self.curriculum.unit_of(scenario)?;
+        unit.jlpt().map(str::to_string)
     }
 
     /// What this profile's cloud tutor has cost since the last booking; only tests and the

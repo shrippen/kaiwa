@@ -86,8 +86,10 @@ impl Placing {
         });
         let (provider, demo) = b.provider(&scenario.id);
         let opening = scenario.opening.clone();
+        let unit_jlpt = b.unit_jlpt(&scenario.id);
         let session =
-            placement::stage_session(scenario, provider, profile.feedback, &profile.ui_lang, i);
+            placement::stage_session(scenario, provider, profile.feedback, &profile.ui_lang, i)
+                .with_unit_jlpt(unit_jlpt);
         let mut opened = Talk::unstored(b, session, demo, now);
         failed.append(&mut opened.failed);
         opened.failed = failed;
