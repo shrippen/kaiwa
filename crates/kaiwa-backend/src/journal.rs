@@ -136,6 +136,9 @@ pub(crate) fn apply(
 fn apply_other(b: &Backend, event: &Event, at: Moment) -> anyhow::Result<()> {
     match event {
         Event::Placed { model } => b.store.set_placement(model.clone())?,
+        Event::PlacementLeftOut => {
+            b.store.update_profile(|p| p.placed = true)?;
+        }
         Event::Nudged { skill, felt } => b.apply_nudge(*skill, *felt)?,
         Event::Skipped { units, offer } => crate::skips::apply(b, units, *offer)?,
         Event::WordAdded { text, unit } => crate::lookup::add_word(b, text, unit.as_deref(), at)?,
@@ -470,5 +473,18 @@ mod tests {
         let folded = backend("acts-folded");
         fold(&folded, &events);
         assert_eq!(export(&live), export(&folded));
+    }
+
+    #[test]
+    fn folding_the_journal_keeps_a_left_out_placement() {
+        let live = backend("left-out-live");
+        live.leave_out_placement().unwrap();
+        assert!(live.store.profile().unwrap().placed);
+        let folded = backend("left-out-folded");
+        fold(&folded, &live.store.events().unwrap());
+        assert!(
+            folded.store.profile().unwrap().placed,
+            "the placement is due again"
+        );
     }
 }

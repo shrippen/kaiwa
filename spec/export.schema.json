@@ -115,7 +115,7 @@
             "type": "object",
             "description": "What the learner did; `kind` names it.",
             "required": ["kind"],
-            "properties": { "kind": { "enum": ["review", "setting", "talk_begun", "talk_saved", "talk_finished", "talk_corrected", "placed", "nudged", "skipped", "word_added", "paused", "pause_ended", "disputed", "costs_booked", "break_spread"] } }
+            "properties": { "kind": { "enum": ["review", "setting", "talk_begun", "talk_saved", "talk_finished", "talk_corrected", "placed", "placement_left_out", "nudged", "skipped", "word_added", "paused", "pause_ended", "disputed", "costs_booked", "break_spread"] } }
           }
         }
       }

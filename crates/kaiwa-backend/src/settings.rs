@@ -282,7 +282,7 @@ impl Backend {
 
     /// The learner leaves the placement out (/LF200/).
     pub fn leave_out_placement(&self) -> anyhow::Result<()> {
-        self.store.update_profile(|p| p.placed = true)?;
+        journal::record(self, &Event::PlacementLeftOut, crate::now())?;
         Ok(())
     }
 }

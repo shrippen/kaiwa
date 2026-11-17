@@ -35,6 +35,8 @@ pub enum Event {
     TalkCorrected { talk: String, state: SessionState },
     /// A placement measured these levels (/LF200/).
     Placed { model: LearnerModel },
+    /// The learner left the placement out (/LF200/).
+    PlacementLeftOut,
     /// "I know this already" or "too hard" for a skill (/LF202/).
     Nudged { skill: Skill, felt: Felt },
     /// Units count as done without their talks (/LF215/).
