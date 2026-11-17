@@ -12,8 +12,11 @@ const LOCKED_SHOWN: usize = 3;
 /// The learning path (/LF600/): one group per unit with its scenarios, state, due reviews and
 /// the unit titles that lock it, in one section per level („N5 · A1“, Q-03).
 /// `[{ "level", "units": [{ "id", "number", "title", "canDo", "state", "scenarios", "due",
-/// "note", "folded" }], "foldedCount", "foldedNames" }]`. `note` is the line after the title:
-/// the due reviews of a unit, „Als nächstes“, or what unlocks a locked one; `canDo` is a
+/// "note", "open", "review", "showCanDo", "showScenarios", "folded" }], "foldedCount",
+/// "foldedNames" }]`. `open` is what a click does: `{"scenario": id}`, `{"review": unit}` or
+/// null; scenarios carry their `label` and button `emphasis`; `review` is a button of its own
+/// with its label. `note` is the line after the title:
+/// the due reviews of a done unit, „Als nächstes“, or what unlocks a locked one; `canDo` is a
 /// sentence of its own that wraps (/LL303/: narrow windows).
 pub fn path(st: &Backend) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
@@ -72,20 +75,13 @@ fn state_word(state: NodeState) -> &'static str {
     }
 }
 
-/// One unit of the path: its scenarios and the line after its title.
+/// One unit of the path: what it shows and what a click on it does.
 fn unit_group(st: &Backend, units: &[UnitNode], unit: &UnitNode, due: usize, lang: &str) -> Value {
     let de = lang == "de";
-    let scenarios: Vec<Value> = unit
-        .scenarios
-        .iter()
-        .map(|sc| {
-            json!({
-                "id": sc.id,
-                "title": scenario_title(st, &sc.id, lang),
-                "state": state_word(sc.state),
-            })
-        })
-        .collect();
+    let locked = unit.state == NodeState::Locked;
+    let done = unit.state == NodeState::Done;
+    let due = if locked { 0 } else { due };
+    let scenarios = scenario_buttons(st, unit, lang);
     // Reviews that go badly are recommended, they lock nothing (T-06).
     let due_text = match (de, unit.shaky) {
         (true, false) => format!("◆ {due} fällig"),
@@ -93,39 +89,77 @@ fn unit_group(st: &Backend, units: &[UnitNode], unit: &UnitNode, due: usize, lan
         (false, false) => format!("◆ {due} due"),
         (false, true) => format!("◆ {due} due · recommended before you go on"),
     };
-    let due_text = if due > 0 { due_text } else { String::new() };
+    let review = (due > 0).then(|| {
+        let word = if de { "Wiederholung" } else { "Review" };
+        json!({ "unit": unit.id, "label": format!("{word}: {} · {due_text}", unit.title) })
+    });
     let note = match unit.state {
-        NodeState::Locked => lock_text(st, units, &unit.id, de),
+        NodeState::Locked => lock_text(units, unit, de),
         NodeState::Current if de => "Als nächstes".to_string(),
         NodeState::Current => "Up next".to_string(),
-        NodeState::Done => due_text.clone(),
-        NodeState::Open => String::new(),
+        NodeState::Done if due > 0 => due_text,
+        _ => String::new(),
     };
+    let open = click(unit, done && due > 0);
     json!({
         "id": unit.id,
         "number": unit.id.to_uppercase(),
         "title": unit.title,
         "canDo": unit.can_do,
+        "showCanDo": !locked && !done,
         "state": state_word(unit.state),
         "scenarios": scenarios,
-        "due": if unit.state == NodeState::Locked { 0 } else { due },
-        "dueText": if unit.state == NodeState::Locked { String::new() } else { due_text },
+        "showScenarios": !locked,
+        "review": review,
+        "due": due,
+        "open": open,
         "note": note,
         "folded": false,
     })
 }
 
+/// The scenarios of a unit as buttons: the one to do next is primary, done ones are quiet.
+fn scenario_buttons(st: &Backend, unit: &UnitNode, lang: &str) -> Vec<Value> {
+    let de = lang == "de";
+    unit.scenarios
+        .iter()
+        .map(|sc| {
+            let title = scenario_title(st, &sc.id, lang);
+            let (label, emphasis) = match sc.state {
+                NodeState::Done if de => (format!("{title} (erledigt)"), "quiet"),
+                NodeState::Done => (format!("{title} (done)"), "quiet"),
+                NodeState::Current => (title, "primary"),
+                _ => (title, "normal"),
+            };
+            json!({ "id": sc.id, "label": label, "emphasis": emphasis })
+        })
+        .collect()
+}
+
+/// What a click on the unit does: a done unit with words due reviews them, otherwise the
+/// first scenario still to do (all done: the first, to play it again); a locked one nothing.
+fn click(unit: &UnitNode, review: bool) -> Value {
+    if unit.state == NodeState::Locked {
+        return Value::Null;
+    }
+    if review {
+        return json!({ "review": unit.id });
+    }
+    let first = unit
+        .scenarios
+        .iter()
+        .find(|s| s.state != NodeState::Done)
+        .or(unit.scenarios.first());
+    first.map_or(Value::Null, |s| json!({ "scenario": s.id }))
+}
+
 /// What unlocks a locked unit, by the names the path shows: „nach An der Konbini (N5-04)“;
 /// several joined with „und“.
-fn lock_text(st: &Backend, units: &[UnitNode], id: &str, de: bool) -> String {
-    let Some(unit) = st.curriculum.unit(id) else {
-        return String::new();
-    };
+fn lock_text(units: &[UnitNode], unit: &UnitNode, de: bool) -> String {
     let names: Vec<String> = unit
-        .requires
+        .missing
         .iter()
-        .filter_map(|r| units.iter().find(|u| u.id == *r))
-        .filter(|u| u.state != NodeState::Done)
+        .filter_map(|m| units.iter().find(|u| u.id == *m))
         .map(|u| format!("{} ({})", u.title, u.id.to_uppercase()))
         .collect();
     let (after, and) = if de {
@@ -172,6 +206,12 @@ mod tests {
             review["note"],
             "◆ 1 fällig · empfohlen, bevor es weitergeht"
         );
+        assert!(
+            review["review"]["label"]
+                .as_str()
+                .unwrap()
+                .ends_with("· ◆ 1 fällig · empfohlen, bevor es weitergeht")
+        );
         // T-06: the next unit is open all the same.
         let next = groups
             .iter()
@@ -208,7 +248,16 @@ mod tests {
         assert_eq!(open["number"].as_str().unwrap().len(), "N5-01".len());
         assert!(open["canDo"].as_str().unwrap().starts_with("Ich kann"));
         assert_eq!(open["note"], "Als nächstes");
+        assert_eq!(open["showCanDo"], true);
+        assert_eq!(open["scenarios"][0]["emphasis"], "primary");
+        assert_eq!(
+            open["open"],
+            json!({ "scenario": open["scenarios"][0]["id"] })
+        );
         assert!(locked["note"].as_str().unwrap().starts_with("nach "));
+        assert!(locked["open"].is_null());
+        assert_eq!(locked["showScenarios"], false);
+        assert_eq!(locked["showCanDo"], false);
     }
 
     #[test]
@@ -307,6 +356,27 @@ mod tests {
         assert_eq!(units[0]["due"], 2);
         assert_eq!(units[0]["note"], "◆ 2 fällig");
         assert_eq!(units[1]["due"], 0);
+        assert!(units[1]["review"].is_null());
+
+        // A done unit: the click reviews, every scenario stays a quiet replay button.
+        assert_eq!(units[0]["open"], json!({ "review": first.id }));
+        assert_eq!(units[0]["showScenarios"], true);
+        assert_eq!(units[0]["showCanDo"], false);
+        assert!(
+            units[0]["scenarios"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|s| s["emphasis"] == "quiet")
+        );
+        let label = units[0]["review"]["label"].as_str().unwrap();
+        assert_eq!(
+            label,
+            format!(
+                "Wiederholung: {} · ◆ 2 fällig",
+                units[0]["title"].as_str().unwrap()
+            )
+        );
 
         // At most three locked units of a level show; the rest folds, named.
         let levels = path(&b).unwrap();

@@ -14,6 +14,11 @@ QQC2.ScrollView {
     required property var kaiwa
     signal talk(string scenario)
     signal showTab(int index)
+    // This unit's due items, not all of them.
+    function review(unit) {
+        kaiwa.openReview(unit)
+        showTab(2)
+    }
     function t(de, en) { return kaiwa.lang === "en" ? en : de }
 
     readonly property var levels: kaiwa.path.length > 0 ? JSON.parse(kaiwa.path) : []
@@ -82,9 +87,6 @@ QQC2.ScrollView {
                     delegate: ColumnLayout {
                         id: unit
                         required property var modelData
-                        readonly property bool inReach: modelData.state === "current" || modelData.state === "open"
-                        // The scenario a click on the unit starts: the first not done, else the first.
-                        readonly property var target: modelData.scenarios.find(s => s.state !== "done") || modelData.scenarios[0]
                         Layout.fillWidth: true
                         spacing: KanteStyle.unit(4)
 
@@ -93,45 +95,42 @@ QQC2.ScrollView {
                             model: [{
                                 title: unit.modelData.number + " · " + unit.modelData.title,
                                 meta: unit.modelData.note,
-                                text: unit.inReach ? unit.modelData.canDo : "",
+                                text: unit.modelData.showCanDo ? unit.modelData.canDo : "",
                                 state: unit.modelData.state
                             }]
                             doneText: page.t("erledigt", "done")
-                            currentText: page.t("als nächstes", "up next")
+                            currentText: page.t("aktuell", "current")
                             lockedText: page.t("gesperrt", "locked")
                             openText: page.t("offen", "open")
                             onActivated: function () {
-                                // A done unit with words due opens that unit's review.
-                                if (unit.modelData.state === "done" && unit.modelData.due > 0) {
-                                    page.kaiwa.openReview(unit.modelData.id)
-                                    page.showTab(2)
-                                    return
-                                }
-                                page.talk(unit.target.id)
+                                // What a click does is the view's: a scenario or a review.
+                                var open = unit.modelData.open
+                                if (!open) { return }
+                                if (open.review) { page.review(open.review) } else { page.talk(open.scenario) }
                             }
                         }
                         Repeater {
-                            model: unit.inReach ? unit.modelData.scenarios : []
+                            model: unit.modelData.showScenarios ? unit.modelData.scenarios : []
                             delegate: KanteButton {
                                 required property var modelData
                                 Layout.leftMargin: KanteStyle.unit(40)
                                 Layout.fillWidth: true
-                                text: modelData.state === "done" ? modelData.title + " (" + page.t("erledigt", "done") + ")" : modelData.title
-                                emphasis: modelData.state === "current" ? KanteButton.Emphasis.Primary : KanteButton.Emphasis.Normal
+                                text: modelData.label
+                                emphasis: modelData.emphasis === "primary" ? KanteButton.Emphasis.Primary
+                                    : modelData.emphasis === "quiet" ? KanteButton.Emphasis.Quiet
+                                    : KanteButton.Emphasis.Normal
                                 onClicked: page.talk(modelData.id)
                             }
                         }
-                        // Words due in a unit still to do: its review is one more button.
+                        // The unit's due words: a review of its own, named with the unit.
                         KanteButton {
                             Layout.leftMargin: KanteStyle.unit(40)
                             Layout.fillWidth: true
-                            visible: unit.inReach && unit.modelData.due > 0
+                            visible: !!unit.modelData.review
                             emphasis: KanteButton.Emphasis.Quiet
-                            text: unit.modelData.dueText
-                            onClicked: {
-                                page.kaiwa.openReview(unit.modelData.id)
-                                page.showTab(2)
-                            }
+                            text: unit.modelData.review ? unit.modelData.review.label : ""
+                            Accessible.name: text
+                            onClicked: page.review(unit.modelData.id)
                         }
                     }
                 }

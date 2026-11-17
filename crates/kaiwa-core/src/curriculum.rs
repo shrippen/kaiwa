@@ -208,8 +208,8 @@ pub struct UnitNode {
     pub level: Option<String>,
     pub state: NodeState,
     pub scenarios: Vec<ScenarioNode>,
-    /// Why a locked unit is locked, in words.
-    pub locked_because: Option<String>,
+    /// The units still to finish before this one opens (ids, in the unit's own order).
+    pub missing: Vec<String>,
     /// Its reviews go badly: reviewing is recommended before going on. It locks nothing.
     pub shaky: bool,
 }
@@ -419,7 +419,6 @@ impl Curriculum {
 
     /// The learning path (/LF600/): every unit and scenario with its state.
     pub fn path(&self, p: &CourseProgress, lang: &str) -> Vec<UnitNode> {
-        let de = lang == "de";
         let mut current_given = false;
         let mut out = Vec::new();
         for u in &self.units {
@@ -462,19 +461,6 @@ impl Curriculum {
                     }
                 })
                 .collect();
-            let title = |id: &str| {
-                self.unit(id)
-                    .map(|u| u.title.get(lang).to_string())
-                    .unwrap_or_else(|| id.to_string())
-            };
-            let locked_because = (state == NodeState::Locked).then(|| {
-                let names: Vec<String> = missing.iter().map(|m| title(m)).collect();
-                if de {
-                    format!("Erst: {}", names.join(", "))
-                } else {
-                    format!("First: {}", names.join(", "))
-                }
-            });
             out.push(UnitNode {
                 id: u.id.clone(),
                 title: u.title.get(lang).to_string(),
@@ -482,7 +468,7 @@ impl Curriculum {
                 level: u.level.as_ref().map(Level::label),
                 state,
                 scenarios,
-                locked_because,
+                missing: missing.iter().map(|m| m.to_string()).collect(),
                 shaky: !Self::reviews_ok(&u.id, p),
             });
         }
@@ -575,7 +561,7 @@ mod tests {
         assert_eq!(path[0].state, NodeState::Current);
         assert_eq!(path[0].scenarios[0].state, NodeState::Current);
         assert_eq!(path[1].state, NodeState::Locked);
-        assert!(path[1].locked_because.as_ref().unwrap().contains("u1"));
+        assert_eq!(path[1].missing, ["u1"]);
         p.scenarios_done.extend(["a".to_string(), "b".to_string()]);
         let path = c.path(&p, "de");
         assert_eq!(path[0].state, NodeState::Done);
@@ -598,7 +584,7 @@ mod tests {
         let path = c.path(&p, "en");
         assert!(path[0].shaky);
         assert_eq!(path[1].state, NodeState::Current);
-        assert_eq!(path[1].locked_because, None);
+        assert!(path[1].missing.is_empty());
         assert_eq!(c.next_scenario(&p).as_deref(), Some("c"));
         // Only the latest five count: three right ones after the bad day are 3 of 5.
         p.reviewed("u1", true);
