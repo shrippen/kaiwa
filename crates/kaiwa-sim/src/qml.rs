@@ -24,6 +24,7 @@ const TESTS: &[(&str, &[&str])] = &[
     ("lena_download_announced", &["tst_models.qml"]),
     ("selin_profile_visible", &["tst_profile.qml"]),
     ("mara_progress", &["tst_profile.qml"]),
+    ("hinnerk_gamification_off", &["tst_start.qml"]),
 ];
 
 /// A test file ends or hangs: the longest it may take.

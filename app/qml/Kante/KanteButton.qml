@@ -117,25 +117,30 @@ QQC2.Button {
         }
     }
 
-    KantePolygon {
+    // The shape, and Quiet's ground on hover: built only where drawn (1.81.1). In System both stood
+    // hidden in every button, a third of its creation.
+    Loader {
         z: -1
         anchors.fill: parent
-        visible: control.drawn && control.emphasis !== KanteButton.Emphasis.Quiet
-        opacity: control.enabled ? 1 : 0.45
-        fillColor: control.kanteFill
-        strokeColor: control.filled ? "transparent" : control.kanteFrame
-        strokeWidth: control.filled ? 0 : 1
-        cutTopRight: control.cut + control.grow
-        cutBottomLeft: control.filled ? control.cut + control.grow : 0
+        active: control.drawn && control.emphasis !== KanteButton.Emphasis.Quiet
+        sourceComponent: KantePolygon {
+            opacity: control.enabled ? 1 : 0.45
+            fillColor: control.kanteFill
+            strokeColor: control.filled ? "transparent" : control.kanteFrame
+            strokeWidth: control.filled ? 0 : 1
+            cutTopRight: control.cut + control.grow
+            cutBottomLeft: control.filled ? control.cut + control.grow : 0
+        }
     }
 
     // Quiet: no frame, only a ground on hover.
-    Rectangle {
+    Loader {
         z: -1
         anchors.fill: parent
-        visible: KanteStyle.themed
-        color: control.emphasis === KanteButton.Emphasis.Quiet && (control.hovered || control.down)
-            ? KanteStyle.sunkenColor : "transparent"
+        active: KanteStyle.themed && control.emphasis === KanteButton.Emphasis.Quiet
+        sourceComponent: Rectangle {
+            color: control.hovered || control.down ? KanteStyle.sunkenColor : "transparent"
+        }
     }
 
     // Focus ring inside the shape.
@@ -194,14 +199,17 @@ QQC2.Button {
             }
         }
 
-        QQC2.Label {
-            visible: control.display !== T.AbstractButton.IconOnly && control.text.length > 0
+        Loader {
+            active: control.drawn && control.display !== T.AbstractButton.IconOnly && control.text.length > 0
+            visible: active
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            text: control.text
-            font: control.font
-            color: control.kanteInk
-            elide: Text.ElideRight
+            sourceComponent: QQC2.Label {
+                text: control.text
+                font: control.font
+                color: control.kanteInk
+                elide: Text.ElideRight
+            }
         }
     }
 

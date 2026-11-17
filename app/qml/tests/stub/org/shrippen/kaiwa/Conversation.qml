@@ -41,6 +41,7 @@ QtObject {
     property bool handsFree: false
     property bool speechError: false
     property bool speechReady: true
+    property bool speechMissing: false
     property int talkState: 0
     property int helpLevel: 0
     property real level: 0

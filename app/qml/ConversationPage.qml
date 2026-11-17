@@ -27,8 +27,12 @@ Kirigami.ScrollablePage {
     function t(de, en) { return lang === "en" ? en : de }
     /** Back to the start page (finished, or to continue later). */
     signal done()
+    /** The learner wants the speech models: back to the tabs, on the settings. */
+    signal showSettings()
     // Leaving the talk: the character does not go on speaking over the next page.
-    onDone: conv.interrupt()
+    onDone: { conv.interrupt(); if (settingsNext) showSettings() }
+    /** The leaving in progress goes on to the settings, not to the start page. */
+    property bool settingsNext: false
     /** Screenshot mode: say the lines of `script` (separated by "|"), save `shot`, quit. */
     property string shot: ""
     property string script: ""
@@ -54,6 +58,10 @@ Kirigami.ScrollablePage {
     // offers to continue at once; during a running talk it asks first (owner, 9.11.2026).
     onBackRequested: function (event) {
         event.accepted = true
+        page.settingsNext = false
+        page.leave()
+    }
+    function leave() {
         if (Leave.asks(page.started, conv.finished, page.placementOver, conv.placementAsk))
             leaveDialog.open()
         else
@@ -139,6 +147,7 @@ Kirigami.ScrollablePage {
                 text: page.t("Später weiter", "Continue later")
                 emphasis: KanteButton.Emphasis.Quiet
                 Accessible.description: page.t("Das Gespräch bleibt offen und lässt sich auf der Startseite fortsetzen.", "The talk stays open; continue it from the start page.")
+                enabled: !conv.busy
                 onClicked: page.done()
             }
         }
@@ -553,8 +562,19 @@ Kirigami.ScrollablePage {
             columns: compact ? 3 : 4
             columnSpacing: KanteStyle.unit(8)
             rowSpacing: KanteStyle.unit(8)
+            // Without the recognition model there is nothing to step through: one calm line.
+            SpeechMissingLine {
+                visible: conv.speechMissing
+                Layout.fillWidth: true
+                Layout.columnSpan: parent.columns
+                lang: page.lang
+                // Leaves like Back: a placement asks first, a running turn is not cut off.
+                enabled: conv.placing || !conv.busy
+                onModelsRequested: { page.settingsNext = true; page.leave() }
+            }
             KanteTalkButton {
                 id: talk
+                visible: !conv.speechMissing
                 Layout.columnSpan: parent.compact ? 3 : 1
                 Layout.fillWidth: parent.compact
                 talkState: conv.busy && conv.talkState === KanteTalkButton.State.Ready ? KanteTalkButton.State.Thinking : conv.talkState
@@ -565,7 +585,7 @@ Kirigami.ScrollablePage {
                 hints: conv.handsFree
                     ? [page.t("Klicken oder Leertaste", "Click or space"), page.t("Eine Pause beendet den Satz", "A pause ends the sentence"), "", page.t("Klicken zum Unterbrechen", "Click to interrupt"), page.t("Warum? Klicken", "Why? Click")]
                     : [page.t("Leertaste halten", "Hold space"), page.t("Loslassen zum Senden", "Release to send"), "", page.t("Tippen zum Unterbrechen", "Tap to interrupt"), page.t("Warum? Klicken", "Why? Click")]
-                enabled: !conv.finished
+                enabled: !conv.finished && !conv.speechMissing
                 onTalkStarted: conv.startTalk()
                 onTalkEnded: conv.stopTalk()
                 onInterruptRequested: conv.bargeIn()
@@ -678,52 +698,7 @@ Kirigami.ScrollablePage {
         }
     }
 
-    // Leaving a running talk: a placement starts again next time, a conversation stays open
-    // and continues from the start page.
-    KanteDialog {
-        id: leaveDialog
-        modal: true
-        anchors.centerIn: QQC2.Overlay.overlay
-        title: conv.placing ? page.t("Einstufung abbrechen?", "Stop the placement?") : page.t("Gespräch verlassen?", "Leave the talk?")
-        kanteBarColor: conv.placing ? KanteStyle.negativeTextColor : KanteStyle.accentColor
-        // Own buttons, so both say what they do in the app's language (the platform's
-        // Cancel would read "Abbrechen" next to "Einstufung abbrechen").
-        standardButtons: QQC2.Dialog.NoButton
-        // The answer it waited for ended the talk or the placement's stages: the page changes
-        // under the dialog (at the reading questions, Back asks again).
-        Connections {
-            target: page
-            function onPlacementOverChanged() { if (page.placementOver) leaveDialog.close() }
-        }
-        footerStart: [
-            KanteButton {
-                text: conv.placing ? page.t("Weiter einstufen", "Keep going") : page.t("Weiterreden", "Keep talking")
-                // Placement: the way out of the question stays plain beside the red button,
-                // as in Kante's destructive dialog.
-                emphasis: conv.placing ? KanteButton.Emphasis.Normal : KanteButton.Emphasis.Primary
-                onClicked: leaveDialog.close()
-            },
-            KanteButton {
-                text: conv.placing ? page.t("Einstufung beenden", "End the placement") : page.t("Verlassen", "Leave")
-                emphasis: conv.placing ? KanteButton.Emphasis.Destructive : KanteButton.Emphasis.Normal
-                // A turn still running would be lost: its answer saves the talk (a placement
-                // is not saved, it can go at any time).
-                enabled: conv.placing || !conv.busy
-                onClicked: { leaveDialog.close(); page.done() }
-            }
-        ]
-        QQC2.Label {
-            width: Math.min(page.width - KanteStyle.unit(64), KanteStyle.unit(380))
-            text: conv.busy && !conv.placing
-                ? page.t("Die Antwort kommt gleich; danach kannst du gehen, ohne dass etwas fehlt.", "The answer is on its way; then you can leave without losing anything.")
-                : conv.placing
-                ? page.t("Die Einstufung beginnt beim nächsten Mal von vorn.", "The placement starts again from the beginning next time.")
-                : page.t("Das Gespräch bleibt offen: Auf der Startseite geht es dort weiter, wo du aufgehört hast.", "The talk stays open: continue it from the start page where you left off.")
-            wrapMode: Text.Wrap
-            font: KanteStyle.defaultFont
-            color: KanteStyle.textColor
-        }
-    }
+    LeaveDialog { id: leaveDialog; page: page; conv: conv }
 
     // The grammar of the unit: each point with its explanation and examples (ADR-009 catalogue).
     KanteDialog {

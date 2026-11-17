@@ -42,6 +42,7 @@ mod trouble;
 pub use trouble::Trouble;
 pub mod views;
 pub mod voice;
+mod week;
 pub mod words;
 
 use std::collections::BTreeMap;

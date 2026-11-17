@@ -177,14 +177,34 @@ KanteSettingGroup {
     }
     // /LF320/: on by default (L-01); without the model it says where to get it (F-08).
     SettingRow {
+        id: moraRow
         readonly property var mora: host.p.moraModel || ({})
         title: host.t("Aussprache-Hinweise", "Pronunciation hints")
         hint: mora.present === false
-            ? host.t("Dafür fehlt das Modell kaiwa-kana-ctc (" + mora.licence + ", " + mora.size + "); es lässt sich unten unter „Modelle“ laden.",
-                     "This needs the model kaiwa-kana-ctc (" + mora.licence + ", " + mora.size + "); download it below under “Models”.")
+            ? host.t("Prüft die Moren eines Satzes und zeigt, welche zu kurz waren. Braucht das Modell kaiwa-kana-ctc (" + mora.licence + ").",
+                     "Checks a sentence's morae and shows which were too short. Needs the model kaiwa-kana-ctc (" + mora.licence + ").")
             : host.t("Nach einem gesprochenen Satz ein Hinweis, wenn ein langer Vokal oder ein っ zu kurz klang. Findet etwa sechs von zehn solchen Fehlern und irrt sich bei etwa jedem zwanzigsten richtigen Satz; ein Hinweis zählt nie als Fehler.",
                      "After a spoken sentence, a hint when a long vowel or a っ sounded too short. Finds about six in ten such mistakes and is wrong for about one correct sentence in twenty; a hint never counts as a mistake.")
+        // The model is missing: the badge and the button that fetches it, one height.
+        RowLayout {
+            visible: moraRow.mora.present === false
+            spacing: KanteStyle.unit(8)
+            KantePill {
+                Layout.preferredHeight: load.implicitHeight
+                Layout.alignment: Qt.AlignVCenter
+                status: KantePill.State.Locked
+                text: host.t("Braucht Modell", "Needs model")
+            }
+            KanteButton {
+                id: load
+                busy: host.download.dir === moraRow.mora.id
+                enabled: host.download.dir === undefined
+                text: host.t("Laden · " + moraRow.mora.downloadMB + " MB", "Download · " + moraRow.mora.downloadMB + " MB")
+                onClicked: host.kaiwa.downloadModel(moraRow.mora.id)
+            }
+        }
         QQC2.Switch {
+            visible: moraRow.mora.present !== false
             checked: host.p.moraHints === true
             text: checked ? host.t("An", "On") : host.t("Aus", "Off")
             onToggled: host.kaiwa.setSetting("moraHints", checked ? "true" : "false")

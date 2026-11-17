@@ -62,41 +62,53 @@ QQC2.ToolButton {
         probe.sourceComponent = probeIcon
     }
 
-    Rectangle {
+    // Kante's ground and content: built only in Kante (System draws the style's own; an
+    // unused layout, icon and label doubled a tool button's cost, 1.81.1).
+    Loader {
         z: -1
         anchors.fill: parent
-        visible: KanteStyle.themed && (control.hovered || control.down || control.filled || control.visualFocus)
-        color: control.filled ? KanteStyle.accentColor : KanteStyle.sunkenColor
-        border.width: control.visualFocus && !control.filled ? 2 : 0
-        border.color: KanteStyle.focusColor
+        active: KanteStyle.themed
+        sourceComponent: Component {
+            Rectangle {
+                visible: control.hovered || control.down || control.filled || control.visualFocus
+                color: control.filled ? KanteStyle.accentColor : KanteStyle.sunkenColor
+                border.width: control.visualFocus && !control.filled ? 2 : 0
+                border.color: KanteStyle.focusColor
+            }
+        }
     }
 
-    RowLayout {
-        visible: KanteStyle.themed
-        x: control.leftPadding + Math.max(0, (control.availableWidth - width) / 2)
-        y: control.topPadding
-        width: Math.min(implicitWidth, control.availableWidth)
-        height: control.availableHeight
-        spacing: Math.max(control.spacing, Kirigami.Units.smallSpacing)
-        opacity: control.enabled ? 1 : 0.4
+    // Not sized: the layout places and sizes itself inside the button.
+    Loader {
+        active: KanteStyle.themed
+        sourceComponent: Component {
+            RowLayout {
+                x: control.leftPadding + Math.max(0, (control.availableWidth - width) / 2)
+                y: control.topPadding
+                width: Math.min(implicitWidth, control.availableWidth)
+                height: control.availableHeight
+                spacing: Math.max(control.spacing, Kirigami.Units.smallSpacing)
+                opacity: control.enabled ? 1 : 0.4
 
-        KanteIcon {
-            visible: control.display !== T.AbstractButton.TextOnly && String(iconSource).length > 0
-            Layout.preferredWidth: control.icon.width > 0 ? control.icon.width : Kirigami.Units.iconSizes.smallMedium
-            Layout.preferredHeight: control.icon.height > 0 ? control.icon.height : Kirigami.Units.iconSizes.smallMedium
-            Layout.alignment: Qt.AlignVCenter
-            iconSource: control.icon.name !== "" ? control.icon.name : control.icon.source
-            color: control.icon.color.a > 0 ? control.icon.color : control.kanteInk
-        }
+                KanteIcon {
+                    visible: control.display !== T.AbstractButton.TextOnly && String(iconSource).length > 0
+                    Layout.preferredWidth: control.icon.width > 0 ? control.icon.width : Kirigami.Units.iconSizes.smallMedium
+                    Layout.preferredHeight: control.icon.height > 0 ? control.icon.height : Kirigami.Units.iconSizes.smallMedium
+                    Layout.alignment: Qt.AlignVCenter
+                    iconSource: control.icon.name !== "" ? control.icon.name : control.icon.source
+                    color: control.icon.color.a > 0 ? control.icon.color : control.kanteInk
+                }
 
-        QQC2.Label {
-            visible: control.display !== T.AbstractButton.IconOnly && control.text.length > 0
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignVCenter
-            text: control.text
-            font: control.font
-            color: control.kanteInk
-            elide: Text.ElideRight
+                QQC2.Label {
+                    visible: control.display !== T.AbstractButton.IconOnly && control.text.length > 0
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: control.text
+                    font: control.font
+                    color: control.kanteInk
+                    elide: Text.ElideRight
+                }
+            }
         }
     }
 

@@ -10,6 +10,7 @@ QtObject {
     property string download: ""
     property string notice: ""
     property string path: ""
+    property string today: ""
     property string learner: ""
     property string stats: ""
     property var calls: []
