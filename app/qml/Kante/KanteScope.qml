@@ -374,7 +374,7 @@ Item {
         }
     }
     // A popup's content gets its window on opening: then its disabled items are looked at.
-    // Looked up through the target (1.82): a scope held as a property (a skin's) has no window of its
+    // Looked up through the target (1.81): a scope held as a property (a skin's) has no window of its
     // own; the scope's is the fallback for a target without one.
     readonly property Item windowRoot: target && target.Window.contentItem ? target.Window.contentItem
                                                                            : scope.Window.contentItem

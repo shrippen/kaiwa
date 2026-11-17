@@ -43,6 +43,9 @@ Item {
     property var errors: []
     /** Steps fire `activated` and take focus. */
     property bool clickable: false
+    /** Least width of a step with its label (1.81); a smaller value fits more steps before
+     *  the bar turns compact, e.g. 8 steps in 848 px. */
+    property real minStepWidth: KanteStyle.unit(110)
 
     /** A step was chosen: click, Return, Enter or Space; only with `clickable`. */
     signal activated(int index)
@@ -97,7 +100,7 @@ Item {
                 readonly property real signSize: Math.max(KanteStyle.unit(20), number.implicitHeight + KanteStyle.unit(4))
                 readonly property bool named: !steps.compact || now
                 /** Width with the label shown. */
-                readonly property real namedWidth: Math.max(KanteStyle.unit(110), label.implicitWidth + KanteStyle.unit(24))
+                readonly property real namedWidth: Math.max(steps.minStepWidth, label.implicitWidth + KanteStyle.unit(24))
                 width: named ? namedWidth : signSize + KanteStyle.unit(20)
                 height: Math.max(KanteStyle.unit(60), label.y + label.implicitHeight + KanteStyle.unit(8))
 
