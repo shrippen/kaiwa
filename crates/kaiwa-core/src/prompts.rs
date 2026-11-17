@@ -20,36 +20,32 @@ fn goals(s: &Scenario) -> String {
         .join("\n")
 }
 
-/// The JLPT level a scenario's unit is oriented on (`n4-03` → "N4"). Free talk has no unit:
-/// it takes the learner's own level (/LF116/), `own` on the learner model's scale
-/// ([`crate::learner::LEVELS`]); without one it sits at the beginner levels.
-fn jlpt(s: &Scenario, own: Option<f64>) -> &'static str {
-    match s.unit.split('-').next() {
-        Some("n4") => "N4",
-        Some("n3") => "N3",
-        Some("n2") => "N2",
-        Some("n1") => "N1",
-        Some("n5") => "N5",
-        _ => match own {
-            None => "N5/N4",
-            // Up to n5, up to n4, n3, n2, beyond.
-            Some(l) if l < 3.5 => "N5",
-            Some(l) if l < 5.5 => "N4",
-            Some(l) if l < 6.5 => "N3",
-            Some(l) if l < 7.5 => "N2",
-            Some(_) => "N1",
-        },
+/// The JLPT level the scenario's unit is oriented on (`unit`, [`crate::curriculum::Unit::jlpt`]).
+/// Free talk has no unit: it takes the learner's own level (/LF116/), `own` on the learner
+/// model's scale ([`crate::learner::LEVELS`]); without one it sits at the beginner levels.
+fn jlpt(unit: Option<&str>, own: Option<f64>) -> &str {
+    if let Some(level) = unit {
+        return level;
+    }
+    match own {
+        None => "N5/N4",
+        // Up to n5, up to n4, n3, n2, beyond.
+        Some(l) if l < 3.5 => "N5",
+        Some(l) if l < 5.5 => "N4",
+        Some(l) if l < 6.5 => "N3",
+        Some(l) if l < 7.5 => "N2",
+        Some(_) => "N1",
     }
 }
 
 /// How the difficulty reads for the character (/LF211/), at the level of the scenario.
-fn level_words(s: &Scenario, d: &Difficulty, own: Option<f64>) -> String {
+fn level_words(unit: Option<&str>, d: &Difficulty, own: Option<f64>) -> String {
     let clauses = match d.get(Knob::Clauses) {
         0 => "no subordinate clauses",
         1 => "at most one simple subordinate clause (〜から, 〜て)",
         _ => "subordinate clauses where natural",
     };
-    let level = jlpt(s, own);
+    let level = jlpt(unit, own);
     let words = match d.unknown_percent() {
         0 => format!("only words a learner at JLPT {level} knows"),
         p => format!("at most {p} % of the words above the learner's level (JLPT {level})"),
@@ -62,12 +58,14 @@ fn level_words(s: &Scenario, d: &Difficulty, own: Option<f64>) -> String {
 
 /// The character's reply: in role, back to the scene after something inappropriate (/LL302/),
 /// in standard Japanese up to N3 (Q-11: dialect only from N2, to listen), at the learner's level, recasting mistakes (/LF305/), giving the Japanese word when the
-/// learner asks in their own language (/LF122/).
+/// learner asks in their own language (/LF122/). `unit` is the JLPT level of the scenario's
+/// unit.
 pub fn reply_system(
     s: &Scenario,
     lang: &str,
     d: &Difficulty,
     grammar: &[String],
+    unit: Option<&str>,
     own: Option<f64>,
 ) -> String {
     let grammar = if grammar.is_empty() {
@@ -92,7 +90,7 @@ pub fn reply_system(
          {{食|た}}べました。{{角|かど}}を{{右|みぎ}}へ。Katakana words and kana stay as they are.",
         character = s.character.en,
         register = register_words(s.register),
-        level = level_words(s, d, own),
+        level = level_words(unit, d, own),
         lang_name = if lang == "de" { "German" } else { "English" },
         goals = goals(s),
     )
@@ -147,12 +145,12 @@ mod tests {
             "../../../data/scenarios/n5-02-jikoshoukai.json"
         ))
         .unwrap();
-        let easy = reply_system(&s, "de", &Difficulty::default(), &[], None);
+        let easy = reply_system(&s, "de", &Difficulty::default(), &[], Some("N5"), None);
         assert!(easy.contains("at most 4 words") && easy.contains("no subordinate"));
         let mut d = Difficulty::default();
         d.set(Knob::Length, 4);
         d.set(Knob::Vocabulary, 3);
-        let hard = reply_system(&s, "de", &d, &[], None);
+        let hard = reply_system(&s, "de", &d, &[], Some("N5"), None);
         assert!(hard.contains("at most 14 words") && hard.contains("3 %"));
         assert!(easy.contains("JLPT N5") && easy.contains("標準語"));
     }
@@ -166,10 +164,14 @@ mod tests {
             "de",
             &Difficulty::default(),
             &["〜てしまいました".into()],
+            Some("N4"),
             Some(8.0),
         );
         assert!(p.contains("This unit practises: 〜てしまいました."));
-        assert!(!reply_system(&s, "de", &Difficulty::default(), &[], None).contains("practises"));
+        assert!(
+            !reply_system(&s, "de", &Difficulty::default(), &[], Some("N4"), None)
+                .contains("practises")
+        );
         let a = analysis_system(&s, "de", &["〜てしまいました".into()]);
         assert!(a.contains("The unit practises: 〜てしまいました"));
         // A server without schema support learns the fields and the kinds from the prompt.
@@ -191,7 +193,7 @@ mod tests {
     fn free_talk_speaks_at_the_learners_own_level() {
         let s =
             Scenario::from_json(include_str!("../../../data/scenarios/frei-shumi.json")).unwrap();
-        let at = |own| reply_system(&s, "de", &Difficulty::default(), &[], own);
+        let at = |own| reply_system(&s, "de", &Difficulty::default(), &[], None, own);
         assert!(at(None).contains("JLPT N5/N4"));
         // a0, n5, n4_low, n4, n3, n2, native_casual
         for (own, level) in [

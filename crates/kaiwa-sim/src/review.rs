@@ -150,7 +150,7 @@ pub fn sheet(root: &Path, c: &Curriculum, grammar: &Catalogue, u: &Unit) -> Resu
     writeln!(
         m,
         "Nach dem Review in `data/curriculum/{}.json` bei {} eintragen / enter after the review:\n",
-        u.id.split('-').next().unwrap_or_default(),
+        u.jlpt().unwrap_or_default().to_lowercase(),
         u.id
     )?;
     writeln!(

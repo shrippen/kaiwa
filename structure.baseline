@@ -21,14 +21,14 @@ crates/kaiwa-backend/src/views.rs	path	ccn=17
 crates/kaiwa-backend/src/views.rs	stats	length=92
 crates/kaiwa-backend/src/views.rs	tutor_view	ccn=24 nesting=6
 crates/kaiwa-backend/src/views.rs	week	ccn=19 length=82
-crates/kaiwa-core/src/curriculum.rs	-	lines=843
+crates/kaiwa-core/src/curriculum.rs	-	lines=857
 crates/kaiwa-core/src/difficulty.rs	target	ccn=24
 crates/kaiwa-core/src/difficulty.rs	word	ccn=16
 crates/kaiwa-core/src/difficulty.rs	words	ccn=32
 crates/kaiwa-core/src/learner.rs	describe_level	ccn=36 nesting=6
 crates/kaiwa-core/src/progress.rs	streak	nesting=5
 crates/kaiwa-core/src/romaji.rs	word_to_kana	ccn=18
-crates/kaiwa-core/src/session.rs	-	lines=1312
+crates/kaiwa-core/src/session.rs	-	lines=1324
 crates/kaiwa-core/src/session.rs	take	length=90
 crates/kaiwa-lang/examples/excerpt.rs	main	ccn=34 length=102
 crates/kaiwa-lang/examples/levels.rs	main	ccn=38 length=136

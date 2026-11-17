@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use kaiwa_core::clock::Moment;
-use kaiwa_core::curriculum::NodeState;
+use kaiwa_core::curriculum::{NodeState, Unit};
 use kaiwa_core::difficulty::KNOBS;
 use kaiwa_core::learner::SKILLS;
 use kaiwa_core::progress::{DailyGoal, streak_note};
@@ -417,16 +417,16 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
             json!({ "kind": k, "word": word, "weeks": w, "text": trend(word, &of_kind, de) })
         })
         .collect();
-    // Words and phrases per level, from the unit they came from ("n5-04" is N5).
+    // Words and phrases per level, from the unit they came from.
     let mut vocab: BTreeMap<String, usize> = BTreeMap::new();
     for i in &items {
         let level = i
             .unit
             .as_deref()
-            .and_then(|u| u.split('-').next())
-            .map(str::to_uppercase)
-            .unwrap_or_else(|| "?".into());
-        *vocab.entry(level).or_default() += 1;
+            .and_then(|u| st.curriculum.unit(u))
+            .and_then(Unit::jlpt)
+            .unwrap_or("?");
+        *vocab.entry(level.to_string()).or_default() += 1;
     }
     Ok(json!({
         "week": week(st, now)?,
