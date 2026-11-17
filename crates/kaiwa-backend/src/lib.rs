@@ -17,6 +17,7 @@ mod demo;
 pub mod ears;
 pub mod flow;
 pub mod journal;
+mod keys;
 pub mod latency;
 pub mod log;
 pub mod lookup;
@@ -27,6 +28,7 @@ pub mod placing;
 pub mod profiles;
 pub mod recordings;
 pub mod reminder;
+mod review;
 #[cfg(feature = "sim")]
 pub mod seed;
 pub mod settings;

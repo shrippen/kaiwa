@@ -1,7 +1,7 @@
 import QtQuick
 
 /**
- * What KanteBassStaff and KanteTabStaff share besides their notation (Kante 1.35, 1.82):
+ * What KanteBassStaff and KanteTabStaff share besides their notation (Kante 1.35, 1.81):
  * the room the layout uses, the layouts of the lines on show, the loop cut into lines, and the
  * lookups in time (note and bar at a time, bar label). Has no look of its own.
  *

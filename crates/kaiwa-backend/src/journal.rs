@@ -6,39 +6,56 @@ use kaiwa_core::Event;
 use kaiwa_core::clock::Moment;
 
 use crate::Backend;
-use crate::settings::SettingError;
+use crate::keys::Key;
 
-/// Settings that belong to this device, not to the profile: applied live, never journaled, so
-/// a second device keeps its own tutor and microphone. The owner decides the final list
-/// (ADR-010, "Offen"); `louder` and `clear` are set by `set_sound`, not as a setting.
-pub(crate) const DEVICE_SETTINGS: &[&str] = &[
-    "tutorProvider",
-    "tutorModel",
-    "tutorBase",
-    "microphone",
-    "unloadAfter",
-    "handsFree",
-];
+/// Why an event was not journaled or not applied.
+#[derive(Debug)]
+pub enum JournalError {
+    /// The profile could not be read or written: it is as it was.
+    NotSaved(anyhow::Error),
+    /// The event is saved, but what it sets off failed (today's goal, deleting recordings).
+    NotApplied(anyhow::Error),
+    /// The profile could not be opened; the event would delete recordings of the real one.
+    Spare,
+}
+
+impl std::fmt::Display for JournalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            // The cause alone: the page says itself what was not saved.
+            Self::NotSaved(e) | Self::NotApplied(e) => write!(f, "{e}"),
+            Self::Spare => f.write_str("refused on a spare profile"),
+        }
+    }
+}
+
+impl std::error::Error for JournalError {}
 
 /// Journals `event`, then applies it. An event that cannot be written is not applied.
-pub(crate) fn record(b: &Backend, event: &Event, at: Moment) -> Result<(), SettingError> {
+pub(crate) fn record(b: &Backend, event: &Event, at: Moment) -> Result<(), JournalError> {
     b.store
         .append_event(event, at)
-        .map_err(|e| SettingError::NotSaved(e.into()))?;
+        .map_err(|e| JournalError::NotSaved(e.into()))?;
     apply(b, event, at)
 }
 
 /// Does what `event` says, through the commands live use.
-pub(crate) fn apply(b: &Backend, event: &Event, at: Moment) -> Result<(), SettingError> {
+pub(crate) fn apply(b: &Backend, event: &Event, at: Moment) -> Result<(), JournalError> {
     match event {
         Event::Review { text, grade } => {
             // A card that is gone changes nothing, as live.
             b.store
                 .review(text, *grade, at)
                 .map(|_| ())
-                .map_err(|e| SettingError::NotSaved(e.into()))
+                .map_err(|e| JournalError::NotSaved(e.into()))
         }
-        Event::Setting { key, value } => b.change_setting(key, value, at),
+        Event::Setting { key, value } => {
+            // A key this version does not know (from a newer device) changes nothing.
+            let Some(key) = Key::parse(key) else {
+                return Ok(());
+            };
+            b.change_setting(key, value, at)
+        }
     }
 }
 
@@ -48,6 +65,13 @@ mod tests {
 
     use super::*;
     use crate::TempBackend;
+
+    #[test]
+    fn a_journal_error_reads_as_its_cause() {
+        // The review page shows it after its own "not saved": no second prefix.
+        let e = JournalError::NotSaved(anyhow::anyhow!("database is locked"));
+        assert_eq!(e.to_string(), "database is locked");
+    }
 
     const T0: Moment = Moment {
         unix: 1_791_100_000,
@@ -112,7 +136,7 @@ mod tests {
         assert_eq!(events.len(), 10);
         assert!(events.iter().all(|e| !matches!(
             &e.event,
-            Event::Setting { key, .. } if DEVICE_SETTINGS.contains(&key.as_str())
+            Event::Setting { key, .. } if Key::parse(key).is_some_and(Key::per_device)
         )));
 
         let folded = backend("folded");
