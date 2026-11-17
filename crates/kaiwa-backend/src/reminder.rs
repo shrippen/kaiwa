@@ -40,7 +40,7 @@ impl Backend {
         if !due {
             return Ok(None);
         }
-        let t = self.store.today(now)?;
+        let t = self.opened_today(now)?;
         let paused = self
             .store
             .pauses()?

@@ -108,10 +108,13 @@ impl Backend {
         self.spare = false;
         deleted?;
 
+        // The language stays, as the new journal's first setting.
         if let Some(lang) = lang {
-            let mut p = self.store.profile()?;
-            p.ui_lang = lang;
-            self.store.set_profile(&p)?;
+            let event = kaiwa_core::Event::Setting {
+                key: crate::keys::Key::UiLang.name().into(),
+                value: lang.code().into(),
+            };
+            crate::journal::record(self, &event, crate::now())?;
         }
         Ok(())
     }

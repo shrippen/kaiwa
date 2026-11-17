@@ -244,6 +244,14 @@ pub fn knob_for(skill: Skill) -> Option<Knob> {
     }
 }
 
+/// How a skill felt to the learner (/LF202/).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Felt {
+    TooEasy,
+    TooHard,
+}
+
 /// The learner corrects the model (/LF202/): the skill moves, and its knob one step at once.
 pub fn learner_says(
     m: &mut LearnerModel,

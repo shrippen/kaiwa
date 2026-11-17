@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{Result, Store};
 
 /// How long a writer waits for another process's write (a loaded disk, many bookings).
-const BUSY_WAIT: std::time::Duration = std::time::Duration::from_secs(30);
+pub(crate) const BUSY_WAIT: std::time::Duration = std::time::Duration::from_secs(30);
 
 impl Store {
     /// Reads a state value (its default when missing), changes it and writes it back as one

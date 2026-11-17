@@ -18,6 +18,13 @@ macro_rules! keys {
                     _ => None,
                 }
             }
+
+            /// The name the settings and the journal use.
+            pub(crate) fn name(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $name,)+
+                }
+            }
         }
     };
 }
@@ -47,8 +54,9 @@ keys! {
 impl Key {
     /// Settings that belong to this device, not to the profile: applied live, never
     /// journaled, so a second device keeps its own tutor and microphone. The owner decided
-    /// the list on 17.11.2026 (ADR-010): tutor, microphone, unload time, hands-free.
-    /// "Louder" and "clear" are set by `set_sound`, not as a setting.
+    /// the list on 17.11.2026 (ADR-010): tutor, microphone, unload time, hands-free, louder
+    /// and clear. The last two are set by `set_sound`, not as a setting, and for the same
+    /// reason not journaled either.
     pub(crate) fn per_device(self) -> bool {
         matches!(
             self,

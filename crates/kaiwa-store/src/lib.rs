@@ -621,7 +621,7 @@ impl Store {
     pub fn set_placement(&self, placed: LearnerModel) -> Result<()> {
         let mut l = self.learning()?;
         let mut p = self.profile()?;
-        let booked = book_placement(&mut l.model, placed, p.feedback_source);
+        let booked = book_placement(std::mem::take(&mut l.model), placed, p.feedback_source);
         l.model = booked.model;
         l.regulator = booked.regulator;
         self.set_learning(&l)?;
@@ -1016,14 +1016,14 @@ impl Store {
     }
 
     /// The day of the last re-entry after a break, if there was one.
-    fn reentered(&self) -> Result<Option<Day>> {
+    pub fn reentered(&self) -> Result<Option<Day>> {
         self.state_value("reentered")
     }
 
     /// The re-entry after a break (/LF231/, T-07), when [`srs::new_break`] says it is one: ten
     /// items stay due, the rest is spread over the next days. The day is kept, so the
     /// refresher lasts the whole day whatever the learner opens first.
-    fn reenter(&self, now: Moment) -> Result<()> {
+    pub fn reenter(&self, now: Moment) -> Result<()> {
         if !srs::new_break(now, self.last_practice()?, self.reentered()?) {
             return Ok(());
         }
@@ -1048,14 +1048,12 @@ impl Store {
 
     /// The items to review now (/LF230/, /LF231/).
     pub fn due(&self, now: Moment, limit: usize) -> Result<Vec<Item>> {
-        self.reenter(now)?;
         let items = self.items()?;
         Ok(srs::due(&items, now, limit).into_iter().cloned().collect())
     }
 
     /// Like [`Store::due`], but only the items of `unit`.
     pub fn due_in(&self, unit: &str, now: Moment, limit: usize) -> Result<Vec<Item>> {
-        self.reenter(now)?;
         let items: Vec<Item> = self
             .items()?
             .into_iter()
@@ -1202,7 +1200,6 @@ impl Store {
         let pauses = self.pauses()?;
         let day = now.day();
         let record = days.get(&day).cloned().unwrap_or_default();
-        self.reenter(now)?;
         let items = self.items()?;
         Ok(Today {
             day,

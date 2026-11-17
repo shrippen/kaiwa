@@ -1,9 +1,11 @@
 //! The skip commands (/LF215/): the offer on the path and the offer after the placement, and
 //! taking them. The rule for keigo is `LearnerModel::may_skip`.
 
+use kaiwa_core::Event;
 use kaiwa_core::curriculum::NodeState;
+use kaiwa_core::event::SkipOffer;
 
-use crate::Backend;
+use crate::{Backend, journal};
 
 /// Whether the scenario `id` is in keigo.
 fn has_keigo(st: &Backend, id: &str) -> bool {
@@ -41,11 +43,23 @@ pub fn take_skip(st: &Backend, unit: &str) -> anyhow::Result<bool> {
     if skip_offer(st)?.is_none_or(|u| u.id != unit) {
         return Ok(false);
     }
-    let mut l = st.store.learning()?;
-    l.course.skipped_units.insert(unit.to_string());
-    l.regulator.took_skip();
-    st.store.set_learning(&l)?;
+    let event = Event::Skipped {
+        units: vec![unit.to_string()],
+        offer: SkipOffer::Unit,
+    };
+    journal::record(st, &event, crate::now())?;
     Ok(true)
+}
+
+/// What a journaled skip does: its units count as done; the path's offer is used up.
+pub(crate) fn apply(st: &Backend, units: &[String], offer: SkipOffer) -> anyhow::Result<()> {
+    let mut l = st.store.learning()?;
+    l.course.skipped_units.extend(units.iter().cloned());
+    if offer == SkipOffer::Unit {
+        l.regulator.took_skip();
+    }
+    st.store.set_learning(&l)?;
+    Ok(())
 }
 
 /// The skip offered after the placement (/LF215/): the units up to the first keigo unit the
@@ -75,9 +89,11 @@ pub fn take_placement_skip(st: &Backend, last: &str) -> anyhow::Result<bool> {
     if offer.units.last().is_none_or(|u| u != last) {
         return Ok(false);
     }
-    let mut l = st.store.learning()?;
-    l.course.skipped_units.extend(offer.units);
-    st.store.set_learning(&l)?;
+    let event = Event::Skipped {
+        units: offer.units,
+        offer: SkipOffer::Placement,
+    };
+    journal::record(st, &event, crate::now())?;
     Ok(true)
 }
 

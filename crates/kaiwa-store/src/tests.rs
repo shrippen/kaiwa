@@ -685,31 +685,37 @@ fn words_before_a_break(store: &Store, last: Moment) {
     store.review("ことば0", Grade::Again, last).unwrap();
 }
 
+/// The start page opened at `now`, after the backend spread a break as it does then.
+fn opened(store: &Store, now: Moment) -> Today {
+    store.reenter(now).unwrap();
+    store.today(now).unwrap()
+}
+
 #[test]
 fn after_a_break_ten_are_ten_and_the_rest_waits_for_the_next_days() {
     let store = Store::in_memory().unwrap();
     // Reviewing counts as practice (T-07): no conversation was ever held.
     words_before_a_break(&store, at(2, 9));
     assert_eq!(store.last_practice().unwrap(), Some(at(2, 9)));
-    assert!(!store.today(at(5, 9)).unwrap().refresher);
-    assert_eq!(store.today(at(5, 9)).unwrap().due, 34);
+    assert!(!opened(&store, at(5, 9)).refresher);
+    assert_eq!(opened(&store, at(5, 9)).due, 34);
 
     let back = at(20, 9);
-    let today = store.today(back).unwrap();
+    let today = opened(&store, back);
     assert!(today.refresher);
     assert_eq!(today.due, 10);
     // Each answer takes one off; none moves up.
     let first = store.due(back, 10).unwrap();
     store.review(&first[0].text, Grade::Good, back).unwrap();
     store.review(&first[1].text, Grade::Good, back).unwrap();
-    let today = store.today(back.plus_secs(3600)).unwrap();
+    let today = opened(&store, back.plus_secs(3600));
     assert_eq!(today.due, 8);
     assert!(today.refresher, "the whole day of the re-entry");
     // The next days bring ten each, not the pile.
-    let next = store.today(at(21, 9)).unwrap();
+    let next = opened(&store, at(21, 9));
     assert!(!next.refresher);
     assert_eq!(next.due, 8 + 10);
-    assert_eq!(store.today(at(22, 9)).unwrap().due, 8 + 20);
+    assert_eq!(opened(&store, at(22, 9)).due, 8 + 20);
 }
 
 #[test]
@@ -717,22 +723,22 @@ fn opening_the_app_in_a_break_does_not_use_the_break_up() {
     let store = Store::in_memory().unwrap();
     words_before_a_break(&store, at(2, 9));
     // Opened on day 10, nothing practised; the days after are no re-entry.
-    assert_eq!(store.today(at(10, 9)).unwrap().due, 10);
-    assert!(!store.today(at(16, 9)).unwrap().refresher);
+    assert_eq!(opened(&store, at(10, 9)).due, 10);
+    assert!(!opened(&store, at(16, 9)).refresher);
     // Three weeks later the learner is back: welcome, ten, not the heap.
-    let back = store.today(at(30, 9)).unwrap();
+    let back = opened(&store, at(30, 9));
     assert!(back.refresher);
     assert_eq!(back.due, 10);
-    assert_eq!(store.today(at(31, 9)).unwrap().due, 20);
+    assert_eq!(opened(&store, at(31, 9)).due, 20);
 }
 
 #[test]
 fn a_break_is_spread_once_also_when_nothing_is_practised_on_the_day_back() {
     let store = Store::in_memory().unwrap();
     words_before_a_break(&store, at(2, 9));
-    assert_eq!(store.today(at(20, 9)).unwrap().due, 10);
+    assert_eq!(opened(&store, at(20, 9)).due, 10);
     // Nothing answered: the day after is no second re-entry, the ten and the next ten wait.
-    let next = store.today(at(21, 9)).unwrap();
+    let next = opened(&store, at(21, 9));
     assert!(!next.refresher);
     assert_eq!(next.due, 20);
     // Practice, then another break: spread again.
@@ -740,7 +746,7 @@ fn a_break_is_spread_once_also_when_nothing_is_practised_on_the_day_back() {
     store
         .review(&first[0].text, Grade::Good, at(21, 9))
         .unwrap();
-    let again = store.today(at(40, 9)).unwrap();
+    let again = opened(&store, at(40, 9));
     assert!(again.refresher);
     assert_eq!(again.due, 10);
 }

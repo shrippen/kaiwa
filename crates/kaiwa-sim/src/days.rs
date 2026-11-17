@@ -392,8 +392,8 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                 if rec.levels_at_start.is_empty() {
                     rec.levels_at_start = levels_of(&learner);
                 }
-                // As the store does: the day keeps the goal it had (/LF602/).
-                rec.goal = Some(goal);
+                // The core's rule: the day keeps the goal it had (/LF602/).
+                rec.keep_goal(at.day(), at.day(), goal);
                 rec.reviews_done += reviews + extra;
                 rec.xp += xp;
                 last_practice = Some(at.plus_secs((minutes * 60.0) as i64));

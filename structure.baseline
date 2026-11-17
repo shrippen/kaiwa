@@ -64,10 +64,9 @@ crates/kaiwa-sim/src/profile.rs	local_switch	ccn=25
 crates/kaiwa-sim/src/profile.rs	own_profile	ccn=79 length=201
 crates/kaiwa-sim/src/profile.rs	sick_pause	ccn=22
 crates/kaiwa-sim/src/review.rs	sheet	ccn=43 length=126
-crates/kaiwa-sim/src/run.rs	-	lines=1155
+crates/kaiwa-sim/src/run.rs	-	lines=1129
 crates/kaiwa-sim/src/run.rs	check	ccn=53 length=204
 crates/kaiwa-sim/src/run.rs	live_check	ccn=29 length=133
-crates/kaiwa-sim/src/run.rs	play_with	length=83
 crates/kaiwa-sim/src/run.rs	run_persona_with	ccn=25 length=99
 crates/kaiwa-sim/src/trace.rs	table	ccn=23 length=115 nesting=5
 crates/kaiwa-sim/src/ui.rs	gamification_off	ccn=26
@@ -86,9 +85,9 @@ crates/kaiwa-speech/src/g2p/numbers.rs	below_10000	ccn=20
 crates/kaiwa-speech/src/mora.rs	-	lines=875
 crates/kaiwa-speech/src/mora.rs	from_dir	ccn=17
 crates/kaiwa-speech/src/mora.rs	variants	ccn=28 length=93
-crates/kaiwa-store/src/lib.rs	-	lines=1341
+crates/kaiwa-store/src/lib.rs	-	lines=1338
 crates/kaiwa-store/src/lib.rs	correct_in	ccn=19 length=89
 crates/kaiwa-store/src/lib.rs	import	ccn=42
 crates/kaiwa-store/src/lib.rs	record_on	length=84
-crates/kaiwa-store/src/tests.rs	-	lines=1167
+crates/kaiwa-store/src/tests.rs	-	lines=1173
 crates/kaiwa-store/src/tests.rs	recording_a_session_feeds_model_path_review_and_day	length=110

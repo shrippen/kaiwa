@@ -113,9 +113,9 @@
           "offset_min": { "type": "integer", "description": "Local time zone offset at that moment, minutes." },
           "body": {
             "type": "object",
-            "description": "What the learner did; `kind` names it (`review`, `setting`, `talk_begun`, `talk_saved`, `talk_finished`, `talk_corrected`).",
+            "description": "What the learner did; `kind` names it.",
             "required": ["kind"],
-            "properties": { "kind": { "enum": ["review", "setting", "talk_begun", "talk_saved", "talk_finished", "talk_corrected"] } }
+            "properties": { "kind": { "enum": ["review", "setting", "talk_begun", "talk_saved", "talk_finished", "talk_corrected", "placed", "placement_left_out", "nudged", "skipped", "word_added", "paused", "pause_ended", "disputed", "costs_booked", "break_spread"] } }
           }
         }
       }

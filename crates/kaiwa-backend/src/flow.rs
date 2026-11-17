@@ -14,7 +14,7 @@ use kaiwa_ai::Correction;
 use kaiwa_core::difficulty::Knob;
 use kaiwa_core::session::{Answer, Asking};
 use kaiwa_core::{Day, Event, Input, Moment, Session, TurnOutcome};
-use kaiwa_store::{Dispute, Recorded};
+use kaiwa_store::Recorded;
 
 use crate::Backend;
 use crate::journal::{self, JournalError};
@@ -349,14 +349,14 @@ impl Talk {
         let learner = self.session.turns().get(turn)?.learner.clone();
         let c = self.session.dispute(turn, better)?;
         let mut failed = Vec::new();
-        let listed = b.store.add_dispute(&Dispute {
-            at: crate::now(),
+        let event = Event::Disputed {
             scenario: self.session.scenario.id.clone(),
             learner,
             original: c.original.clone(),
             better: c.better.clone(),
             explanation: c.explanation.clone(),
-        });
+        };
+        let listed = journal::record(b, &event, crate::now());
         failed.extend(listed.err().map(anyhow::Error::from));
         // The mark is kept even when the list is not.
         let recorded = self.keep_marks(b, &mut failed);
