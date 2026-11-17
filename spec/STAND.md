@@ -19,11 +19,20 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 **Geparkt:** Plasmoid und Dienst `kaiwad` (M4) auf dem Zweig `later/plasmoid`, bis die App nahe 1.0 ist. Dort sind Kurzgespräch, fünf Wiederholungen, Sprechtaste über den Dienst und Erinnerungen gebaut. **Offen:** In der CI lädt `plasmoidviewer` das Plasmoid ohne QML-Fehler, aber sein `Today`-Aufruf kommt bei `kaiwad` nicht an (Lauf 1530, „plasmoid: no call reached kaiwad“). Ob das am Offscreen-Betrieb, an der Wartezeit (20 s) oder am D-Bus-Modul von Plasma liegt, ist beim Wiederaufnehmen als Erstes zu klären. Die Erinnerungs-Einstellung der App ist bis dahin ausgeblendet.
 
+## Entscheidungen vom 2026-11-17
+
+Im Artefakt der Nacht beantwortet:
+
+- **E-1, E-2 (Sync):** Vorschläge angenommen, eingetragen in [ADR-010](adr/010-sync.md).
+- **E-3:** Die Zeit nach dem letzten Zug zählt weiter nicht; der vorgeschlagene Knopf „Fertig“ unter der Bilanz entfällt.
+- **E-4 (Gestaltung):** alle Vorschläge, vorher je eine Skizze als Artefakt: Lernpfad in Gruppen je Einheit mit den Namen der Sperren, die der Pfad zeigt; Japanisch im Gespräch größer; Demo-Banner verweist auf die Einstellungen; Aussprache-Hinweise ohne Modell als „Braucht Modell“ statt Schalter; „Kein Sprechen“ als ruhige Zeile; Heute in zwei Spalten; Fähigkeiten im Profil als Balken, Knöpfe auf Klick; Verlaufslinien mit Achse und Tooltip; dB an der Pegelskala. Die Wochenkarte behält Di, Do, Sa.
+- **E-5 (Audit):** alle sechs Funde des vierten Audits beheben, 3 und 6 vor Sync-Schritt 2.
+
 ## Nacht zum 2026-11-17
 
 Alle Funde des dritten Audits behoben (Eigentümer, 16.11.2026: „korrigiere alle funde im audit“), je ein PR: #159 (Simulation öffnet Gespräche und Profile über das Backend, `kaiwa-sim/src/talk.rs`; teilweise, Rest in `ARCHITECTURE.md`), #160 (Keigo-Regel für das Überspringen einmal im Kern, `LearnerModel::may_skip`; `skips.rs`; `leave_out_placement` und `take_placement_offer` statt zweimal `skip_placement`), #161 (jedes Backend hat seinen eigenen Kostenzähler statt eines globalen), #162 (Fehler neben dem Gespräch erreichen den Lernenden über `Backend::take_troubles`; ein unlesbares Profil startet ein Ersatzprofil im Speicher mit dauerhaftem Hinweis statt abzustürzen), #165 (Hilfe, Hörhilfen und Übersetzung als Befehle des Gesprächs im Backend; `session_mut` geschlossen), Fund 4 als #167 (Fehlersätze aus `kaiwa-backend/src/words.rs`, Meldungen werden angehängt; der nicht einsatzbereite Tutor erreicht den Lernenden). Dazu #163 (Kante-Abgleich), #166 (abgelaufene Aufnahmen auch am Ende eines Gesprächs löschen; Kosten in einer Transaktion buchen) und #168 (eine Übersetzung, die während eines Zuges ankommt, zählt nur, wenn der Zug scheitert, /LF212/).
 
-Sync begonnen (M6, /LF700/): [ADR-010](adr/010-sync.md) (vorgeschlagen) synchronisiert über ein Journal: Jede Handlung des Lernenden ist ein Ereignis, der Stand ist dessen Faltung durch dieselben Befehle wie live; Ablage später als eine `age`-Datei je Gerät in einem Ordner oder per WebDAV. Schritt 1 ist gemergt (#164): Tabelle `events` (Migration 5), Geräte-Id, Wiederholungen und Einstellungen als Ereignisse, Test „Faltung = live“. Nächster Schritt: Gespräche als Ereignisse und Export `kaiwa-export/4` mit dem Journal. Offen für den Eigentümer: welche Einstellungen je Gerät gelten, und die Bestätigung der Schichten für den Baustein `kaiwa-sync` (Schritt 5).
+Sync begonnen (M6, /LF700/): [ADR-010](adr/010-sync.md) (angenommen) synchronisiert über ein Journal: Jede Handlung des Lernenden ist ein Ereignis, der Stand ist dessen Faltung durch dieselben Befehle wie live; Ablage später als eine `age`-Datei je Gerät in einem Ordner oder per WebDAV. Schritt 1 ist gemergt (#164): Tabelle `events` (Migration 5), Geräte-Id, Wiederholungen und Einstellungen als Ereignisse, Test „Faltung = live“. Nächster Schritt: Gespräche als Ereignisse und Export `kaiwa-export/4` mit dem Journal.
 
 ## Tage 2026-11-13 bis 16
 
@@ -214,7 +223,7 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
 12. **Die Anthropic-Anbindung ist nicht live geprüft** (T-10): #72 hat die Anfragen nach der API-Referenz umgebaut (`crates/kaiwa-ai/src/anthropic.rs`), in der Sitzung gab es keinen Schlüssel. Der erste Schritt des lokalen Tests (`kaiwa-sim run --live` mit `KAIWA_PROVIDER=anthropic`) zeigt, ob sie stimmen. Offen dabei: Die Modelle denken vor der Antwort nach, in der Voreinstellung recht gründlich; für die Antwortzeit (/LL010/) lohnt `output_config.effort` „low“ für die Antwort der Figur, das ist eine Abwägung zwischen Tempo und Güte und nicht gesetzt. Und: Lehnt ein Modell eine Antwort ab (Sicherheitsfilter), gibt es keinen Ersatz; die API bietet dafür `fallbacks` an.
 
 13. **Kleinigkeiten der zweiten Leser vom 13.11., noch offen:**
-    - Gespräch: Die Zeit nach dem letzten Zug zählt nicht (das Gespräch wird mit dem letzten Zug gebucht; die Zeit danach bräuchte eine nachträgliche Änderung des Eintrags), und Schließen des Fensters verliert einen laufenden Zug.
+    - Gespräch: Schließen des Fensters verliert einen laufenden Zug. (Die Zeit nach dem letzten Zug zählt bewusst nicht, E-3.)
     - Kosten: Zwei Prozesse auf einem Profil (zweite App, später Plasmoid) können das Limit zusammen doppelt ausgeben (die Buchung selbst ist seit dem Fix eine Transaktion).
     - Erinnerung: „Später“ über Mitternacht verschiebt die Erinnerung auf den nächsten Tag (wirkt erst mit M4).
     - Nachschlagen: IPADIC liefert für かって/よんだ die Grundform かつ/よぶ; ohne Beugungsform im `LineWord` nicht zu lösen. Noch Zwillinge (auch vor #114): こと → 琴, そう/よう, と als „if“ statt „with“. IPADIC trennt こうちゃ in こう + ちゃ; ちゃ zeigt dann ては. じゃ für das Orts-では (ここじゃ) zeigt die Kopula „be; is“.

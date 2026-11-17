@@ -1,6 +1,6 @@
 # ADR-010: Sync zwischen Geräten
 
-**Status:** Vorgeschlagen (Schritt 1 bis 4 ohne Netz; Schritt 5 wartet auf die Bestätigung der Schichten durch den Eigentümer) · **Bezug:** /LF700/, /LF507/, /LF710/, /LF711/, /LF713/, `jonas_sync`, `jonas_local_switch`
+**Status:** Angenommen (Eigentümer, 17.11.2026; Schritt 1 umgesetzt) · **Bezug:** /LF700/, /LF507/, /LF710/, /LF711/, /LF713/, `jonas_sync`, `jonas_local_switch`
 
 ## Kontext
 
@@ -26,7 +26,7 @@ Das Profil ist eine SQLite-Datei. Lernstand (`learning`), Karten (`items`) und T
 - **Ids.** Gespräche bekommen die Id ihres Start-Ereignisses (Text statt fortlaufender Zahl). Karten (`norm(text)`) und Tage (Tagesnummer) sind schon geräteübergreifend eindeutig.
 - **Konflikte.**
   - Lernstand, Karten, Tage, Serie, Kosten: keine eigene Regel, sie sind das Ergebnis der Faltung. Zwei Geräte am selben Tag ergeben die Summe ihrer Übung.
-  - Einstellungen: je Schlüssel die späteste. Gerätebezogene Einstellungen (Tutor, Mikrofon, Entladezeit; welche genau, entscheidet der Eigentümer) gehen nicht ins Journal; sonst bricht `jonas_local_switch`.
+  - Einstellungen: je Schlüssel die späteste. Gerätebezogene Einstellungen (Tutor, Mikrofon, Entladezeit, Freisprechen, Lauter, Klar; Eigentümer, 17.11.2026) gehen nicht ins Journal; sonst bricht `jonas_local_switch`.
   - Offene Sitzung: je Sitzung der späteste gespeicherte Stand; ein beendetes Gespräch schlägt ein offenes. Führen zwei Geräte dieselbe offene Sitzung getrennt weiter, gewinnt die spätere. Das ist der eine benannte Verlust.
   - Pausen und Widersprüche: Vereinigung über die Ereignis-Id.
 - **Ablage.** Eine versiegelte Datei je Gerät im gewählten Ordner; jedes Gerät schreibt nur seine eigene und liest die der anderen. Damit braucht es keine Sperre und kein ETag, und ein Ordner, den ein anderes Programm abgleicht (Syncthing), geht genauso. Beitritt: Das erste Gerät legt `base` ab (sein Stand); ein weiteres tritt nur mit leerem Profil bei, wie beim Import.
@@ -40,7 +40,7 @@ Das Profil ist eine SQLite-Datei. Lernstand (`learning`), Karten (`items`) und T
 2. Gespräche als Ereignisse über `Session::restore`; Gesprächs-Id als Text; Export `kaiwa-export/4` mit dem Journal (es sind Daten des Lernenden, /LF710/), Schema in `spec/export.schema.json`.
 3. Die übrigen Ereignisse; danach schreibt nichts mehr am Journal vorbei.
 4. `Backend::merge` und Beitritt, mit zwei Profilen getestet: beide üben am selben Tag getrennt, danach sind beide gleich und die Tageszähler die Summe.
-5. Baustein `kaiwa-sync` mit Ordner, Speicher und `age`; `Backend::sync_now`; `jonas_sync` in `kaiwa-sim` über einen Ordner. Ändert die Schichten in `ARCHITECTURE.md`: der Eigentümer bestätigt.
+5. Baustein `kaiwa-sync` mit Ordner, Speicher und `age`; `Backend::sync_now`; `jonas_sync` in `kaiwa-sim` über einen Ordner. Ändert die Schichten in `ARCHITECTURE.md` (vom Eigentümer bestätigt, E-2, 17.11.2026).
 6. WebDAV, Kachel in den Einstellungen, Zeile in „Was verlässt das Gerät?“ (/LF711/).
 
 ## Risiken
@@ -52,7 +52,7 @@ Das Profil ist eine SQLite-Datei. Lernstand (`learning`), Karten (`items`) und T
 - Die Korrektur nach dem Ende (V-05) ersetzt im Journal das beendete Gespräch; die gespeicherte Aufzeichnung davor kann dann entfallen. Eigener Schritt.
 - Größe: Transkripte liegen im Journal; verdichtet (neue `base`) wird erst, wenn es messbar stört.
 
-## Offen für den Eigentümer
+## Entschieden (Eigentümer, 17.11.2026)
 
-- Welche Einstellungen gelten je Gerät (Vorschlag: Tutor, Mikrofon, Entladezeit, Lauter, Klar, Freisprechen) und welche je Profil?
-- Schritt 5 fügt den Baustein `kaiwa-sync` in die Schichten ein.
+- Je Gerät gelten Tutor, Mikrofon, Entladezeit, Freisprechen, Lauter und Klar; alle anderen Einstellungen je Profil.
+- Der Baustein `kaiwa-sync` kommt in Schritt 5 unter das Backend, wie oben beschrieben; der PR von Schritt 5 ändert die Schichten in `ARCHITECTURE.md`.
