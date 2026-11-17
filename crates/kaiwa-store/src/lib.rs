@@ -15,12 +15,13 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use kaiwa_core::booking::book_talk;
+pub use kaiwa_core::booking::FeedbackSource;
+use kaiwa_core::booking::{book_placement, book_talk};
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum};
-use kaiwa_core::difficulty::{Change, Difficulty, Regulator};
+use kaiwa_core::difficulty::{Change, Regulator};
 use kaiwa_core::feedback::Amount;
-use kaiwa_core::learner::{LearnerModel, Skill};
+use kaiwa_core::learner::LearnerModel;
 use kaiwa_core::progress::{DailyGoal, DayRecord, Pause, Streak, XP_REVIEW, streak, turn_counts};
 use kaiwa_core::session::{Session, SessionState};
 use kaiwa_core::srs::{self, Grade, Item};
@@ -115,19 +116,6 @@ pub enum Script {
     Kana,
     /// No text: listening only.
     Hidden,
-}
-
-/// Where the amount of feedback comes from (/LF304/, V-02).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum FeedbackSource {
-    /// Neither a placement nor the learner set it.
-    #[default]
-    Default,
-    /// The speaking level of a placement set it.
-    Level,
-    /// The learner picked it in the settings; a placement leaves it.
-    Chosen,
 }
 
 /// The profile (/LD010/).
@@ -629,31 +617,22 @@ impl Store {
         Ok(())
     }
 
-    /// After the placement (/LF200/): the model and the difficulty that fits it.
-    /// Takes the levels a placement measured. The history stays: mistakes, the learner's own
-    /// corrections (/LF202/) and pronunciation, which a talk does not show (typed turns count
-    /// too).
+    /// After the placement (/LF200/): books what [`book_placement`] decides.
     pub fn set_placement(&self, placed: LearnerModel) -> Result<()> {
         let mut l = self.learning()?;
-        let mut model = placed;
-        model.errors = std::mem::take(&mut l.model.errors);
-        model.corrections_by_learner = l.model.corrections_by_learner;
-        model.set(Skill::Pronunciation, l.model.level(Skill::Pronunciation));
-        l.regulator = Regulator::new(Difficulty::for_learner(&model));
-        l.model = model;
+        let mut p = self.profile()?;
+        let booked = book_placement(&mut l.model, placed, p.feedback_source);
+        l.model = booked.model;
+        l.regulator = booked.regulator;
         self.set_learning(&l)?;
-        // The levels the days started from belong to the old model: a new placement is no
-        // progress, so the week's comparison starts again with the next talk (/LF604/).
         for (day, mut record) in self.days()? {
-            if !record.levels_at_start.is_empty() {
-                record.levels_at_start.clear();
+            if record.restart() {
                 self.put_day(day, &record)?;
             }
         }
-        let mut p = self.profile()?;
         p.placed = true;
-        if p.feedback_source != FeedbackSource::Chosen {
-            p.feedback = Amount::for_level(l.model.level(Skill::Speaking));
+        if let Some(amount) = booked.feedback {
+            p.feedback = amount;
             p.feedback_source = FeedbackSource::Level;
         }
         self.set_profile(&p)
@@ -842,12 +821,7 @@ impl Store {
         let speaking = s.spoken_secs((ended.unix - started.unix) as f64);
         let xp = summary.xp.xp;
         let mut rec = self.day(day)?;
-        // The goal of the day, for the streak later (/LF602/). A talk that ends after
-        // midnight counts for the day it began, which keeps the goal it had: a goal chosen
-        // after midnight is today's.
-        if rec.goal.is_none() || day == ended.day() {
-            rec.goal = Some(self.profile()?.daily_goal);
-        }
+        rec.keep_goal(day, ended.day(), self.profile()?.daily_goal);
         rec.add_talk(
             levels_before,
             speaking,
@@ -1046,23 +1020,11 @@ impl Store {
         self.state_value("reentered")
     }
 
-    /// The re-entry after a break of `srs::BREAK_DAYS` or more (/LF231/, T-07): ten items stay
-    /// due, the rest of what is due is spread over the next days, once per break. The day is
-    /// kept, so the refresher lasts the whole day whatever the learner opens first, and a
-    /// break in which nothing was practised is not spread again the day after. Opening the app
-    /// without practising does not use the break up: `srs::BREAK_DAYS` after that day it is a
-    /// re-entry again.
+    /// The re-entry after a break (/LF231/, T-07), when [`srs::new_break`] says it is one: ten
+    /// items stay due, the rest is spread over the next days. The day is kept, so the
+    /// refresher lasts the whole day whatever the learner opens first.
     fn reenter(&self, now: Moment) -> Result<()> {
-        let last = self.last_practice()?;
-        if !srs::refresher(now, last) {
-            return Ok(());
-        }
-        // Practice since the last re-entry, or as long away again since it: a new break.
-        let again = match (self.reentered()?, last) {
-            (Some(day), Some(last)) => last.day() >= day || now.day().0 - day.0 >= srs::BREAK_DAYS,
-            _ => true,
-        };
-        if !again {
+        if !srs::new_break(now, self.last_practice()?, self.reentered()?) {
             return Ok(());
         }
         let mut items = self.items()?;

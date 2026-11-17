@@ -114,9 +114,6 @@ A change that needs more places than its row lists is a finding for the next aud
   handlers and gamification text, the palette's colours, the voice's pace in
   `app/src/conversation.rs` and the one file that downloads (`kaiwa-backend/src/models.rs`).
   What a page does is checked in QML tests (`app/qml/tests`).
-- The store still decides some learning rules itself: what a new placement resets
-  (difficulty, the week's comparison, the amount of corrections), when a gap counts as a
-  new break, and which daily goal a talk over midnight gets. `AUDIT.md`, finding 3.
 - The settings page keeps its own lists for the amount of corrections, how long
   recordings are kept and the reminder times. The backend accepts any number for
   recordings, reminder and unload time, and any daily goal from 1 to 120 minutes, though
