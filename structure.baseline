@@ -88,9 +88,9 @@ crates/kaiwa-speech/src/g2p/numbers.rs	below_10000	ccn=20
 crates/kaiwa-speech/src/mora.rs	-	lines=875
 crates/kaiwa-speech/src/mora.rs	from_dir	ccn=17
 crates/kaiwa-speech/src/mora.rs	variants	ccn=28 length=93
-crates/kaiwa-store/src/lib.rs	-	lines=1405
+crates/kaiwa-store/src/lib.rs	-	lines=1404
 crates/kaiwa-store/src/lib.rs	correct_in	ccn=22 length=100
 crates/kaiwa-store/src/lib.rs	import	ccn=46
-crates/kaiwa-store/src/lib.rs	record_on	ccn=16 length=93
-crates/kaiwa-store/src/tests.rs	-	lines=1147
+crates/kaiwa-store/src/lib.rs	record_on	length=92
+crates/kaiwa-store/src/tests.rs	-	lines=1167
 crates/kaiwa-store/src/tests.rs	recording_a_session_feeds_model_path_review_and_day	length=110

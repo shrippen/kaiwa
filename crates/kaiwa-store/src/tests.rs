@@ -218,6 +218,26 @@ fn an_interrupted_session_continues_where_it_stopped() {
 }
 
 #[test]
+fn time_spoken_counts_when_the_analysis_had_gaps() {
+    // jonas_analysis_gaps (T-11): such a turn is no evidence of the level, but the time
+    // spoken is practice and counts for the day.
+    let store = Store::in_memory().unwrap();
+    let mut talk = Session::new(scenario(), provider(), Amount::Little, "de");
+    let start = at(0, 9);
+    let id = store.begin_session(&talk.snapshot(), start).unwrap();
+    talk.turn("マラです。よろしくおねがいします。", Input::Spoken)
+        .unwrap();
+    let mut state = talk.snapshot();
+    state.turns[0].incomplete = true;
+    let talk = Session::restore(scenario(), provider(), state);
+
+    let r = store
+        .record(id, &talk, start, start.plus_secs(60), None)
+        .unwrap();
+    assert_eq!(r.day.speaking_secs, 60, "one minute, the one turn spoken");
+}
+
+#[test]
 fn recording_a_session_feeds_model_path_review_and_day() {
     let store = Store::in_memory().unwrap();
     let mut p = store.profile().unwrap();

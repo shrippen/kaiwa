@@ -22,7 +22,7 @@ use kaiwa_core::difficulty::{Change, Difficulty, Regulator};
 use kaiwa_core::feedback::Amount;
 use kaiwa_core::learner::{LearnerModel, Skill};
 use kaiwa_core::progress::{DailyGoal, DayRecord, Pause, Streak, XP_REVIEW, streak};
-use kaiwa_core::session::{Session, SessionState};
+use kaiwa_core::session::{Input, Session, SessionState};
 use kaiwa_core::srs::{self, Grade, Item};
 use migrations::MIGRATIONS;
 use rusqlite::{Connection, OptionalExtension, params};
@@ -833,13 +833,12 @@ impl Store {
                 .collect(),
         };
 
-        // Practice time: the session's wall time, at most an hour, in the share of spoken turns.
+        // Practice time: the session's wall time, at most an hour, in the share of spoken turns;
+        // a turn whose analysis had gaps was spoken too (T-11).
         let wall = (ended.unix - started.unix).clamp(0, 3600) as f64;
-        let spoken_share = if stats.turns == 0 {
-            0.0
-        } else {
-            f64::from(stats.turns - stats.typed_turns) / f64::from(stats.turns)
-        };
+        let turns = s.turns();
+        let spoken = turns.iter().filter(|t| t.input == Input::Spoken).count();
+        let spoken_share = spoken as f64 / turns.len().max(1) as f64;
         let speaking = (wall * spoken_share).round() as u32;
         let xp = summary.xp.xp;
         let mut rec = self.day(day)?;
