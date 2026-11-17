@@ -11,6 +11,7 @@ QtObject {
     property string notice: ""
     property string path: ""
     property string learner: ""
+    property string stats: ""
     property var calls: []
 
     function record(name, args) { calls = calls.concat([[name].concat(args)]) }
@@ -23,5 +24,6 @@ QtObject {
     function stopDownload() { record("stopDownload", []) }
     function openReview(unit) { record("openReview", [unit]) }
     function skipUnit(unit) { record("skipUnit", [unit]) }
+    function nudge(skill, up) { record("nudge", [skill, up]) }
     function setSetting(key, value) { record("setSetting", [key, value]) }
 }

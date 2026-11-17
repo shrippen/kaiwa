@@ -13,7 +13,7 @@ QQC2.ScrollView {
     signal place()
     function t(de, en) { return kaiwa.lang === "en" ? en : de }
 
-    readonly property var learner: kaiwa.learner.length > 0 ? JSON.parse(kaiwa.learner) : ({ skills: [], weak: [], knobs: [] })
+    readonly property var learner: kaiwa.learner.length > 0 ? JSON.parse(kaiwa.learner) : ({ skills: [], scale: [], weak: [], knobs: [] })
     readonly property var stats: kaiwa.stats.length > 0 ? JSON.parse(kaiwa.stats) : ({ heat: [] })
     // Narrow (/LL303/): figures in two columns, the settings Kaiwa chose in one.
     readonly property bool compact: applicationWindow().compact
@@ -50,36 +50,14 @@ QQC2.ScrollView {
             onClicked: page.place()
         }
 
-        Repeater {
-            model: page.learner.skills
-            delegate: KanteListRow {
-                required property var modelData
-                Layout.fillWidth: true
-                Layout.leftMargin: KanteStyle.unit(18)
-                Layout.rightMargin: KanteStyle.unit(18)
-                text: modelData.name
-                subtitle: modelData.words
-                // The whole line in words, else the buttons go under it (/LL303/).
-                minTextWidth: Math.max(KanteStyle.unit(160), wordsWidth.advanceWidth)
-                TextMetrics { id: wordsWidth; font: KanteStyle.smallFont; text: modelData.words }
-                trailing: RowLayout {
-                    spacing: KanteStyle.unit(6)
-                    KanteButton {
-                        size: KanteButton.Size.Small
-                        emphasis: KanteButton.Emphasis.Quiet
-                        text: page.t("Kann ich schon", "I know this")
-                        Accessible.name: text + ": " + modelData.name
-                        onClicked: page.kaiwa.nudge(modelData.skill, true)
-                    }
-                    KanteButton {
-                        size: KanteButton.Size.Small
-                        emphasis: KanteButton.Emphasis.Quiet
-                        text: page.t("Zu schwer", "Too hard")
-                        Accessible.name: text + ": " + modelData.name
-                        onClicked: page.kaiwa.nudge(modelData.skill, false)
-                    }
-                }
-            }
+        SkillRows {
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(6)
+            Layout.rightMargin: KanteStyle.unit(6)
+            kaiwa: page.kaiwa
+            skills: page.learner.skills
+            marks: page.learner.scale || []
+            compact: page.compact
         }
 
         QQC2.Label {
@@ -265,29 +243,15 @@ QQC2.ScrollView {
                 }
             }
         }
-        Repeater {
-            model: page.stats.mistakes || []
-            delegate: RowLayout {
-                required property var modelData
-                Layout.fillWidth: true
-                Layout.leftMargin: KanteStyle.unit(18)
-                Layout.rightMargin: KanteStyle.unit(18)
-                spacing: KanteStyle.unit(14)
-                KanteSparkline {
-                    values: modelData.weeks
-                    implicitWidth: KanteStyle.unit(120)
-                    implicitHeight: KanteStyle.unit(24)
-                    Accessible.role: Accessible.Graphic
-                    Accessible.name: modelData.word + ": " + modelData.weeks.join(", ")
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: modelData.text
-                    color: KanteStyle.textColor
-                    font: KanteStyle.defaultFont
-                    wrapMode: Text.Wrap
-                }
-            }
+        MistakeCharts {
+            Layout.fillWidth: true
+            Layout.leftMargin: KanteStyle.unit(18)
+            Layout.rightMargin: KanteStyle.unit(18)
+            visible: (page.stats.mistakes || []).length > 0
+            kaiwa: page.kaiwa
+            talks: page.stats.talks || []
+            mistakes: page.stats.mistakes || []
+            compact: page.compact
         }
         // Minutes spoken per day over the twelve weeks: weekdays and months on the axes, the
         // minutes of a day on hover, the levels in the legend (charts carry their labels).

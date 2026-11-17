@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use kaiwa_core::clock::Moment;
 use kaiwa_core::curriculum::Unit;
 use kaiwa_core::difficulty::KNOBS;
-use kaiwa_core::learner::SKILLS;
+use kaiwa_core::learner::{SCALE_MARKS, SKILLS};
 use kaiwa_core::progress::{DailyGoal, streak_note};
 use kaiwa_store::{FeedbackSource, Script};
 use serde_json::{Value, json};
@@ -22,7 +22,7 @@ pub(crate) fn scenario_title(st: &Backend, id: &str, lang: &str) -> String {
 }
 
 /// The word for a stored kind string, from the core's list; unknown kinds read "other".
-fn kind_word(kind: &str, de: bool) -> &'static str {
+pub(crate) fn kind_word(kind: &str, de: bool) -> &'static str {
     let parsed = serde_json::from_value::<kaiwa_ai::CorrectionKind>(Value::from(kind));
     match (parsed, de) {
         (Ok(k), true) => kaiwa_core::feedback::kind_word(k, "de"),
@@ -173,6 +173,8 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
                 "skill": serde_json::to_value(s).unwrap_or_default(),
                 "name": s.word(lang),
                 "words": words.split_once(": ").map(|(_, w)| w.to_string()).unwrap_or(words.clone()),
+                "short": l.model.level_word(*s, lang),
+                "share": l.model.share(*s),
             })
         })
         .collect();
@@ -212,6 +214,7 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
     let offer = crate::skips::skip_offer(st)?;
     Ok(json!({
         "skills": skills,
+        "scale": SCALE_MARKS.iter().map(|(name, at)| json!({ "name": name, "at": at })).collect::<Vec<_>>(),
         "weak": weak,
         "grammar": grammar,
         "knobs": knobs,
@@ -220,46 +223,6 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
         // The unit the offer is about (T-08): the one the learner is in now.
         "skipUnit": offer.map(|u| json!({ "id": u.id, "title": u.title })),
     }))
-}
-
-/// Talks before a kind of mistake gets a trend, and how often it must have come up in them;
-/// with fewer there is only the count (one mistake is no trend).
-const TREND_TALKS: usize = 4;
-const TREND_MISTAKES: u32 = 3;
-
-/// How a kind of mistake developed (/LF610/): how often it came up per turn in the later half
-/// of the talks against the earlier half. `talks` are the talks in order, each with its turns
-/// (without those marked as misrecognised, whose mistakes do not count either) and its
-/// mistakes of this kind. Talks, not weeks: a week that has just begun, or the one the
-/// learner started in, holds few talks and would read as a change. A quarter more or less
-/// counts as a change.
-fn trend(word: &str, talks: &[(u32, u32)], de: bool) -> String {
-    let rate = |t: &[(u32, u32)]| {
-        let (turns, mistakes) = t
-            .iter()
-            .fold((0, 0), |(a, b), (turns, m)| (a + turns, b + m));
-        f64::from(mistakes) / f64::from(turns.max(1))
-    };
-    let n: u32 = talks.iter().map(|t| t.1).sum();
-    if talks.len() < TREND_TALKS || n < TREND_MISTAKES {
-        return if de {
-            format!("{word}: bisher {n}×")
-        } else {
-            format!("{word}: {n}× so far")
-        };
-    }
-    let (early, late) = talks.split_at(talks.len() / 2);
-    let (early, late) = (rate(early), rate(late));
-    match (late, de) {
-        (l, true) if l < 0.75 * early => format!("{word}: seltener als in den Gesprächen davor"),
-        (l, false) if l < 0.75 * early => format!("{word}: less often than in the talks before"),
-        (l, true) if l > 1.25 * early => {
-            format!("{word}: zuletzt häufiger, ein Fall für die Wiederholung")
-        }
-        (l, false) if l > 1.25 * early => format!("{word}: more often lately, one for the review"),
-        (_, true) => format!("{word}: etwa gleich oft"),
-        (_, false) => format!("{word}: about as often"),
-    }
 }
 
 /// Minutes spoken a day from which each heat level starts: 1–2 min is level 1, … over 10
@@ -320,46 +283,8 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let minutes: u32 = shown().map(|r| r.speaking_secs).sum::<u32>() / 60;
     let practice_days = shown().filter(|r| r.speaking_secs > 0).count();
     let items = st.store.items()?;
-    // Kinds of mistakes per week over the same twelve weeks (/LF610/).
     let from = start.start(now.offset_min).unix;
-    let mut weeks: BTreeMap<String, [u32; 12]> = BTreeMap::new();
-    // The talks in order, for the trend: the turns of each and its mistakes per kind.
-    let mut talks: Vec<(u32, BTreeMap<String, u32>)> = Vec::new();
-    for row in st.store.finished_since(from)? {
-        let Ok(state) = st.store.session_state(row.id) else {
-            continue;
-        };
-        let w = ((row.started.day().0 - start.0) / 7).clamp(0, 11) as usize;
-        let mut made: BTreeMap<String, u32> = BTreeMap::new();
-        for t in state.turns.iter().filter(|t| !t.incomplete) {
-            for k in kaiwa_core::session::mistake_kinds(t) {
-                *made.entry(k.clone()).or_default() += 1;
-                weeks.entry(k).or_default()[w] += 1;
-            }
-        }
-        let turns = state
-            .turns
-            .iter()
-            .filter(|t| !t.misrecognized && !t.incomplete)
-            .count();
-        if turns > 0 {
-            talks.push((turns as u32, made));
-        }
-    }
-    let mut kinds: Vec<(String, [u32; 12])> = weeks.into_iter().collect();
-    kinds.sort_by_key(|(_, w)| std::cmp::Reverse(w.iter().sum::<u32>()));
-    let mistakes: Vec<Value> = kinds
-        .iter()
-        .take(3)
-        .map(|(k, w)| {
-            let word = kind_word(k, de);
-            let of_kind: Vec<(u32, u32)> = talks
-                .iter()
-                .map(|(turns, made)| (*turns, made.get(k).copied().unwrap_or(0)))
-                .collect();
-            json!({ "kind": k, "word": word, "weeks": w, "text": trend(word, &of_kind, de) })
-        })
-        .collect();
+    let (mistakes, talks) = crate::mistakes::view(st, from, de)?;
     // Words and phrases per level, from the unit they came from.
     let mut vocab: BTreeMap<String, usize> = BTreeMap::new();
     for i in &items {
@@ -374,6 +299,7 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     Ok(json!({
         "week": week(st, now)?,
         "mistakes": mistakes,
+        "talks": talks,
         "vocab": vocab.iter().map(|(l, n)| json!({ "level": l, "count": n })).collect::<Vec<_>>(),
         "heat": levels,
         "heatEnd": today.iso(),
@@ -1072,96 +998,6 @@ mod tests {
     }
 
     #[test]
-    fn the_trend_compares_talks_not_weeks() {
-        // (turns, mistakes) per talk. Fading over eight talks, and the other way round.
-        let fading = [
-            (4, 3),
-            (4, 3),
-            (4, 2),
-            (4, 2),
-            (4, 1),
-            (4, 1),
-            (4, 0),
-            (4, 0),
-        ];
-        assert!(trend("Partikeln", &fading, true).contains("seltener"));
-        let mut rising = fading;
-        rising.reverse();
-        assert!(trend("Particles", &rising, false).contains("more often"));
-        // A week of one mistake a talk, then a Monday talk with four: more often, although
-        // the new week has fewer mistakes than the last (review #67).
-        let monday = [
-            (4, 1),
-            (4, 1),
-            (4, 1),
-            (4, 1),
-            (4, 1),
-            (4, 1),
-            (4, 1),
-            (4, 4),
-        ];
-        assert!(trend("Partikeln", &monday, true).contains("häufiger"));
-        // Two days of practice are no trend, whichever weeks they fall into.
-        assert_eq!(
-            trend("Partikeln", &[(4, 1), (4, 3)], true),
-            "Partikeln: bisher 4×"
-        );
-        // Longer talks with as many mistakes per turn: the same.
-        let longer = [(4, 1), (4, 1), (8, 2), (8, 2)];
-        assert!(trend("Partikeln", &longer, true).contains("gleich"));
-        assert_eq!(trend("Particles", &[], false), "Particles: 0× so far");
-        // One mistake in twenty talks is no trend, wherever it falls (review #67).
-        let mut once = [(4, 0); 20];
-        once[10].1 = 1;
-        assert_eq!(trend("Partikeln", &once, true), "Partikeln: bisher 1×");
-        once[0].1 = 2;
-        assert!(trend("Partikeln", &once, true).contains("seltener"));
-    }
-
-    #[test]
-    fn misrecognised_turns_do_not_thin_out_the_trend() {
-        // Four talks of four valid turns with 2, 1, 2, 1 particle mistakes; the third has
-        // twelve more turns, all marked as misrecognised (review #68). Per valid turn the
-        // later half is as the earlier: 3 of 8 each.
-        let b = crate::TempBackend::new("trend-misrecognised", false).unwrap();
-        let scenario = b.scenarios.get("n5-02-jikoshoukai").cloned().unwrap();
-        let now = crate::now();
-        for (n, (mistakes, misrecognised)) in [(2, 0), (1, 0), (2, 12), (1, 0)].iter().enumerate() {
-            let (provider, _) = b.provider(&scenario.id);
-            let mut s = kaiwa_core::Session::new(
-                scenario.clone(),
-                provider,
-                kaiwa_core::Amount::Little,
-                "de",
-            );
-            for turn in 0..4 + misrecognised {
-                let line = if turn < *mistakes {
-                    "コーヒーを好きです。"
-                } else {
-                    "マラです。よろしくおねがいします。"
-                };
-                s.turn(line, kaiwa_core::Input::Spoken).unwrap();
-                if turn >= 4 {
-                    assert!(s.mark_misrecognized(turn));
-                }
-            }
-            let started = now.plus_secs((n as i64 - 4) * 86_400);
-            b.store
-                .put_finished_session(&s.snapshot(), started, started.plus_secs(300), 0.8)
-                .unwrap();
-        }
-        let v = stats(&b, now).unwrap();
-        let particle = v["mistakes"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|x| x["kind"] == "particle")
-            .expect("particles")
-            .clone();
-        assert_eq!(particle["text"], "Partikel: etwa gleich oft", "{particle}");
-    }
-
-    #[test]
     fn the_twelve_weeks_total_what_they_show() {
         let b = crate::TempBackend::new("twelve-weeks", false).unwrap();
         let now = crate::now();
@@ -1275,29 +1111,5 @@ mod tests {
         // Her own pick: no band.
         b.store.set_feedback(kaiwa_core::Amount::Little).unwrap();
         assert!(profile(&b).unwrap()["feedbackBand"].is_null());
-    }
-
-    #[test]
-    fn mistakes_over_twelve_weeks() {
-        let b = crate::TempBackend::new("stats", true).unwrap();
-        let v = stats(&b, crate::now()).unwrap();
-        let m = v["mistakes"].as_array().unwrap();
-        let particle = m
-            .iter()
-            .find(|x| x["kind"] == "particle")
-            .expect("particles");
-        assert!(
-            particle["text"].as_str().unwrap().contains("seltener"),
-            "{particle}"
-        );
-        assert!(m.iter().any(|x| x["kind"] == "counter"), "{m:?}");
-        assert_eq!(particle["weeks"].as_array().unwrap().len(), 12);
-        assert!(
-            v["vocab"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .any(|x| x["level"] == "N5")
-        );
     }
 }

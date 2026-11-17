@@ -161,6 +161,28 @@ pub fn level_index(name: &str) -> Option<f64> {
         .map(|i| i as f64)
 }
 
+/// Short words per level, (German, English): up to the level of N4 for the skills, and
+/// per register step.
+const LEVEL_WORDS: [(&str, &str); 6] = [
+    ("noch nicht begonnen", "not started yet"),
+    ("erste Wörter", "first words"),
+    ("Anfang N5", "early N5"),
+    ("N5", "N5"),
+    ("erste N4-Themen", "first N4 topics"),
+    ("N4 und mehr", "N4 and beyond"),
+];
+const REGISTER_WORDS: [(&str, &str); 5] = [
+    ("noch keine", "none yet"),
+    ("です/ます fehlt", "です/ます missing"),
+    ("です/ます", "です/ます"),
+    ("locker und höflich", "casual and polite"),
+    ("Grundlagen 敬語", "basics of 敬語"),
+];
+
+/// Where the levels sit on the skills' bar, as a share of its length: the column heads of
+/// the profile.
+pub const SCALE_MARKS: [(&str, f64); 3] = [("N5", 3.0 / 8.0), ("N4", 5.0 / 8.0), ("N3", 6.0 / 8.0)];
+
 /// What the learner showed in one session, per skill: the level of the material and the share
 /// that went well (0..1). Skills without evidence are left out.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -244,6 +266,22 @@ impl LearnerModel {
             .collect()
     }
 
+    /// A skill's level as a share of its scale, 0..1: the length of its bar.
+    pub fn share(&self, s: Skill) -> f64 {
+        self.level(s) / s.max()
+    }
+
+    /// A skill's level in a few words, for a line of the profile ("Anfang N5").
+    pub fn level_word(&self, s: Skill, lang: &str) -> &'static str {
+        let band = self.level(s).round() as usize;
+        let (de, en) = if s == Skill::Register {
+            REGISTER_WORDS[band.min(REGISTER_WORDS.len() - 1)]
+        } else {
+            LEVEL_WORDS[band.min(LEVEL_WORDS.len() - 1)]
+        };
+        if lang == "de" { de } else { en }
+    }
+
     /// The kinds of mistakes that still come up most, worst first.
     pub fn weak_spots(&self, n: usize) -> Vec<(&str, f64)> {
         let mut v: Vec<(&str, f64)> = self
@@ -307,6 +345,23 @@ fn describe_level(s: Skill, v: f64, lang: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_level_has_a_short_word_and_a_share() {
+        let mut m = LearnerModel::placed(&[(Skill::Listening, "n5")]);
+        m.set(Skill::Register, 4.0);
+        m.set(Skill::Speaking, 0.0);
+        m.set(Skill::ReadingKanji, 8.0);
+        assert_eq!(m.level_word(Skill::Listening, "de"), "N5");
+        assert_eq!(m.level_word(Skill::Speaking, "en"), "not started yet");
+        assert_eq!(m.level_word(Skill::ReadingKanji, "de"), "N4 und mehr");
+        assert_eq!(m.level_word(Skill::Register, "en"), "basics of 敬語");
+        assert_eq!(m.share(Skill::Listening), 3.0 / 8.0);
+        assert_eq!(m.share(Skill::Register), 1.0);
+        // The heads sit where the levels are on the 0..8 scale.
+        let n4 = SCALE_MARKS.iter().find(|m| m.0 == "N4").unwrap().1;
+        assert_eq!(n4 * 8.0, level_index("n4").unwrap());
+    }
 
     #[test]
     fn a_flawless_easy_session_lowers_nothing() {

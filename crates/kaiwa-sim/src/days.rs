@@ -1113,8 +1113,8 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
         if ["particle", "counter"].contains(&m["kind"].as_str().unwrap_or_default())
             && (text.contains("häufiger") || text.contains("more often"))
         {
-            let weeks = &m["weeks"];
-            found.push(format!("a faded mistake reads as rising: {text} {weeks}"));
+            let counts = &m["counts"];
+            found.push(format!("a faded mistake reads as rising: {text} {counts}"));
         }
     }
     Ok((!found.is_empty()).then(|| found.join("; ")))

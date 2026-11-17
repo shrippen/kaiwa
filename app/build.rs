@@ -8,6 +8,8 @@ fn main() {
         "qml/PathPage.qml",
         "qml/ReviewPage.qml",
         "qml/ProfilePage.qml",
+        "qml/SkillRows.qml",
+        "qml/MistakeCharts.qml",
         "qml/SettingsPage.qml",
         "qml/SettingsSpeech.qml",
         "qml/SettingsTutor.qml",
