@@ -3,12 +3,13 @@
 //! session, and the limit the learner sets. A local tutor costs nothing and shows no costs.
 
 use kaiwa_ai::cost::Spent;
+use kaiwa_core::Event;
 use kaiwa_core::clock::Moment;
 use kaiwa_store::COST_STATE_PREFIX;
 use serde_json::{Value, json};
 
 use crate::Backend;
-use crate::journal::JournalError;
+use crate::journal::{self, JournalError};
 
 pub use kaiwa_store::CostMonth as Month;
 
@@ -28,17 +29,38 @@ impl Backend {
     }
 
     fn book(&self, spent: Spent, now: Moment, session_ended: bool) -> anyhow::Result<Month> {
-        let (m, ()) = self.store.update_state_value(&key(now), |m: &mut Month| {
+        // Nothing spent and no talk to count: nothing to journal.
+        if spent.calls == 0 && spent.unknown_calls == 0 && !session_ended {
+            self.arm_brake(now)?;
+            return self.month_cost(now);
+        }
+        let event = Event::CostsBooked {
+            cents: spent.cents,
+            calls: spent.calls,
+            unknown_calls: spent.unknown_calls,
+            talk_ended: session_ended,
+        };
+        journal::record(self, &event, now)?;
+        self.month_cost(now)
+    }
+
+    /// What a journaled booking does: the month of `now` adds the costs.
+    pub(crate) fn add_costs(
+        &self,
+        spent: Spent,
+        now: Moment,
+        talk_ended: bool,
+    ) -> anyhow::Result<()> {
+        self.store.update_state_value(&key(now), |m: &mut Month| {
             m.cents += spent.cents;
             m.calls += spent.calls;
             m.unknown_calls += spent.unknown_calls;
             m.paid |= spent.cents > 0.0;
-            if session_ended && std::mem::take(&mut m.paid) {
+            if talk_ended && std::mem::take(&mut m.paid) {
                 m.sessions += 1;
             }
         })?;
-        self.arm_brake(now)?;
-        Ok(m)
+        self.arm_brake(now)
     }
 
     /// Sets the meter's budget to what the limit leaves this month.

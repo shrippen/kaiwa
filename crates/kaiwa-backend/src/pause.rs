@@ -5,23 +5,27 @@
 use kaiwa_core::clock::Day;
 use kaiwa_core::progress::Pause;
 
-use crate::Backend;
+use kaiwa_core::Event;
+
+use crate::{Backend, journal};
 
 impl Backend {
     /// Pauses `days` days from `today` on; returns the day it rests until now. An earlier,
     /// longer pause still holds, so that may be later than this one's end.
     pub fn pause(&self, today: Day, days: u32) -> anyhow::Result<Day> {
         anyhow::ensure!(days > 0, "a pause has at least one day");
-        self.store.add_pause(Pause {
+        let pause = Pause {
             from: today,
             to: today.plus(i64::from(days) - 1),
-        })?;
+        };
+        journal::record(self, &Event::Paused { pause }, crate::now())?;
         Ok(self.store.paused_until(today)?.unwrap_or(today))
     }
 
     /// Ends the pause running on `today`: it held up to yesterday, today counts again.
     pub fn end_pause(&self, today: Day) -> anyhow::Result<()> {
-        Ok(self.store.end_pause(today)?)
+        journal::record(self, &Event::PauseEnded { day: today }, crate::now())?;
+        Ok(())
     }
 }
 

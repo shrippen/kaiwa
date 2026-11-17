@@ -23,6 +23,36 @@ impl Backend {
             self.store.item(text).map_err(anyhow::Error::from)
         })
     }
+
+    /// Back after a break (/LF231/): what is due is spread over the next days, journaled.
+    /// Called before anything shows what is due.
+    fn spread_break(&self, now: Moment) -> anyhow::Result<()> {
+        let (last, reentered) = (self.store.last_practice()?, self.store.reentered()?);
+        if kaiwa_core::srs::new_break(now, last, reentered) {
+            journal::record(self, &Event::BreakSpread, now)?;
+        }
+        Ok(())
+    }
+
+    /// The items due now, of `unit` or all, after a break is spread.
+    pub(crate) fn due(
+        &self,
+        unit: Option<&str>,
+        now: Moment,
+        limit: usize,
+    ) -> anyhow::Result<Vec<Item>> {
+        self.spread_break(now)?;
+        Ok(match unit {
+            Some(u) => self.store.due_in(u, now, limit)?,
+            None => self.store.due(now, limit)?,
+        })
+    }
+
+    /// The start page's numbers, after a break is spread.
+    pub(crate) fn opened_today(&self, now: Moment) -> anyhow::Result<kaiwa_store::Today> {
+        self.spread_break(now)?;
+        Ok(self.store.today(now)?)
+    }
 }
 
 /// The answer's words for the page; `{"error": …}` when nothing was saved.

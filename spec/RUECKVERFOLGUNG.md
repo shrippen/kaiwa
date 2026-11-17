@@ -48,7 +48,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF220/ | M | Das Curriculum ist ein Graph aus Einheiten. | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_path` |
 | /LF221/ | M | Inhalte (Szenarien, Beispielsätze, Erklärungen) werden geprüft … | core, lang | Code | – |
 | /LF230/ | M | Wiederholung (SRS) für Wörter, Wendungen und Grammatikmuster aus … | app, backend, core, store | geprüft | 2 von 2 automatisch grün: `emi_srs_keigo`, `mara_srs_errors` |
-| /LF231/ | S | Wer eine Pause einlegt (≥ 7 Tage), steigt mit einer Auffrischung … | app, core, store | geprüft | 1 von 1 automatisch grün: `mara_comeback` |
+| /LF231/ | S | Wer eine Pause einlegt (≥ 7 Tage), steigt mit einer Auffrischung … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_comeback` |
 | /LF300/ | M | Nach jedem eigenen Zug bewertet das System Grammatik, Wortwahl … | – | geprüft | 2 von 3 automatisch grün: `emi_keigo_detect`, `jonas_analysis_gaps`, `selin_register_flag` |
 | /LF301/ | M | Jeder Vorschlag zeigt: eigene Form → bessere Form (als Diff), eine … | app | geprüft | 1 von 1 automatisch grün: `mara_diff_audio` |
 | /LF302/ | M | Vorschläge haben einen Schweregrad: *verhindert Verständnis* … | ai, core | geprüft | 1 von 2 automatisch grün: `emi_keigo_detect`, `selin_register_flag` |
@@ -68,7 +68,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF504/ | M | Das Plasmoid folgt den Plasma-Widget-Regeln von Kante: Standard ist … | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_compact` |
 | /LF505/ | M | Push-to-Talk funktioniert im Plasmoid per Klick und per globalem … | – | offen | 0 von 1 automatisch grün: `mara_ptt_shortcut` |
 | /LF506/ | M | Das Plasmoid funktioniert ohne geöffnete App. | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_fast` |
-| /LF507/ | S | Eine Plasmoid-Sitzung lässt sich in der App fortsetzen und umgekehrt. | backend | geprüft | 1 von 2 automatisch grün: `jonas_sync`, `mara_resume` |
+| /LF507/ | S | Eine Plasmoid-Sitzung lässt sich in der App fortsetzen und umgekehrt. | backend, core | geprüft | 1 von 2 automatisch grün: `jonas_sync`, `mara_resume` |
 | /LF510/ | S | App und Plasmoid teilen Modelle, Profil und Mikrofon (ein Dienst … | backend | Code | – |
 | /LF520/ | S | Erinnerungen über das Benachrichtigungssystem (KNotification), zur … | backend, store | Code | – |
 | /LF521/ | S | Globales Tastenkürzel für Push-to-Talk und „Kurzsitzung starten“ … | – | offen | 0 von 1 automatisch grün: `mara_ptt_shortcut` |

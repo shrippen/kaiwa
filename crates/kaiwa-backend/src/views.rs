@@ -37,7 +37,7 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
     let lang = p.ui_lang.as_str();
     let de = lang == "de";
-    let t = st.store.today(now)?;
+    let t = st.opened_today(now)?;
     let learning = st.store.learning()?;
     let next = st.curriculum.next_scenario(&learning.course).map(|id| {
         let unit = st.curriculum.unit_of(&id);
@@ -96,13 +96,13 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
 
 /// The items to review now, at most `limit` (/LF230/, /LF502/: five in the plasmoid).
 pub fn review(st: &Backend, now: Moment, limit: usize) -> anyhow::Result<Value> {
-    let due = st.store.due(now, limit)?;
+    let due = st.due(None, now, limit)?;
     review_rows(st, &due)
 }
 
 /// The review of one unit, what its path node opens; all due items when none of it is due.
 pub fn review_unit(st: &Backend, now: Moment, limit: usize, unit: &str) -> anyhow::Result<Value> {
-    let due = st.store.due_in(unit, now, limit)?;
+    let due = st.due(Some(unit), now, limit)?;
     if due.is_empty() {
         return review(st, now, limit);
     }
@@ -111,7 +111,7 @@ pub fn review_unit(st: &Backend, now: Moment, limit: usize, unit: &str) -> anyho
 
 /// The unit a review is narrowed to, {"id", "title", "due"}; null when none of it is due.
 pub fn review_scope(st: &Backend, now: Moment, unit: &str) -> anyhow::Result<Value> {
-    let due = st.store.due_in(unit, now, usize::MAX)?.len();
+    let due = st.due(Some(unit), now, usize::MAX)?.len();
     if due == 0 {
         return Ok(Value::Null);
     }

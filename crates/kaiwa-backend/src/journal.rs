@@ -126,7 +126,61 @@ pub(crate) fn apply(
                 failed: Vec::new(),
             })
         }
+        _ => apply_other(b, event, at)
+            .map(|()| Applied::default())
+            .map_err(JournalError::NotSaved),
     }
+}
+
+/// The events that change the learning state outside a talk or a review.
+fn apply_other(b: &Backend, event: &Event, at: Moment) -> anyhow::Result<()> {
+    match event {
+        Event::Placed { model } => b.store.set_placement(model.clone())?,
+        Event::Nudged { skill, felt } => b.apply_nudge(*skill, *felt)?,
+        Event::Skipped { units, offer } => crate::skips::apply(b, units, *offer)?,
+        Event::WordAdded { text, unit } => crate::lookup::add_word(b, text, unit.as_deref(), at)?,
+        Event::BreakSpread => b.store.reenter(at)?,
+        _ => apply_kept(b, event, at)?,
+    }
+    Ok(())
+}
+
+/// The events that only add to what the profile keeps: pauses, disputes, costs.
+fn apply_kept(b: &Backend, event: &Event, at: Moment) -> anyhow::Result<()> {
+    match event {
+        Event::Paused { pause } => b.store.add_pause(*pause)?,
+        Event::PauseEnded { day } => b.store.end_pause(*day)?,
+        Event::Disputed {
+            scenario,
+            learner,
+            original,
+            better,
+            explanation,
+        } => b.store.add_dispute(&kaiwa_store::Dispute {
+            at,
+            scenario: scenario.clone(),
+            learner: learner.clone(),
+            original: original.clone(),
+            better: better.clone(),
+            explanation: explanation.clone(),
+        })?,
+        Event::CostsBooked {
+            cents,
+            calls,
+            unknown_calls,
+            talk_ended,
+        } => {
+            let spent = kaiwa_ai::cost::Spent {
+                cents: *cents,
+                calls: *calls,
+                unknown_calls: *unknown_calls,
+            };
+            b.add_costs(spent, at, *talk_ended)?
+        }
+        // Their own arms in `apply` and `apply_other`.
+        _ => {}
+    }
+    Ok(())
 }
 
 fn not_saved(e: kaiwa_store::StoreError) -> JournalError {
@@ -311,6 +365,8 @@ mod tests {
                 Event::TalkCorrected { .. } => "corrected",
                 Event::Review { .. } => "review",
                 Event::Setting { .. } => "setting",
+                Event::CostsBooked { .. } => "costs",
+                _ => "other",
             })
             .collect();
         assert_eq!(
@@ -319,6 +375,7 @@ mod tests {
                 "begun",
                 "saved",
                 "finished",
+                "costs",
                 "review",
                 "review",
                 "corrected"
@@ -353,5 +410,65 @@ mod tests {
         let open = folded.store.open_session().unwrap().expect("still open");
         assert_eq!(Some(open.id.clone()), talk.id());
         assert_eq!(folded.store.session_state(&open.id).unwrap().turns.len(), 1);
+    }
+
+    #[test]
+    fn folding_the_journal_gives_the_live_acts_outside_talks() {
+        use kaiwa_core::learner::Skill;
+
+        let live = backend("acts-live");
+        // A disputed correction in a talk.
+        let opened = Talk::begin(&live, SCENARIO, T0, Length::Short).unwrap();
+        let mut talk = opened.talk;
+        talk.say(
+            &live,
+            "コーヒーを好きです。",
+            Input::Spoken,
+            T0.plus_secs(60),
+        )
+        .unwrap()
+        .unwrap();
+        let better = talk.session().turns()[0].corrections[0].better.clone();
+        let disputed = talk.dispute(&live, 0, &better).expect("disputed");
+        assert!(disputed.failed.is_empty(), "{:?}", disputed.failed);
+
+        // Placement, the learner's own word on a skill, a skip, a word, a pause.
+        let placed =
+            kaiwa_core::LearnerModel::placed(&[(Skill::Speaking, "n4"), (Skill::Listening, "n4")]);
+        live.set_placement(placed).unwrap();
+        live.nudge("listening", crate::settings::Felt::TooEasy)
+            .unwrap();
+        let offer = crate::skips::placement_offer(&live).unwrap();
+        let last = offer.units.last().expect("an N4 placement skips units");
+        assert!(crate::skips::take_placement_skip(&live, last).unwrap());
+        assert!(crate::lookup::remember(&live, "猫", None, T0.plus_secs(DAY)).unwrap());
+        assert!(!crate::lookup::remember(&live, "猫", None, T0.plus_secs(DAY)).unwrap());
+        let today = T0.plus_secs(DAY).day();
+        live.pause(today, 3).unwrap();
+        live.end_pause(today.plus(1)).unwrap();
+        // Back after three weeks: the break is spread.
+        crate::views::today(&live, T0.plus_secs(21 * DAY)).unwrap();
+
+        let events = live.store.events().unwrap();
+        for kind in [
+            "disputed",
+            "placed",
+            "nudged",
+            "skipped",
+            "word_added",
+            "paused",
+            "pause_ended",
+            "break_spread",
+        ] {
+            assert!(
+                events
+                    .iter()
+                    .any(|e| serde_json::to_value(&e.event).unwrap()["kind"] == kind),
+                "{kind} not journaled"
+            );
+        }
+        let folded = backend("acts-folded");
+        fold(&folded, &events);
+        assert_eq!(export(&live), export(&folded));
     }
 }

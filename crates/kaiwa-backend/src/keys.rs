@@ -18,6 +18,13 @@ macro_rules! keys {
                     _ => None,
                 }
             }
+
+            /// The name the settings and the journal use.
+            pub(crate) fn name(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $name,)+
+                }
+            }
         }
     };
 }

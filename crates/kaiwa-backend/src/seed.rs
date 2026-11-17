@@ -106,8 +106,9 @@ impl Seed<'_> {
         self.0.store.item(text)
     }
 
-    pub fn due(&self, now: Moment, limit: usize) -> Result<Vec<Item>> {
-        self.0.store.due(now, limit)
+    /// What is due, after spreading a break as the review page does.
+    pub fn due(&self, now: Moment, limit: usize) -> anyhow::Result<Vec<Item>> {
+        self.0.due(None, now, limit)
     }
 
     pub fn put_item(&self, item: &Item) -> Result<()> {
@@ -130,8 +131,9 @@ impl Seed<'_> {
         self.0.store.paused_until(today)
     }
 
-    pub fn today(&self, now: Moment) -> Result<Today> {
-        self.0.store.today(now)
+    /// The start page's numbers, after spreading a break as the start page does.
+    pub fn today(&self, now: Moment) -> anyhow::Result<Today> {
+        self.0.opened_today(now)
     }
 
     pub fn export(&self, now: Moment) -> Result<serde_json::Value> {
