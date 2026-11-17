@@ -96,6 +96,7 @@ QQC2.ScrollView {
                     Layout.fillWidth: true
                     markup: page.current ? page.current.text : ""
                     density: KanteRubyText.Density.All
+                    font: KanteStyle.studyFont()
                 }
                 QQC2.Label {
                     Layout.fillWidth: true
@@ -164,6 +165,7 @@ QQC2.ScrollView {
                     Layout.fillWidth: true
                     markup: page.talk ? page.current.cue : ""
                     density: KanteRubyText.Density.All
+                    font: KanteStyle.studyFont()
                 }
             }
             QQC2.Label {

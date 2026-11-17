@@ -184,6 +184,8 @@ Kirigami.ScrollablePage {
                     segments: modelData.segments ? modelData.segments : []
                     markup: modelData.who === "character" && !modelData.segments ? modelData.markup : ""
                     density: KanteRubyText.Density.All
+                    // E-4: the Japanese the learner studies stands above the controls.
+                    font: KanteStyle.studyFont()
                     interactive: true
                     wordHint: page.t("Eingabe: nachschlagen", "Enter: look up")
                     onWordActivated: function (word) { wordPopup.show(line, msg.index, word) }
@@ -236,7 +238,7 @@ Kirigami.ScrollablePage {
                             : modelData.tier === "yellow" ? KanteHintCard.Tier.Yellow
                             : modelData.tier === "blue" ? KanteHintCard.Tier.Blue : KanteHintCard.Tier.None
                         tierText: modelData.tierText
-                        titleItem: KanteDiffText { parts: modelData.parts }
+                        titleItem: KanteDiffText { parts: modelData.parts; font: KanteStyle.studyFont() }
                         text: modelData.explanation
                         meta: modelData.disputed ? modelData.meta + page.t(" · umstritten", " · disputed") : modelData.meta
                         RowLayout {
