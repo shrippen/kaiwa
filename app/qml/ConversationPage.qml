@@ -184,7 +184,6 @@ Kirigami.ScrollablePage {
                     segments: modelData.segments ? modelData.segments : []
                     markup: modelData.who === "character" && !modelData.segments ? modelData.markup : ""
                     density: KanteRubyText.Density.All
-                    // E-4: the Japanese the learner studies stands above the controls.
                     font: KanteStyle.studyFont()
                     interactive: true
                     wordHint: page.t("Eingabe: nachschlagen", "Enter: look up")
