@@ -43,4 +43,11 @@ pub(super) const MIGRATIONS: &[&str] = &[
         at INTEGER NOT NULL,
         offset_min INTEGER NOT NULL,
         body TEXT NOT NULL);",
+    // 6: where the amount of feedback comes from (V-02), for profiles from before it
+    // (2026-11-17, before the first release). Any amount but "little" was a pick; "little"
+    // was the fixed default, and a skipped placement cannot be told from a real one.
+    "UPDATE settings SET value = json_set(value, '$.feedback_source',
+        CASE WHEN json_extract(value, '$.feedback') IN ('normal', 'much')
+             THEN 'chosen' ELSE 'default' END)
+     WHERE key = 'profile' AND json_type(value, '$.feedback_source') IS NULL;",
 ];

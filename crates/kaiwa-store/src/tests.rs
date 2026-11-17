@@ -102,13 +102,23 @@ fn old_profile(amount: &str, placed: bool) -> serde_json::Value {
     old
 }
 
-fn with_row(profile: &serde_json::Value, speaking: &str) -> Store {
-    let s = Store::in_memory().unwrap();
-    s.db.execute(
+/// A profile file of schema 5 holding `profile`, opened now: migration 6 runs.
+fn before_6(profile: &serde_json::Value) -> Store {
+    let db = rusqlite::Connection::open_in_memory().unwrap();
+    for sql in &crate::MIGRATIONS[..5] {
+        db.execute_batch(sql).unwrap();
+    }
+    db.pragma_update(None, "user_version", 5).unwrap();
+    db.execute(
         "INSERT INTO settings (key, value) VALUES ('profile', ?1)",
         [profile.to_string()],
     )
     .unwrap();
+    Store::init(db).unwrap()
+}
+
+fn with_row(profile: &serde_json::Value, speaking: &str) -> Store {
+    let s = before_6(profile);
     let mut l = s.learning().unwrap();
     l.model = kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, speaking)]);
     s.set_learning(&l).unwrap();
@@ -116,7 +126,7 @@ fn with_row(profile: &serde_json::Value, speaking: &str) -> Store {
 }
 
 #[test]
-fn a_profile_from_before_the_feedback_source_reads() {
+fn migration_6_sets_the_feedback_source() {
     // A pick is a pick.
     for amount in ["normal", "much"] {
         let p = with_row(&old_profile(amount, true), "n3")
@@ -143,15 +153,17 @@ fn a_profile_from_before_the_feedback_source_reads() {
 }
 
 #[test]
+fn migration_6_keeps_a_feedback_source_already_set() {
+    let mut row = old_profile("normal", true);
+    row["feedback_source"] = "level".into();
+    let p = before_6(&row).profile().unwrap();
+    assert_eq!(p.feedback_source, FeedbackSource::Level);
+}
+
+#[test]
 fn an_old_skipped_placement_is_not_a_placement() {
     // Skipping sets `placed` only.
-    let s = Store::in_memory().unwrap();
-    s.db.execute(
-        "INSERT INTO settings (key, value) VALUES ('profile', ?1)",
-        [old_profile("little", true).to_string()],
-    )
-    .unwrap();
-    let p = s.profile().unwrap();
+    let p = before_6(&old_profile("little", true)).profile().unwrap();
     assert_eq!(
         (p.feedback, p.feedback_source),
         (Amount::Little, FeedbackSource::Default)
@@ -161,24 +173,6 @@ fn an_old_skipped_placement_is_not_a_placement() {
     let p = with_row(&old_profile("little", true), "n4")
         .profile()
         .unwrap();
-    assert_eq!(
-        (p.feedback, p.feedback_source),
-        (Amount::Little, FeedbackSource::Default)
-    );
-}
-
-#[test]
-fn an_old_export_imports_with_the_same_rule() {
-    let import = |amount: &str| {
-        let src = with_row(&old_profile(amount, true), "n3");
-        let mut export = src.export(at(1, 9)).unwrap();
-        export["profile"] = old_profile(amount, true);
-        let dst = Store::in_memory().unwrap();
-        dst.import(&export).unwrap();
-        dst.profile().unwrap()
-    };
-    assert_eq!(import("much").feedback_source, FeedbackSource::Chosen);
-    let p = import("little");
     assert_eq!(
         (p.feedback, p.feedback_source),
         (Amount::Little, FeedbackSource::Default)
@@ -646,27 +640,15 @@ fn migration_3_names_the_tutor_by_its_preset() {
 }
 
 #[test]
-fn an_export_of_format_1_keeps_a_local_tutor_local() {
-    let a = Store::in_memory().unwrap();
-    let mut p = a.profile().unwrap();
-    p.tutor.provider = "ollama".into();
-    a.set_profile(&p).unwrap();
-    let mut old = a.export(at(1, 9)).unwrap();
-    old["schema"] = "kaiwa-export/1".into();
-    for (base, after) in [("", "ollama"), ("http://gpu.lan:8080/v1", "custom")] {
-        old["profile"]["tutor"] =
-            serde_json::json!({ "provider": "openai", "model": "qwen3:14b", "base_url": base });
-        let b = Store::in_memory().unwrap();
-        b.import(&old).unwrap();
-        assert_eq!(b.profile().unwrap().tutor.provider, after);
+fn an_export_of_an_older_format_is_refused() {
+    let mut old = Store::in_memory().unwrap().export(at(1, 9)).unwrap();
+    for schema in ["kaiwa-export/0", "kaiwa-export/1", "kaiwa-export/2"] {
+        old["schema"] = schema.into();
+        assert!(
+            Store::in_memory().unwrap().import(&old).is_err(),
+            "{schema}"
+        );
     }
-    // An export from before the tutor setting has no tutor and still loads.
-    old["profile"].as_object_mut().unwrap().remove("tutor");
-    let b = Store::in_memory().unwrap();
-    b.import(&old).unwrap();
-    assert_eq!(b.profile().unwrap().tutor, kaiwa_ai::Tutor::default());
-    old["schema"] = "kaiwa-export/0".into();
-    assert!(Store::in_memory().unwrap().import(&old).is_err());
 }
 
 /// Thirty-four words met on day 0, the first answered on `last`.
@@ -1099,16 +1081,9 @@ fn export_carries_the_costs_per_month() {
 }
 
 #[test]
-fn an_export_of_format_2_has_no_costs() {
+fn an_export_without_costs_is_refused() {
+    // The costs are required, like the arrays.
     let a = Store::in_memory().unwrap();
-    let mut old = a.export(at(1, 9)).unwrap();
-    old["schema"] = "kaiwa-export/2".into();
-    old.as_object_mut().unwrap().remove("costs");
-    let b = Store::in_memory().unwrap();
-    b.import(&old).unwrap();
-    assert_eq!(b.export(at(1, 9)).unwrap()["costs"], serde_json::json!({}));
-
-    // From format 3 on the costs are required, like the arrays.
     let mut cut = a.export(at(1, 9)).unwrap();
     cut.as_object_mut().unwrap().remove("costs");
     assert!(Store::in_memory().unwrap().import(&cut).is_err());
