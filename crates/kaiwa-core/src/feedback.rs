@@ -19,6 +19,9 @@ pub enum Amount {
 }
 
 impl Amount {
+    /// The amounts the settings offer, from least to most.
+    pub const ALL: [Amount; 3] = [Amount::Little, Amount::Normal, Amount::Much];
+
     /// The amount that fits a speaking level on the learner model's scale
     /// ([`crate::learner::LEVELS`]): up to N5 little, N4 normal, from N3 much (V-02).
     pub fn for_level(level: f64) -> Self {

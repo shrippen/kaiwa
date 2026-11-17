@@ -264,7 +264,7 @@ mod tests {
                 at,
             );
         }
-        live.set_setting("goal", "25", T0).unwrap();
+        live.set_setting("goal", "20", T0).unwrap();
         live.set_setting("name", "Lena", T0.plus_secs(60)).unwrap();
         live.set_setting("script", "1", T0.plus_secs(day)).unwrap();
         live.set_setting("goal", "15", T0.plus_secs(2 * day))
