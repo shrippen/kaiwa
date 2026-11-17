@@ -153,7 +153,7 @@ impl Store {
 }
 
 /// A required array of an export; missing is an error, so a cut-off file imports nothing.
-pub(crate) fn array<'a>(v: &'a serde_json::Value, key: &str) -> Result<&'a Vec<serde_json::Value>> {
+fn array<'a>(v: &'a serde_json::Value, key: &str) -> Result<&'a Vec<serde_json::Value>> {
     v[key]
         .as_array()
         .ok_or_else(|| StoreError::WrongFormat(key.into()))
