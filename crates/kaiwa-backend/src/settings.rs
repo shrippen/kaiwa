@@ -249,7 +249,8 @@ impl Backend {
             .unwrap_or(1.0)
     }
 
-    /// The learner's pick of "louder" and "clearer" for the tutor's voice.
+    /// The learner's pick of "louder" and "clearer" for the tutor's voice; per device, so not
+    /// journaled (ADR-010).
     pub fn set_sound(&self, louder: bool, clear: bool) -> anyhow::Result<()> {
         self.store.update_profile(|p| {
             p.louder = louder;
