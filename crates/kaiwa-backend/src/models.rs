@@ -73,11 +73,14 @@ pub fn list(lang: &str) -> Value {
 /// comes from (F-08: source, size and licence before any download).
 pub fn mora_model() -> Value {
     let dir = models_dir().join(mora::MODEL);
+    let download_mb = offer(mora::MODEL).map_or(Value::Null, |o| o["downloadMB"].clone());
     json!({
         "present": dir.join("model.int8.onnx").exists() || dir.join("model.onnx").exists(),
+        "id": mora::MODEL,
         "dir": dir.display().to_string(),
         "url": KANA_CTC_URL,
-        "size": "356 MB",
+        "downloadMB": download_mb,
+        "size": format!("{download_mb} MB"),
         "licence": "Apache-2.0",
     })
 }
@@ -189,6 +192,16 @@ mod tests {
         let v = mora_model();
         assert_eq!(v["url"], KANA_CTC_URL);
         assert!(v["present"].is_boolean());
+    }
+
+    #[test]
+    fn the_mora_model_takes_its_size_from_the_catalogue() {
+        let v = mora_model();
+        let listed = offer(mora::MODEL).unwrap();
+        assert_eq!(v["id"], mora::MODEL);
+        assert!(v["downloadMB"].as_u64().unwrap() > 0);
+        assert_eq!(v["downloadMB"], listed["downloadMB"]);
+        assert_eq!(v["size"], format!("{} MB", listed["downloadMB"]));
     }
 
     #[test]
