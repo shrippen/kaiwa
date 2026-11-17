@@ -98,10 +98,10 @@ A change that needs more places than its row lists is a finding for the next aud
   and `kaiwa-lang` directly for its own checks. The main path of every persona (`run.rs`,
   `steps.rs`) plays help, turns and translation through the backend's flow (`Talk`, unstored,
   on the recorded tutor), but builds its `Session` itself (`talk.rs`) instead of
-  `Backend::new_talk`, so the learner's difficulty from the profile does not apply. Still on
-  a bare core `Session` with their own tutor: the checks in `engine.rs` (`:287`–`:725`,
-  `:950`), the profile checks (`profile.rs:59`, `:395`, `:468`) and the day simulation
-  (`days.rs:930`). The load-time check (`fast`, `profile.rs`) still opens a profile in
+  `Backend::new_talk`, so the profile's difficulty, learner level, unit grammar, amount of
+  corrections and language do not apply. Still on a bare core `Session` (some with their
+  own tutor): most checks in `engine.rs`, the profile checks in `profile.rs` and the day
+  simulation (`days.rs`, `simulate`). The load-time check (`fast`, `profile.rs`) still opens a profile in
   `kaiwa-store`: it needs `batch` and a timed load. The dispute check reads the QA list
   through `seed`, which no backend command offers.
 - The conversation page does not take the backend's background troubles: a chosen tutor
