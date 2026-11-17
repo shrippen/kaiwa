@@ -80,7 +80,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF604/ | S | Wochenrückblick: Sprechzeit, neue Wörter, Fortschritt pro Fähigkeit. | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_progress` |
 | /LF605/ | M | Gamification lässt sich ganz abschalten (keine XP, keine Serie, nur … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_gamification_off` |
 | /LF606/ | M | Es gibt keine Herzen, Leben oder Sperren nach Fehlern. | core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_hearts` |
-| /LF610/ | S | Statistik: Heatmap der Übungstage, Wortschatz pro Niveau, Sprechzeit … | app, backend | geprüft | 1 von 1 automatisch grün: `mara_progress` |
+| /LF610/ | S | Statistik: Heatmap der Übungstage, Wortschatz pro Niveau, Sprechzeit … | app, backend, core | geprüft | 1 von 1 automatisch grün: `mara_progress` |
 | /LF620/ | M | Benachrichtigungen sind abschaltbar, höchstens eine pro Tag und ohne … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
 | /LF700/ | K | Sync zwischen Geräten über eine Ende-zu-Ende-verschlüsselte Datei auf … | – | offen | 0 von 1 automatisch grün: `jonas_sync` |
 | /LF710/ | M | Export aller eigenen Daten (Profil, Verlauf, Wiederholung) als offene … | app, backend, store | geprüft | 3 von 3 automatisch grün: `lena_delete`, `lena_export`, `lena_import` |

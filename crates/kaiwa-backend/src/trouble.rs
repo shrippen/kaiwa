@@ -95,10 +95,22 @@ mod tests {
         std::fs::remove_dir_all(&dir).unwrap();
     }
 
-    fn spare_at(name: &str) -> Backend {
+    /// A spare for a profile in a temp directory that goes when the spare is dropped.
+    fn spare_at(name: &str) -> crate::TempBackend {
         let dir = std::env::temp_dir().join(format!("kaiwa-{name}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
-        Backend::or_spare(dir.join("x.kaiwa"), Err(anyhow::anyhow!("broken")))
+        let spare = Backend::or_spare(dir.join("x.kaiwa"), Err(anyhow::anyhow!("broken")));
+        crate::TempBackend {
+            backend: Some(spare),
+            dir,
+        }
+    }
+
+    #[test]
+    fn a_spare_of_a_test_leaves_no_directory() {
+        let dir = std::env::temp_dir().join(format!("kaiwa-spare-gone-{}", std::process::id()));
+        drop(spare_at("spare-gone"));
+        assert!(!dir.exists(), "{} stayed", dir.display());
     }
 
     #[test]

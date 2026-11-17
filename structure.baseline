@@ -15,9 +15,8 @@ app/src/conversation.rs	submit	length=92
 crates/kaiwa-ai/src/privacy.rs	flows	length=84
 crates/kaiwa-backend/src/demo.rs	seed	ccn=29 length=200
 crates/kaiwa-backend/src/reminder.rs	reminder	ccn=21
-crates/kaiwa-backend/src/views.rs	-	lines=1298
+crates/kaiwa-backend/src/views.rs	-	lines=1110
 crates/kaiwa-backend/src/views.rs	key_view	ccn=17
-crates/kaiwa-backend/src/views.rs	stats	length=92
 crates/kaiwa-backend/src/views.rs	tutor_view	ccn=24 nesting=6
 crates/kaiwa-backend/src/views.rs	week	ccn=19 length=82
 crates/kaiwa-core/src/curriculum.rs	-	lines=843
@@ -45,9 +44,9 @@ crates/kaiwa-lang/src/words.rs	joins	ccn=16
 crates/kaiwa-lang/src/words.rs	words	ccn=21 length=83
 crates/kaiwa-lang/tests/levels.rs	help_sentences_stay_at_their_units_level	ccn=19 length=96 nesting=7
 crates/kaiwa-lang/tests/lookup.rs	content_words_are_in_the_dictionary	nesting=5
-crates/kaiwa-sim/src/days.rs	-	lines=1177
+crates/kaiwa-sim/src/days.rs	-	lines=1175
 crates/kaiwa-sim/src/days.rs	check	ccn=66 length=213
-crates/kaiwa-sim/src/days.rs	progress_views	ccn=54 length=210
+crates/kaiwa-sim/src/days.rs	progress_views	ccn=41 length=170
 crates/kaiwa-sim/src/days.rs	simulate	ccn=51 length=391 nesting=5
 crates/kaiwa-sim/src/engine.rs	-	lines=959
 crates/kaiwa-sim/src/engine.rs	analysis_gaps	ccn=37 length=97

@@ -23,8 +23,6 @@ Item {
     readonly property var models: kaiwa.models.length > 0 ? JSON.parse(kaiwa.models) : []
     readonly property var download: kaiwa.download.length > 0 ? JSON.parse(kaiwa.download) : ({})
     readonly property real side: KanteStyle.unit(18)
-    // The placement level the feedback amount follows (V-02, /LF304/).
-    readonly property var feedbackLevel: ({ "little": t("bis N5", "up to N5"), "normal": "N4", "much": t("ab N3", "N3 and up") })
 
     // The words for a tile's number of settings ("1 Einstellung", "5 Einstellungen").
     function counted(n) {
@@ -113,9 +111,9 @@ Item {
                 }
                 SettingRow {
                     title: page.t("Verbesserungen", "Corrections")
-                    hint: (page.p.feedbackBand
-                           ? page.t("Nach Einstufung (" + page.feedbackLevel[page.p.feedbackBand] + "). ",
-                                    "By placement (" + page.feedbackLevel[page.p.feedbackBand] + "). ")
+                    hint: (page.p.feedbackLevel
+                           ? page.t("Nach Einstufung (" + page.p.feedbackLevel + "). ",
+                                    "By placement (" + page.p.feedbackLevel + "). ")
                            : "")
                           + page.t("Wenig: nur Fehler. Viel: auch Stil", "Little: mistakes only. Much: style too")
                     Choice {

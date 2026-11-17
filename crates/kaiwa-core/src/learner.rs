@@ -11,6 +11,8 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::jlpt::{N3_FROM, N4_FROM};
+
 pub const LEVELS: [&str; 9] = [
     "none",
     "a0",
@@ -58,6 +60,19 @@ pub const SKILLS: [Skill; 7] = [
 impl Skill {
     pub fn max(self) -> f64 {
         if self == Skill::Register { 4.0 } else { 8.0 }
+    }
+
+    /// The levels a skill's bar names: (name, share of the bar's length where it sits).
+    pub fn marks(self) -> Vec<(&'static str, f64)> {
+        let marks: &[(&str, &str)] = if self == Skill::Register {
+            &REGISTER_MARKS
+        } else {
+            &LEVEL_MARKS
+        };
+        marks
+            .iter()
+            .filter_map(|(name, level)| Some((*name, level_index(level)? / self.max())))
+            .collect()
     }
 
     pub fn word(self, lang: &str) -> &'static str {
@@ -161,6 +176,32 @@ pub fn level_index(name: &str) -> Option<f64> {
         .map(|i| i as f64)
 }
 
+/// Short words per level, (German, English): one per step of the skills' scale 0–8, and per
+/// register step 0–4.
+const LEVEL_WORDS: [(&str, &str); 9] = [
+    ("noch nicht begonnen", "not started yet"),
+    ("erste Wörter", "first words"),
+    ("Anfang N5", "early N5"),
+    ("N5", "N5"),
+    ("erste N4-Themen", "first N4 topics"),
+    ("N4", "N4"),
+    ("N3", "N3"),
+    ("N2", "N2"),
+    ("Muttersprachniveau", "native level"),
+];
+const REGISTER_WORDS: [(&str, &str); 5] = [
+    ("noch keine", "none yet"),
+    ("です/ます fehlt", "です/ます missing"),
+    ("です/ます", "です/ます"),
+    ("locker und höflich", "casual and polite"),
+    ("Grundlagen 敬語", "basics of 敬語"),
+];
+
+/// The levels a skill's bar names, as (name, level name in `LEVELS` or `REGISTERS`): the JLPT
+/// levels for the skills, two register steps for the register.
+const LEVEL_MARKS: [(&str, &str); 3] = [("N5", "n5"), ("N4", "n4"), ("N3", "n3")];
+const REGISTER_MARKS: [(&str, &str); 2] = [("です/ます", "desu_masu"), ("敬語", "keigo_basic")];
+
 /// What the learner showed in one session, per skill: the level of the material and the share
 /// that went well (0..1). Skills without evidence are left out.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -244,6 +285,22 @@ impl LearnerModel {
             .collect()
     }
 
+    /// A skill's level as a share of its scale, 0..1: the length of its bar.
+    pub fn share(&self, s: Skill) -> f64 {
+        self.level(s) / s.max()
+    }
+
+    /// A skill's level in a few words, for a line of the profile ("Anfang N5").
+    pub fn level_word(&self, s: Skill, lang: &str) -> &'static str {
+        let band = self.level(s).round() as usize;
+        let (de, en) = if s == Skill::Register {
+            REGISTER_WORDS[band.min(REGISTER_WORDS.len() - 1)]
+        } else {
+            LEVEL_WORDS[band.min(LEVEL_WORDS.len() - 1)]
+        };
+        if lang == "de" { de } else { en }
+    }
+
     /// The kinds of mistakes that still come up most, worst first.
     pub fn weak_spots(&self, n: usize) -> Vec<(&str, f64)> {
         let mut v: Vec<(&str, f64)> = self
@@ -280,9 +337,9 @@ fn describe_level(s: Skill, v: f64, lang: &str) -> String {
         x if x < 0.5 => 0,
         x if x < 1.5 => 1,
         x if x < 2.5 => 2,
-        x if x < 3.5 => 3,
+        x if x < N4_FROM => 3,
         x if x < 4.5 => 4,
-        x if x < 5.5 => 5,
+        x if x < N3_FROM => 5,
         _ => 6,
     };
     let what = s.word(lang);
@@ -307,6 +364,30 @@ fn describe_level(s: Skill, v: f64, lang: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_level_has_a_short_word_and_a_share() {
+        let mut m = LearnerModel::placed(&[(Skill::Listening, "n5")]);
+        m.set(Skill::Register, 4.0);
+        m.set(Skill::Speaking, 0.0);
+        m.set(Skill::ReadingKanji, 8.0);
+        assert_eq!(m.level_word(Skill::Listening, "de"), "N5");
+        assert_eq!(m.level_word(Skill::Speaking, "en"), "not started yet");
+        assert_eq!(
+            m.level_word(Skill::ReadingKanji, "de"),
+            "Muttersprachniveau"
+        );
+        assert_eq!(m.level_word(Skill::Register, "en"), "basics of 敬語");
+        assert_eq!(m.share(Skill::Listening), 3.0 / 8.0);
+        assert_eq!(m.share(Skill::Register), 1.0);
+        // The marks sit where their levels are on the skill's own scale.
+        let at = |skill: Skill| skill.marks();
+        assert_eq!(
+            at(Skill::Listening),
+            vec![("N5", 3.0 / 8.0), ("N4", 5.0 / 8.0), ("N3", 6.0 / 8.0)]
+        );
+        assert_eq!(at(Skill::Register), vec![("です/ます", 0.5), ("敬語", 1.0)]);
+    }
 
     #[test]
     fn a_flawless_easy_session_lowers_nothing() {
@@ -403,5 +484,14 @@ mod tests {
         m.nudge(Skill::Listening, true);
         assert!(m.level(Skill::Listening) > before);
         assert_eq!(m.corrections_by_learner, 1);
+    }
+
+    #[test]
+    fn the_words_change_at_the_n4_and_n3_borders() {
+        let words = |v| describe_level(Skill::Listening, v, "en");
+        assert!(words(3.49).contains("at N5"));
+        assert!(words(3.5).contains("first N4"));
+        assert!(words(5.49).contains("confident at N4"));
+        assert!(words(5.5).contains("beyond N4"));
     }
 }

@@ -21,6 +21,7 @@ mod keys;
 pub mod latency;
 pub mod log;
 pub mod lookup;
+mod mistakes;
 #[cfg(feature = "speech")]
 pub mod models;
 mod path;
@@ -667,6 +668,13 @@ impl std::ops::Deref for TempBackend {
     type Target = Backend;
     fn deref(&self) -> &Backend {
         self.backend.as_ref().expect("open until dropped")
+    }
+}
+
+#[cfg(any(test, feature = "demo"))]
+impl std::ops::DerefMut for TempBackend {
+    fn deref_mut(&mut self) -> &mut Backend {
+        self.backend.as_mut().expect("open until dropped")
     }
 }
 
