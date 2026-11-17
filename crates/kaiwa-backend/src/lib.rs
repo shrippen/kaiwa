@@ -671,6 +671,13 @@ impl std::ops::Deref for TempBackend {
 }
 
 #[cfg(any(test, feature = "demo"))]
+impl std::ops::DerefMut for TempBackend {
+    fn deref_mut(&mut self) -> &mut Backend {
+        self.backend.as_mut().expect("open until dropped")
+    }
+}
+
+#[cfg(any(test, feature = "demo"))]
 impl Drop for TempBackend {
     fn drop(&mut self) {
         // The profile closes first, then its directory goes.
