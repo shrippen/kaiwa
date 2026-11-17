@@ -3,6 +3,7 @@
 
 use std::collections::BTreeMap;
 
+use kaiwa_core::Lang;
 use kaiwa_core::clock::Moment;
 use kaiwa_core::curriculum::Unit;
 use kaiwa_core::difficulty::KNOBS;
@@ -14,7 +15,7 @@ use serde_json::{Value, json};
 use crate::Backend;
 pub use crate::path::path;
 
-pub(crate) fn scenario_title(st: &Backend, id: &str, lang: &str) -> String {
+pub(crate) fn scenario_title(st: &Backend, id: &str, lang: Lang) -> String {
     st.scenarios
         .get(id)
         .map(|s| s.title.get(lang).to_string())
@@ -22,21 +23,18 @@ pub(crate) fn scenario_title(st: &Backend, id: &str, lang: &str) -> String {
 }
 
 /// The word for a stored kind string, from the core's list; unknown kinds read "other".
-pub(crate) fn kind_word(kind: &str, de: bool) -> &'static str {
+pub(crate) fn kind_word(kind: &str, lang: Lang) -> &'static str {
     let parsed = serde_json::from_value::<kaiwa_ai::CorrectionKind>(Value::from(kind));
-    match (parsed, de) {
-        (Ok(k), true) => kaiwa_core::feedback::kind_word(k, "de"),
-        (Ok(k), false) => kaiwa_core::feedback::kind_word(k, "en"),
-        (Err(_), true) => "Sonstiges",
-        (Err(_), false) => "Other",
+    match parsed {
+        Ok(k) => kaiwa_core::feedback::kind_word(k, lang),
+        Err(_) => lang.pick("Sonstiges", "Other"),
     }
 }
 
 /// The start page (Lastenheft Kap. 7: today, daily goal, next scenario, review).
 pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
-    let lang = p.ui_lang.as_str();
-    let de = lang == "de";
+    let lang = p.ui_lang;
     let t = st.store.today(now)?;
     let learning = st.store.learning()?;
     let next = st.curriculum.next_scenario(&learning.course).map(|id| {
@@ -53,8 +51,8 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         .as_ref()
         .map(|r| json!({ "id": r.id, "title": scenario_title(st, &r.scenario, lang) }));
     let DailyGoal::Minutes(goal_value) = p.daily_goal;
-    let (spoken, rest) = crate::week::goal_words(de, goal_value, t.record.speaking_secs);
-    let week = crate::week::bars(st, now, p.daily_goal, de)?;
+    let (spoken, rest) = crate::week::goal_words(lang, goal_value, t.record.speaking_secs);
+    let week = crate::week::bars(st, now, p.daily_goal, lang)?;
     // Free talk (/LF116/): the topic scenarios outside the path, at the learner's difficulty.
     let free: Vec<Value> = st
         .scenarios
@@ -119,7 +117,7 @@ pub fn review_scope(st: &Backend, now: Moment, unit: &str) -> anyhow::Result<Val
     let course = st.store.learning()?.course;
     let title = st
         .curriculum
-        .path(&course, &p.ui_lang)
+        .path(&course, p.ui_lang)
         .into_iter()
         .find(|u| u.id == unit)
         .map(|u| u.title)
@@ -128,7 +126,7 @@ pub fn review_scope(st: &Backend, now: Moment, unit: &str) -> anyhow::Result<Val
 }
 
 fn review_rows(st: &Backend, due: &[kaiwa_core::srs::Item]) -> anyhow::Result<Value> {
-    let de = st.store.profile()?.ui_lang == "de";
+    let lang = st.store.profile()?.ui_lang;
     Ok(Value::Array(
         due.iter()
             .map(|i| {
@@ -145,7 +143,7 @@ fn review_rows(st: &Backend, due: &[kaiwa_core::srs::Item]) -> anyhow::Result<Va
                     "cue": i.cue.as_deref().map(|c| kaiwa_lang::complete(crate::lookup::words(), c)),
                     // What the correction was about, in words (Höflichkeit, Partikel …).
                     "practises": match &i.source {
-                        kaiwa_core::srs::Source::Correction { kind } => kind_word(kind, de),
+                        kaiwa_core::srs::Source::Correction { kind } => kind_word(kind, lang),
                         _ => "",
                     },
                 })
@@ -157,8 +155,7 @@ fn review_rows(st: &Backend, due: &[kaiwa_core::srs::Item]) -> anyhow::Result<Va
 /// The learner model in words (/LF202/), the difficulty in words, weak spots.
 pub fn learner(st: &Backend) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
-    let lang = p.ui_lang.as_str();
-    let de = lang == "de";
+    let lang = p.ui_lang;
     let l = st.store.learning()?;
     let skills: Vec<Value> = SKILLS
         .iter()
@@ -178,7 +175,7 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
         .model
         .weak_spots(3)
         .iter()
-        .map(|(k, _)| json!({ "kind": k, "word": kind_word(k, de) }))
+        .map(|(k, _)| json!({ "kind": k, "word": kind_word(k, lang) }))
         .collect();
     let d = &l.regulator.difficulty;
     let knobs: Vec<Value> = KNOBS
@@ -225,13 +222,12 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
 const HEAT_STEPS: [u32; 4] = [1, 3, 6, 11];
 
 /// The legend of the heat map: what each level means, level 0 first.
-fn heat_scale(de: bool) -> Vec<String> {
+fn heat_scale(lang: Lang) -> Vec<String> {
     let mut out = vec!["0 min".to_string()];
     for (i, from) in HEAT_STEPS.iter().enumerate() {
         out.push(match HEAT_STEPS.get(i + 1) {
             Some(next) => format!("{from}–{} min", next - 1),
-            None if de => format!("ab {from} min"),
-            None => format!("{from} min +"),
+            None => lang.pick(format!("ab {from} min"), format!("{from} min +")),
         });
     }
     out
@@ -257,7 +253,7 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let today = now.day();
     // Monday of the week 11 weeks back, to today: whole weeks in columns.
     let start = today.plus(-(today.weekday() as i64) - 7 * 11);
-    let de = st.store.profile()?.ui_lang != "en";
+    let lang = st.store.profile()?.ui_lang;
     let mut levels = Vec::new();
     // Each day by its ISO date with its level and minutes, for the calendar's squares and
     // tooltips (charts carry their labels).
@@ -279,7 +275,7 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     let practice_days = shown().filter(|r| r.speaking_secs > 0).count();
     let items = st.store.items()?;
     let from = start.start(now.offset_min).unix;
-    let (mistakes, talks) = crate::mistakes::view(st, from, de)?;
+    let (mistakes, talks) = crate::mistakes::view(st, from, lang)?;
     // Words and phrases per level, from the unit they came from.
     let mut vocab: BTreeMap<String, usize> = BTreeMap::new();
     for i in &items {
@@ -300,7 +296,7 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         "heatEnd": today.iso(),
         "heatDays": by_day,
         "heatTips": tips,
-        "heatScale": heat_scale(de),
+        "heatScale": heat_scale(lang),
         "minutes": minutes,
         "days": practice_days,
         "items": items.len(),
@@ -362,8 +358,8 @@ pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     }
     let share = |(ok, all): (usize, usize)| (all > 0).then(|| (100 * ok / all) as u32);
     // Progress per skill: the learner model now against where the week's first talk started.
-    let de = st.store.profile()?.ui_lang != "en";
-    let lang = if de { "de" } else { "en" };
+    let lang = st.store.profile()?.ui_lang;
+    let de = lang == Lang::De;
     let model = st.store.learning()?.model;
     let skills: Vec<Value> = days
         .range(this..=today)
@@ -420,7 +416,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "feedback": p.feedback, "feedbackSteps": kaiwa_core::Amount::ALL,
         // Set by a placement (V-02): the levels its amount covers ("up to N5"), kept in practice.
         "feedbackLevel": (p.feedback_source == FeedbackSource::Level)
-            .then(|| p.feedback.level_words(&p.ui_lang)),
+            .then(|| p.feedback.level_words(p.ui_lang)),
         "script": match p.script { Script::Furigana => 0, Script::Kana => 1, Script::Hidden => 2 },
         "endPause": p.end_pause_secs,
         "pauseSteps": kaiwa_core::turn_end::PAUSE_STEPS,
@@ -446,11 +442,11 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
             / 100.0,
         "microphone": p.microphone,
         "cost": st.cost_view(crate::now())?,
-        "latency": st.latency_view(&p.ui_lang)?,
+        "latency": st.latency_view(p.ui_lang)?,
         "path": st.path.display().to_string(),
         "profiles": st.profiles(),
-        "key": key_view(st, &p.ui_lang),
-        "tutor": tutor_view(st, &p.ui_lang),
+        "key": key_view(st, p.ui_lang),
+        "tutor": tutor_view(st, p.ui_lang),
         "demoData": st.demo_data,
         // "About" (/LD050/): the version, the licence and where the dictionary comes from.
         "about": {
@@ -465,7 +461,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
 
 /// The grammar of a scenario's unit (/LF220/, /LL112/): each point with its explanation in the
 /// UI language and examples in furigana markup, in the unit's order. Empty for free talk.
-pub fn grammar(st: &Backend, scenario: &str, lang: &str) -> Value {
+pub fn grammar(st: &Backend, scenario: &str, lang: Lang) -> Value {
     let Some(unit) = st.curriculum.unit_of(scenario) else {
         return json!([]);
     };
@@ -488,14 +484,14 @@ pub fn grammar(st: &Backend, scenario: &str, lang: &str) -> Value {
 /// The tutor set up in the settings (Q-15): provider, model and server as stored, what the
 /// environment overrides (local test), whether a conversation can start, and the presets to
 /// choose from.
-pub fn tutor_view(st: &Backend, lang: &str) -> Value {
+pub fn tutor_view(st: &Backend, lang: Lang) -> Value {
     use kaiwa_ai::presets::{PRESETS, preset};
     let t = st.tutor();
     let env = st.tutor_env();
     let provider = env("KAIWA_PROVIDER").unwrap_or_default();
     let overridden = std::env::var("KAIWA_PROVIDER").is_ok_and(|v| !v.is_empty());
     let ready = st.tutor_set_up();
-    let de = lang != "en";
+    let de = lang == Lang::De;
     let p = preset(&provider);
     let missing_key = p.is_some_and(|p| p.needs_key()) && st.keys().key(&provider, &env).is_none();
     let missing_server = p.is_some_and(|p| p.base_url(&env).is_none());
@@ -542,7 +538,7 @@ pub fn tutor_view(st: &Backend, lang: &str) -> Value {
 
 /// The tutor's API key (/LF713/): which provider, where its key comes from, in words; `null`
 /// for a provider without a key (a server on this computer).
-pub fn key_view(st: &Backend, lang: &str) -> Value {
+pub fn key_view(st: &Backend, lang: Lang) -> Value {
     use kaiwa_ai::secrets::KeyState;
     let env = st.tutor_env();
     let Some(p) = env("KAIWA_PROVIDER")
@@ -552,7 +548,7 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
         return Value::Null;
     };
     let provider = p.id.to_string();
-    let de = lang != "en";
+    let de = lang == Lang::De;
     let s = st.keys().state(&provider, env);
     let var = kaiwa_ai::secrets::env_var(&provider);
     let text = match (&s, de) {
@@ -598,8 +594,8 @@ pub fn key_view(st: &Backend, lang: &str) -> Value {
 pub use crate::profiles::key_error;
 
 /// "What leaves the device?" (/LF711/), from `kaiwa_ai::privacy`, for the tutor set up.
-pub fn privacy(st: &Backend, lang: &str) -> Value {
-    serde_json::to_value(kaiwa_ai::privacy::flows(st.tutor_env(), lang)).unwrap_or_default()
+pub fn privacy(st: &Backend, lang: Lang) -> Value {
+    serde_json::to_value(kaiwa_ai::privacy::flows(st.tutor_env(), lang.code())).unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -610,12 +606,12 @@ mod tests {
     #[test]
     fn stored_kinds_read_with_the_core_words() {
         // Kinds the old list lacked now have their own word; unknown stays "other".
-        assert_eq!(kind_word("omission", true), "Auslassung");
-        assert_eq!(kind_word("loanword", false), "Loanword");
-        assert_eq!(kind_word("word_order", true), "Satzstellung");
-        assert_eq!(kind_word("register", true), "Höflichkeit");
-        assert_eq!(kind_word("nonsense", true), "Sonstiges");
-        assert_eq!(kind_word("nonsense", false), "Other");
+        assert_eq!(kind_word("omission", Lang::De), "Auslassung");
+        assert_eq!(kind_word("loanword", Lang::En), "Loanword");
+        assert_eq!(kind_word("word_order", Lang::De), "Satzstellung");
+        assert_eq!(kind_word("register", Lang::De), "Höflichkeit");
+        assert_eq!(kind_word("nonsense", Lang::De), "Sonstiges");
+        assert_eq!(kind_word("nonsense", Lang::En), "Other");
     }
 
     #[test]
@@ -631,7 +627,7 @@ mod tests {
             return;
         }
 
-        let de = key_view(&b, "de");
+        let de = key_view(&b, Lang::De);
         assert_eq!(de["canStore"], false);
         assert_eq!(de["stored"], false);
         let text = de["text"].as_str().unwrap();
@@ -639,22 +635,22 @@ mod tests {
         assert!(!text.contains("außerhalb"), "{text}");
         assert!(text.contains("ANTHROPIC_API_KEY"), "{text}");
         assert!(!text.contains("Schlüsselbund erreichbar"), "{text}");
-        let en = key_view(&b, "en")["text"].as_str().unwrap().to_string();
+        let en = key_view(&b, Lang::En)["text"].as_str().unwrap().to_string();
         assert!(en.contains("no key in the keyring"), "{en}");
         assert!(!en.contains("outside"), "{en}");
         assert!(en.contains("ANTHROPIC_API_KEY"), "{en}");
 
         let e = kaiwa_ai::secrets::KeyError::EnvOnly;
-        assert!(!key_error(&e, "de").contains("Schlüsselbund hat abgelehnt"));
-        assert!(!key_error(&e, "en").contains("refused"));
-        assert!(!key_error(&e, "de").contains("außerhalb"));
-        assert!(!key_error(&e, "en").contains("outside"));
+        assert!(!key_error(&e, Lang::De).contains("Schlüsselbund hat abgelehnt"));
+        assert!(!key_error(&e, Lang::En).contains("refused"));
+        assert!(!key_error(&e, Lang::De).contains("außerhalb"));
+        assert!(!key_error(&e, Lang::En).contains("outside"));
     }
 
     #[test]
     fn privacy_is_local_without_a_cloud_provider() {
         let b = crate::TempBackend::new("privacy", false).unwrap();
-        let rows = privacy(&b, "de");
+        let rows = privacy(&b, Lang::De);
         let rows = rows.as_array().unwrap();
         assert_eq!(rows.len(), 3);
         if std::env::var_os("KAIWA_PROVIDER").is_none() {
@@ -671,18 +667,18 @@ mod tests {
             return; // the local test's environment wins over the settings
         }
         let b = crate::TempBackend::new("tutor", false).unwrap();
-        let v = tutor_view(&b, "de");
+        let v = tutor_view(&b, Lang::De);
         assert_eq!(v["ready"], false);
         assert!(v["status"].as_str().unwrap().starts_with("Kein Tutor"));
         let mut p = b.store.profile().unwrap();
         p.tutor.provider = "ollama".into();
         b.store.set_profile(&p).unwrap();
-        let v = tutor_view(&b, "de");
+        let v = tutor_view(&b, Lang::De);
         assert_eq!(v["ready"], false);
         assert!(v["status"].as_str().unwrap().contains("Modell"));
         p.tutor.model = "qwen3:14b".into();
         b.store.set_profile(&p).unwrap();
-        let v = tutor_view(&b, "en");
+        let v = tutor_view(&b, Lang::En);
         assert_eq!(v["ready"], true);
         assert_eq!(v["effective"], "ollama");
         assert!(
@@ -693,21 +689,21 @@ mod tests {
                 .any(|p| p["id"] == "openrouter")
         );
         // The local server sends nothing out and takes no key.
-        let rows = privacy(&b, "en");
+        let rows = privacy(&b, Lang::En);
         assert!(rows.as_array().unwrap().iter().all(|r| r["cloud"] == false));
-        assert_eq!(key_view(&b, "en"), Value::Null);
+        assert_eq!(key_view(&b, Lang::En), Value::Null);
         let (_, demo) = b.provider("n5-01-aisatsu");
         assert!(!demo, "a tutor set up is used, not the recordings");
         // Any OpenAI-compatible server needs its address.
         p.tutor.provider = "custom".into();
         b.store.set_profile(&p).unwrap();
-        let v = tutor_view(&b, "en");
+        let v = tutor_view(&b, Lang::En);
         assert_eq!(v["ready"], false);
         assert!(v["status"].as_str().unwrap().contains("server address"));
         p.tutor.base_url = "http://localhost:8080/v1".into();
         b.store.set_profile(&p).unwrap();
-        assert_eq!(tutor_view(&b, "en")["ready"], true);
-        assert_eq!(key_view(&b, "en")["provider"], "custom");
+        assert_eq!(tutor_view(&b, Lang::En)["ready"], true);
+        assert_eq!(key_view(&b, Lang::En)["provider"], "custom");
     }
 
     #[test]
@@ -832,7 +828,7 @@ mod tests {
         let v = learner(&b).unwrap();
         assert_eq!(v["offerSkip"], true);
         assert_eq!(v["skipUnit"]["id"], first.id.as_str());
-        assert_eq!(v["skipUnit"]["title"], first.title.get("de"));
+        assert_eq!(v["skipUnit"]["title"], first.title.get(Lang::De));
         // Not the unit of the offer: nothing happens.
         assert!(!take_skip(&b, &b.curriculum.units[1].id).unwrap());
         // Taken (what the button does): one unit, and the offer is used up; a second click
@@ -896,7 +892,7 @@ mod tests {
     #[test]
     fn a_conversation_shows_its_units_grammar() {
         let b = crate::TempBackend::new("grammar", false).unwrap();
-        let g = grammar(&b, "n5-08-onsen", "de");
+        let g = grammar(&b, "n5-08-onsen", Lang::De);
         let labels: Vec<&str> = g
             .as_array()
             .unwrap()
@@ -906,7 +902,7 @@ mod tests {
         assert!(labels.contains(&"〜てもいいですか"), "{labels:?}");
         assert!(g[0]["explain"].as_str().unwrap().len() > 10);
         assert!(g[0]["examples"][0].as_str().unwrap().contains('{'));
-        assert_eq!(grammar(&b, "frei-shumi", "de"), json!([]));
+        assert_eq!(grammar(&b, "frei-shumi", Lang::De), json!([]));
     }
 
     #[test]

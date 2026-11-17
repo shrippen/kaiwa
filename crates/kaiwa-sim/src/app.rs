@@ -24,6 +24,7 @@ use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
+use kaiwa_core::Lang;
 
 use crate::run::Outcome;
 
@@ -115,7 +116,7 @@ fn texts(
     want: Option<u32>,
 ) -> Result<Option<String>> {
     let mut found = Vec::new();
-    for lang in ["de", "en"] {
+    for lang in [Lang::De, Lang::En] {
         let mut runs: Vec<(String, Vec<&str>)> = VIEWS
             .iter()
             .map(|v| (format!("{v}-{lang}"), vec!["--view", v]))
@@ -126,7 +127,7 @@ fn texts(
             let png = tmp.join(format!("{name}.png"));
             let mut cmd = app(bin, tmp);
             cmd.env("KAIWA_DEMO", "1")
-                .env("KAIWA_LANG", lang)
+                .env("KAIWA_LANG", lang.code())
                 .env("QT_SCALE_FACTOR", scale.to_string())
                 .arg("--shot")
                 .arg(&png)

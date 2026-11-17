@@ -3,6 +3,7 @@
 //! session, and the limit the learner sets. A local tutor costs nothing and shows no costs.
 
 use kaiwa_ai::cost::Spent;
+use kaiwa_core::Lang;
 use kaiwa_core::clock::Moment;
 use kaiwa_store::COST_STATE_PREFIX;
 use serde_json::{Value, json};
@@ -68,7 +69,7 @@ impl Backend {
     /// For the settings: the month, the average per session, the limit, in words.
     pub fn cost_view(&self, now: Moment) -> anyhow::Result<Value> {
         let p = self.store.profile()?;
-        let de = p.ui_lang != "en";
+        let de = p.ui_lang == Lang::De;
         let m = self.month_cost(now)?;
         let euro = |c: f64| {
             let s = format!("{:.2} €", c / 100.0);

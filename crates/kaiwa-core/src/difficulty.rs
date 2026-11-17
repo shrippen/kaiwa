@@ -9,6 +9,7 @@
 //! not understood make the rest of the session easier at once (/LF213/). Three sessions at 95 %
 //! or more lead to the offer to skip ahead (/LF215/).
 
+use crate::Lang;
 use serde::{Deserialize, Serialize};
 
 use crate::learner::{LearnerModel, Skill};
@@ -60,8 +61,8 @@ impl Knob {
         }
     }
 
-    pub fn word(self, lang: &str) -> &'static str {
-        let de = lang == "de";
+    pub fn word(self, lang: Lang) -> &'static str {
+        let de = lang == Lang::De;
         match self {
             Knob::Vocabulary => {
                 if de {
@@ -273,8 +274,8 @@ pub struct Change {
 
 impl Change {
     /// The change in plain words for the summary, e.g. "Die Figur spricht etwas schneller."
-    pub fn words(&self, lang: &str) -> &'static str {
-        let de = lang == "de";
+    pub fn words(&self, lang: Lang) -> &'static str {
+        let de = lang == Lang::De;
         let harder = self.to > self.from;
         match (self.knob, harder, de) {
             (Knob::Speed, true, true) => "Die Figur spricht nächstes Mal etwas schneller.",

@@ -1,6 +1,7 @@
 //! Instructions for the two calls of a turn (ADR-004). They go to whichever provider is set;
 //! the wording is tried against real models in the owner's local test, not in CI.
 
+use crate::Lang;
 use crate::difficulty::{Difficulty, Knob};
 use crate::jlpt::Jlpt;
 use crate::scenario::{Register, Scenario};
@@ -58,7 +59,7 @@ fn level_words(unit: Option<&str>, d: &Difficulty, own: Option<f64>) -> String {
 /// unit.
 pub fn reply_system(
     s: &Scenario,
-    lang: &str,
+    lang: Lang,
     d: &Difficulty,
     grammar: &[String],
     unit: Option<&str>,
@@ -87,14 +88,14 @@ pub fn reply_system(
         character = s.character.en,
         register = register_words(s.register),
         level = level_words(unit, d, own),
-        lang_name = if lang == "de" { "German" } else { "English" },
+        lang_name = lang.name(),
         goals = goals(s),
     )
 }
 
 /// The analysis of the learner's last turn: structured, strict about false alarms (/LL110/),
 /// fillers are no mistakes (/LF102/).
-pub fn analysis_system(s: &Scenario, lang: &str, grammar: &[String]) -> String {
+pub fn analysis_system(s: &Scenario, lang: Lang, grammar: &[String]) -> String {
     let grammar = if grammar.is_empty() {
         String::new()
     } else {
@@ -127,7 +128,7 @@ pub fn analysis_system(s: &Scenario, lang: &str, grammar: &[String]) -> String {
         character = s.character.en,
         register = register_words(s.register),
         goals = goals(s),
-        lang_name = if lang == "de" { "German" } else { "English" },
+        lang_name = lang.name(),
     )
 }
 
@@ -141,12 +142,12 @@ mod tests {
             "../../../data/scenarios/n5-02-jikoshoukai.json"
         ))
         .unwrap();
-        let easy = reply_system(&s, "de", &Difficulty::default(), &[], Some("N5"), None);
+        let easy = reply_system(&s, Lang::De, &Difficulty::default(), &[], Some("N5"), None);
         assert!(easy.contains("at most 4 words") && easy.contains("no subordinate"));
         let mut d = Difficulty::default();
         d.set(Knob::Length, 4);
         d.set(Knob::Vocabulary, 3);
-        let hard = reply_system(&s, "de", &d, &[], Some("N5"), None);
+        let hard = reply_system(&s, Lang::De, &d, &[], Some("N5"), None);
         assert!(hard.contains("at most 14 words") && hard.contains("3 %"));
         assert!(easy.contains("JLPT N5") && easy.contains("標準語"));
     }
@@ -157,7 +158,7 @@ mod tests {
             Scenario::from_json(include_str!("../../../data/scenarios/n4-14-guchi.json")).unwrap();
         let p = reply_system(
             &s,
-            "de",
+            Lang::De,
             &Difficulty::default(),
             &["〜てしまいました".into()],
             Some("N4"),
@@ -165,10 +166,10 @@ mod tests {
         );
         assert!(p.contains("This unit practises: 〜てしまいました."));
         assert!(
-            !reply_system(&s, "de", &Difficulty::default(), &[], Some("N4"), None)
+            !reply_system(&s, Lang::De, &Difficulty::default(), &[], Some("N4"), None)
                 .contains("practises")
         );
-        let a = analysis_system(&s, "de", &["〜てしまいました".into()]);
+        let a = analysis_system(&s, Lang::De, &["〜てしまいました".into()]);
         assert!(a.contains("The unit practises: 〜てしまいました"));
         // A server without schema support learns the fields and the kinds from the prompt.
         for field in [
@@ -189,7 +190,7 @@ mod tests {
     fn free_talk_speaks_at_the_learners_own_level() {
         let s =
             Scenario::from_json(include_str!("../../../data/scenarios/frei-shumi.json")).unwrap();
-        let at = |own| reply_system(&s, "de", &Difficulty::default(), &[], None, own);
+        let at = |own| reply_system(&s, Lang::De, &Difficulty::default(), &[], None, own);
         assert!(at(None).contains("JLPT N5/N4"));
         // a0, n5, n4_low, n4, n3, n2, native_casual
         for (own, level) in [

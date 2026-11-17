@@ -1,6 +1,7 @@
 //! The demo profile (build feature `demo`, never in a package): two weeks of a beginner's
 //! history for screenshots.
 
+use kaiwa_core::Lang;
 use kaiwa_core::clock::Day;
 use kaiwa_core::difficulty::{Difficulty, Regulator};
 use kaiwa_core::learner::{LearnerModel, Skill};
@@ -23,11 +24,7 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
     let profile = Profile {
         name: "Mara".into(),
         placed: true,
-        ui_lang: if std::env::var("KAIWA_LANG").as_deref() == Ok("en") {
-            "en".into()
-        } else {
-            "de".into()
-        },
+        ui_lang: Lang::of(&std::env::var("KAIWA_LANG").unwrap_or_default()),
         ..Default::default()
     };
     st.store.set_profile(&profile)?;
@@ -140,8 +137,7 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
                 .and_then(|f| MockProvider::from_json(f).ok())
                 .unwrap_or_default(),
         );
-        let mut s =
-            kaiwa_core::Session::new(sc, mock, kaiwa_core::Amount::Little, &profile.ui_lang);
+        let mut s = kaiwa_core::Session::new(sc, mock, kaiwa_core::Amount::Little, profile.ui_lang);
         for line in ["仕事はプロデューサーです。", "コーヒーを好きです。"] {
             s.turn(line, kaiwa_core::Input::Spoken)?;
         }
@@ -198,7 +194,7 @@ pub(crate) fn seed(st: &Backend) -> anyhow::Result<()> {
             n502.clone(),
             mock,
             kaiwa_core::Amount::Little,
-            &profile.ui_lang,
+            profile.ui_lang,
         );
         s.turn(
             "マラです。よろしくおねがいします。",

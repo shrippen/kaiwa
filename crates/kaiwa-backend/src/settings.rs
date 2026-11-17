@@ -4,6 +4,7 @@
 //! `kaiwa_core::choices` leaves the profile as it is.
 
 use kaiwa_core::Event;
+use kaiwa_core::Lang;
 use kaiwa_core::choices::{GOAL_STEPS, KEEP_STEPS, REMINDER_STEPS, UNLOAD_STEPS};
 use kaiwa_core::clock::Moment;
 use kaiwa_core::learner::Skill;
@@ -17,8 +18,6 @@ use crate::keys::Key;
 
 /// The highest style: 0 system, 1 Kante, 2 Kante Light.
 const STYLE_MAX: u8 = 2;
-const LANG_EN: &str = "en";
-const LANG_DE: &str = "de";
 
 /// The text sizes as the page gets them: f32 1.6 would become 1.600000023841858 in JSON, so
 /// they are rounded to hundredths like the profile's own `textScale`.
@@ -75,7 +74,7 @@ fn apply_look(p: &mut Profile, key: Key, value: &str) -> bool {
         Key::HandsFree => p.hands_free = on(value),
         Key::Script => p.script = script_of(value),
         Key::Style => p.style = value.parse().unwrap_or(0).min(STYLE_MAX),
-        Key::UiLang => p.ui_lang = if value == LANG_EN { LANG_EN } else { LANG_DE }.into(),
+        Key::UiLang => p.ui_lang = Lang::of(value),
         Key::Name => p.name = value.to_string(),
         Key::TextScale => {
             if let Ok(s) = value.parse::<f32>() {
@@ -430,8 +429,8 @@ mod tests {
         assert_eq!(set(&b, "script", "1").script, Script::Kana);
         assert_eq!(set(&b, "script", "2").script, Script::Hidden);
         assert_eq!(set(&b, "script", "0").script, Script::Furigana);
-        assert_eq!(set(&b, "uiLang", "en").ui_lang, "en");
-        assert_eq!(set(&b, "uiLang", "fr").ui_lang, "de");
+        assert_eq!(set(&b, "uiLang", "en").ui_lang, Lang::En);
+        assert_eq!(set(&b, "uiLang", "fr").ui_lang, Lang::De);
     }
 
     #[test]

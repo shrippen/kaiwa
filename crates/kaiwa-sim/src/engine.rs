@@ -17,7 +17,7 @@ use kaiwa_core::learner::{LearnerModel, Skill, level_index};
 use kaiwa_core::placement::{Placement, Reading, STAGES, StageResult, TURNS_PER_STAGE};
 use kaiwa_core::romaji;
 use kaiwa_core::session::{Input, Session};
-use kaiwa_core::{Amount, Regulator};
+use kaiwa_core::{Amount, Lang, Regulator};
 use serde_json::Value;
 
 use crate::run::Outcome;
@@ -278,7 +278,7 @@ fn analysis_gaps() -> Result<Option<String>> {
             talk::scenario(scenario)?,
             Arc::new(Gappy { recorded, extra }),
             Amount::Little,
-            "de",
+            Lang::De,
         ))
     };
     let mut found = Vec::new();
@@ -401,9 +401,9 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
 
     // Offered on the start page, in both languages, none of them a scenario of the path.
     let mut topics = Vec::new();
-    for lang in ["de", "en"] {
+    for lang in [Lang::De, Lang::En] {
         let mut profile = b.profile()?;
-        profile.ui_lang = lang.into();
+        profile.ui_lang = lang;
         b.seed().set_profile(&profile)?;
         let today = kaiwa_backend::views::today(&b, now)?;
         let free: Vec<(String, String)> = today["free"]
@@ -471,7 +471,7 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
         let tutor = Arc::new(Listening {
             goals: goals.clone(),
         });
-        let mut s = Session::new(scenario.clone(), tutor, Amount::Normal, "en")
+        let mut s = Session::new(scenario.clone(), tutor, Amount::Normal, Lang::En)
             .with_difficulty(Difficulty::for_learner(&model));
         s.turn("映画音楽をよく聞きます。", Input::Spoken)?;
         Ok(s)
@@ -494,7 +494,7 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
     }
     let after = b.seed().learning()?.course;
     if b.curriculum().next_scenario(&after) != next
-        || b.curriculum().path(&after, "de") != b.curriculum().path(&before, "de")
+        || b.curriculum().path(&after, Lang::De) != b.curriculum().path(&before, Lang::De)
     {
         found.push("free talks moved the learning path".into());
     }
@@ -531,7 +531,7 @@ fn xp_fair() -> Result<Option<String>> {
     if f64::from(j.xp) > 0.5 * f64::from(m.xp) {
         return Ok(Some(format!("Jonas {} XP, Mara {} XP", j.xp, m.xp)));
     }
-    if j.explain("de").is_empty() {
+    if j.explain(Lang::De).is_empty() {
         return Ok(Some("the summary does not say why".into()));
     }
     Ok(None)
@@ -623,7 +623,7 @@ fn tts_slow(root: &Path, p: &Value) -> Result<Option<String>> {
 /// lifts the speed one step.
 fn profile_visible(p: &Value) -> Result<Option<String>> {
     let mut m = placed(p);
-    let words = m.describe("de");
+    let words = m.describe(Lang::De);
     let listening = &words
         .iter()
         .find(|(s, _)| *s == Skill::Listening)
@@ -827,7 +827,7 @@ fn skip(root: &Path, p: &Value) -> Result<Option<String>> {
     };
     let lang = b.profile()?.ui_lang;
     let current = c
-        .path(&b.seed().learning()?.course, &lang)
+        .path(&b.seed().learning()?.course, lang)
         .into_iter()
         .find(|u| u.state == kaiwa_core::curriculum::NodeState::Current);
     if current.as_ref().is_none_or(|u| u.id != next.id) {
@@ -874,7 +874,7 @@ fn feedback_level(root: &Path, p: &Value) -> Result<Option<String>> {
 
 /// /LF711/: only local parts: nothing leaves the device.
 fn transparency() -> Result<Option<String>> {
-    let f = kaiwa_ai::privacy::flows(|_| None, "de");
+    let f = kaiwa_ai::privacy::flows(|_| None, Lang::De.code());
     Ok(f.iter()
         .find(|x| x.cloud || x.sends != "nichts")
         .map(|x| format!("{} sends {}", x.part, x.provider)))
@@ -883,7 +883,7 @@ fn transparency() -> Result<Option<String>> {
 /// /LF711/: a cloud tutor sends text; recognition and voice stay local.
 fn mixed() -> Result<Option<String>> {
     let env = |k: &str| (k == "KAIWA_PROVIDER").then(|| "anthropic".to_string());
-    let f = kaiwa_ai::privacy::flows(env, "de");
+    let f = kaiwa_ai::privacy::flows(env, Lang::De.code());
     let ok = f.len() == 3
         && !f[0].cloud
         && f[0].sends == "nichts"

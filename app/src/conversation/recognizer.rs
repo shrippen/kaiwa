@@ -3,13 +3,13 @@
 use cxx_qt::{CxxQtThread, CxxQtType};
 use cxx_qt_lib::QString;
 use kaiwa_backend::ears::{self, Recognition};
+use kaiwa_core::Lang;
 
 use super::{ERROR, READY, SPEAKING, qobject};
 
 /// Loads ReazonSpeech; without the model the talk button shows why, and the talk page offers
 /// the models instead of the talk button (`speech_missing`).
-pub(super) fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>, lang: &str) {
-    let lang = lang.to_string();
+pub(super) fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>, lang: Lang) {
     let loaded = Recognition::load();
     let _ = thread.queue(move |mut q| match loaded {
         Ok(rec) => {
@@ -21,7 +21,7 @@ pub(super) fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>, lang:
             }
         }
         Err(e) => {
-            let text = ears::recognizer_text(&e, &lang);
+            let text = ears::recognizer_text(&e, lang);
             q.as_mut().set_speech_error(QString::from(&text));
             q.as_mut().set_speech_missing(ears::model_missing(&e));
             q.as_mut().set_talk_state(ERROR);

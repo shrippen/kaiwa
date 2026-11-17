@@ -32,7 +32,7 @@ fn line(o: &TurnOutcome) -> Vec<String> {
 
 /// The summary of the booked talk; an unreadable profile is added to `failed`.
 fn recorded_view(b: &Backend, r: &Recorded, s: &Session, failed: &mut Vec<String>) -> Value {
-    let (view, unread) = b.recorded_view(r, s, &s.lang);
+    let (view, unread) = b.recorded_view(r, s, s.lang);
     failed.extend(unread);
     view
 }
@@ -57,7 +57,7 @@ impl ShortTalk {
     /// The talk as the plasmoid shows it.
     pub fn view(&self) -> Value {
         let s = self.talk.session();
-        let lang = s.lang.as_str();
+        let lang = s.lang;
         let last = s.turns().last();
         json!({
             "scenario": s.scenario.id,

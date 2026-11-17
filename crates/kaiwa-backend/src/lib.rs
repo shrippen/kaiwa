@@ -539,7 +539,7 @@ impl Backend {
         let grammar = self.unit_grammar(&scenario.id);
         let unit_jlpt = self.unit_jlpt(&scenario.id);
         let session =
-            kaiwa_core::Session::new(scenario, provider, profile.feedback, &profile.ui_lang)
+            kaiwa_core::Session::new(scenario, provider, profile.feedback, profile.ui_lang)
                 .with_difficulty(learning.regulator.difficulty.clone())
                 .with_grammar(grammar)
                 .with_unit_jlpt(unit_jlpt)
@@ -721,7 +721,8 @@ mod tests {
         let b = TempBackend::new("correct-talk", false).unwrap();
         let scenario = b.scenarios.get("n5-02-jikoshoukai").cloned().unwrap();
         let (provider, _) = b.provider(&scenario.id);
-        let mut s = kaiwa_core::Session::new(scenario, provider, Amount::Little, "de");
+        let mut s =
+            kaiwa_core::Session::new(scenario, provider, Amount::Little, kaiwa_core::Lang::De);
         let begun = now();
         let id = b.store.begin_local(&s.snapshot(), begun).unwrap();
         for line in [

@@ -13,6 +13,7 @@ use kaiwa_ai::secrets::KeyStore;
 use kaiwa_backend::Backend;
 use kaiwa_backend::flow::Talk;
 use kaiwa_core::Amount;
+use kaiwa_core::Lang;
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::Curriculum;
 use kaiwa_core::session::{Input, Session};
@@ -260,14 +261,14 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
 
     // The grandson's own profile: from zero, in the interface's language (English here, to
     // tell it from a new profile's default), now the one in use.
-    let file = profiles::create(&dir, "Ole", "en")?;
+    let file = profiles::create(&dir, "Ole", Lang::En)?;
     if profiles::current_in(&dir) != file {
         found.push("the new profile is not the one in use".into());
     }
     let ole = open(file.clone())?;
     let op = ole.profile()?;
     let fresh = kaiwa_store::Profile::default();
-    if op.name != "Ole" || op.ui_lang != "en" {
+    if op.name != "Ole" || op.ui_lang != Lang::En {
         found.push(format!("the new profile: {} / {}", op.name, op.ui_lang));
     }
     if op.text_scale != fresh.text_scale
@@ -308,7 +309,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     talk(&ole, 2)?;
     talk(&ole, 3)?;
     let mut op = ole.profile()?;
-    op.ui_lang = "de".into();
+    op.ui_lang = Lang::De;
     op.text_scale = 1.0;
     op.gamification = true;
     op.cost_limit_cents = Some(2000);
@@ -357,7 +358,7 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     drop((ole, hinnerk));
 
     // A name with a path in it stays a file in the directory.
-    let odd = profiles::create(&dir, "../../Ole", "de")?;
+    let odd = profiles::create(&dir, "../../Ole", Lang::De)?;
     if odd.parent() != Some(&*dir) {
         found.push(format!(
             "a profile outside the directory: {}",
@@ -465,7 +466,7 @@ fn local_switch(root: &Path) -> Result<Option<String>> {
             } else {
                 Arc::new(mock())
             };
-            let mut s = talk::start(sc.clone(), provider, Amount::Little, "de");
+            let mut s = talk::start(sc.clone(), provider, Amount::Little, Lang::De);
             let id = store.seed().begin_session(&s.snapshot(), at(d, 9 * 3600))?;
             for t in [
                 "マラです。よろしくおねがいします。",
@@ -664,8 +665,8 @@ fn fast(root: &Path) -> Result<Option<String>> {
         let store = Store::open(&path)?;
         let today = store.today(at(2600, 9 * 3600))?;
         let learning = store.learning()?;
-        let _path = c.path(&learning.course, "de");
-        let _words = learning.model.describe("de");
+        let _path = c.path(&learning.course, Lang::De);
+        let _words = learning.model.describe(Lang::De);
         let _recent = store.sessions(30)?;
         ms = ms.min(t.elapsed().as_millis());
         due = today.due;

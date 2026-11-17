@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 use kaiwa_ai::AiError;
 use kaiwa_ai::secrets::KeyError;
+use kaiwa_core::Lang;
 use kaiwa_core::clock::Day;
 
 use crate::Trouble;
@@ -13,24 +14,24 @@ use crate::profiles::key_error;
 use crate::transfer::ImportError;
 
 /// The profile was left as it is: it could not be read or written.
-pub fn unreadable(e: &anyhow::Error, lang: &str) -> String {
-    match lang == "de" {
+pub fn unreadable(e: &anyhow::Error, lang: Lang) -> String {
+    match lang == Lang::De {
         true => format!("Das Profil ließ sich nicht ändern, nichts geändert: {e}"),
         false => format!("The profile could not be changed, nothing changed: {e}"),
     }
 }
 
 /// A save or load inside a talk failed.
-pub fn unsaved(e: &str, lang: &str) -> String {
-    match lang == "de" {
+pub fn unsaved(e: &str, lang: Lang) -> String {
+    match lang == Lang::De {
         true => format!("Das Profil ließ sich nicht lesen oder schreiben: {e}"),
         false => format!("The profile could not be read or written: {e}"),
     }
 }
 
 /// Why a change is refused while the stand-in profile runs.
-pub fn spare(lang: &str) -> &'static str {
-    match lang == "de" {
+pub fn spare(lang: Lang) -> &'static str {
+    match lang == Lang::De {
         true => {
             "Das Profil ließ sich nicht öffnen, das geht gerade nicht. Lösche es in den Einstellungen („Profil löschen …“) oder wähle ein anderes Profil."
         }
@@ -41,32 +42,32 @@ pub fn spare(lang: &str) -> &'static str {
 }
 
 /// A setting is saved but what it sets off failed (today's goal, deleting recordings).
-pub fn unapplied(e: &anyhow::Error, lang: &str) -> String {
-    match lang == "de" {
+pub fn unapplied(e: &anyhow::Error, lang: Lang) -> String {
+    match lang == Lang::De {
         true => format!("Gespeichert, aber nicht ganz umgesetzt: {e}"),
         false => format!("Saved, but not fully applied: {e}"),
     }
 }
 
 /// A page or the profile could not be loaded; what the page shows is empty or the defaults.
-pub fn unloaded(e: &anyhow::Error, lang: &str) -> String {
-    match lang == "de" {
+pub fn unloaded(e: &anyhow::Error, lang: Lang) -> String {
+    match lang == Lang::De {
         true => format!("Das Profil ließ sich nicht vollständig laden: {e:#}"),
         false => format!("The profile could not be loaded completely: {e:#}"),
     }
 }
 
 /// A talk could not be opened because the profile could not be read.
-pub fn talk_unopened(e: &anyhow::Error, lang: &str) -> String {
-    match lang == "en" {
+pub fn talk_unopened(e: &anyhow::Error, lang: Lang) -> String {
+    match lang == Lang::En {
         true => format!("The talk cannot be opened: {e}"),
         false => format!("Das Gespräch lässt sich nicht öffnen: {e}"),
     }
 }
 
 /// What went wrong in the background ([`crate::Backend::take_troubles`]).
-pub fn trouble(t: &Trouble, lang: &str) -> String {
-    let de = lang == "de";
+pub fn trouble(t: &Trouble, lang: Lang) -> String {
+    let de = lang == Lang::De;
     match (t, de) {
         (Trouble::Unopened(e), true) => format!(
             "Das Profil ließ sich nicht öffnen, die Datei bleibt unverändert. Alles, was jetzt geschieht, wird nicht gespeichert: {e:#}"
@@ -106,8 +107,8 @@ pub fn trouble(t: &Trouble, lang: &str) -> String {
 }
 
 /// The export's result.
-pub fn exported(result: &anyhow::Result<PathBuf>, lang: &str) -> String {
-    match (result, lang == "de") {
+pub fn exported(result: &anyhow::Result<PathBuf>, lang: Lang) -> String {
+    match (result, lang == Lang::De) {
         (Ok(file), true) => format!("Exportiert nach {}.", file.display()),
         (Ok(file), false) => format!("Exported to {}.", file.display()),
         (Err(e), true) => format!("Der Export ist fehlgeschlagen: {e}"),
@@ -116,8 +117,8 @@ pub fn exported(result: &anyhow::Result<PathBuf>, lang: &str) -> String {
 }
 
 /// The import's result; `file` is what the learner named.
-pub fn imported(result: &Result<(), ImportError>, file: &str, lang: &str) -> String {
-    match (result, lang == "de") {
+pub fn imported(result: &Result<(), ImportError>, file: &str, lang: Lang) -> String {
+    match (result, lang == Lang::De) {
         (Ok(()), true) => format!("Importiert aus {file}."),
         (Ok(()), false) => format!("Imported from {file}."),
         (Err(ImportError::Spare), _) => spare(lang).to_string(),
@@ -137,8 +138,8 @@ pub fn imported(result: &Result<(), ImportError>, file: &str, lang: &str) -> Str
 }
 
 /// The result of deleting all data of the profile.
-pub fn wiped(result: &anyhow::Result<()>, lang: &str) -> String {
-    match (result, lang == "de") {
+pub fn wiped(result: &anyhow::Result<()>, lang: Lang) -> String {
+    match (result, lang == Lang::De) {
         (Ok(()), true) => "Alle Daten dieses Profils sind gelöscht.".to_string(),
         (Ok(()), false) => "All data of this profile is deleted.".to_string(),
         (Err(e), true) => format!("Das Löschen ist fehlgeschlagen: {e}"),
@@ -148,8 +149,8 @@ pub fn wiped(result: &anyhow::Result<()>, lang: &str) -> String {
 
 /// The result of setting a pause; says until when, as nothing else on the page shows a pause.
 /// With `streak`, also that the streak holds.
-pub fn pause_set(result: &anyhow::Result<Day>, streak: bool, lang: &str) -> String {
-    let de = lang == "de";
+pub fn pause_set(result: &anyhow::Result<Day>, streak: bool, lang: Lang) -> String {
+    let de = lang == Lang::De;
     let until = match result {
         Ok(until) => *until,
         Err(e) if de => return format!("Die Pause ließ sich nicht eintragen: {e}"),
@@ -170,8 +171,8 @@ pub fn pause_set(result: &anyhow::Result<Day>, streak: bool, lang: &str) -> Stri
 }
 
 /// The result of ending a pause.
-pub fn pause_ended(result: &anyhow::Result<()>, lang: &str) -> String {
-    match (result, lang == "de") {
+pub fn pause_ended(result: &anyhow::Result<()>, lang: Lang) -> String {
+    match (result, lang == Lang::De) {
         (Ok(()), true) => "Die Pause ist beendet: Heute zählt wieder.".to_string(),
         (Ok(()), false) => "The pause is over: today counts again.".to_string(),
         (Err(e), true) => format!("Die Pause ließ sich nicht beenden: {e}"),
@@ -180,8 +181,8 @@ pub fn pause_ended(result: &anyhow::Result<()>, lang: &str) -> String {
 }
 
 /// The result of putting the tutor's key into the keyring.
-pub fn key_stored(result: &Result<(), KeyError>, lang: &str) -> String {
-    match (result, lang == "de") {
+pub fn key_stored(result: &Result<(), KeyError>, lang: Lang) -> String {
+    match (result, lang == Lang::De) {
         (Ok(()), true) => "Der Schlüssel liegt im Schlüsselbund.".to_string(),
         (Ok(()), false) => "The key is in the keyring.".to_string(),
         (Err(e), _) => key_error(e, lang),
@@ -189,8 +190,8 @@ pub fn key_stored(result: &Result<(), KeyError>, lang: &str) -> String {
 }
 
 /// The result of taking the tutor's key out of the keyring.
-pub fn key_removed(result: &Result<(), KeyError>, lang: &str) -> String {
-    match (result, lang == "de") {
+pub fn key_removed(result: &Result<(), KeyError>, lang: Lang) -> String {
+    match (result, lang == Lang::De) {
         (Ok(()), true) => "Der Schlüssel ist aus dem Schlüsselbund entfernt.".to_string(),
         (Ok(()), false) => "The key is removed from the keyring.".to_string(),
         (Err(e), _) => key_error(e, lang),
@@ -199,8 +200,8 @@ pub fn key_removed(result: &Result<(), KeyError>, lang: &str) -> String {
 
 /// The tutor did not answer. The budget and a missing tutor have their own sentence and say
 /// what to do.
-pub fn tutor_failed(e: &AiError, lang: &str) -> String {
-    match (e, lang == "en") {
+pub fn tutor_failed(e: &AiError, lang: Lang) -> String {
+    match (e, lang == Lang::En) {
         (AiError::NoTutor, true) => {
             "No tutor is set up. Choose one in the settings under Tutor.".to_string()
         }
@@ -220,8 +221,8 @@ pub fn tutor_failed(e: &AiError, lang: &str) -> String {
 }
 
 /// The tutor could not translate a line.
-pub fn translation_failed(e: &AiError, lang: &str) -> String {
-    match (e, lang == "en") {
+pub fn translation_failed(e: &AiError, lang: Lang) -> String {
+    match (e, lang == Lang::En) {
         (AiError::NoFixture, true) => {
             "The recorded answers have no translation for this line.".to_string()
         }
@@ -234,8 +235,8 @@ pub fn translation_failed(e: &AiError, lang: &str) -> String {
 }
 
 /// A recording had no voice in it.
-pub fn no_sound(lang: &str) -> &'static str {
-    match lang == "en" {
+pub fn no_sound(lang: Lang) -> &'static str {
+    match lang == Lang::En {
         true => {
             "No sound came in. Is a microphone plugged in, switched on and chosen? Settings › Microphone tests it."
         }
@@ -246,8 +247,8 @@ pub fn no_sound(lang: &str) -> &'static str {
 }
 
 /// The recognition heard nothing in a recording.
-pub fn not_understood(lang: &str) -> &'static str {
-    match lang == "en" {
+pub fn not_understood(lang: Lang) -> &'static str {
+    match lang == Lang::En {
         true => "Nothing understood. Once more, a little louder or closer to the microphone.",
         false => "Nichts verstanden. Noch einmal, etwas lauter oder näher am Mikrofon.",
     }
@@ -264,28 +265,28 @@ mod tests {
     #[test]
     fn a_profile_failure_says_what_happened_in_both_languages() {
         assert_eq!(
-            unreadable(&failure(), "de"),
+            unreadable(&failure(), Lang::De),
             "Das Profil ließ sich nicht ändern, nichts geändert: disk full"
         );
         assert_eq!(
-            unreadable(&failure(), "en"),
+            unreadable(&failure(), Lang::En),
             "The profile could not be changed, nothing changed: disk full"
         );
-        assert!(unapplied(&failure(), "de").starts_with("Gespeichert, aber"));
-        assert!(unapplied(&failure(), "en").starts_with("Saved, but"));
-        assert!(unsaved("x", "de").contains("lesen oder schreiben"));
-        assert!(unsaved("x", "en").contains("read or written"));
+        assert!(unapplied(&failure(), Lang::De).starts_with("Gespeichert, aber"));
+        assert!(unapplied(&failure(), Lang::En).starts_with("Saved, but"));
+        assert!(unsaved("x", Lang::De).contains("lesen oder schreiben"));
+        assert!(unsaved("x", Lang::En).contains("read or written"));
     }
 
     #[test]
     fn a_trouble_has_its_sentence_with_the_detail() {
         let t = Trouble::KeysUnmoved("locked".into());
         assert_eq!(
-            trouble(&t, "de"),
+            trouble(&t, Lang::De),
             "Die alten Schlüssel blieben, wo sie waren: locked"
         );
         assert_eq!(
-            trouble(&t, "en"),
+            trouble(&t, Lang::En),
             "The old keys stayed where they were: locked"
         );
     }
@@ -293,43 +294,49 @@ mod tests {
     #[test]
     fn an_unready_tutor_says_what_is_missing() {
         let t = Trouble::TutorUnready("needs a key".into());
-        assert_eq!(trouble(&t, "de"), "Der Tutor ist nicht bereit: needs a key");
-        assert_eq!(trouble(&t, "en"), "The tutor is not ready: needs a key");
+        assert_eq!(
+            trouble(&t, Lang::De),
+            "Der Tutor ist nicht bereit: needs a key"
+        );
+        assert_eq!(trouble(&t, Lang::En), "The tutor is not ready: needs a key");
     }
 
     #[test]
     fn the_tutor_failures_are_told_by_kind_not_by_text() {
-        assert!(tutor_failed(&AiError::Budget, "en").starts_with("The cost limit"));
-        assert!(tutor_failed(&AiError::Budget, "de").starts_with("Das Kostenlimit"));
-        assert!(tutor_failed(&AiError::NoTutor, "en").starts_with("No tutor"));
-        assert!(tutor_failed(&AiError::NoTutor, "de").starts_with("Es ist kein Tutor"));
+        assert!(tutor_failed(&AiError::Budget, Lang::En).starts_with("The cost limit"));
+        assert!(tutor_failed(&AiError::Budget, Lang::De).starts_with("Das Kostenlimit"));
+        assert!(tutor_failed(&AiError::NoTutor, Lang::En).starts_with("No tutor"));
+        assert!(tutor_failed(&AiError::NoTutor, Lang::De).starts_with("Es ist kein Tutor"));
         let net = AiError::Network("down".into());
         assert_eq!(
-            tutor_failed(&net, "en"),
+            tutor_failed(&net, Lang::En),
             "The tutor did not answer: network: down"
         );
         assert_eq!(
-            tutor_failed(&net, "de"),
+            tutor_failed(&net, Lang::De),
             "Der Tutor hat nicht geantwortet: network: down"
         );
-        assert!(translation_failed(&AiError::NoFixture, "en").contains("no translation"));
-        assert!(translation_failed(&net, "de").starts_with("Gerade keine Übersetzung"));
+        assert!(translation_failed(&AiError::NoFixture, Lang::En).contains("no translation"));
+        assert!(translation_failed(&net, Lang::De).starts_with("Gerade keine Übersetzung"));
     }
 
     #[test]
     fn an_import_names_the_file_and_the_reason() {
         let bad: Result<(), ImportError> = Err(ImportError::NotAnExport);
         assert_eq!(
-            imported(&bad, "a.json", "de"),
+            imported(&bad, "a.json", Lang::De),
             "a.json ist kein Export von Kaiwa."
         );
         assert_eq!(
-            imported(&bad, "a.json", "en"),
+            imported(&bad, "a.json", Lang::En),
             "a.json is not an export of Kaiwa."
         );
         let spare_refused = Err(ImportError::Spare);
-        assert_eq!(imported(&spare_refused, "a", "en"), spare("en"));
-        assert_eq!(imported(&Ok(()), "a.json", "en"), "Imported from a.json.");
+        assert_eq!(imported(&spare_refused, "a", Lang::En), spare(Lang::En));
+        assert_eq!(
+            imported(&Ok(()), "a.json", Lang::En),
+            "Imported from a.json."
+        );
     }
 
     #[test]
@@ -337,37 +344,40 @@ mod tests {
         let until: anyhow::Result<Day> = Ok(Day(20_000));
         let (_, m, d) = Day(20_000).ymd();
         assert_eq!(
-            pause_set(&until, true, "de"),
+            pause_set(&until, true, Lang::De),
             format!("Pause bis einschließlich {d}.{m}.: Die Serie bleibt so lange stehen.")
         );
         assert_eq!(
-            pause_set(&until, false, "en"),
+            pause_set(&until, false, Lang::En),
             format!("Paused up to and including {}.", Day(20_000).iso())
         );
         assert_eq!(
-            pause_set(&Err(failure()), true, "en"),
+            pause_set(&Err(failure()), true, Lang::En),
             "The pause could not be set: disk full"
         );
     }
 
     #[test]
     fn a_result_of_an_action_has_both_outcomes() {
-        assert_eq!(wiped(&Ok(()), "en"), "All data of this profile is deleted.");
         assert_eq!(
-            wiped(&Err(failure()), "de"),
+            wiped(&Ok(()), Lang::En),
+            "All data of this profile is deleted."
+        );
+        assert_eq!(
+            wiped(&Err(failure()), Lang::De),
             "Das Löschen ist fehlgeschlagen: disk full"
         );
         assert_eq!(
-            pause_ended(&Ok(()), "de"),
+            pause_ended(&Ok(()), Lang::De),
             "Die Pause ist beendet: Heute zählt wieder."
         );
-        assert_eq!(key_stored(&Ok(()), "en"), "The key is in the keyring.");
+        assert_eq!(key_stored(&Ok(()), Lang::En), "The key is in the keyring.");
         assert_eq!(
-            key_removed(&Ok(()), "de"),
+            key_removed(&Ok(()), Lang::De),
             "Der Schlüssel ist aus dem Schlüsselbund entfernt."
         );
         assert_eq!(
-            exported(&Ok(PathBuf::from("/x/a.json")), "en"),
+            exported(&Ok(PathBuf::from("/x/a.json")), Lang::En),
             "Exported to /x/a.json."
         );
     }

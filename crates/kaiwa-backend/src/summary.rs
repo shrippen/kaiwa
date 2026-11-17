@@ -1,6 +1,7 @@
 //! The summary page of a finished talk: what the end of the session did, in words
 //! (/LF310/, /LF603/, /LF605/).
 
+use kaiwa_core::Lang;
 use kaiwa_core::feedback::{Shown, kind_word, severity_word};
 use kaiwa_core::{Session, Summary};
 use serde_json::{Value, json};
@@ -8,13 +9,9 @@ use serde_json::{Value, json};
 use crate::{Backend, Recorded};
 
 /// One correction as the pages show it.
-pub fn shown_view(s: &Shown, lang: &str) -> Value {
+pub fn shown_view(s: &Shown, lang: Lang) -> Value {
     let tier_text = if s.correction.also_possible {
-        if lang == "de" {
-            "Auch möglich"
-        } else {
-            "Also possible"
-        }
+        lang.pick("Auch möglich", "Also possible")
     } else {
         severity_word(s.correction.severity, lang)
     };
@@ -30,7 +27,7 @@ pub fn shown_view(s: &Shown, lang: &str) -> Value {
 }
 
 /// The goals of a talk with which are reached, during the talk and on the summary.
-pub fn goals_view(s: &Session, lang: &str) -> Vec<Value> {
+pub fn goals_view(s: &Session, lang: Lang) -> Vec<Value> {
     let met = s.summary().goals_met;
     s.goals()
         .iter()
@@ -40,7 +37,7 @@ pub fn goals_view(s: &Session, lang: &str) -> Vec<Value> {
 
 /// What the session says about itself at the end: goals met, the top corrections, the
 /// review, the turns by kind.
-pub fn summary_view(s: &Session, lang: &str) -> Value {
+pub fn summary_view(s: &Session, lang: Lang) -> Value {
     let sum: Summary = s.summary();
     json!({
         "goalsMet": sum.goals_met.len(),
@@ -56,7 +53,7 @@ pub fn summary_view(s: &Session, lang: &str) -> Value {
 impl Backend {
     /// The summary of a recorded talk, and why the profile could not be read if it could not:
     /// the page then shows the summary with the defaults and says so.
-    pub fn recorded_view(&self, r: &Recorded, s: &Session, lang: &str) -> (Value, Option<String>) {
+    pub fn recorded_view(&self, r: &Recorded, s: &Session, lang: Lang) -> (Value, Option<String>) {
         let profile = self.profile();
         let unread = profile.as_ref().err().map(|e| e.to_string());
         let gamification = profile.map(|p| p.gamification).unwrap_or(true);
@@ -103,13 +100,13 @@ mod tests {
         let b = TempBackend::new("summary-xp", false).unwrap();
         let s = session(&b);
 
-        let (view, unread) = b.recorded_view(&recorded(), &s, "en");
+        let (view, unread) = b.recorded_view(&recorded(), &s, Lang::En);
         assert_eq!(view["xp"], XP);
         assert_eq!(view["newItems"], 2);
         assert!(unread.is_none());
 
         b.store.update_profile(|p| p.gamification = false).unwrap();
-        let (view, unread) = b.recorded_view(&recorded(), &s, "en");
+        let (view, unread) = b.recorded_view(&recorded(), &s, Lang::En);
         assert!(view["xp"].is_null());
         assert!(view["xpWhy"].as_array().unwrap().is_empty());
         assert!(unread.is_none());
@@ -120,7 +117,7 @@ mod tests {
         let b = TempBackend::new("summary-goals", false).unwrap();
         let s = session(&b);
 
-        let goals = goals_view(&s, "en");
+        let goals = goals_view(&s, Lang::En);
 
         assert_eq!(goals.len(), s.goals().len());
         assert!(
@@ -128,8 +125,8 @@ mod tests {
                 .iter()
                 .all(|g| g["done"] == false && g["id"].is_string())
         );
-        assert_eq!(summary_view(&s, "en")["goalsTotal"], goals.len());
-        assert_eq!(summary_view(&s, "en")["goalsMet"], 0);
+        assert_eq!(summary_view(&s, Lang::En)["goalsTotal"], goals.len());
+        assert_eq!(summary_view(&s, Lang::En)["goalsMet"], 0);
     }
 
     #[test]
@@ -144,7 +141,7 @@ mod tests {
         )
         .unwrap();
 
-        let (view, unread) = b.recorded_view(&recorded(), &s, "en");
+        let (view, unread) = b.recorded_view(&recorded(), &s, Lang::En);
 
         assert!(unread.is_some());
         assert_eq!(view["xp"], XP);

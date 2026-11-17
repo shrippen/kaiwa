@@ -12,6 +12,7 @@
 
 use std::collections::BTreeMap;
 
+use crate::Lang;
 use serde::{Deserialize, Serialize};
 
 use crate::clock::Day;
@@ -184,8 +185,8 @@ pub fn freezes_left(s: &Streak, today: Day) -> usize {
 }
 
 /// What the start page says about the streak, plain and without blame (/LF620/, /LL300/).
-pub fn streak_note(s: &Streak, today: Day, lang: &str) -> String {
-    let de = lang == "de";
+pub fn streak_note(s: &Streak, today: Day, lang: Lang) -> String {
+    let de = lang == Lang::De;
     if s.ended_on.last() == Some(&today.plus(-1)) && s.days == 0 {
         return if de {
             "Die Serie hat neu begonnen. Heute ist Tag eins.".into()
@@ -311,8 +312,8 @@ impl SessionXp {
     }
 
     /// One line per reason, for the summary.
-    pub fn explain(&self, lang: &str) -> Vec<String> {
-        let de = lang == "de";
+    pub fn explain(&self, lang: Lang) -> Vec<String> {
+        let de = lang == Lang::De;
         self.reduced
             .iter()
             .map(|(r, n)| match (r, de) {
@@ -457,7 +458,7 @@ mod tests {
         assert_eq!(s.ended_on, vec![d0.plus(7)]);
         assert_eq!(s.days, 1);
         assert_eq!(s.longest, 5);
-        assert!(blameless(&streak_note(&s, d0.plus(8), "de")));
+        assert!(blameless(&streak_note(&s, d0.plus(8), Lang::De)));
     }
 
     #[test]
@@ -540,8 +541,8 @@ mod tests {
         let mut s = SessionXp::default();
         s.add_turn(turn_xp("はい", Input::Spoken, &[], false));
         s.add_turn(turn_xp("はい", Input::Spoken, &["はい"], false));
-        assert_eq!(s.explain("de").len(), 2);
-        assert!(s.explain("en").iter().all(|l| blameless(l)));
+        assert_eq!(s.explain(Lang::De).len(), 2);
+        assert!(s.explain(Lang::En).iter().all(|l| blameless(l)));
     }
 
     #[test]

@@ -3,6 +3,7 @@
 //! export; the settings show median and 95th percentile, and when the median is over 3 s they
 //! suggest something faster without switching to it (persona Lena).
 
+use kaiwa_core::Lang;
 use serde_json::{Value, json};
 
 use crate::Backend;
@@ -18,9 +19,9 @@ fn quantile(sorted: &[u32], q: f64) -> u32 {
     sorted[i]
 }
 
-fn seconds(ms: u32, de: bool) -> String {
+fn seconds(ms: u32, lang: Lang) -> String {
     let s = format!("{:.1}", f64::from(ms) / 1000.0);
-    if de { s.replace('.', ",") } else { s }
+    lang.pick(s.replace('.', ","), s)
 }
 
 impl Backend {
@@ -35,26 +36,26 @@ impl Backend {
     }
 
     /// Median and 95th percentile in words; `null` before five answers.
-    pub fn latency_view(&self, lang: &str) -> anyhow::Result<Value> {
+    pub fn latency_view(&self, lang: Lang) -> anyhow::Result<Value> {
         let mut all: Vec<u32> = self.store.state_value(KEY)?.unwrap_or_default();
         if all.len() < 5 {
             return Ok(Value::Null);
         }
         all.sort_unstable();
         let (p50, p95) = (quantile(&all, 0.5), quantile(&all, 0.95));
-        let de = lang == "de";
+        let de = lang == Lang::De;
         let text = if de {
             format!(
                 "Im Mittel {} s bis zur Antwort, fast immer unter {} s (letzte {} Antworten).",
-                seconds(p50, de),
-                seconds(p95, de),
+                seconds(p50, lang),
+                seconds(p95, lang),
                 all.len()
             )
         } else {
             format!(
                 "{} s to the answer on average, almost always under {} s (last {} answers).",
-                seconds(p50, de),
-                seconds(p95, de),
+                seconds(p50, lang),
+                seconds(p95, lang),
                 all.len()
             )
         };
@@ -89,7 +90,7 @@ mod tests {
         for ms in [1000, 1200, 900, 1100] {
             b.add_latency(ms).unwrap();
         }
-        assert_eq!(b.latency_view("de").unwrap(), Value::Null);
+        assert_eq!(b.latency_view(Lang::De).unwrap(), Value::Null);
     }
 
     #[test]
@@ -98,7 +99,7 @@ mod tests {
         for ms in [2000, 4000, 3500, 3200, 5000, 3100] {
             b.add_latency(ms).unwrap();
         }
-        let v = b.latency_view("de").unwrap();
+        let v = b.latency_view(Lang::De).unwrap();
         assert_eq!(v["p50"], 3500);
         assert_eq!(v["p95"], 5000);
         assert_eq!(v["slow"], true);
@@ -112,7 +113,7 @@ mod tests {
         for ms in 0..60 {
             b.add_latency(1000 + ms).unwrap();
         }
-        let v = b.latency_view("en").unwrap();
+        let v = b.latency_view(Lang::En).unwrap();
         assert_eq!(v["count"], 50);
         assert_eq!(v["slow"], false);
         assert_eq!(v["suggestion"], "");

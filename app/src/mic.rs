@@ -60,6 +60,7 @@ use cxx_qt::{CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_backend::ears::{self, Clip, Hands, Mic, Recognition};
 use kaiwa_backend::voice::Playback;
+use kaiwa_core::Lang;
 use serde_json::json;
 
 use crate::state::state;
@@ -87,11 +88,8 @@ pub struct MicTestRust {
     player: Option<Playback>,
 }
 
-fn lang() -> String {
-    state()
-        .profile()
-        .map(|p| p.ui_lang)
-        .unwrap_or_else(|_| "de".into())
+fn lang() -> Lang {
+    state().profile().map(|p| p.ui_lang).unwrap_or_default()
 }
 
 impl qobject::MicTest {
@@ -125,7 +123,7 @@ impl qobject::MicTest {
                 self.as_mut().set_phase(RECORDING);
             }
             Err(e) => {
-                let text = ears::speech_text(&e, &lang());
+                let text = ears::speech_text(&e, lang());
                 self.as_mut().set_error(QString::from(&text));
                 self.as_mut().set_phase(ERROR);
             }
@@ -158,7 +156,7 @@ impl qobject::MicTest {
         let rec = match m.stop() {
             Ok(r) => r,
             Err(e) => {
-                let text = ears::speech_text(&e, &lang);
+                let text = ears::speech_text(&e, lang);
                 self.as_mut().set_error(QString::from(&text));
                 self.as_mut().set_phase(ERROR);
                 return;
@@ -167,7 +165,7 @@ impl qobject::MicTest {
         let check = rec.check();
         let base = json!({
             "verdict": check.id(),
-            "text": check.text(&lang),
+            "text": check.text(lang),
             "speechDb": check.speech_db.round(),
             "noiseDb": check.noise_db.round(),
             "seconds": (check.seconds * 10.0).round() / 10.0,
@@ -197,7 +195,7 @@ impl qobject::MicTest {
                 Err(e) if ears::model_missing(&e) => v["recognition"] = "missing".into(),
                 Err(e) => {
                     v["recognition"] = "failed".into();
-                    v["why"] = ears::test_text(&e, &lang).into();
+                    v["why"] = ears::test_text(&e, lang).into();
                 }
             }
             let _ = thread.queue(move |mut q| {
@@ -215,7 +213,7 @@ impl qobject::MicTest {
             match Playback::open() {
                 Ok(p) => self.as_mut().rust_mut().player = Some(p),
                 Err(e) => {
-                    let text = ears::speech_text(&e, &lang());
+                    let text = ears::speech_text(&e, lang());
                     // The result stays; the speaker problem shows under it.
                     self.as_mut().set_error(QString::from(&text));
                     return;

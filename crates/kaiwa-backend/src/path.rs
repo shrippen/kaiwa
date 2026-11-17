@@ -1,5 +1,6 @@
 //! The learning path view (/LF600/): the content of the path page as JSON.
 
+use kaiwa_core::Lang;
 use kaiwa_core::curriculum::{NodeState, UnitNode};
 use serde_json::{Value, json};
 
@@ -20,7 +21,7 @@ const LOCKED_SHOWN: usize = 3;
 /// sentence of its own that wraps (/LL303/: narrow windows).
 pub fn path(st: &Backend) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
-    let lang = p.ui_lang.as_str();
+    let lang = p.ui_lang;
     let learning = st.store.learning()?;
     let items = st.store.items()?;
     let today = crate::now().day();
@@ -76,8 +77,8 @@ fn state_word(state: NodeState) -> &'static str {
 }
 
 /// One unit of the path: what it shows and what a click on it does.
-fn unit_group(st: &Backend, units: &[UnitNode], unit: &UnitNode, due: usize, lang: &str) -> Value {
-    let de = lang == "de";
+fn unit_group(st: &Backend, units: &[UnitNode], unit: &UnitNode, due: usize, lang: Lang) -> Value {
+    let de = lang == Lang::De;
     let locked = unit.state == NodeState::Locked;
     let done = unit.state == NodeState::Done;
     let due = if locked { 0 } else { due };
@@ -94,7 +95,7 @@ fn unit_group(st: &Backend, units: &[UnitNode], unit: &UnitNode, due: usize, lan
         json!({ "unit": unit.id, "label": format!("{word}: {} · {due_text}", unit.title) })
     });
     let note = match unit.state {
-        NodeState::Locked => lock_text(units, unit, de),
+        NodeState::Locked => lock_text(units, unit, lang),
         NodeState::Current if de => "Als nächstes".to_string(),
         NodeState::Current => "Up next".to_string(),
         NodeState::Done if due > 0 => due_text,
@@ -119,8 +120,8 @@ fn unit_group(st: &Backend, units: &[UnitNode], unit: &UnitNode, due: usize, lan
 }
 
 /// The scenarios of a unit as buttons: the one to do next is primary, done ones are quiet.
-fn scenario_buttons(st: &Backend, unit: &UnitNode, lang: &str) -> Vec<Value> {
-    let de = lang == "de";
+fn scenario_buttons(st: &Backend, unit: &UnitNode, lang: Lang) -> Vec<Value> {
+    let de = lang == Lang::De;
     unit.scenarios
         .iter()
         .map(|sc| {
@@ -155,18 +156,14 @@ fn click(unit: &UnitNode, review: bool) -> Value {
 
 /// What unlocks a locked unit, by the names the path shows: „nach An der Konbini (N5-04)“;
 /// several joined with „und“.
-fn lock_text(units: &[UnitNode], unit: &UnitNode, de: bool) -> String {
+fn lock_text(units: &[UnitNode], unit: &UnitNode, lang: Lang) -> String {
     let names: Vec<String> = unit
         .missing
         .iter()
         .filter_map(|m| units.iter().find(|u| u.id == *m))
         .map(|u| format!("{} ({})", u.title, u.id.to_uppercase()))
         .collect();
-    let (after, and) = if de {
-        ("nach", " und ")
-    } else {
-        ("after", " and ")
-    };
+    let (after, and) = lang.pick(("nach", " und "), ("after", " and "));
     format!("{after} {}", names.join(and))
 }
 

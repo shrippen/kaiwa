@@ -8,6 +8,7 @@
 //!                                                          Over ─► finish ─► result view
 //! ```
 
+use kaiwa_core::Lang;
 use kaiwa_core::learner::Skill;
 use kaiwa_core::placement::{self, Placement, Reading, STAGES, Step};
 use kaiwa_core::{Moment, Session};
@@ -28,7 +29,7 @@ pub struct Stage {
     /// The opening line of the character.
     pub opening: String,
     /// The learner's interface language.
-    pub lang: String,
+    pub lang: Lang,
     /// The stage's place, from 0.
     pub index: usize,
     /// How many stages there are at most.
@@ -88,7 +89,7 @@ impl Placing {
         let opening = scenario.opening.clone();
         let unit_jlpt = b.unit_jlpt(&scenario.id);
         let session =
-            placement::stage_session(scenario, provider, profile.feedback, &profile.ui_lang, i)
+            placement::stage_session(scenario, provider, profile.feedback, profile.ui_lang, i)
                 .with_unit_jlpt(unit_jlpt);
         let mut opened = Talk::unstored(b, session, demo, now);
         failed.append(&mut opened.failed);
@@ -133,7 +134,7 @@ impl Placing {
             Profile::default().ui_lang
         });
         let words: Vec<String> = model
-            .describe(&lang)
+            .describe(lang)
             .into_iter()
             .filter(|(s, _)| *s != Skill::Pronunciation)
             .map(|(_, w)| w)
@@ -267,7 +268,7 @@ mod tests {
         assert_eq!(r["minutes"], Placement::max_minutes());
         let words = r["placement"].as_array().unwrap();
         let pron = Skill::Pronunciation;
-        let shown = expected.describe("en");
+        let shown = expected.describe(Lang::En);
         let named: Vec<_> = shown.iter().filter(|(s, _)| *s != pron).collect();
         assert_eq!(words.len(), named.len());
         let word = shown.iter().find(|(s, _)| *s == pron).map(|(_, w)| w);

@@ -7,6 +7,7 @@
 use std::path::Path;
 use std::sync::{Mutex, OnceLock};
 
+use kaiwa_core::Lang;
 use kaiwa_core::Moment;
 use kaiwa_core::srs::{Item, ItemKind, Source};
 use kaiwa_lang::{Dictionary, LineWord, Words, annotate, dictionary_path};
@@ -74,7 +75,7 @@ pub fn sources() -> Vec<(String, String, String)> {
 /// the target accent (M-04, without a judgement) and whether the word is in the review
 /// already. `{"missing": true}` without the dictionary, `{"found": false}` for a word it
 /// does not know.
-pub fn lookup(backend: &Backend, word: &LineWord, lang: &str) -> Value {
+pub fn lookup(backend: &Backend, word: &LineWord, lang: Lang) -> Value {
     #[cfg_attr(not(feature = "speech"), allow(unused_mut))]
     let mut v = lookup_in(&dictionary_path(), backend, word, lang);
     if v["missing"] != true {
@@ -90,7 +91,7 @@ pub fn lookup(backend: &Backend, word: &LineWord, lang: &str) -> Value {
 }
 
 /// [`lookup`] in the dictionary at `path`.
-pub fn lookup_in(path: &Path, backend: &Backend, word: &LineWord, lang: &str) -> Value {
+pub fn lookup_in(path: &Path, backend: &Backend, word: &LineWord, lang: Lang) -> Value {
     enum Found {
         Word(kaiwa_lang::dict::Entry),
         Name(kaiwa_lang::dict::Name),
@@ -99,7 +100,7 @@ pub fn lookup_in(path: &Path, backend: &Backend, word: &LineWord, lang: &str) ->
     let entry = if path.exists() {
         dictionary(path).and_then(|g| {
             g.as_ref().map(|(_, d)| {
-                Ok(match d.lookup_word(word, lang)? {
+                Ok(match d.lookup_word(word, lang.code())? {
                     Some(e) => Found::Word(e),
                     None => d.lookup_name(word)?.map_or(Found::Nothing, Found::Name),
                 })
@@ -134,7 +135,7 @@ pub fn lookup_in(path: &Path, backend: &Backend, word: &LineWord, lang: &str) ->
             "name": true,
             "word": n.word,
             "reading": n.reading,
-            "pos": [kaiwa_lang::pos::name_label(&n.kinds, lang)],
+            "pos": [kaiwa_lang::pos::name_label(&n.kinds, lang.code())],
             "senses": n.trans.map(|t| vec![vec![t]]).unwrap_or_default(),
             "lang": lang,
             "fallback": false,
@@ -206,7 +207,7 @@ mod tests {
     fn a_click_shows_the_entry_and_the_word_goes_into_the_review_once() {
         let b = backend("click");
         let w = word("{駅|えき}までは", 0);
-        let v = lookup_in(&excerpt(), &b, &w, "de");
+        let v = lookup_in(&excerpt(), &b, &w, Lang::De);
         assert_eq!(v["found"], true);
         assert_eq!(v["reading"], "えき");
         assert_eq!(v["senses"][0][0], "Bahnhof");
@@ -225,7 +226,7 @@ mod tests {
             .unwrap();
         assert_eq!(item.source, Source::Lookup);
         assert_eq!(item.unit.as_deref(), Some("n5-06"));
-        assert_eq!(lookup_in(&excerpt(), &b, &w, "de")["inReview"], true);
+        assert_eq!(lookup_in(&excerpt(), &b, &w, Lang::De)["inReview"], true);
         // The next day it is due, marked as looked up.
         let due = crate::views::review(&b, now.plus_secs(86_400), 10).unwrap();
         let card = due
@@ -241,16 +242,16 @@ mod tests {
     #[test]
     fn a_name_shows_its_kind_and_reading() {
         let b = backend("name");
-        let v = lookup_in(&excerpt(), &b, &word("{田中|たなか}です。", 0), "de");
+        let v = lookup_in(&excerpt(), &b, &word("{田中|たなか}です。", 0), Lang::De);
         assert_eq!(v["name"], true);
         assert_eq!(v["reading"], "たなか");
         assert_eq!(v["pos"][0], "Name · Familienname");
         assert_eq!(v["senses"][0][0], "Tanaka");
-        let v = lookup_in(&excerpt(), &b, &word("山田さんは", 0), "en");
+        let v = lookup_in(&excerpt(), &b, &word("山田さんは", 0), Lang::En);
         assert_eq!(v["word"], "山田");
         assert_eq!(v["reading"], "やまだ");
         // A name in katakana only.
-        let v = lookup_in(&excerpt(), &b, &word("ミュラーと申します。", 0), "de");
+        let v = lookup_in(&excerpt(), &b, &word("ミュラーと申します。", 0), Lang::De);
         assert_eq!(v["name"], true);
         assert_eq!(v["reading"], "ミュラー");
     }
@@ -262,7 +263,7 @@ mod tests {
             Path::new("/nonexistent/kaiwa-dict.sqlite"),
             &b,
             &word("駅", 0),
-            "de",
+            Lang::De,
         );
         assert_eq!(v["missing"], true);
         assert_eq!(v["text"], "駅");
@@ -277,7 +278,7 @@ mod tests {
         db.execute_batch("DROP TABLE form").unwrap();
         drop(db);
 
-        let v = lookup_in(&file, &b, &word("駅", 0), "de");
+        let v = lookup_in(&file, &b, &word("駅", 0), Lang::De);
 
         std::fs::remove_file(&file).unwrap();
         assert_eq!(v["found"], false);

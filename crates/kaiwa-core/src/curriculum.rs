@@ -18,7 +18,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::scenario::Text;
+use crate::{Lang, scenario::Text};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Unit {
@@ -158,8 +158,8 @@ pub enum NodeState {
 }
 
 impl NodeState {
-    pub fn word(self, lang: &str) -> &'static str {
-        let de = lang == "de";
+    pub fn word(self, lang: Lang) -> &'static str {
+        let de = lang == Lang::De;
         match self {
             NodeState::Done => {
                 if de {
@@ -418,7 +418,7 @@ impl Curriculum {
     }
 
     /// The learning path (/LF600/): every unit and scenario with its state.
-    pub fn path(&self, p: &CourseProgress, lang: &str) -> Vec<UnitNode> {
+    pub fn path(&self, p: &CourseProgress, lang: Lang) -> Vec<UnitNode> {
         let mut current_given = false;
         let mut out = Vec::new();
         for u in &self.units {
@@ -477,7 +477,7 @@ impl Curriculum {
 
     /// The next scenario to play: the current one on the path.
     pub fn next_scenario(&self, p: &CourseProgress) -> Option<String> {
-        self.path(p, "en")
+        self.path(p, Lang::En)
             .into_iter()
             .flat_map(|u| u.scenarios)
             .find(|s| s.state == NodeState::Current)
@@ -557,13 +557,13 @@ mod tests {
         let c = course();
         c.check().unwrap();
         let mut p = CourseProgress::default();
-        let path = c.path(&p, "de");
+        let path = c.path(&p, Lang::De);
         assert_eq!(path[0].state, NodeState::Current);
         assert_eq!(path[0].scenarios[0].state, NodeState::Current);
         assert_eq!(path[1].state, NodeState::Locked);
         assert_eq!(path[1].missing, ["u1"]);
         p.scenarios_done.extend(["a".to_string(), "b".to_string()]);
-        let path = c.path(&p, "de");
+        let path = c.path(&p, Lang::De);
         assert_eq!(path[0].state, NodeState::Done);
         assert_eq!(path[1].state, NodeState::Current);
         assert_eq!(path[2].state, NodeState::Open);
@@ -579,9 +579,9 @@ mod tests {
         // Too few answers say nothing yet.
         p.reviewed("u1", false);
         p.reviewed("u1", false);
-        assert!(!c.path(&p, "en")[0].shaky);
+        assert!(!c.path(&p, Lang::En)[0].shaky);
         p.reviewed("u1", false);
-        let path = c.path(&p, "en");
+        let path = c.path(&p, Lang::En);
         assert!(path[0].shaky);
         assert_eq!(path[1].state, NodeState::Current);
         assert!(path[1].missing.is_empty());
@@ -589,10 +589,10 @@ mod tests {
         // Only the latest five count: three right ones after the bad day are 3 of 5.
         p.reviewed("u1", true);
         p.reviewed("u1", true);
-        assert!(c.path(&p, "en")[0].shaky, "2 of 5");
+        assert!(c.path(&p, Lang::En)[0].shaky, "2 of 5");
         p.reviewed("u1", true);
         assert_eq!(p.reviews["u1"], [false, false, true, true, true]);
-        let path = c.path(&p, "en");
+        let path = c.path(&p, Lang::En);
         assert!(!path[0].shaky);
         assert_eq!(path[1].state, NodeState::Current);
         // And a new bad run brings the mark back, however good the unit once went.
@@ -600,7 +600,7 @@ mod tests {
             p.reviewed("u1", false);
         }
         assert_eq!(p.reviews["u1"], [true, true, false, false, false]);
-        assert!(c.path(&p, "en")[0].shaky);
+        assert!(c.path(&p, Lang::En)[0].shaky);
     }
 
     #[test]
@@ -675,7 +675,7 @@ mod bundled {
                 assert_eq!(sc.unit, u.id, "{s} names its unit");
             }
         }
-        let path = c.path(&CourseProgress::default(), "de");
+        let path = c.path(&CourseProgress::default(), Lang::De);
         assert_eq!(path[0].state, NodeState::Current);
         assert_eq!(
             c.next_scenario(&CourseProgress::default()).as_deref(),
