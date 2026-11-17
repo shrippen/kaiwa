@@ -1102,6 +1102,11 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
         if trend != want {
             found.push(format!("{kind} should read \"{want}\": \"{trend}\""));
         }
+        // Her promise: particles and counters fade over the run, so they never read as rising.
+        if ["particle", "counter"].contains(&kind) && trend == "häufiger" {
+            let counts = &m["counts"];
+            found.push(format!("a faded mistake reads as rising: {kind} {counts}"));
+        }
     }
     Ok((!found.is_empty()).then(|| found.join("; ")))
 }
