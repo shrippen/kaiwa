@@ -22,8 +22,8 @@ pub enum JournalError {
 impl std::fmt::Display for JournalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NotSaved(e) => write!(f, "not saved: {e:#}"),
-            Self::NotApplied(e) => write!(f, "saved, not applied: {e:#}"),
+            // The cause alone: the page says itself what was not saved.
+            Self::NotSaved(e) | Self::NotApplied(e) => write!(f, "{e}"),
             Self::Spare => f.write_str("refused on a spare profile"),
         }
     }
@@ -65,6 +65,13 @@ mod tests {
 
     use super::*;
     use crate::TempBackend;
+
+    #[test]
+    fn a_journal_error_reads_as_its_cause() {
+        // The review page shows it after its own "not saved": no second prefix.
+        let e = JournalError::NotSaved(anyhow::anyhow!("database is locked"));
+        assert_eq!(e.to_string(), "database is locked");
+    }
 
     const T0: Moment = Moment {
         unix: 1_791_100_000,
