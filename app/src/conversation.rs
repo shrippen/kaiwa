@@ -203,12 +203,11 @@ use cxx_qt_lib::QString;
 use kaiwa_backend::ears::{
     self, Clip, Ears, Hands, Heard, Mic, MoraFailure, Moras, Offer, Patience, Recognition,
 };
-use kaiwa_backend::flow::{self, Length, Talk};
+use kaiwa_backend::flow::{self, Hear, Length, Talk, VoiceState};
 use kaiwa_backend::log::Log;
 use kaiwa_backend::placing::{self, Next, Placing, Stage};
 use kaiwa_backend::voice::{self, Debt, Enhance, Line, Owed, Pace, Said, Speaker};
 use kaiwa_core::Input;
-use kaiwa_core::session::Aid;
 use serde_json::Value;
 
 use crate::state::{now, state};
@@ -544,18 +543,6 @@ impl qobject::Conversation {
     /// What failed beside what worked: each one to the notice.
     fn say_all_failed(mut self: Pin<&mut Self>, failed: &[anyhow::Error]) {
         for e in failed {
-            self.as_mut().say_unsaved(&format!("{e:#}"));
-        }
-    }
-
-    /// Keeps the state of the talk after a change outside a turn (help, a listening aid, a
-    /// translation).
-    fn save(mut self: Pin<&mut Self>) {
-        let Some(talk) = self.talk.clone() else {
-            return;
-        };
-        let saved = talk.lock().ok().map(|t| t.save(&state()));
-        if let Some(Err(e)) = saved {
             self.as_mut().say_unsaved(&format!("{e:#}"));
         }
     }
@@ -897,81 +884,91 @@ impl qobject::Conversation {
         let Some(talk) = self.talk.clone() else {
             return;
         };
-        // Not while the tutor thinks about a turn already sent: the aid would count for it,
-        // though the answer was given without (/LF212/).
+        // A recognition in flight is busy too (the tutor's own turn the talk knows).
         if *self.busy() {
             return;
         }
         self.as_mut().wake();
         match aid {
             0 | 1 => {
-                // The voice is still loading again after the idle time (`wake` above): the
-                // learner hears nothing, so nothing counts; the next click plays (/LF212/).
-                if self.speaker.is_none() {
+                let kind = if aid == 0 { Hear::Repeat } else { Hear::Slow };
+                let voice = match self.speaker {
+                    Some(_) => VoiceState::Ready,
+                    None => VoiceState::Loading,
+                };
+                let heard = talk
+                    .lock()
+                    .ok()
+                    .and_then(|mut t| t.hear(&state(), kind, line, voice));
+                let Some(heard) = heard else {
                     return;
-                }
-                if let Ok(mut t) = talk.lock() {
-                    let kind = if aid == 0 { Aid::Repeat } else { Aid::Slow };
-                    t.session_mut().aid(kind, line);
-                }
-                self.as_mut().save();
+                };
+                self.as_mut().say_all_failed(&heard.failed);
                 self.as_mut().interrupt();
                 let speed = self.speed(if aid == 0 { Pace::Normal } else { Pace::Slow });
                 self.speak_at(&markup, speed, false);
             }
-            2 if !translated => {
-                let lang = self.lang.clone();
-                let thread = self.qt_thread();
-                self.as_mut().rust_mut().log.translating(i);
-                self.as_mut().publish_turns();
-                // A turn sent meanwhile leaves the clicked line behind: the aid counts for nothing.
-                let asked_at = line;
-                std::thread::spawn(move || {
-                    let line = kaiwa_core::plain(&markup);
-                    // Asked without holding the session (the window needs it meanwhile).
-                    let asking = talk.lock().ok().map(|t| t.session().translating(&line));
-                    let result = asking.map(|a| a.run());
-                    let _ = thread.queue(move |mut q| {
-                        q.as_mut().rust_mut().log.translated_not(i);
-                        // What the translation cost (/LF714/), not only with the next turn.
-                        let booked = state().book_costs(now(), false);
-                        if let Err(e) = booked {
-                            q.as_mut().say_unsaved(&e.to_string());
-                        }
-                        match result {
-                            Some(Ok(text)) => {
-                                // It counts as help once the learner has it (/LF212/).
-                                if let Ok(mut t) = talk.lock() {
-                                    t.session_mut().aid(Aid::Translate, asked_at);
-                                }
-                                q.as_mut().rust_mut().log.translation(i, &text);
-                                q.as_mut().save();
-                                q.as_mut().publish_turns();
-                            }
-                            Some(Err(kaiwa_ai::AiError::NoFixture)) => {
-                                let msg = if lang == "en" {
-                                    "The recorded answers have no translation for this line."
-                                } else {
-                                    "Für diese Zeile haben die aufgezeichneten Antworten keine Übersetzung."
-                                };
-                                q.as_mut().set_error(QString::from(msg));
-                            }
-                            Some(Err(e)) => {
-                                let msg = if lang == "en" {
-                                    format!("No translation right now: {e}")
-                                } else {
-                                    format!("Gerade keine Übersetzung: {e}")
-                                };
-                                q.as_mut().set_error(QString::from(&msg));
-                            }
-                            None => {}
-                        }
-                        q.as_mut().publish_turns();
-                    });
-                });
-            }
+            2 if !translated => self.translate(i, &markup, line, talk),
             _ => {}
         }
+    }
+
+    /// Asks the tutor for the translation of the character's line at log index `i`.
+    fn translate(
+        mut self: Pin<&mut Self>,
+        i: usize,
+        markup: &str,
+        line: usize,
+        talk: Arc<Mutex<Talk>>,
+    ) {
+        // Not while the tutor thinks about a turn already sent.
+        let asking = talk
+            .lock()
+            .ok()
+            .and_then(|t| t.ask_translation(markup, line));
+        let Some(asking) = asking else {
+            return;
+        };
+        let lang = self.lang.clone();
+        let thread = self.qt_thread();
+        self.as_mut().rust_mut().log.translating(i);
+        self.as_mut().publish_turns();
+        std::thread::spawn(move || {
+            // Asked without holding the talk (the window needs it meanwhile).
+            let fetched = asking.run();
+            let _ = thread.queue(move |mut q| {
+                q.as_mut().rust_mut().log.translated_not(i);
+                let taken = talk
+                    .lock()
+                    .ok()
+                    .map(|mut t| t.take_translation(&state(), now(), fetched));
+                let Some(taken) = taken else {
+                    q.as_mut().publish_turns();
+                    return;
+                };
+                q.as_mut().say_all_failed(&taken.failed);
+                match taken.result {
+                    Ok(text) => q.as_mut().rust_mut().log.translation(i, &text),
+                    Err(kaiwa_ai::AiError::NoFixture) => {
+                        let msg = if lang == "en" {
+                            "The recorded answers have no translation for this line."
+                        } else {
+                            "Für diese Zeile haben die aufgezeichneten Antworten keine Übersetzung."
+                        };
+                        q.as_mut().set_error(QString::from(msg));
+                    }
+                    Err(e) => {
+                        let msg = if lang == "en" {
+                            format!("No translation right now: {e}")
+                        } else {
+                            format!("Gerade keine Übersetzung: {e}")
+                        };
+                        q.as_mut().set_error(QString::from(&msg));
+                    }
+                }
+                q.as_mut().publish_turns();
+            });
+        });
     }
 
     /// The word `word` of the line at `log_index` (the character's or the learner's own).
@@ -1342,7 +1339,7 @@ impl qobject::Conversation {
         std::thread::spawn(move || {
             // The talk is held only to ask and to take the answer, not while the tutor
             // thinks: the window locks it for help and the listening aids.
-            let asking = talk.lock().map(|t| t.ask(&text));
+            let asking = talk.lock().map(|mut t| t.ask(&text));
             let answered: Result<_, String> = asking
                 .map_err(|e| e.to_string())
                 .and_then(|a| a.run().map_err(|e| e.to_string()));
@@ -1409,17 +1406,16 @@ impl qobject::Conversation {
     }
 
     fn help(mut self: Pin<&mut Self>) {
-        // Not while the tutor thinks about a turn already sent: the help would count for it.
+        // A recognition in flight is busy too (the tutor's own turn the talk knows).
         if *self.busy() {
             return;
         }
         let Some(talk) = self.talk.clone() else {
             return;
         };
-        let step = talk.lock().expect("talk lock").session_mut().help();
-        // Kept at once: help used after the last turn is there when the talk is continued.
-        self.as_mut().save();
-        if let Some(step) = step {
+        let helped = talk.lock().expect("talk lock").help(&state());
+        self.as_mut().say_all_failed(&helped.failed);
+        if let Some(step) = helped.step {
             self.as_mut().set_help_text(QString::from(&step.text));
             self.as_mut().set_help_level(i32::from(step.level));
         }

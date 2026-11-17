@@ -92,8 +92,8 @@ A change that needs more places than its row lists is a finding for the next aud
 ## Known deviations
 
 - The app still depends on `kaiwa-core`, `kaiwa-ai` and `kaiwa-lang` directly, all in
-  `conversation.rs`: input and aid kinds, plain text for a translation, the tutor's error
-  kinds, the lookup's words. Found after `AUDIT.md` finding 7 was fixed.
+  `conversation.rs`: the input kind, the tutor's error kinds, the lookup's words. Found
+  after `AUDIT.md` finding 7 was fixed.
 - `kaiwa-sim` sets up and reads test state through the backend's `seed` (feature `sim`,
   only the sim turns it on) and still depends on `kaiwa-store`, `kaiwa-core`, `kaiwa-ai`
   and `kaiwa-lang` directly for its own checks. Talks on

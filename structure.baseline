@@ -8,9 +8,8 @@ exclude	spikes/s06-moren/*
 exclude	spikes/s07-pitch/*
 app/qml/ConversationPage.qml	-	lines=980
 app/src/app.rs	refresh	length=90
-app/src/conversation.rs	-	lines=1518
+app/src/conversation.rs	-	lines=1514
 app/src/conversation.rs	begin	length=96
-app/src/conversation.rs	listen	ccn=19 length=91
 app/src/conversation.rs	start	length=127
 app/src/conversation.rs	submit	length=92
 crates/kaiwa-ai/src/privacy.rs	flows	length=84
@@ -51,7 +50,7 @@ crates/kaiwa-sim/src/days.rs	-	lines=1177
 crates/kaiwa-sim/src/days.rs	check	ccn=66 length=213
 crates/kaiwa-sim/src/days.rs	progress_views	ccn=54 length=210
 crates/kaiwa-sim/src/days.rs	simulate	ccn=51 length=392 nesting=5
-crates/kaiwa-sim/src/engine.rs	-	lines=960
+crates/kaiwa-sim/src/engine.rs	-	lines=959
 crates/kaiwa-sim/src/engine.rs	analysis_gaps	ccn=37 length=97
 crates/kaiwa-sim/src/engine.rs	check	ccn=24
 crates/kaiwa-sim/src/engine.rs	cost_limit	ccn=45 length=99
