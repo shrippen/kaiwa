@@ -517,7 +517,7 @@ impl Backend {
     /// session as it is now, in one transaction. The newest talk only.
     pub fn correct_talk(
         &self,
-        id: i64,
+        id: &str,
         session: &kaiwa_core::Session,
     ) -> anyhow::Result<kaiwa_store::Recorded> {
         let recorded = self.store.correct(id, session, |learning, ended| {
@@ -715,7 +715,7 @@ mod tests {
         let (provider, _) = b.provider(&scenario.id);
         let mut s = kaiwa_core::Session::new(scenario, provider, Amount::Little, "de");
         let begun = now();
-        let id = b.store.begin_session(&s.snapshot(), begun).unwrap();
+        let id = b.store.begin_local(&s.snapshot(), begun).unwrap();
         for line in [
             "マラです。よろしくおねがいします。",
             "ドイツのハンブルクから来ました。",
@@ -727,7 +727,7 @@ mod tests {
         assert!(s.done());
         let end = begun.plus_secs(300);
         b.store
-            .record(id, &s, begun, end, Some(&b.curriculum))
+            .record(&id, &s, begun, end, Some(&b.curriculum))
             .unwrap();
         b.track_grammar(&s, end).unwrap();
         let wrong = |b: &Backend| {
@@ -742,7 +742,7 @@ mod tests {
         assert!(b.store.item("コーヒーが好きです").unwrap().is_some());
 
         assert!(s.mark_misrecognized(3));
-        let r = b.correct_talk(id, &s).unwrap();
+        let r = b.correct_talk(&id, &s).unwrap();
 
         let learning = b.store.learning().unwrap();
         assert!(!learning.model.errors.contains_key("particle"));

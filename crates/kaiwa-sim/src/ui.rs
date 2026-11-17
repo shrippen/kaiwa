@@ -255,13 +255,13 @@ fn retention() -> Result<Option<String>> {
         .iter()
         .map(|r| {
             b.seed()
-                .session_state(r.id)
+                .session_state(&r.id)
                 .map(|s| s.turns.len())
                 .unwrap_or(0)
         })
         .sum();
     for (i, r) in sessions.iter().take(3).enumerate() {
-        b.keep_recording(r.id, i, &[0.05; 8000], 16_000, NOW)?;
+        b.keep_recording(&r.id, i, &[0.05; 8000], 16_000, NOW)?;
     }
     let files = |b: &Backend| {
         std::fs::read_dir(b.recordings_dir())
@@ -278,7 +278,7 @@ fn retention() -> Result<Option<String>> {
         .iter()
         .map(|r| {
             b.seed()
-                .session_state(r.id)
+                .session_state(&r.id)
                 .map(|s| s.turns.len())
                 .unwrap_or(0)
         })

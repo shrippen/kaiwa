@@ -7,7 +7,7 @@ use kaiwa_core::session::Input;
 
 use super::*;
 
-fn scenario() -> Scenario {
+pub(crate) fn scenario() -> Scenario {
     Scenario::from_json(include_str!(
         "../../../data/scenarios/n5-02-jikoshoukai.json"
     ))
@@ -18,7 +18,7 @@ fn curriculum() -> Curriculum {
     Curriculum::from_json(include_str!("../../../data/curriculum/n5.json")).unwrap()
 }
 
-fn provider() -> Arc<dyn ChatProvider> {
+pub(crate) fn provider() -> Arc<dyn ChatProvider> {
     Arc::new(
         MockProvider::from_json(include_str!("../../../qa/fixtures/n5-02-jikoshoukai.json"))
             .unwrap()
@@ -26,7 +26,7 @@ fn provider() -> Arc<dyn ChatProvider> {
     )
 }
 
-fn at(day: i64, hour: i64) -> Moment {
+pub(crate) fn at(day: i64, hour: i64) -> Moment {
     Day::from_ymd(2026, 10, 5)
         .plus(day)
         .start(120)
@@ -39,7 +39,7 @@ fn temp(name: &str) -> PathBuf {
     dir.join("test.kaiwa")
 }
 
-fn schema_version(s: &Store) -> usize {
+pub(crate) fn schema_version(s: &Store) -> usize {
     let v: i64 =
         s.db.pragma_query_value(None, "user_version", |r| r.get(0))
             .unwrap();
@@ -196,17 +196,17 @@ fn an_interrupted_session_continues_where_it_stopped() {
     {
         let store = Store::open(&path).unwrap();
         let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
-        let id = store.begin_session(&session.snapshot(), at(0, 9)).unwrap();
+        let id = store.begin_local(&session.snapshot(), at(0, 9)).unwrap();
         assert!(store.open_session().unwrap().is_none(), "nothing said yet");
         session
             .turn("マラです。よろしくおねがいします。", Input::Spoken)
             .unwrap();
-        store.save_session(id, &session.snapshot()).unwrap();
+        store.save_session(&id, &session.snapshot()).unwrap();
         // The plasmoid closes here.
     }
     let store = Store::open(&path).unwrap();
     let open = store.open_session().unwrap().unwrap();
-    let state = store.session_state(open.id).unwrap();
+    let state = store.session_state(&open.id).unwrap();
     let session = Session::restore(scenario(), provider(), state);
     assert_eq!(
         session.current_goal().unwrap().id,
@@ -224,7 +224,7 @@ fn time_spoken_counts_when_the_analysis_had_gaps() {
     let store = Store::in_memory().unwrap();
     let mut talk = Session::new(scenario(), provider(), Amount::Little, "de");
     let start = at(0, 9);
-    let id = store.begin_session(&talk.snapshot(), start).unwrap();
+    let id = store.begin_local(&talk.snapshot(), start).unwrap();
     talk.turn("マラです。よろしくおねがいします。", Input::Spoken)
         .unwrap();
     let mut state = talk.snapshot();
@@ -232,7 +232,7 @@ fn time_spoken_counts_when_the_analysis_had_gaps() {
     let talk = Session::restore(scenario(), provider(), state);
 
     let r = store
-        .record(id, &talk, start, start.plus_secs(60), None)
+        .record(&id, &talk, start, start.plus_secs(60), None)
         .unwrap();
     assert_eq!(r.day.speaking_secs, 60, "one minute, the one turn spoken");
 }
@@ -246,7 +246,7 @@ fn recording_a_session_feeds_model_path_review_and_day() {
     let c = curriculum();
     let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
     let start = at(0, 9);
-    let id = store.begin_session(&session.snapshot(), start).unwrap();
+    let id = store.begin_local(&session.snapshot(), start).unwrap();
     for (t, i) in [
         ("マラです。よろしくおねがいします。", Input::Spoken),
         ("ドイツのハンブルクから来ました。", Input::Spoken),
@@ -256,7 +256,7 @@ fn recording_a_session_feeds_model_path_review_and_day() {
         session.turn(t, i).unwrap();
     }
     let r = store
-        .record(id, &session, start, start.plus_secs(6 * 60), Some(&c))
+        .record(&id, &session, start, start.plus_secs(6 * 60), Some(&c))
         .unwrap();
     assert!(r.new_items > 0);
     assert_eq!(r.day.typed_turns, 1);
@@ -291,9 +291,9 @@ fn recording_a_session_feeds_model_path_review_and_day() {
         "the talk moved the model"
     );
     let second = Session::new(scenario(), provider(), Amount::Little, "de");
-    let id2 = store.begin_session(&second.snapshot(), at(0, 20)).unwrap();
+    let id2 = store.begin_local(&second.snapshot(), at(0, 20)).unwrap();
     let r2 = store
-        .record(id2, &second, at(0, 20), at(0, 20).plus_secs(60), Some(&c))
+        .record(&id2, &second, at(0, 20), at(0, 20).plus_secs(60), Some(&c))
         .unwrap();
     assert_eq!(&r2.day.levels_at_start, kept);
     // A new placement is no progress: the days forget where they started from.
@@ -312,11 +312,11 @@ fn recording_a_session_feeds_model_path_review_and_day() {
     );
     // A talk of two sittings, the second after midnight: all its time, on the second day.
     let third = Session::new(scenario(), provider(), Amount::Little, "de");
-    let id3 = store.begin_session(&third.snapshot(), at(1, 23)).unwrap();
+    let id3 = store.begin_local(&third.snapshot(), at(1, 23)).unwrap();
     let end = at(2, 0).plus_secs(8 * 60);
     let r3 = store
         .record_on(
-            id3,
+            &id3,
             &third,
             end.plus_secs(-15 * 60),
             end,
@@ -358,10 +358,10 @@ fn export_and_import_carry_everything() {
     };
     a.set_profile(&p).unwrap();
     let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
-    let id = a.begin_session(&session.snapshot(), at(0, 9)).unwrap();
+    let id = a.begin_local(&session.snapshot(), at(0, 9)).unwrap();
     session.turn("コーヒーを好きです。", Input::Spoken).unwrap();
     a.record(
-        id,
+        &id,
         &session,
         at(0, 9),
         at(0, 9).plus_secs(300),
@@ -401,9 +401,9 @@ fn export_and_import_carry_everything() {
 fn import_keeps_that_the_learner_reviewed() {
     let a = Store::in_memory().unwrap();
     let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
-    let id = a.begin_session(&session.snapshot(), at(0, 9)).unwrap();
+    let id = a.begin_local(&session.snapshot(), at(0, 9)).unwrap();
     session.turn("コーヒーを好きです。", Input::Spoken).unwrap();
-    a.record(id, &session, at(0, 9), at(0, 9).plus_secs(300), None)
+    a.record(&id, &session, at(0, 9), at(0, 9).plus_secs(300), None)
         .unwrap();
     words_before_a_break(&a, at(1, 9));
     for day in 2..=9 {
@@ -457,9 +457,9 @@ fn a_goal_changed_during_the_day_is_the_days_goal() {
         s.turn("マラです。よろしくおねがいします。", Input::Spoken)
             .unwrap();
         let start = at(day, 9);
-        let id = store.begin_session(&s.snapshot(), start).unwrap();
+        let id = store.begin_local(&s.snapshot(), start).unwrap();
         store
-            .record(id, &s, start, start.plus_secs(minutes * 60), Some(&c))
+            .record(&id, &s, start, start.plus_secs(minutes * 60), Some(&c))
             .unwrap();
     };
     // Goal ten minutes, met yesterday. Today six minutes, then the goal is lowered to five.
@@ -496,10 +496,10 @@ fn a_goal_changed_during_the_day_is_the_days_goal() {
         .set_day_goal(at(3, 0).day(), DailyGoal::Minutes(30))
         .unwrap();
     let late = Session::new(scenario(), provider(), Amount::Little, "de");
-    let id = store.begin_session(&late.snapshot(), at(2, 23)).unwrap();
+    let id = store.begin_local(&late.snapshot(), at(2, 23)).unwrap();
     let end = at(3, 0).plus_secs(180);
     store
-        .record_on(id, &late, at(2, 23), end, at(2, 23).day(), Some(&c))
+        .record_on(&id, &late, at(2, 23), end, at(2, 23).day(), Some(&c))
         .unwrap();
     assert_eq!(
         store.day(at(2, 23).day()).unwrap().goal,
@@ -590,7 +590,7 @@ fn every_shown_correction_comes_back_as_a_mini_conversation() {
     let store = Store::in_memory().unwrap();
     let mut session = Session::new(scenario(), provider(), Amount::Much, "de");
     let start = at(0, 9);
-    let id = store.begin_session(&session.snapshot(), start).unwrap();
+    let id = store.begin_local(&session.snapshot(), start).unwrap();
     for t in [
         "コーヒーを好きです。",
         "わたしはマラです。わたしはプロデューサーです。",
@@ -602,7 +602,7 @@ fn every_shown_correction_comes_back_as_a_mini_conversation() {
     assert!(session.summary().corrected.len() >= 4);
     store
         .record(
-            id,
+            &id,
             &session,
             start,
             start.plus_secs(300),
@@ -662,11 +662,11 @@ fn migration_3_names_the_tutor_by_its_preset() {
 #[test]
 fn an_export_of_an_older_format_is_refused() {
     let mut old = Store::in_memory().unwrap().export(at(1, 9)).unwrap();
-    for schema in ["kaiwa-export/0", "kaiwa-export/1", "kaiwa-export/2"] {
-        old["schema"] = schema.into();
+    for n in 0..4 {
+        old["schema"] = format!("kaiwa-export/{n}").into();
         assert!(
             Store::in_memory().unwrap().import(&old).is_err(),
-            "{schema}"
+            "kaiwa-export/{n}"
         );
     }
 }
@@ -911,8 +911,8 @@ fn marking_after_the_end(how: Mark) {
 
     let store = Store::in_memory().unwrap();
     let mut session = talk_ending_in_a_mistake();
-    let id = store.begin_session(&session.snapshot(), start).unwrap();
-    store.record(id, &session, start, end, Some(&c)).unwrap();
+    let id = store.begin_local(&session.snapshot(), start).unwrap();
+    store.record(&id, &session, start, end, Some(&c)).unwrap();
     assert!(liked(&store));
     assert!(
         store
@@ -924,7 +924,7 @@ fn marking_after_the_end(how: Mark) {
     );
 
     mark(&mut session, how);
-    let r = store.correct(id, &session, |_, _| {}).unwrap();
+    let r = store.correct(&id, &session, |_, _| {}).unwrap();
     assert!(!liked(&store), "the review item of that turn is gone");
     assert!(
         !store
@@ -939,9 +939,9 @@ fn marking_after_the_end(how: Mark) {
     // The same as marking before the end.
     let expected = Store::in_memory().unwrap();
     let mut marked = talk_ending_in_a_mistake();
-    let id2 = expected.begin_session(&marked.snapshot(), start).unwrap();
+    let i2 = expected.begin_local(&marked.snapshot(), start).unwrap();
     mark(&mut marked, how);
-    let r2 = expected.record(id2, &marked, start, end, Some(&c)).unwrap();
+    let r2 = expected.record(&i2, &marked, start, end, Some(&c)).unwrap();
     assert_eq!(store.learning().unwrap(), expected.learning().unwrap());
     assert_eq!(store.items().unwrap(), expected.items().unwrap());
     assert_eq!(r.new_items, r2.new_items);
@@ -950,7 +950,7 @@ fn marking_after_the_end(how: Mark) {
     let row = &store.sessions(1).unwrap()[0];
     assert_eq!(Some(r.success), row.success);
     assert_eq!(
-        store.session_state(id).unwrap().turns[3].misrecognized,
+        store.session_state(&id).unwrap().turns[3].misrecognized,
         matches!(how, Mark::Misrecognized),
         "the stored talk has the mark"
     );
@@ -980,12 +980,12 @@ fn a_correction_keeps_the_items_the_profile_had_before_the_talk() {
     store.put_item(&earlier).unwrap();
 
     let mut session = talk_ending_in_a_mistake();
-    let id = store.begin_session(&session.snapshot(), at(0, 9)).unwrap();
+    let id = store.begin_local(&session.snapshot(), at(0, 9)).unwrap();
     store
-        .record(id, &session, at(0, 9), at(0, 10), Some(&c))
+        .record(&id, &session, at(0, 9), at(0, 10), Some(&c))
         .unwrap();
     session.mark_misrecognized(3);
-    store.correct(id, &session, |_, _| {}).unwrap();
+    store.correct(&id, &session, |_, _| {}).unwrap();
     assert!(
         store.items().unwrap().contains(&earlier),
         "not made by this talk, so not taken back"
@@ -997,20 +997,20 @@ fn only_the_newest_talk_can_be_corrected() {
     let c = curriculum();
     let store = Store::in_memory().unwrap();
     let mut first = talk_ending_in_a_mistake();
-    let id = store.begin_session(&first.snapshot(), at(0, 9)).unwrap();
+    let id = store.begin_local(&first.snapshot(), at(0, 9)).unwrap();
     store
-        .record(id, &first, at(0, 9), at(0, 10), Some(&c))
+        .record(&id, &first, at(0, 9), at(0, 10), Some(&c))
         .unwrap();
     let later = Session::new(scenario(), provider(), Amount::Little, "de");
-    let id2 = store.begin_session(&later.snapshot(), at(1, 9)).unwrap();
+    let id2 = store.begin_local(&later.snapshot(), at(1, 9)).unwrap();
     store
-        .record(id2, &later, at(1, 9), at(1, 10), Some(&c))
+        .record(&id2, &later, at(1, 9), at(1, 10), Some(&c))
         .unwrap();
 
     first.mark_misrecognized(3);
     let learning = store.learning().unwrap();
     assert!(matches!(
-        store.correct(id, &first, |_, _| {}),
+        store.correct(&id, &first, |_, _| {}),
         Err(StoreError::Superseded(_))
     ));
     assert_eq!(store.learning().unwrap(), learning, "nothing changed");
@@ -1020,21 +1020,21 @@ fn only_the_newest_talk_can_be_corrected() {
     let store = Store::in_memory().unwrap();
     let mut a = talk_ending_in_a_mistake();
     let mut b = talk_ending_in_a_mistake();
-    let id_a = store.begin_session(&a.snapshot(), at(0, 9)).unwrap();
-    let id_b = store.begin_session(&b.snapshot(), at(0, 10)).unwrap();
+    let id_a = store.begin_local(&a.snapshot(), at(0, 9)).unwrap();
+    let id_b = store.begin_local(&b.snapshot(), at(0, 10)).unwrap();
     store
-        .record(id_b, &b, at(0, 10), at(0, 11), Some(&c))
+        .record(&id_b, &b, at(0, 10), at(0, 11), Some(&c))
         .unwrap();
     store
-        .record(id_a, &a, at(0, 9), at(0, 12), Some(&c))
+        .record(&id_a, &a, at(0, 9), at(0, 12), Some(&c))
         .unwrap();
     b.mark_misrecognized(3);
     assert!(matches!(
-        store.correct(id_b, &b, |_, _| {}),
+        store.correct(&id_b, &b, |_, _| {}),
         Err(StoreError::Superseded(_))
     ));
     a.mark_misrecognized(3);
-    store.correct(id_a, &a, |_, _| {}).unwrap();
+    store.correct(&id_a, &a, |_, _| {}).unwrap();
 }
 
 /// Marking turn 0 of a talk whose turn 2 has the same correction: the card that stays is the
@@ -1059,16 +1059,16 @@ fn a_card_that_stays_comes_from_the_turns_that_stay() {
 
     let store = Store::in_memory().unwrap();
     let mut session = talk();
-    let id = store.begin_session(&session.snapshot(), start).unwrap();
-    store.record(id, &session, start, end, Some(&c)).unwrap();
+    let id = store.begin_local(&session.snapshot(), start).unwrap();
+    store.record(&id, &session, start, end, Some(&c)).unwrap();
     session.mark_misrecognized(0);
-    store.correct(id, &session, |_, _| {}).unwrap();
+    store.correct(&id, &session, |_, _| {}).unwrap();
 
     let expected = Store::in_memory().unwrap();
     let mut marked = talk();
-    let id2 = expected.begin_session(&marked.snapshot(), start).unwrap();
+    let i2 = expected.begin_local(&marked.snapshot(), start).unwrap();
     marked.mark_misrecognized(0);
-    expected.record(id2, &marked, start, end, Some(&c)).unwrap();
+    expected.record(&i2, &marked, start, end, Some(&c)).unwrap();
     let liked = |s: &Store| {
         s.item("コーヒーが好きです")
             .unwrap()
