@@ -23,6 +23,7 @@ pub mod log;
 pub mod lookup;
 #[cfg(feature = "speech")]
 pub mod models;
+mod path;
 pub mod pause;
 pub mod placing;
 pub mod profiles;
