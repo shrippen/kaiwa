@@ -124,12 +124,12 @@ impl Talk {
     }
 
     /// Books what the translation cost (/LF714/), also when it failed. It counts as help
-    /// once the learner has it, for the line it was asked on only and not during a sent turn
-    /// (/LF212/), and is saved.
+    /// once the learner has it, for the line it was asked on only, and is saved (/LF212/).
+    /// During a sent turn it is held: it counts only if that turn fails.
     pub fn take_translation(&mut self, b: &Backend, now: Moment, got: Fetched) -> Translated {
         let mut failed: Vec<anyhow::Error> = b.book_costs(now, false).err().into_iter().collect();
-        // The learner has it now; during a sent turn it would count for an answer given
-        // without it (/LF212/).
+        // During a sent turn it would count for an answer given without it: held until the
+        // turn is taken (dropped) or fails (counted, `Talk::failed_call`).
         if got.result.is_ok() && self.asking {
             self.held = Some(got.line);
         }
