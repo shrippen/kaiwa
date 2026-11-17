@@ -215,7 +215,7 @@ Item {
 
     /**
      * Wait after the last change of size, spacing or bar width before laying out again
-     * (1.82), in ms: while a window is dragged the drawn lines stay, then they move to their
+     * (1.81), in ms: while a window is dragged the drawn lines stay, then they move to their
      * new place once. 0 (default): at once.
      */
     property int settleMs: 0
@@ -231,7 +231,7 @@ Item {
      *  laying out) lands at once instead of growing in (Kontra 12.11.). */
     readonly property bool grown: frame.grown
 
-    // Line layouts by line index (1.82), kept by the frame: a line keeps its layout while it
+    // Line layouts by line index (1.81), kept by the frame: a line keeps its layout while it
     // stays in view, so a page turn lays out only the line that comes in.
     readonly property var lineCache: frame.lineCache
     readonly property int lineRevision: frame.lineRevision
@@ -743,7 +743,7 @@ Item {
                     opacity: !(KanteStyle.active && KanteStyle.light) ? 0.7 : 1
                 }
             }
-            // Bar lines, stems and beams as one shape (1.82): a page of hundreds of rectangles took
+            // Bar lines, stems and beams as one shape (1.81): a page of hundreds of rectangles took
             // 57 ms to turn (Kontra 12.11.).
             Shape {
                 anchors.fill: parent
@@ -898,7 +898,7 @@ Item {
                     }
                     // Technique sign above right of the fret number (1.31); a ghost note's parentheses
                     // are its sign, its result frames them (1.37). Built only for a note with a
-                    // technique, the label only with a label: most notes have neither (1.82).
+                    // technique, the label only with a label: most notes have neither (1.81).
                     Loader {
                         id: techniqueSlot
                         readonly property bool ghost: fretBox.modelData.technique === "ghost"
@@ -930,7 +930,7 @@ Item {
 
             Repeater {
                 model: line.lay.marks
-                // A mark is built once its note has a state to show (1.82): before, every
+                // A mark is built once its note has a state to show (1.81): before, every
                 // pending note of the page carried one. Built by a state change on a live line,
                 // it moves as a live mark would (A4); built with the line, it stays still.
                 delegate: Item {

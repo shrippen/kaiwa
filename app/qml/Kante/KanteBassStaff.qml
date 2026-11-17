@@ -183,7 +183,7 @@ Item {
 
     /**
      * Wait after the last change of size, spacing or bar width before laying out again
-     * (1.82), in ms: while a window is dragged the drawn lines stay, then they move to their
+     * (1.81), in ms: while a window is dragged the drawn lines stay, then they move to their
      * new place once. 0 (default): at once.
      */
     property int settleMs: 0
@@ -199,7 +199,7 @@ Item {
      *  laying out) lands at once instead of growing in (Kontra 12.11.). */
     readonly property bool grown: frame.grown
 
-    // Line layouts by line index (1.82), kept by the frame: a line keeps its layout while it
+    // Line layouts by line index (1.81), kept by the frame: a line keeps its layout while it
     // stays in view, so a page turn lays out only the line that comes in.
     readonly property var lineCache: frame.lineCache
     readonly property int lineRevision: frame.lineRevision
@@ -824,7 +824,7 @@ Item {
     // Rehearsal marks (1.50); the probe measures the row.
     KanteRehearsalMark { id: markProbe; visible: false; text: "A"; pixelSize: staff.sp * 1.4; Accessible.ignored: true }
 
-    // The lines shown, one delegate each, kept while they stay in view (1.82, as
+    // The lines shown, one delegate each, kept while they stay in view (1.81, as
     // KanteTabStaff): a page turn builds only the line that comes in, the others move up and
     // the top one fades (A2); lines that come or go fade in or out (A1).
     ListView {
@@ -991,7 +991,7 @@ Item {
                     Accessible.ignored: true
                 }
             }
-            // A mark is built once its note has a state to show (1.82); built by a state change on a
+            // A mark is built once its note has a state to show (1.81); built by a state change on a
             // live line it moves (A4), built with the line it stays still.
             Repeater {
                 model: line.lay.marks
