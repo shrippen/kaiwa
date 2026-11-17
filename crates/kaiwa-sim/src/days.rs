@@ -1079,8 +1079,8 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
         if !progress::blameless(trend) {
             found.push(format!("blame in: {trend}"));
         }
-        // As the run had it: mistakes per talk, the later half of her last ten talks against
-        // the earlier, the talks the chart shows.
+        // As the run had it: mistakes per talk, the later half of her talks against the
+        // earlier; the run is shorter than the chart's twelve weeks, so the chart shows all.
         let kind = m["kind"].as_str().unwrap_or_default();
         let counted = |s: &SimSession| {
             s.mistakes
@@ -1089,7 +1089,7 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
                 .filter(|(k, severity)| k == kind && severity != "style")
                 .count() as f64
         };
-        let shown = &run.sessions[run.sessions.len().saturating_sub(kaiwa_core::trend::WINDOW)..];
+        let shown = &run.sessions[..];
         let mean = |half: &[SimSession]| half.iter().map(counted).sum::<f64>() / half.len() as f64;
         let (early, late) = shown.split_at(shown.len() / 2);
         let want = match (mean(early), mean(late)) {

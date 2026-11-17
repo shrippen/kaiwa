@@ -1,11 +1,11 @@
-//! The kinds of mistakes of the profile (/LF610/): per kind how often it came up in each of
-//! the last talks, and the trend the core reads from the same points.
+//! The kinds of mistakes of the profile (/LF610/): per kind how often it came up in each talk
+//! of the view's twelve weeks, and the trend the core reads from the same points.
 
 use std::collections::BTreeMap;
 
 use serde_json::{Value, json};
 
-use kaiwa_core::trend::{Change, WINDOW, change};
+use kaiwa_core::trend::{Change, change};
 
 use crate::Backend;
 use crate::views::{kind_word, scenario_title};
@@ -58,7 +58,6 @@ pub(crate) fn view(st: &Backend, from: i64, de: bool) -> anyhow::Result<(Vec<Val
     }
     let mut kinds: Vec<(String, u32)> = totals.into_iter().collect();
     kinds.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
-    let shown = talks.len().saturating_sub(WINDOW);
     let mistakes: Vec<Value> = kinds
         .iter()
         .take(3)
@@ -71,13 +70,12 @@ pub(crate) fn view(st: &Backend, from: i64, de: bool) -> anyhow::Result<(Vec<Val
             json!({
                 "kind": k,
                 "word": word,
-                "counts": &of_kind[shown..],
+                "counts": of_kind,
                 "trend": trend_word(&of_kind, de),
             })
         })
         .collect();
-    let talks = talk_names.split_off(shown);
-    Ok((mistakes, talks))
+    Ok((mistakes, talk_names))
 }
 
 #[cfg(test)]
@@ -95,9 +93,9 @@ mod tests {
 
     #[test]
     fn misrecognised_turns_do_not_thin_out_the_trend() {
-        // Four talks of four valid turns with 2, 1, 2, 1 particle mistakes; the third has
-        // twelve more turns, all marked as misrecognised (review #68). The later half is as
-        // the earlier: 3 of 8 turns each.
+        // Four talks with 2, 1, 2, 1 particle mistakes; the third has twelve more turns with
+        // the mistake, all marked as misrecognised (review #68): they are the recogniser's,
+        // so the later half is as the earlier, 3 each.
         let b = crate::TempBackend::new("trend-misrecognised", false).unwrap();
         let scenario = b.scenarios.get("n5-02-jikoshoukai").cloned().unwrap();
         let now = crate::now();
@@ -110,7 +108,7 @@ mod tests {
                 "de",
             );
             for turn in 0..4 + misrecognised {
-                let line = if turn < *mistakes {
+                let line = if turn < *mistakes || turn >= 4 {
                     "コーヒーを好きです。"
                 } else {
                     "マラです。よろしくおねがいします。"
@@ -133,22 +131,31 @@ mod tests {
             .find(|x| x["kind"] == "particle")
             .expect("particles")
             .clone();
+        assert_eq!(particle["counts"], json!([2, 1, 2, 1]), "{particle}");
         assert_eq!(particle["trend"], "gleich oft", "{particle}");
     }
 
     #[test]
     fn mistakes_over_twelve_weeks() {
         let b = crate::TempBackend::new("stats", true).unwrap();
-        let v = stats(&b, crate::now()).unwrap();
+        let now = crate::now();
+        let v = stats(&b, now).unwrap();
         let m = v["mistakes"].as_array().unwrap();
         let particle = m
             .iter()
             .find(|x| x["kind"] == "particle")
             .expect("particles");
         assert!(m.iter().any(|x| x["kind"] == "counter"), "{m:?}");
-        // The charts: the last talks, each with day and scenario, the counts of a kind aligned.
+        // The charts: every talk of the twelve weeks, each with day and scenario, the counts of
+        // a kind aligned.
         let talks = v["talks"].as_array().unwrap();
-        assert!(!talks.is_empty() && talks.len() <= WINDOW);
+        let today = now.day();
+        let monday = today.plus(-(today.weekday() as i64) - 7 * 11);
+        let finished = b
+            .store
+            .finished_since(monday.start(now.offset_min).unix)
+            .unwrap();
+        assert_eq!(talks.len(), finished.len());
         assert_eq!(particle["counts"].as_array().unwrap().len(), talks.len());
         assert!(
             talks

@@ -1,8 +1,7 @@
-//! How a kind of mistake develops (/LF610/): the profile's chart shows the mistakes of the
-//! last talks, one point per talk, and the trend reads exactly those points.
+//! How a kind of mistake develops (/LF610/): the profile's chart shows the mistakes of every
+//! talk of its twelve weeks, one point per talk, and the trend reads exactly those points
+//! (owner, E-7: a fade over weeks shows, and word and line agree).
 
-/// The talks a chart shows and a trend reads, newest last.
-pub const WINDOW: usize = 10;
 /// Talks before a kind of mistake gets a trend, and how many mistakes it must have in them;
 /// with fewer there is only the line (one mistake is no trend).
 const MIN_TALKS: usize = 4;
@@ -18,11 +17,10 @@ pub enum Change {
 }
 
 /// The change from the earlier half of the talks to the later one, in mistakes per talk.
-/// `counts` are the mistakes of one kind per talk in order; only the last `WINDOW` count.
-/// Talks, not weeks: a week that has just begun holds few talks and would read as a change.
-/// `None`: too little for a trend.
-pub fn change(counts: &[u32]) -> Option<Change> {
-    let shown = &counts[counts.len().saturating_sub(WINDOW)..];
+/// `counts` are the mistakes of one kind per talk in order, the points of the chart.
+/// Halves of talks, not weeks: a week that has just begun holds few talks and would read as a
+/// change. `None`: too little for a trend.
+pub fn change(shown: &[u32]) -> Option<Change> {
     if shown.len() < MIN_TALKS || shown.iter().sum::<u32>() < MIN_MISTAKES {
         return None;
     }
@@ -62,12 +60,12 @@ mod tests {
     }
 
     #[test]
-    fn only_the_talks_the_chart_shows_count() {
-        // Ten talks of four mistakes, then ten that rise from none: the line rises, so the
-        // trend does, although all twenty together read as fewer.
-        let mut counts = vec![4; 10];
-        counts.extend([0, 0, 1, 1, 2, 2, 3, 3, 3, 3]);
-        assert_eq!(change(&counts), Some(Change::More));
+    fn a_fade_over_weeks_outweighs_a_late_rise() {
+        // Mara: particles fade over 28 talks and rise a little in the last ten; every point
+        // the chart shows counts, so the fade does.
+        let mut counts = vec![2, 2, 1, 2, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0];
+        counts.extend([0, 0, 0, 0, 0, 0, 1, 0, 1, 1]);
+        assert_eq!(change(&counts), Some(Change::Less));
     }
 
     #[test]

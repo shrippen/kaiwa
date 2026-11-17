@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import Kante
 
-// Mistakes per talk (/LF610/): per kind of mistake a line over the last talks with its trend
+// Mistakes per talk (/LF610/): per kind of mistake a line over the twelve weeks' talks, its trend
 // in a word; on hover the day, the scenario and the number of mistakes of that talk. The
 // view brings the talks (`talks`: day and scenario) and per kind the counts, aligned.
 ColumnLayout {
@@ -37,7 +37,7 @@ ColumnLayout {
 
     KanteSectionLabel {
         Layout.fillWidth: true
-        text: t("Fehler je Gespräch · letzte ", "Mistakes per talk · last ") + talks.length + t(" Gespräche", " talks")
+        text: t("Fehler je Gespräch · zwölf Wochen, ", "Mistakes per talk · twelve weeks, ") + talks.length + t(" Gespräche", " talks")
         rule: true
     }
     GridLayout {
