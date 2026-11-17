@@ -139,6 +139,21 @@ QtObject {
             : Qt.font({ family: japaneseFamily, pixelSize: b.pixelSize, bold: b.bold })
     }
 
+    /** How much larger text the learner studies is than the controls around it. */
+    readonly property real studyScale: 1.35
+    /** `japaneseFont(base)` at `studyScale` times the size: a sentence to read or a correction. */
+    function studyFont(base) {
+        const b = base || defaultFont
+        const f = japaneseFont(b)
+        // From the base, not from japaneseFont: Qt.font rounds a point size down, and a font
+        // given in pixels reports its point size too (16 px = 12 pt).
+        if (b.pointSize > 0)
+            f.pointSize = b.pointSize * studyScale
+        else
+            f.pixelSize = Math.round(b.pixelSize * studyScale)
+        return f
+    }
+
     // ── Surfaces (System values match a plain Kirigami look) ─────────────
     readonly property color strongTextColor: themed ? palette.strongText : Kirigami.Theme.textColor
     readonly property color mutedTextColor: themed ? palette.mutedText : tint(Kirigami.Theme.textColor, 0.75)
