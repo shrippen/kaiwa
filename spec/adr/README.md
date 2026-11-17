@@ -19,3 +19,4 @@ Offene Punkte tragen eine Frage-ID (`F-xx`) aus dem jeweiligen Fragenpaket. Die 
 | [007](007-daten-lizenzen.md) | Sprachdaten und Lizenzen | Angenommen | Code MIT, Daten getrennt; JMdict/KANJIDIC2, UniDic; JLPT- und Akzentlisten prüfen |
 | [008](008-plasmoid-backend.md) | Backend für App und Plasmoid | Angenommen | Dienst `kaiwad` (D-Bus), dünner Client im Plasmoid; nur über Pakete |
 | [009](009-curriculum-format.md) | Curriculum-Format v2 | Angenommen (Q-04, Q-07) | eine Datei je Stufe, Gesamtgraph; Grammatik-Katalog `data/grammar/`; Stufe „N5 · A1“ |
+| [010](010-sync.md) | Sync zwischen Geräten | Vorgeschlagen | Journal der Handlungen, neu gefaltet durch dieselben Befehle; eine `age`-Datei je Gerät in Ordner oder WebDAV |

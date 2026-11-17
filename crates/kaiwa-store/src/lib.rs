@@ -24,6 +24,7 @@ use kaiwa_core::learner::{LearnerModel, Skill};
 use kaiwa_core::progress::{DailyGoal, DayRecord, Pause, Streak, XP_REVIEW, streak};
 use kaiwa_core::session::{Session, SessionState};
 use kaiwa_core::srs::{self, Grade, Item};
+use migrations::MIGRATIONS;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
@@ -401,43 +402,6 @@ pub fn delete_profile(path: &Path) -> Result<()> {
     }
     Ok(())
 }
-
-/// Schema versions; each entry migrates from the version before.
-const MIGRATIONS: &[&str] = &[
-    // 1
-    "CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-     CREATE TABLE learning (id INTEGER PRIMARY KEY CHECK (id = 1), value TEXT NOT NULL);
-     CREATE TABLE sessions (
-        id INTEGER PRIMARY KEY,
-        scenario TEXT NOT NULL,
-        started INTEGER NOT NULL,
-        offset_min INTEGER NOT NULL,
-        ended INTEGER,
-        finished INTEGER NOT NULL DEFAULT 0,
-        success REAL,
-        xp INTEGER NOT NULL DEFAULT 0,
-        speaking_secs INTEGER NOT NULL DEFAULT 0,
-        state TEXT NOT NULL);
-     CREATE INDEX sessions_started ON sessions(started);
-     CREATE TABLE items (key TEXT PRIMARY KEY, due INTEGER NOT NULL, value TEXT NOT NULL);
-     CREATE INDEX items_due ON items(due);
-     CREATE TABLE days (day INTEGER PRIMARY KEY, value TEXT NOT NULL);
-     CREATE TABLE pauses (from_day INTEGER NOT NULL, to_day INTEGER NOT NULL);
-     CREATE TABLE disputes (id INTEGER PRIMARY KEY, value TEXT NOT NULL);",
-    // 2: unit and scenario ids in path order (2026-10-14, before the first release); the
-    // rewrite of the stored ids is `rename_unit_ids`.
-    "SELECT 1;",
-    // 3: tutor presets (2026-11-09, before the first release): "openai" meant any
-    // OpenAI-compatible server and is now the provider OpenAI; without a server it was
-    // Ollama on this computer, with one it is "custom".
-    "UPDATE settings SET value = json_set(value, '$.tutor.provider',
-        CASE WHEN coalesce(json_extract(value, '$.tutor.base_url'), '') = ''
-             THEN 'ollama' ELSE 'custom' END)
-     WHERE key = 'profile' AND json_extract(value, '$.tutor.provider') = 'openai';",
-    // 4: what the end of a talk stored, to take back when the summary marks a turn (V-05,
-    // 2026-11-13); NULL for talks recorded before.
-    "ALTER TABLE sessions ADD COLUMN recording TEXT;",
-];
 
 /// A required array of an export; missing is an error, so a cut-off file imports nothing.
 fn array<'a>(v: &'a serde_json::Value, key: &str) -> Result<&'a Vec<serde_json::Value>> {
@@ -1475,6 +1439,10 @@ impl Store {
         Ok(())
     }
 }
+
+mod events;
+mod migrations;
+pub use events::Stored;
 
 #[cfg(test)]
 mod tests;
