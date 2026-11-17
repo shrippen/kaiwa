@@ -244,6 +244,21 @@ mod tests {
         assert_eq!(aids(&t), before);
     }
 
+    /// /LF212/: asked before a turn, a translation that arrives while the tutor works on the
+    /// turn does not count; the answer to that turn came without it.
+    #[test]
+    fn a_translation_arriving_during_a_turn_does_not_count() {
+        let b = TempBackend::new("aids-translate-busy", true).unwrap();
+        let mut t = open(&b);
+        let asked = t.ask_translation(&t.session().scenario.opening.clone(), 0);
+        let got = asked.unwrap().run();
+
+        let _asking = t.ask("はい");
+        assert!(t.take_translation(&b, now(), got).result.is_ok());
+
+        assert_eq!(aids(&t), 0);
+    }
+
     #[test]
     fn a_failed_translation_does_not_count() {
         let b = TempBackend::new("aids-nofixture", true).unwrap();
