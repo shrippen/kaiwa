@@ -18,6 +18,9 @@ KanteDialog {
     // Own buttons, so both say what they do in the app's language (the platform's
     // Cancel would read "Abbrechen" next to "Einstufung abbrechen").
     standardButtons: QQC2.Dialog.NoButton
+    // Staying drops where the leaving would have gone (e.g. to the settings).
+    property bool leaving: false
+    onClosed: { if (!leaving) page.settingsNext = false; leaving = false }
     // The answer it waited for ended the talk or the placement's stages: the page changes
     // under the dialog (at the reading questions, Back asks again).
     Connections {
@@ -38,7 +41,7 @@ KanteDialog {
             // A turn still running would be lost: its answer saves the talk (a placement
             // is not saved, it can go at any time).
             enabled: conv.placing || !conv.busy
-            onClicked: { dialog.close(); page.done() }
+            onClicked: { dialog.leaving = true; dialog.close(); page.done() }
         }
     ]
     QQC2.Label {

@@ -17,8 +17,8 @@ RowLayout {
 
     Text {
         Layout.fillWidth: true
-        text: line.t("Sprechen braucht die Modelle für Erkennung und Stimme. Bis dahin tippst du.",
-                     "Speaking needs the models for recognition and voice. Until then you type.")
+        text: line.t("Sprechen braucht das Modell für die Erkennung. Bis dahin tippst du.",
+                     "Speaking needs the model for recognition. Until then you type.")
         color: KanteStyle.mutedTextColor
         font: KanteStyle.defaultFont
         wrapMode: Text.Wrap

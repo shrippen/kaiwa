@@ -30,7 +30,9 @@ Kirigami.ScrollablePage {
     /** The learner wants the speech models: back to the tabs, on the settings. */
     signal showSettings()
     // Leaving the talk: the character does not go on speaking over the next page.
-    onDone: conv.interrupt()
+    onDone: { conv.interrupt(); if (settingsNext) showSettings() }
+    /** The leaving in progress goes on to the settings, not to the start page. */
+    property bool settingsNext: false
     /** Screenshot mode: say the lines of `script` (separated by "|"), save `shot`, quit. */
     property string shot: ""
     property string script: ""
@@ -56,6 +58,10 @@ Kirigami.ScrollablePage {
     // offers to continue at once; during a running talk it asks first (owner, 9.11.2026).
     onBackRequested: function (event) {
         event.accepted = true
+        page.settingsNext = false
+        page.leave()
+    }
+    function leave() {
         if (Leave.asks(page.started, conv.finished, page.placementOver, conv.placementAsk))
             leaveDialog.open()
         else
@@ -141,6 +147,7 @@ Kirigami.ScrollablePage {
                 text: page.t("Später weiter", "Continue later")
                 emphasis: KanteButton.Emphasis.Quiet
                 Accessible.description: page.t("Das Gespräch bleibt offen und lässt sich auf der Startseite fortsetzen.", "The talk stays open; continue it from the start page.")
+                enabled: !conv.busy
                 onClicked: page.done()
             }
         }
@@ -561,7 +568,9 @@ Kirigami.ScrollablePage {
                 Layout.fillWidth: true
                 Layout.columnSpan: parent.columns
                 lang: page.lang
-                onModelsRequested: { page.showSettings(); page.done() }
+                // Leaves like Back: a placement asks first, a running turn is not cut off.
+                enabled: conv.placing || !conv.busy
+                onModelsRequested: { page.settingsNext = true; page.leave() }
             }
             KanteTalkButton {
                 id: talk

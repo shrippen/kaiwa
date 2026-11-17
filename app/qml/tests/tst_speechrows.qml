@@ -77,4 +77,73 @@ Item {
         }
     }
     Component { id: spy; SignalSpy { } }
+
+    TestCase {
+        name: "SpeechMissingLeave"
+        when: windowShown
+
+        function speechless() {
+            const t = createTemporaryObject(talkPage, root, { width: root.width, height: root.height })
+            t.conv.speechMissing = true
+            wait(50)
+            return t
+        }
+
+        // Same way as Back: a placement asks first, and nothing happens before the answer.
+        function test_the_models_button_asks_during_a_placement() {
+            const t = speechless()
+            t.conv.placing = true
+            const left = createTemporaryObject(spy, root, { target: t.page, signalName: "showSettings" })
+            const done = createTemporaryObject(spy, root, { target: t.page, signalName: "done" })
+            mouseClick(t.button("Modelle laden"))
+            wait(50)
+            compare(left.count, 0)
+            compare(done.count, 0)
+            verify(t.find(i => i.title === "Einstufung abbrechen?" && i.visible) !== null, "no question")
+
+            mouseClick(t.find(i => i.text === "Einstufung beenden" && i.clicked !== undefined))
+            compare(left.count, 1)
+            compare(done.count, 1)
+        }
+
+        function test_keeping_on_talking_stays_on_the_page() {
+            const t = speechless()
+            t.conv.placing = true
+            const left = createTemporaryObject(spy, root, { target: t.page, signalName: "showSettings" })
+            mouseClick(t.button("Modelle laden"))
+            wait(50)
+            mouseClick(t.find(i => i.text === "Weiter einstufen" && i.clicked !== undefined))
+            wait(50)
+            compare(left.count, 0)
+            // Leaving later another way goes to the start page, not to the settings.
+            t.page.done()
+            compare(left.count, 0)
+        }
+
+        // A turn still running would be lost: the button waits, like "Verlassen".
+        function test_the_models_button_waits_for_a_running_turn() {
+            const t = speechless()
+            t.conv.busy = true
+            verify(!t.button("Modelle laden").enabled)
+            t.conv.busy = false
+            verify(t.button("Modelle laden").enabled)
+        }
+
+        function test_continue_later_waits_for_a_running_turn() {
+            const t = speechless()
+            t.conv.busy = true
+            verify(!t.button("Später weiter").enabled)
+            t.conv.busy = false
+            verify(t.button("Später weiter").enabled)
+        }
+
+        function test_without_speech_the_talk_button_and_space_do_nothing() {
+            const t = speechless()
+            const talk = t.talkButton()
+            verify(!talk.enabled)
+            t.conv.calls = []
+            keyClick(Qt.Key_Space)
+            compare(t.conv.count("startTalk"), 0)
+        }
+    }
 }
