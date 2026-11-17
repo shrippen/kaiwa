@@ -105,7 +105,7 @@ impl Store {
     }
 
     /// The talks of an export, with the ids they had.
-    pub(crate) fn import_sessions(&self, v: &serde_json::Value) -> Result<()> {
+    fn import_sessions(&self, v: &serde_json::Value) -> Result<()> {
         for s in array(v, "sessions")? {
             let row: SessionRow = serde_json::from_value(s["row"].clone())?;
             let state: SessionState = serde_json::from_value(s["state"].clone())?;
@@ -130,7 +130,7 @@ impl Store {
     }
 
     /// The journal of an export, as it was.
-    pub(crate) fn import_events(&self, v: &serde_json::Value) -> Result<()> {
+    fn import_events(&self, v: &serde_json::Value) -> Result<()> {
         let wrong = || StoreError::WrongFormat("events".into());
         for e in array(v, "events")? {
             let text = |k: &str| e[k].as_str().ok_or_else(wrong);
