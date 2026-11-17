@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import Kante
+import "lang.js" as Lang
 
 // Today (Lastenheft Kap. 7): an interrupted session to continue (/LF121/), the next scenario
 // on the path, the reviews that are due (/LF230/, /LF231/) and free talk on the left; the daily
@@ -13,7 +14,7 @@ QQC2.ScrollView {
     signal talk(string scenario, bool resume)
     signal showTab(int index)
     signal place()
-    function t(de, en) { return kaiwa.lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(kaiwa.lang, de, en) }
 
     readonly property var today: kaiwa.today.length > 0 ? JSON.parse(kaiwa.today) : ({})
     readonly property bool compact: applicationWindow().compact

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import Kante
+import "lang.js" as Lang
 
 // Profile and statistics: the learner model in words, no raw numbers, and the learner can
 // correct it (Lastenheft /LF202/); what still trips them up; how Kaiwa sets the difficulty
@@ -11,7 +12,7 @@ QQC2.ScrollView {
     required property var kaiwa
     /** Do the placement again (/LF200/: repeatable). */
     signal place()
-    function t(de, en) { return kaiwa.lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(kaiwa.lang, de, en) }
 
     readonly property var learner: kaiwa.learner.length > 0 ? JSON.parse(kaiwa.learner) : ({ skills: [], weak: [], knobs: [] })
     readonly property var stats: kaiwa.stats.length > 0 ? JSON.parse(kaiwa.stats) : ({ heat: [] })
@@ -267,7 +268,7 @@ QQC2.ScrollView {
             endDate: page.dayOf(page.stats.heatEnd)
             levels: page.stats.heatDays || ({})
             tips: page.stats.heatTips || ({})
-            locale: Qt.locale(page.kaiwa.lang === "en" ? "en_GB" : "de_DE")
+            locale: Qt.locale(Lang.pick(page.kaiwa.lang, "de_DE", "en_GB"))
             firstDayOfWeek: Locale.Monday
             Accessible.role: Accessible.Graphic
             Accessible.name: page.t("Minuten gesprochen je Tag in den letzten zwölf Wochen", "Minutes spoken per day over the last twelve weeks")

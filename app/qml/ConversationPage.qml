@@ -6,6 +6,7 @@ import Kante
 import org.shrippen.kaiwa
 import "leave.js" as Leave
 import "record.js" as Record
+import "lang.js" as Lang
 
 // One scenario as a conversation (M1): the character speaks with furigana, the learner
 // types (speech follows with spike 0.3), help comes in three steps, corrections sit under
@@ -20,11 +21,10 @@ Kirigami.ScrollablePage {
     property bool resume: false
     /** Play the placement (/LF200/) instead of a scenario. */
     property bool placement: false
-    /** UI language of the profile, "de" or "en". */
-    property string lang: "de"
+    property string lang: "de" // UI language of the profile, "de" or "en"
     /** The app object (models and their download, for the dictionary). */
     property var kaiwa: null
-    function t(de, en) { return lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(lang, de, en) }
     /** Back to the start page (finished, or to continue later). */
     signal done()
     /** The learner wants the speech models: back to the tabs, on the settings. */

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import Kante
+import "lang.js" as Lang
 
 // Review (Lastenheft /LF230/): the due words and phrases from the learner's own talks, one at a
 // time, never as a flash card. A correction comes back as a mini conversation: the character
@@ -12,7 +13,7 @@ import Kante
 QQC2.ScrollView {
     id: page
     required property var kaiwa
-    function t(de, en) { return kaiwa.lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(kaiwa.lang, de, en) }
 
     readonly property var items: kaiwa.review.length > 0 ? JSON.parse(kaiwa.review) : []
     readonly property var current: items.length > 0 ? items[0] : null

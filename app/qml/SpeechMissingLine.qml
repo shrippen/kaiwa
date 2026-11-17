@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Kante
+import "lang.js" as Lang
 
 // The talk page's footer without the speech models: one calm line instead of the talk
 // button's "No speech" step, with the way to the models. Typing goes on below it.
@@ -11,7 +12,7 @@ RowLayout {
     property string lang: "de"
     // The learner wants the models: the page leaves for the settings.
     signal modelsRequested()
-    function t(de, en) { return lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(lang, de, en) }
 
     spacing: KanteStyle.unit(10)
 

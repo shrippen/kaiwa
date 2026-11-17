@@ -1,5 +1,6 @@
 import QtQuick
 import Kante
+import "lang.js" as Lang
 
 // Under the main tabs for as long as the profile could not be opened and a stand-in runs
 // (`profile.spare`): nothing done now is saved. Unlike the notice it stays on every tab.
@@ -17,7 +18,7 @@ KanteBanner {
     }
 
     visible: spare
-    function t(de, en) { return kaiwa.lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(kaiwa.lang, de, en) }
     title: t("Ersatzprofil", "Stand-in profile")
     text: t("Das Profil ließ sich nicht öffnen. Nichts, was du jetzt tust, wird gespeichert.",
             "The profile could not be opened. Nothing you do now is saved.")
