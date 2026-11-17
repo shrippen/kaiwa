@@ -204,9 +204,8 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
 12. **Die Anthropic-Anbindung ist nicht live geprüft** (T-10): #72 hat die Anfragen nach der API-Referenz umgebaut (`crates/kaiwa-ai/src/anthropic.rs`), in der Sitzung gab es keinen Schlüssel. Der erste Schritt des lokalen Tests (`kaiwa-sim run --live` mit `KAIWA_PROVIDER=anthropic`) zeigt, ob sie stimmen. Offen dabei: Die Modelle denken vor der Antwort nach, in der Voreinstellung recht gründlich; für die Antwortzeit (/LL010/) lohnt `output_config.effort` „low“ für die Antwort der Figur, das ist eine Abwägung zwischen Tempo und Güte und nicht gesetzt. Und: Lehnt ein Modell eine Antwort ab (Sicherheitsfilter), gibt es keinen Ersatz; die API bietet dafür `fallbacks` an.
 
 13. **Kleinigkeiten der zweiten Leser vom 13.11., noch offen:**
-    - Gespräch: Die Zeit nach dem letzten Zug zählt nicht, und Schließen des Fensters verliert einen laufenden Zug.
-    - Kosten: Zwei Prozesse auf einem Profil (zweite App, später Plasmoid) können das Limit zusammen doppelt ausgeben, und `book` liest und schreibt den Monat ohne Transaktion.
-    - Aufnahmen: Die Frist wird nur beim Öffnen des Profils und beim Ändern der Einstellung durchgesetzt, nicht im laufenden Betrieb.
+    - Gespräch: Die Zeit nach dem letzten Zug zählt nicht (das Gespräch wird mit dem letzten Zug gebucht; die Zeit danach bräuchte eine nachträgliche Änderung des Eintrags), und Schließen des Fensters verliert einen laufenden Zug.
+    - Kosten: Zwei Prozesse auf einem Profil (zweite App, später Plasmoid) können das Limit zusammen doppelt ausgeben (die Buchung selbst ist seit dem Fix eine Transaktion).
     - Erinnerung: „Später“ über Mitternacht verschiebt die Erinnerung auf den nächsten Tag (wirkt erst mit M4).
     - Nachschlagen: IPADIC liefert für かって/よんだ die Grundform かつ/よぶ; ohne Beugungsform im `LineWord` nicht zu lösen. Noch Zwillinge (auch vor #114): こと → 琴, そう/よう, と als „if“ statt „with“. IPADIC trennt こうちゃ in こう + ちゃ; ちゃ zeigt dann ては. じゃ für das Orts-では (ここじゃ) zeigt die Kopula „be; is“.
     - Export: Exporte im Format 1 vom 9. bis 14.10.2026 tragen alte Einheiten-Ids (nur Testdaten).
