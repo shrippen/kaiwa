@@ -149,14 +149,18 @@ mod tests {
         assert_eq!((a.seq, b.seq), (1, 2));
         assert_eq!(b.id, format!("{device}-2"));
 
-        // Fold order is by time, not by number; a foreign device sorts by its id at a tie.
-        s.db.execute(
-            "INSERT INTO events VALUES ('0a-1', '0a', 1, 1000, 0, ?1)",
-            params![serde_json::to_string(&setting("5")).unwrap()],
-        )
-        .unwrap();
+        // Fold order is by time, not by number; at a tie devices sort by id. The own id is
+        // random hex: "00" sorts before any of it, "gg" after.
+        for foreign in ["00", "gg"] {
+            s.db.execute(
+                "INSERT INTO events VALUES (?1 || '-1', ?1, 1, 1000, 0, ?2)",
+                params![foreign, serde_json::to_string(&setting("5")).unwrap()],
+            )
+            .unwrap();
+        }
         let ids: Vec<String> = s.events().unwrap().into_iter().map(|e| e.id).collect();
-        assert_eq!(ids, vec!["0a-1".to_string(), b.id, a.id]);
+        let want = vec!["00-1".to_string(), b.id, "gg-1".to_string(), a.id];
+        assert_eq!(ids, want);
         assert_eq!(s.events().unwrap()[1].at, early);
     }
 }
