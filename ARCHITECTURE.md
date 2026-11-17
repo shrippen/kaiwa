@@ -117,10 +117,6 @@ A change that needs more places than its row lists is a finding for the next aud
 - The store still decides some learning rules itself: what a new placement resets
   (difficulty, the week's comparison, the amount of corrections), when a gap counts as a
   new break, and which daily goal a talk over midnight gets. `AUDIT.md`, finding 3.
-- The settings page keeps its own lists for the amount of corrections, how long
-  recordings are kept and the reminder times. The backend accepts any number for
-  recordings, reminder and unload time, and any daily goal from 1 to 120 minutes, though
-  the pages offer only the steps. `AUDIT.md`, finding 2.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
   then the app is the only front end and runs the backend in its own process. On that
   branch `kaiwad` drives microphone and recognition itself; M4 moves that into the

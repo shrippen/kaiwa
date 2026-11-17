@@ -117,8 +117,9 @@ Item {
                            : "")
                           + page.t("Wenig: nur Fehler. Viel: auch Stil", "Little: mistakes only. Much: style too")
                     Choice {
-                        readonly property var values: ["little", "normal", "much"]
-                        model: [page.t("Wenig", "Little"), page.t("Normal", "Normal"), page.t("Viel", "Much")]
+                        readonly property var values: page.p.feedbackSteps || []
+                        readonly property var labels: ({ little: page.t("Wenig", "Little"), normal: page.t("Normal", "Normal"), much: page.t("Viel", "Much") })
+                        model: values.map(function (a) { return labels[a] })
                         shown: Math.max(0, values.indexOf(page.p.feedback))
                         onActivated: function (i) { page.kaiwa.setSetting("feedback", values[i]) }
                     }
@@ -169,8 +170,11 @@ Item {
                     title: page.t("Erinnerung", "Reminder")
                     hint: page.t("Höchstens eine am Tag, über das Plasmoid; nur solange das Tagesziel offen ist", "At most one a day, through the plasmoid; only while the daily goal is open")
                     Choice {
-                        readonly property var values: [null, 8 * 60, 12 * 60 + 30, 19 * 60]
-                        model: [page.t("Aus", "Off"), "08:00", "12:30", "19:00"]
+                        readonly property var values: page.p.reminderSteps || []
+                        model: values.map(function (m) {
+                            return m === null ? page.t("Aus", "Off")
+                                              : String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0")
+                        })
                         shown: Math.max(0, values.indexOf(page.p.reminder === undefined ? null : page.p.reminder))
                         onActivated: function (i) { page.kaiwa.setSetting("reminder", values[i] === null ? "" : String(values[i])) }
                     }
@@ -261,8 +265,8 @@ Item {
                     title: page.t("Aufnahmen behalten", "Keep recordings")
                     hint: page.t("Zum Vergleichen mit früher. Abschalten löscht sie sofort; die Abschriften bleiben", "To compare with earlier. Turning it off deletes them at once; the transcripts stay")
                     Choice {
-                        readonly property var values: [null, 7, 30]
-                        model: [page.t("Nein", "No"), page.t("7 Tage", "7 days"), page.t("30 Tage", "30 days")]
+                        readonly property var values: page.p.keepSteps || []
+                        model: values.map(function (d) { return d === null ? page.t("Nein", "No") : page.t(d + " Tage", d + " days") })
                         shown: Math.max(0, values.indexOf(page.p.keepRecordings === undefined ? null : page.p.keepRecordings))
                         onActivated: function (i) { page.kaiwa.setSetting("keepRecordings", values[i] === null ? "" : String(values[i])) }
                     }

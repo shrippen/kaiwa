@@ -74,7 +74,7 @@ mod tests {
     fn an_export_goes_into_a_new_profile() {
         let a = backend("from");
         a.set_setting("name", "Lena", T0).unwrap();
-        a.set_setting("goal", "25", T0).unwrap();
+        a.set_setting("goal", "20", T0).unwrap();
         let file = a.dir.join("out.json");
 
         // A file:// URL from the file dialog works as a path.
@@ -85,7 +85,7 @@ mod tests {
         assert_eq!(b.import_from(file.to_str().unwrap()), Ok(file));
         let p = b.store.profile().unwrap();
         assert_eq!(p.name, "Lena");
-        assert_eq!(p.daily_goal, kaiwa_core::progress::DailyGoal::Minutes(25));
+        assert_eq!(p.daily_goal, kaiwa_core::progress::DailyGoal::Minutes(20));
     }
 
     #[test]

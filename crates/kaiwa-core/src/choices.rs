@@ -1,5 +1,5 @@
 //! The steps the settings offer for values that are no learning rule of their own: text
-//! size, daily goal, unloading the speech models. Each list is defined here once; the store
+//! size, daily goal, unloading the speech models, keeping recordings, the reminder. Each list is defined here once; the store
 //! keeps its limits and defaults to them, the profile view passes them to the page.
 
 /// The text sizes the settings offer (/LL202/).
@@ -11,3 +11,10 @@ pub const GOAL_STEPS: [u32; 5] = [3, 5, 10, 15, 20];
 /// The idle times the settings offer for unloading the speech models, in minutes; `None`
 /// keeps them (/LL012/).
 pub const UNLOAD_STEPS: [Option<u32>; 4] = [Some(5), Some(10), Some(30), None];
+
+/// The days the settings offer for keeping recordings; `None` keeps none (/LF712/).
+pub const KEEP_STEPS: [Option<u32>; 3] = [None, Some(7), Some(30)];
+
+/// The reminder times the settings offer, in minutes after midnight (8:00, 12:30, 19:00);
+/// `None` is off.
+pub const REMINDER_STEPS: [Option<u32>; 4] = [None, Some(480), Some(750), Some(1140)];

@@ -1,8 +1,10 @@
 //! The settings and the small profile actions (Lastenheft /LF202/, /LF602/, /LF712/): the
 //! limits of each setting and what a change sets off live here, so no front end repeats them.
-//! An unknown key or a value that does not parse leaves the profile as it is.
+//! An unknown key, a value that does not parse or one that is not among the steps of
+//! `kaiwa_core::choices` leaves the profile as it is.
 
 use kaiwa_core::Event;
+use kaiwa_core::choices::{GOAL_STEPS, KEEP_STEPS, REMINDER_STEPS, UNLOAD_STEPS};
 use kaiwa_core::clock::Moment;
 use kaiwa_core::learner::Skill;
 use kaiwa_core::progress::DailyGoal;
@@ -13,8 +15,6 @@ use crate::Backend;
 use crate::journal::{self, JournalError};
 use crate::keys::Key;
 
-const GOAL_MIN_MINUTES: u32 = 1;
-const GOAL_MAX_MINUTES: u32 = 120;
 /// The highest style: 0 system, 1 Kante, 2 Kante Light.
 const STYLE_MAX: u8 = 2;
 const LANG_EN: &str = "en";
@@ -27,6 +27,15 @@ pub(crate) fn text_scale_steps() -> Vec<f64> {
         .iter()
         .map(|s| (f64::from(*s) * 100.0).round() / 100.0)
         .collect()
+}
+
+/// The step a value names: "" is `None`, a number is `Some` of it. `None` outside the steps.
+fn step_of(value: &str, steps: &[Option<u32>]) -> Option<Option<u32>> {
+    let step = match value {
+        "" => None,
+        _ => Some(value.parse().ok()?),
+    };
+    steps.contains(&step).then_some(step)
 }
 
 /// The "yes" a switch is stored with.
@@ -85,8 +94,8 @@ fn apply_look(p: &mut Profile, key: Key, value: &str) -> bool {
 fn apply_rest(p: &mut Profile, key: Key, value: &str) {
     match key {
         Key::Goal => {
-            if let Ok(m) = value.parse::<u32>() {
-                p.daily_goal = DailyGoal::Minutes(m.clamp(GOAL_MIN_MINUTES, GOAL_MAX_MINUTES));
+            if let Some(m) = value.parse().ok().filter(|m| GOAL_STEPS.contains(m)) {
+                p.daily_goal = DailyGoal::Minutes(m);
             }
         }
         Key::EndPause => {
@@ -94,9 +103,21 @@ fn apply_rest(p: &mut Profile, key: Key, value: &str) {
                 p.end_pause_secs = kaiwa_core::turn_end::clamp_pause(s);
             }
         }
-        Key::Reminder => p.reminder = value.parse().ok(),
-        Key::UnloadAfter => p.unload_after_min = value.parse().ok(),
-        Key::KeepRecordings => p.keep_recordings_days = value.parse().ok(),
+        Key::Reminder => {
+            if let Some(m) = step_of(value, &REMINDER_STEPS) {
+                p.reminder = m;
+            }
+        }
+        Key::UnloadAfter => {
+            if let Some(m) = step_of(value, &UNLOAD_STEPS) {
+                p.unload_after_min = m;
+            }
+        }
+        Key::KeepRecordings => {
+            if let Some(d) = step_of(value, &KEEP_STEPS) {
+                p.keep_recordings_days = d;
+            }
+        }
         Key::TutorProvider => set_provider(p, value),
         // A device id from the microphone list; "" is the default.
         Key::Microphone => p.microphone = (!value.is_empty()).then(|| value.to_string()),
@@ -310,15 +331,6 @@ mod tests {
     }
 
     #[test]
-    fn the_goal_stays_between_one_and_120_minutes() {
-        let b = backend("goal");
-        assert_eq!(set(&b, "goal", "0").daily_goal, DailyGoal::Minutes(1));
-        assert_eq!(set(&b, "goal", "999").daily_goal, DailyGoal::Minutes(120));
-        assert_eq!(set(&b, "goal", "20").daily_goal, DailyGoal::Minutes(20));
-        assert_eq!(set(&b, "goal", "x").daily_goal, DailyGoal::Minutes(20));
-    }
-
-    #[test]
     fn a_new_goal_applies_to_today_and_later_days_only() {
         let b = backend("goal-today");
         let today = T0.day();
@@ -326,10 +338,10 @@ mod tests {
         for d in [yesterday, today] {
             b.store.put_day(d, &DayRecord::default()).unwrap();
         }
-        set(&b, "goal", "30");
+        set(&b, "goal", "15");
         let days = b.store.days().unwrap();
-        assert_eq!(days[&today].goal, Some(DailyGoal::Minutes(30)));
-        assert_ne!(days[&yesterday].goal, Some(DailyGoal::Minutes(30)));
+        assert_eq!(days[&today].goal, Some(DailyGoal::Minutes(15)));
+        assert_ne!(days[&yesterday].goal, Some(DailyGoal::Minutes(15)));
     }
 
     #[test]
@@ -366,11 +378,6 @@ mod tests {
         );
         assert_eq!(set(&b, "goal", "3").daily_goal, DailyGoal::Minutes(3));
         let goals = kaiwa_core::choices::GOAL_STEPS;
-        assert!(
-            goals
-                .iter()
-                .all(|g| (GOAL_MIN_MINUTES..=GOAL_MAX_MINUTES).contains(g))
-        );
 
         // A new profile starts on a step, and the view shows it.
         assert!(kaiwa_store::UNLOAD_STEPS.contains(&kaiwa_store::DEFAULT_UNLOAD));
@@ -443,7 +450,7 @@ mod tests {
         assert_eq!(set(&b, "reminder", "480").reminder, Some(480));
         assert_eq!(set(&b, "reminder", "").reminder, None);
         assert_eq!(set(&b, "unloadAfter", "5").unload_after_min, Some(5));
-        assert_eq!(set(&b, "unloadAfter", "never").unload_after_min, None);
+        assert_eq!(set(&b, "unloadAfter", "").unload_after_min, None);
         assert_eq!(
             set(&b, "microphone", "mic-1").microphone.as_deref(),
             Some("mic-1")
