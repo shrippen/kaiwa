@@ -28,9 +28,8 @@ use migrations::MIGRATIONS;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
-/// The export format; 2 names the tutor by its preset (migration 3), 3 adds the monthly
-/// costs (V-04). An export of format 1 is read with [`tutor_ids_3`], one of format 2 has no
-/// costs.
+/// The export format; 2 named the tutor by its preset (migration 3), 3 added the monthly
+/// costs (V-04). Only the current format is read (no release yet).
 pub const EXPORT_SCHEMA: &str = "kaiwa-export/3";
 
 /// The device state of a month's costs is `cost.<year>-<month>`; the export keeps the months.
@@ -183,24 +182,6 @@ pub struct Profile {
     /// default, and so is a device that is gone.
     #[serde(default)]
     pub microphone: Option<String>,
-}
-
-/// A profile from before `feedback_source` (in the database or an export). Any amount but
-/// "little" was a pick. "little" was the fixed default, and nothing tells a real placement from
-/// a skipped one reliably: a skip sets only `placed`, and every talk moves the model on. So
-/// "little" stays the default; a new placement sets it by level, as for every profile.
-fn migrate_feedback_source(profile: &mut serde_json::Value) {
-    let Some(o) = profile.as_object_mut() else {
-        return;
-    };
-    if o.contains_key("feedback_source") {
-        return;
-    }
-    let source = match o.get("feedback").and_then(|f| f.as_str()) {
-        Some("normal" | "much") => FeedbackSource::Chosen,
-        _ => FeedbackSource::Default,
-    };
-    o.insert("feedback_source".into(), serde_json::json!(source));
 }
 
 fn yes() -> bool {
@@ -410,19 +391,6 @@ fn array<'a>(v: &'a serde_json::Value, key: &str) -> Result<&'a Vec<serde_json::
         .ok_or_else(|| StoreError::WrongFormat(key.into()))
 }
 
-/// Migration 3 for a profile outside the database (an export of format 1): "openai" was any
-/// OpenAI-compatible server, Ollama on this computer without a server.
-fn tutor_ids_3(profile: &mut serde_json::Value) {
-    // An export from before the tutor setting (14.10.2026) has none; it stays missing.
-    let Some(t) = profile.get_mut("tutor") else {
-        return;
-    };
-    if t["provider"] == "openai" {
-        let base = t["base_url"].as_str().unwrap_or_default();
-        t["provider"] = if base.is_empty() { "ollama" } else { "custom" }.into();
-    }
-}
-
 /// Migration 2: unit ids before → after (scenario ids carry the unit id as prefix). Frozen;
 /// one pass per text, so n5-13 → n5-03 and n5-03 → n5-04 do not chain.
 const UNIT_IDS_2: &[(&str, &str)] = &[
@@ -566,10 +534,9 @@ impl Store {
     pub fn profile(&self) -> Result<Profile> {
         let raw: Option<serde_json::Value> =
             self.get_json("SELECT value FROM settings WHERE key = ?1", "profile")?;
-        let Some(mut v) = raw else {
+        let Some(v) = raw else {
             return Ok(Profile::default());
         };
-        migrate_feedback_source(&mut v);
         Ok(serde_json::from_value(v)?)
     }
 
@@ -1355,18 +1322,10 @@ impl Store {
 
     /// Reads an export into this (new, empty) profile.
     pub fn import(&self, v: &serde_json::Value) -> Result<()> {
-        let mut profile = v["profile"].clone();
-        let mut costs_in_file = true;
-        match v["schema"].as_str() {
-            Some(EXPORT_SCHEMA) => {}
-            Some("kaiwa-export/2") => costs_in_file = false,
-            Some("kaiwa-export/1") => {
-                costs_in_file = false;
-                tutor_ids_3(&mut profile);
-            }
-            _ => return Err(StoreError::WrongFormat(v["schema"].to_string())),
+        if v["schema"].as_str() != Some(EXPORT_SCHEMA) {
+            return Err(StoreError::WrongFormat(v["schema"].to_string()));
         }
-        migrate_feedback_source(&mut profile);
+        let profile = v["profile"].clone();
         let empty: i64 = self
             .db
             .query_row("SELECT COUNT(*) FROM sessions", [], |r| r.get(0))?;
@@ -1421,18 +1380,16 @@ impl Store {
             self.add_dispute(&serde_json::from_value(d.clone())?)?;
         }
         // A placement may have booked costs before the import: the file's month adds to them.
-        if costs_in_file {
-            let wrong = || StoreError::WrongFormat("costs".into());
-            for (month, m) in v["costs"].as_object().ok_or_else(wrong)? {
-                let add: CostMonth = serde_json::from_value(m.clone()).map_err(|_| wrong())?;
-                if !is_month_key(month) {
-                    return Err(wrong());
-                }
-                let key = format!("{COST_STATE_PREFIX}{month}");
-                let mut sum: CostMonth = self.state_value(&key)?.unwrap_or_default();
-                sum.add(&add);
-                self.set_state_value(&key, &sum)?;
+        let wrong = || StoreError::WrongFormat("costs".into());
+        for (month, m) in v["costs"].as_object().ok_or_else(wrong)? {
+            let add: CostMonth = serde_json::from_value(m.clone()).map_err(|_| wrong())?;
+            if !is_month_key(month) {
+                return Err(wrong());
             }
+            let key = format!("{COST_STATE_PREFIX}{month}");
+            let mut sum: CostMonth = self.state_value(&key)?.unwrap_or_default();
+            sum.add(&add);
+            self.set_state_value(&key, &sum)?;
         }
         self.set_state_value(IMPORTED_STATE, &true)?;
         tx.commit()?;

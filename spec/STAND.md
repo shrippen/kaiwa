@@ -218,7 +218,6 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
     - Kosten: Zwei Prozesse auf einem Profil (zweite App, später Plasmoid) können das Limit zusammen doppelt ausgeben (die Buchung selbst ist seit dem Fix eine Transaktion).
     - Erinnerung: „Später“ über Mitternacht verschiebt die Erinnerung auf den nächsten Tag (wirkt erst mit M4).
     - Nachschlagen: IPADIC liefert für かって/よんだ die Grundform かつ/よぶ; ohne Beugungsform im `LineWord` nicht zu lösen. Noch Zwillinge (auch vor #114): こと → 琴, そう/よう, と als „if“ statt „with“. IPADIC trennt こうちゃ in こう + ちゃ; ちゃ zeigt dann ては. じゃ für das Orts-では (ここじゃ) zeigt die Kopula „be; is“.
-    - Export: Exporte im Format 1 vom 9. bis 14.10.2026 tragen alte Einheiten-Ids (nur Testdaten).
 14. **Aus den Reviews der Nacht zum 17.11., offen:**
     - Die Gesprächsseite holt keine Hintergrundfehler ab: Ein gewählter Tutor ohne Schlüssel heißt dort „kein Tutor“, die Hauptseiten sagen nach dem Gespräch, warum (`ARCHITECTURE.md`).
     - Profilwechsel und neues Profil zeigen bei einem Fehler den englischen Prüftext aus `profiles.rs`.
