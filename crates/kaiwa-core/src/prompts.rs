@@ -2,6 +2,7 @@
 //! the wording is tried against real models in the owner's local test, not in CI.
 
 use crate::difficulty::{Difficulty, Knob};
+use crate::jlpt::Jlpt;
 use crate::scenario::{Register, Scenario};
 
 fn register_words(r: Register) -> &'static str {
@@ -29,12 +30,7 @@ fn jlpt(unit: Option<&str>, own: Option<f64>) -> &str {
     }
     match own {
         None => "N5/N4",
-        // Up to n5, up to n4, n3, n2, beyond.
-        Some(l) if l < 3.5 => "N5",
-        Some(l) if l < 5.5 => "N4",
-        Some(l) if l < 6.5 => "N3",
-        Some(l) if l < 7.5 => "N2",
-        Some(_) => "N1",
+        Some(l) => Jlpt::of(l).name(),
     }
 }
 

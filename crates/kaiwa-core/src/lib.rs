@@ -13,6 +13,7 @@ pub mod difficulty;
 pub mod event;
 pub mod feedback;
 pub mod grammar;
+pub mod jlpt;
 pub mod learner;
 pub mod placement;
 pub mod progress;

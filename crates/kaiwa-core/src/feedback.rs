@@ -4,6 +4,7 @@ use kaiwa_ai::{Correction, Severity};
 use serde::{Deserialize, Serialize};
 
 use crate::diff::{Part, diff};
+use crate::jlpt::Jlpt;
 
 /// How much feedback the learner wants (/LF304/).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -21,14 +22,41 @@ impl Amount {
     /// The amount that fits a speaking level on the learner model's scale
     /// ([`crate::learner::LEVELS`]): up to N5 little, N4 normal, from N3 much (V-02).
     pub fn for_level(level: f64) -> Self {
-        // Same bands as the level the characters hear (`prompts::jlpt`): below n4_low is N5.
-        if level < 3.5 {
-            return Amount::Little;
+        Self::for_jlpt(Jlpt::of(level))
+    }
+
+    fn for_jlpt(jlpt: Jlpt) -> Self {
+        match jlpt {
+            Jlpt::N5 => Amount::Little,
+            Jlpt::N4 => Amount::Normal,
+            _ => Amount::Much,
         }
-        if level < 5.5 {
-            return Amount::Normal;
+    }
+
+    /// The levels a placement at this amount covers, in the UI language: "up to N5", "N4",
+    /// "N3 and up".
+    pub fn level_words(self, lang: &str) -> String {
+        let de = lang != "en";
+        let own: Vec<Jlpt> = Jlpt::ALL
+            .into_iter()
+            .filter(|j| Self::for_jlpt(*j) == self)
+            .collect();
+        let (Some(first), Some(last)) = (own.first(), own.last()) else {
+            return String::new();
+        };
+
+        // The easiest level opens the range, the hardest closes it.
+        if *first == Jlpt::ALL[0] {
+            return format!("{} {}", if de { "bis" } else { "up to" }, last.name());
         }
-        Amount::Much
+        if first == last {
+            return first.name().into();
+        }
+        if de {
+            format!("ab {}", first.name())
+        } else {
+            format!("{} and up", first.name())
+        }
     }
 
     /// The mildest severity still shown.
@@ -196,6 +224,16 @@ mod tests {
         ] {
             assert_eq!(Amount::for_level(level), amount, "{level}");
         }
+    }
+
+    #[test]
+    fn the_amount_names_its_levels() {
+        let words = |a: Amount, lang| a.level_words(lang);
+        assert_eq!(words(Amount::Little, "de"), "bis N5");
+        assert_eq!(words(Amount::Little, "en"), "up to N5");
+        assert_eq!(words(Amount::Normal, "de"), "N4");
+        assert_eq!(words(Amount::Much, "de"), "ab N3");
+        assert_eq!(words(Amount::Much, "en"), "N3 and up");
     }
 
     fn c(severity: Severity, better: &str) -> Correction {
