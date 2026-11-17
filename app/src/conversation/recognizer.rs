@@ -2,8 +2,8 @@
 
 use cxx_qt::{CxxQtThread, CxxQtType};
 use cxx_qt_lib::QString;
+use kaiwa_backend::Lang;
 use kaiwa_backend::ears::{self, Recognition};
-use kaiwa_core::Lang;
 
 use super::{ERROR, READY, SPEAKING, qobject};
 

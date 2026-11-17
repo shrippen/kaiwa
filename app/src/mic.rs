@@ -58,9 +58,9 @@ use std::time::Instant;
 
 use cxx_qt::{CxxQtType, Threading};
 use cxx_qt_lib::QString;
+use kaiwa_backend::Lang;
 use kaiwa_backend::ears::{self, Clip, Hands, Mic, Recognition};
 use kaiwa_backend::voice::Playback;
-use kaiwa_core::Lang;
 use serde_json::json;
 
 use crate::state::state;

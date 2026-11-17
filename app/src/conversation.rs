@@ -209,8 +209,8 @@ use kaiwa_backend::flow::{self, Hear, Length, Talk, VoiceState};
 use kaiwa_backend::log::Log;
 use kaiwa_backend::placing::{self, Next, Placing, Stage};
 use kaiwa_backend::voice::{self, Debt, Enhance, Line, Owed, Pace, Said, Speaker};
-use kaiwa_backend::words;
-use kaiwa_core::{Input, Lang};
+use kaiwa_backend::{Lang, words};
+use kaiwa_core::Input;
 use serde_json::Value;
 
 use crate::state::{now, state};

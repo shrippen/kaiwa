@@ -53,6 +53,7 @@ use kaiwa_ai::ChatProvider;
 #[cfg(any(test, feature = "demo"))]
 use kaiwa_ai::mock::MockProvider;
 
+pub use kaiwa_core::Lang;
 use kaiwa_core::Scenario;
 use kaiwa_core::clock::Moment;
 use kaiwa_core::curriculum::Curriculum;

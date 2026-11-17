@@ -139,11 +139,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use cxx_qt::Threading;
 
 use cxx_qt_lib::QString;
+use kaiwa_backend::Lang;
 use kaiwa_backend::Trouble;
 use kaiwa_backend::models::{self, Fetch};
 use kaiwa_backend::settings::{Felt, SettingError};
 use kaiwa_backend::words;
-use kaiwa_core::Lang;
 use serde_json::json;
 
 use crate::state::views;
