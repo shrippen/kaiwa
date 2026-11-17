@@ -97,11 +97,12 @@ A change that needs more places than its row lists is a finding for the next aud
 - `kaiwa-sim` sets up and reads test state through the backend's `seed` (feature `sim`,
   only the sim turns it on) and still depends on `kaiwa-store`, `kaiwa-core`, `kaiwa-ai`
   and `kaiwa-lang` directly for its own checks. Talks on
-  recorded answers start in `talk.rs` from the backend's scenario and recorded tutor; the
-  free-talk check in `engine.rs` and the day simulation (`days.rs`) still build a `Session`
+  recorded answers take only scenario and recorded tutor from the backend (`talk.rs`);
+  help, turns and translation then run on a bare core `Session` (`run.rs`), not through
+  the backend's flow. `AUDIT.md`, finding 4. The free-talk check in `engine.rs` and the day simulation (`days.rs`) still build a `Session`
   with their own tutor. The load-time check (`fast`, `profile.rs`) still opens a profile in
   `kaiwa-store`: it needs `batch` and a timed load. The dispute check reads the QA list
-  through `seed`, which no backend command offers. Rest of finding 6.
+  through `seed`, which no backend command offers.
 - The conversation page does not take the backend's background troubles: a chosen tutor
   that cannot be set up (no key) reads there as "no tutor"; the main pages say why after
   the talk. Found in the review of PR 167.
@@ -109,11 +110,17 @@ A change that needs more places than its row lists is a finding for the next aud
   `models`), but the app holds them and drives when to load, listen, speak and unload. For
   `kaiwad` (M4) that flow still has to move into the backend.
 - `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
-  `turn_xp`. `AUDIT.md`, "Seit dem letzten Audit", finding 4.
+  `turn_xp`.
 - Some persona checks still read source text: scans of all pages for strings, names,
   handlers and gamification text, the palette's colours, the voice's pace in
   `app/src/conversation.rs` and the one file that downloads (`kaiwa-backend/src/models.rs`).
-  What a page does is checked in QML tests (`app/qml/tests`). `AUDIT.md`, "Seit dem letzten Audit", finding 8.
+  What a page does is checked in QML tests (`app/qml/tests`).
+- The store still decides some learning rules itself: what a new placement resets
+  (difficulty, the week's comparison, the amount of corrections), when a gap counts as a
+  new break, and which daily goal a talk over midnight gets. `AUDIT.md`, finding 3.
+- The settings page keeps its own lists for the amount of corrections, how long
+  recordings are kept and the reminder times; the backend accepts any number for the
+  last two. `AUDIT.md`, finding 2.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
   then the app is the only front end and runs the backend in its own process. On that
   branch `kaiwad` drives microphone and recognition itself; M4 moves that into the
