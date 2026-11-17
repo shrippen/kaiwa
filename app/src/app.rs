@@ -142,11 +142,12 @@ use cxx_qt_lib::QString;
 use kaiwa_backend::Trouble;
 use kaiwa_backend::models::{self, Fetch};
 use kaiwa_backend::settings::{Felt, SettingError};
-use kaiwa_backend::transfer::ImportError;
+use kaiwa_backend::words;
 use serde_json::json;
 
 use crate::state::views;
 use crate::state::{now, state};
+use crate::util::append_notice;
 
 pub struct KaiwaAppRust {
     today: QString,
@@ -192,107 +193,59 @@ impl Default for KaiwaAppRust {
     }
 }
 
-const SPARE_DE: &str = "Das Profil ließ sich nicht öffnen, das geht gerade nicht. Lösche es in den Einstellungen („Profil löschen …“) oder wähle ein anderes Profil.";
-const SPARE_EN: &str = "The profile could not be opened, so this is not possible now. Delete it in the settings (“Delete profile …”) or pick another profile.";
-
 fn q(v: &serde_json::Value) -> QString {
     QString::from(&v.to_string())
 }
 
 impl qobject::KaiwaApp {
+    fn ui_lang(&self) -> String {
+        self.lang().to_string()
+    }
+
+    /// Adds `msg` below what the notice already says, once: a second failure does not wipe
+    /// the first.
+    fn add_notice(mut self: Pin<&mut Self>, msg: &str) {
+        let new = append_notice(&self.notice().to_string(), msg);
+        self.as_mut().set_notice(QString::from(&new));
+    }
+
+    /// Says what an action the learner just asked for came to. That replaces the notice: what
+    /// it said before is not about this action.
+    fn say_result(mut self: Pin<&mut Self>, msg: &str) {
+        self.as_mut().set_notice(QString::default());
+        self.add_notice(msg);
+    }
+
     /// Tells the learner the profile was left as it is (it could not be read or written).
-    fn say_unreadable(mut self: Pin<&mut Self>, e: &anyhow::Error) {
-        let msg = match self.lang().to_string() == "de" {
-            true => format!("Das Profil ließ sich nicht ändern, nichts geändert: {e}"),
-            false => format!("The profile could not be changed, nothing changed: {e}"),
-        };
-        self.as_mut().set_notice(QString::from(&msg));
+    fn say_unreadable(self: Pin<&mut Self>, e: &anyhow::Error) {
+        let msg = words::unreadable(e, &self.ui_lang());
+        self.add_notice(&msg);
     }
 
     /// Tells the learner why a change is refused while the stand-in profile runs.
-    fn say_spare(mut self: Pin<&mut Self>) {
-        let msg = match self.lang().to_string() == "de" {
-            true => SPARE_DE,
-            false => SPARE_EN,
-        };
-        self.as_mut().set_notice(QString::from(msg));
+    fn say_spare(self: Pin<&mut Self>) {
+        let msg = words::spare(&self.ui_lang());
+        self.add_notice(msg);
     }
 
     /// Tells the learner the setting is saved but its effect failed (today's goal, deleting
     /// recordings).
-    fn say_unapplied(mut self: Pin<&mut Self>, e: &anyhow::Error) {
-        let msg = match self.lang().to_string() == "de" {
-            true => format!("Gespeichert, aber nicht ganz umgesetzt: {e}"),
-            false => format!("Saved, but not fully applied: {e}"),
-        };
-        self.as_mut().set_notice(QString::from(&msg));
+    fn say_unapplied(self: Pin<&mut Self>, e: &anyhow::Error) {
+        let msg = words::unapplied(e, &self.ui_lang());
+        self.add_notice(&msg);
     }
 
     /// Tells the learner a page or the profile could not be loaded; what the page shows is
     /// then empty or the defaults.
     fn say_unloaded(self: Pin<&mut Self>, e: &anyhow::Error) {
-        let msg = match self.lang().to_string() == "de" {
-            true => format!("Das Profil ließ sich nicht vollständig laden: {e:#}"),
-            false => format!("The profile could not be loaded completely: {e:#}"),
-        };
+        let msg = words::unloaded(e, &self.ui_lang());
         self.add_notice(&msg);
     }
 
     /// Tells the learner what went wrong in the background (`Backend::take_troubles`).
     fn say_trouble(self: Pin<&mut Self>, t: &Trouble) {
-        let de = self.lang().to_string() == "de";
-        let msg = match (t, de) {
-            (Trouble::Unopened(e), true) => format!(
-                "Das Profil ließ sich nicht öffnen, die Datei bleibt unverändert. Alles, was jetzt geschieht, wird nicht gespeichert: {e:#}"
-            ),
-            (Trouble::Unopened(e), false) => format!(
-                "The profile could not be opened; the file is left as it is. Nothing done now is saved: {e:#}"
-            ),
-            (Trouble::Unpurged(e), true) => {
-                format!("Abgelaufene Aufnahmen ließen sich nicht löschen: {e}")
-            }
-            (Trouble::Unpurged(e), false) => {
-                format!("Expired recordings could not be deleted: {e}")
-            }
-            (Trouble::RecordingsKept(e), true) => {
-                format!("Die Aufnahmen ließen sich nicht löschen: {e:#}")
-            }
-            (Trouble::RecordingsKept(e), false) => {
-                format!("The recordings could not be deleted: {e:#}")
-            }
-            (Trouble::KeysKept(e), true) => {
-                format!("Der Schlüsselbund behält Schlüssel dieses Profils: {e}")
-            }
-            (Trouble::KeysKept(e), false) => {
-                format!("The keyring kept keys of this profile: {e}")
-            }
-            (Trouble::KeysMarkerLost(e), true) => format!(
-                "Die alten Schlüssel sind umgezogen, aber das Vermerken ist fehlgeschlagen; der nächste Start versucht es noch einmal: {e}"
-            ),
-            (Trouble::KeysMarkerLost(e), false) => {
-                format!("The old keys moved, but noting it failed; the next start tries again: {e}")
-            }
-            (Trouble::KeysUnmoved(e), true) => {
-                format!("Die alten Schlüssel blieben, wo sie waren: {e}")
-            }
-            (Trouble::KeysUnmoved(e), false) => {
-                format!("The old keys stayed where they were: {e}")
-            }
-        };
+        let msg = words::trouble(t, &self.ui_lang());
         self.add_notice(&msg);
-    }
-
-    /// Adds `msg` below what the notice already says (an action's own message stays), once.
-    fn add_notice(mut self: Pin<&mut Self>, msg: &str) {
-        let old = self.notice().to_string();
-        if old.contains(msg) {
-            return;
-        }
-        let new = match old.is_empty() {
-            true => msg.to_string(),
-            false => format!("{old}\n{msg}"),
-        };
-        self.as_mut().set_notice(QString::from(&new));
     }
 
     fn refresh(mut self: Pin<&mut Self>) {
@@ -394,8 +347,8 @@ impl qobject::KaiwaApp {
             let outcome = fetch.run(&stop, &progress);
             let _ = thread.queue(move |mut app| {
                 app.as_mut().set_download(QString::default());
-                let notice = outcome.text(&app.lang().to_string());
-                app.as_mut().set_notice(QString::from(&notice));
+                let notice = outcome.text(&app.ui_lang());
+                app.as_mut().say_result(&notice);
                 app.as_mut().refresh();
             });
         });
@@ -438,27 +391,17 @@ impl qobject::KaiwaApp {
         self.as_mut().refresh();
     }
 
-    fn export_profile(mut self: Pin<&mut Self>, file: &QString) {
+    fn export_profile(self: Pin<&mut Self>, file: &QString) {
         let result = state().export_to(&file.to_string(), now());
-        let de = self.lang().to_string() == "de";
-        self.as_mut().set_notice(QString::from(&match result {
-            Ok(file) if de => format!("Exportiert nach {}.", file.display()),
-            Ok(file) => format!("Exported to {}.", file.display()),
-            Err(e) if de => format!("Der Export ist fehlgeschlagen: {e}"),
-            Err(e) => format!("The export failed: {e}"),
-        }));
+        let msg = words::exported(&result, &self.ui_lang());
+        self.say_result(&msg);
     }
 
     fn delete_profile(mut self: Pin<&mut Self>) {
         self.as_mut().set_answer(QString::default());
         let result = state().wipe();
-        let de = self.lang().to_string() == "de";
-        self.as_mut().set_notice(QString::from(match (result, de) {
-            (Ok(()), true) => "Alle Daten dieses Profils sind gelöscht.".to_string(),
-            (Ok(()), false) => "All data of this profile is deleted.".to_string(),
-            (Err(e), true) => format!("Das Löschen ist fehlgeschlagen: {e}"),
-            (Err(e), false) => format!("Deleting failed: {e}"),
-        }));
+        let msg = words::wiped(&result, &self.ui_lang());
+        self.as_mut().say_result(&msg);
         self.as_mut().refresh();
     }
 
@@ -471,38 +414,16 @@ impl qobject::KaiwaApp {
                 let streak = st.profile().map(|p| p.gamification).unwrap_or(true);
                 (added, streak)
             };
-            // Say that it took, and until when: nothing else on the page shows a pause.
-            let de = self.lang().to_string() == "de";
-            self.as_mut().set_notice(QString::from(&match (added, de) {
-                (Ok(until), true) if streak => {
-                    let (_, m, d) = until.ymd();
-                    format!("Pause bis einschließlich {d}.{m}.: Die Serie bleibt so lange stehen.")
-                }
-                (Ok(until), true) => {
-                    let (_, m, d) = until.ymd();
-                    format!("Pause bis einschließlich {d}.{m}.")
-                }
-                (Ok(until), false) if streak => format!(
-                    "Paused up to and including {}: the streak holds until then.",
-                    until.iso()
-                ),
-                (Ok(until), false) => format!("Paused up to and including {}.", until.iso()),
-                (Err(e), true) => format!("Die Pause ließ sich nicht eintragen: {e}"),
-                (Err(e), false) => format!("The pause could not be set: {e}"),
-            }));
+            let msg = words::pause_set(&added, streak, &self.ui_lang());
+            self.as_mut().say_result(&msg);
         }
         self.as_mut().refresh();
     }
 
     fn stop_pause(mut self: Pin<&mut Self>) {
         let result = state().end_pause(now().day());
-        let de = self.lang().to_string() == "de";
-        self.as_mut().set_notice(QString::from(&match (result, de) {
-            (Ok(()), true) => "Die Pause ist beendet: Heute zählt wieder.".to_string(),
-            (Ok(()), false) => "The pause is over: today counts again.".to_string(),
-            (Err(e), true) => format!("Die Pause ließ sich nicht beenden: {e}"),
-            (Err(e), false) => format!("The pause could not be ended: {e}"),
-        }));
+        let msg = words::pause_ended(&result, &self.ui_lang());
+        self.as_mut().say_result(&msg);
         self.as_mut().refresh();
     }
 
@@ -514,22 +435,10 @@ impl qobject::KaiwaApp {
         };
         let result = result.map(|_| ());
         // The import brings its own UI language: say it in the one the profile has now.
+        self.as_mut().set_notice(QString::default());
         self.as_mut().refresh();
-        let de = self.lang().to_string() == "de";
-        self.as_mut().set_notice(QString::from(&match (result, de) {
-            (Ok(()), true) => format!("Importiert aus {file}."),
-            (Ok(()), false) => format!("Imported from {file}."),
-            (Err(ImportError::Spare), true) => SPARE_DE.to_string(),
-            (Err(ImportError::Spare), false) => SPARE_EN.to_string(),
-            (Err(ImportError::NotEmpty), true) => "Der Import geht nur in ein leeres Profil. Lege oben ein neues Profil an und importiere dort.".to_string(),
-            (Err(ImportError::NotEmpty), false) => "An import needs an empty profile. Add a new profile above and import there.".to_string(),
-            (Err(ImportError::NotAnExport), true) => format!("{file} ist kein Export von Kaiwa."),
-            (Err(ImportError::NotAnExport), false) => format!("{file} is not an export of Kaiwa."),
-            (Err(ImportError::Unreadable(e)), true) => format!("{file} ließ sich nicht lesen: {e}"),
-            (Err(ImportError::Unreadable(e)), false) => format!("{file} could not be read: {e}"),
-            (Err(ImportError::Broken(e)), true) => format!("Der Import ist fehlgeschlagen, das Profil ist unverändert: {e}"),
-            (Err(ImportError::Broken(e)), false) => format!("The import failed, the profile is unchanged: {e}"),
-        }));
+        let msg = words::imported(&result, &file, &self.ui_lang());
+        self.add_notice(&msg);
     }
 
     fn skip_unit(mut self: Pin<&mut Self>, unit: &QString) {
@@ -550,7 +459,8 @@ impl qobject::KaiwaApp {
             st.open_profile(&file.to_string()).map(|b| *st = b)
         };
         if let Err(e) = result {
-            self.as_mut().set_notice(QString::from(&format!("{e:#}")));
+            let msg = format!("{e:#}");
+            self.as_mut().add_notice(&msg);
         }
         self.as_mut().refresh();
     }
@@ -568,37 +478,28 @@ impl qobject::KaiwaApp {
             })
         };
         if let Err(e) = result {
-            self.as_mut().set_notice(QString::from(&format!("{e:#}")));
+            let msg = format!("{e:#}");
+            self.as_mut().add_notice(&msg);
         }
         self.as_mut().refresh();
     }
 
     fn store_key(mut self: Pin<&mut Self>, key: &QString) {
-        let de = self.lang().to_string() == "de";
         // Only a provider that takes a key has a keyring entry.
         let Some(result) = state().store_key(&key.to_string()) else {
             return;
         };
-        let msg = match (result, de) {
-            (Ok(()), true) => "Der Schlüssel liegt im Schlüsselbund.".to_string(),
-            (Ok(()), false) => "The key is in the keyring.".to_string(),
-            (Err(e), _) => kaiwa_backend::views::key_error(&e, if de { "de" } else { "en" }),
-        };
-        self.as_mut().set_notice(QString::from(&msg));
+        let msg = words::key_stored(&result, &self.ui_lang());
+        self.as_mut().say_result(&msg);
         self.as_mut().refresh();
     }
 
     fn remove_key(mut self: Pin<&mut Self>) {
-        let de = self.lang().to_string() == "de";
         let Some(result) = state().remove_key() else {
             return;
         };
-        let msg = match (result, de) {
-            (Ok(()), true) => "Der Schlüssel ist aus dem Schlüsselbund entfernt.".to_string(),
-            (Ok(()), false) => "The key is removed from the keyring.".to_string(),
-            (Err(e), _) => kaiwa_backend::views::key_error(&e, if de { "de" } else { "en" }),
-        };
-        self.as_mut().set_notice(QString::from(&msg));
+        let msg = words::key_removed(&result, &self.ui_lang());
+        self.as_mut().say_result(&msg);
         self.as_mut().refresh();
     }
 

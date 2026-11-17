@@ -38,6 +38,7 @@ mod trouble;
 pub use trouble::Trouble;
 pub mod views;
 pub mod voice;
+pub mod words;
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -597,7 +598,10 @@ impl Backend {
         match kaiwa_ai::provider_from(&self.keys, self.meter.clone(), self.tutor_env()) {
             Ok(Some(p)) => return (p, false),
             Ok(None) => {}
-            Err(e) => eprintln!("kaiwa: {e}"),
+            Err(e) => {
+                eprintln!("kaiwa: {e}");
+                self.trouble(Trouble::TutorUnready(e));
+            }
         }
         #[cfg(any(test, feature = "demo"))]
         {

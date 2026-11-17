@@ -102,11 +102,12 @@ A change that needs more places than its row lists is a finding for the next aud
   with their own tutor. The load-time check (`fast`, `profile.rs`) still opens a profile in
   `kaiwa-store`: it needs `batch` and a timed load. The dispute check reads the QA list
   through `seed`, which no backend command offers. Rest of finding 6.
+- The conversation page does not take the backend's background troubles: a chosen tutor
+  that cannot be set up (no key) reads there as "no tutor"; the main pages say why after
+  the talk. Found in the review of PR 167.
 - Microphone, recognition, voice and downloads are backend types (`ears`, `voice`,
   `models`), but the app holds them and drives when to load, listen, speak and unload. For
   `kaiwad` (M4) that flow still has to move into the backend.
-- One failure is still only logged: an unreadable tutor key, which then looks like no
-  tutor (`lib.rs`, `provider`). Found in the review of PR 153.
 - `kaiwa-sim`'s day simulation still adds up points per turn itself instead of the core's
   `turn_xp`. `AUDIT.md`, "Seit dem letzten Audit", finding 4.
 - Some persona checks still read source text: scans of all pages for strings, names,
