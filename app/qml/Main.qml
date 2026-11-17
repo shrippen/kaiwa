@@ -101,6 +101,7 @@ Kirigami.ApplicationWindow {
                 kaiwa.refresh()
                 root.pageStack.pop()
             }
+            onShowSettings: tabs.currentIndex = root.views.indexOf("settings")
         }
     }
 
