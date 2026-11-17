@@ -376,6 +376,9 @@ mod tests {
             }
         );
         assert_eq!(card_kind("えきまで", None).0, ItemKind::Word);
+        // The edge: six characters are a word, seven a phrase.
+        assert_eq!(card_kind("ともだちです", None).0, ItemKind::Word);
+        assert_eq!(card_kind("ともだちでした", None).0, ItemKind::Phrase);
         assert_eq!(card_kind("ありがとうございます", None).0, ItemKind::Phrase);
     }
 
