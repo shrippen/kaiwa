@@ -362,6 +362,8 @@ impl qobject::KaiwaApp {
         let edited = state().set_setting(&key.to_string(), &value.to_string(), now());
         match edited {
             Err(SettingError::NotSaved(e)) => self.as_mut().say_unreadable(&e),
+            // A key the page passes is always known: nothing changed, so say nothing.
+            Err(SettingError::Unknown) => {}
             Err(SettingError::NotApplied(e)) => self.as_mut().say_unapplied(&e),
             Err(SettingError::Spare) => self.as_mut().say_spare(),
             Ok(()) => {}

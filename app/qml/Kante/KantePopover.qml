@@ -15,7 +15,7 @@ import "."
  * side facing the point and a clear space around the point itself. `pointerSide` ("left" or
  * "right": the side of the card that bears the pointer; "" after `openAt`, and after `openAtPoint`
  * when there is no room for a pointer) says where it landed.
- * `openAtRect(item, rect, bounds, side)` (Kante 1.82, for Klappe) does the same beside a rectangle
+ * `openAtRect(item, rect, bounds, side)` (Kante 1.81, for Klappe) does the same beside a rectangle
  * of `item` (an element on a plan): right of it, else left, kept inside `bounds` (an Item, say the
  * plan; null: the window), the pointer at the rectangle's middle. `side` (`KantePopover.Side`
  * Auto, Right, Left) forces a side; `rectSlot(item, rect, bounds, side)` tells where the card

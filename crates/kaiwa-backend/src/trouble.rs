@@ -128,7 +128,7 @@ mod tests {
             value: "1".into(),
         };
         let folded = crate::journal::apply(&spare, &event, now);
-        assert!(matches!(folded, Err(crate::settings::SettingError::Spare)));
+        assert!(matches!(folded, Err(crate::journal::JournalError::Spare)));
 
         spare
             .store

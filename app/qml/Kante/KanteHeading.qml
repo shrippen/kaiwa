@@ -11,7 +11,7 @@ import "."
  *   Kante Light  the same section labels in theme colors, and the Rajdhani
  *           title for `pageTitle`; other headings stay the platform's.
  * `wrapMode` (1.68): a title breaks its lines in Kante too (one line and elided without it);
- * section labels stay one line beside their rule. A title follows `horizontalAlignment` (1.82);
+ * section labels stay one line beside their rule. A title follows `horizontalAlignment` (1.81);
  * a section label stays left, its rule after it.
  */
 Kirigami.Heading {
