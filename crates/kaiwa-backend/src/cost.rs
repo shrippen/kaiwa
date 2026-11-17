@@ -8,7 +8,7 @@ use kaiwa_store::COST_STATE_PREFIX;
 use serde_json::{Value, json};
 
 use crate::Backend;
-use crate::settings::SettingError;
+use crate::journal::JournalError;
 
 pub use kaiwa_store::CostMonth as Month;
 
@@ -51,11 +51,11 @@ impl Backend {
     }
 
     /// Stores the limit and re-arms the brake at once (/LF714/).
-    pub fn set_cost_limit(&self, limit: Option<u32>, now: Moment) -> Result<(), SettingError> {
+    pub fn set_cost_limit(&self, limit: Option<u32>, now: Moment) -> Result<(), JournalError> {
         self.store
             .update_profile(|p| p.cost_limit_cents = limit)
-            .map_err(|e| SettingError::NotSaved(e.into()))?;
-        self.arm_brake(now).map_err(SettingError::NotApplied)
+            .map_err(|e| JournalError::NotSaved(e.into()))?;
+        self.arm_brake(now).map_err(JournalError::NotApplied)
     }
 
     /// Whether the limit is reached (a new talk with a cloud tutor would be refused).
@@ -193,7 +193,7 @@ mod tests {
 
         let r = b.set_cost_limit(Some(50), now);
 
-        assert!(matches!(r, Err(SettingError::NotApplied(_))), "{r:?}");
+        assert!(matches!(r, Err(JournalError::NotApplied(_))), "{r:?}");
         assert_eq!(b.store.profile().unwrap().cost_limit_cents, Some(50));
     }
 

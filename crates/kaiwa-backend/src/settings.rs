@@ -10,7 +10,8 @@ use kaiwa_store::{Profile, Script};
 use serde_json::json;
 
 use crate::Backend;
-use crate::journal::{self, DEVICE_SETTINGS};
+use crate::journal::{self, JournalError};
+use crate::keys::Key;
 
 const GOAL_MIN_MINUTES: u32 = 1;
 const GOAL_MAX_MINUTES: u32 = 120;
@@ -58,16 +59,16 @@ fn set_provider(p: &mut Profile, value: &str) {
 }
 
 /// How the interface looks and what it shows. `false` when `key` is not one of these.
-fn apply_look(p: &mut Profile, key: &str, value: &str) -> bool {
+fn apply_look(p: &mut Profile, key: Key, value: &str) -> bool {
     match key {
-        "gamification" => p.gamification = on(value),
-        "moraHints" => p.mora_hints = on(value),
-        "handsFree" => p.hands_free = on(value),
-        "script" => p.script = script_of(value),
-        "style" => p.style = value.parse().unwrap_or(0).min(STYLE_MAX),
-        "uiLang" => p.ui_lang = if value == LANG_EN { LANG_EN } else { LANG_DE }.into(),
-        "name" => p.name = value.to_string(),
-        "textScale" => {
+        Key::Gamification => p.gamification = on(value),
+        Key::MoraHints => p.mora_hints = on(value),
+        Key::HandsFree => p.hands_free = on(value),
+        Key::Script => p.script = script_of(value),
+        Key::Style => p.style = value.parse().unwrap_or(0).min(STYLE_MAX),
+        Key::UiLang => p.ui_lang = if value == LANG_EN { LANG_EN } else { LANG_DE }.into(),
+        Key::Name => p.name = value.to_string(),
+        Key::TextScale => {
             if let Ok(s) = value.parse::<f32>() {
                 p.text_scale = s.clamp(
                     kaiwa_store::TEXT_SCALE_STEPS[0],
@@ -81,26 +82,26 @@ fn apply_look(p: &mut Profile, key: &str, value: &str) -> bool {
 }
 
 /// Practice, timing, privacy and the tutor; anything else is ignored.
-fn apply_rest(p: &mut Profile, key: &str, value: &str) {
+fn apply_rest(p: &mut Profile, key: Key, value: &str) {
     match key {
-        "goal" => {
+        Key::Goal => {
             if let Ok(m) = value.parse::<u32>() {
                 p.daily_goal = DailyGoal::Minutes(m.clamp(GOAL_MIN_MINUTES, GOAL_MAX_MINUTES));
             }
         }
-        "endPause" => {
+        Key::EndPause => {
             if let Ok(s) = value.parse::<f32>() {
                 p.end_pause_secs = kaiwa_core::turn_end::clamp_pause(s);
             }
         }
-        "reminder" => p.reminder = value.parse().ok(),
-        "unloadAfter" => p.unload_after_min = value.parse().ok(),
-        "keepRecordings" => p.keep_recordings_days = value.parse().ok(),
-        "tutorProvider" => set_provider(p, value),
+        Key::Reminder => p.reminder = value.parse().ok(),
+        Key::UnloadAfter => p.unload_after_min = value.parse().ok(),
+        Key::KeepRecordings => p.keep_recordings_days = value.parse().ok(),
+        Key::TutorProvider => set_provider(p, value),
         // A device id from the microphone list; "" is the default.
-        "microphone" => p.microphone = (!value.is_empty()).then(|| value.to_string()),
-        "tutorModel" => p.tutor.model = value.trim().to_string(),
-        "tutorBase" => p.tutor.base_url = value.trim().to_string(),
+        Key::Microphone => p.microphone = (!value.is_empty()).then(|| value.to_string()),
+        Key::TutorModel => p.tutor.model = value.trim().to_string(),
+        Key::TutorBase => p.tutor.base_url = value.trim().to_string(),
         _ => {}
     }
 }
@@ -121,6 +122,18 @@ pub enum SettingError {
     NotApplied(anyhow::Error),
     /// The profile could not be opened; the setting would delete recordings of the real one.
     Spare,
+    /// No setting has that name; nothing is journaled or changed.
+    Unknown,
+}
+
+impl From<JournalError> for SettingError {
+    fn from(e: JournalError) -> Self {
+        match e {
+            JournalError::NotSaved(e) => Self::NotSaved(e),
+            JournalError::NotApplied(e) => Self::NotApplied(e),
+            JournalError::Spare => Self::Spare,
+        }
+    }
 }
 
 impl Backend {
@@ -128,38 +141,41 @@ impl Backend {
     /// reminder, unloadAfter, costLimit, moraHints, handsFree, textScale, keepRecordings,
     /// name, tutorProvider (a preset id), tutorModel, tutorBase, microphone.
     pub fn set_setting(&self, key: &str, value: &str, now: Moment) -> Result<(), SettingError> {
+        let Some(k) = Key::parse(key) else {
+            return Err(SettingError::Unknown);
+        };
+        // Refused before the journal: a refused change is no event.
+        self.spare_refuses(k)?;
+        if k.per_device() {
+            return Ok(self.change_setting(k, value, now)?);
+        }
         let event = Event::Setting {
             key: key.into(),
             value: value.into(),
         };
-        // Refused before the journal: a refused change is no event.
-        self.spare_refuses(key)?;
-        if DEVICE_SETTINGS.contains(&key) {
-            return self.change_setting(key, value, now);
-        }
-        journal::record(self, &event, now)
+        Ok(journal::record(self, &event, now)?)
     }
 
     /// The change itself; [`journal::apply`] calls it for the journal's events too.
     pub(crate) fn change_setting(
         &self,
-        key: &str,
+        key: Key,
         value: &str,
         now: Moment,
-    ) -> Result<(), SettingError> {
+    ) -> Result<(), JournalError> {
         // Again for a fold: the spare's recordings directory is the real profile's.
         self.spare_refuses(key)?;
         match key {
             // The brake follows the new limit at once (/LF714/).
-            "costLimit" => {
+            Key::CostLimit => {
                 self.set_cost_limit(value.parse().ok(), now)?;
             }
             // The pick is the learner's: a placement leaves it (V-02).
-            "feedback" => {
+            Key::Feedback => {
                 if let Ok(a) = serde_json::from_value(json!(value)) {
                     self.store
                         .set_feedback(a)
-                        .map_err(|e| SettingError::NotSaved(e.into()))?;
+                        .map_err(|e| JournalError::NotSaved(e.into()))?;
                 }
             }
             _ => self.edit_profile(key, value, now)?,
@@ -168,14 +184,14 @@ impl Backend {
     }
 
     /// On a spare, a change that would delete the real profile's recordings.
-    fn spare_refuses(&self, key: &str) -> Result<(), SettingError> {
-        if self.spare && key == "keepRecordings" {
-            return Err(SettingError::Spare);
+    fn spare_refuses(&self, key: Key) -> Result<(), JournalError> {
+        if self.spare && key == Key::KeepRecordings {
+            return Err(JournalError::Spare);
         }
         Ok(())
     }
 
-    fn edit_profile(&self, key: &str, value: &str, now: Moment) -> Result<(), SettingError> {
+    fn edit_profile(&self, key: Key, value: &str, now: Moment) -> Result<(), JournalError> {
         let p = self
             .store
             .update_profile(|p| {
@@ -183,11 +199,11 @@ impl Backend {
                     apply_rest(p, key, value);
                 }
             })
-            .map_err(|e| SettingError::NotSaved(e.into()))?;
-        let follow = |r: anyhow::Result<()>| r.map_err(SettingError::NotApplied);
+            .map_err(|e| JournalError::NotSaved(e.into()))?;
+        let follow = |r: anyhow::Result<()>| r.map_err(JournalError::NotApplied);
 
         // A day already begun is judged by the goal it ends with (/LF602/).
-        if key == "goal" {
+        if key == Key::Goal {
             follow(
                 self.store
                     .set_day_goal(now.day(), p.daily_goal)
@@ -196,7 +212,7 @@ impl Backend {
         }
 
         // Turning recordings off (or shortening the days) deletes them now (/LF712/).
-        if key == "keepRecordings" {
+        if key == Key::KeepRecordings {
             follow(self.purge_recordings(now).map(|_| ()))?;
         }
         Ok(())
@@ -437,7 +453,9 @@ mod tests {
     fn an_unknown_key_changes_nothing() {
         let b = backend("unknown");
         let before = b.store.profile().unwrap();
-        b.set_setting("colour", "red", T0).unwrap();
+        let r = b.set_setting("colour", "red", T0);
+        assert!(matches!(r, Err(SettingError::Unknown)), "{r:?}");
+        assert!(b.store.events().unwrap().is_empty(), "no event for it");
         assert_eq!(
             serde_json::to_value(&before).unwrap(),
             serde_json::to_value(b.store.profile().unwrap()).unwrap()
