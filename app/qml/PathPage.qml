@@ -3,29 +3,25 @@ import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import Kante
 
-// The learning path (Lastenheft /LF600/, /LF220/): units of the curriculum with their
-// scenarios and, where words are due, a review node. Done, now, open and locked differ in
-// sign and word, never only in colour; a locked node says what unlocks it. One section per
-// level, named „N5 · A1“ and oriented on JLPT and the JF Standard, never a JLPT course (Q-03).
+// The learning path (Lastenheft /LF600/, /LF220/): one group per unit of the curriculum, its
+// scenarios inside and, where words are due, the review in the same group. Done, next, open
+// and locked differ in sign and word, never only in colour; a locked unit says what unlocks
+// it, and the locked ones beyond the first three of a level fold into one button. One
+// section per level, named „N5 · A1“ and oriented on JLPT and the JF Standard, never a JLPT
+// course (Q-03). The view (kaiwa-backend `path`) does the grouping; this page only shows it.
 QQC2.ScrollView {
     id: page
     required property var kaiwa
     signal talk(string scenario)
     signal showTab(int index)
+    // This unit's due items, not all of them.
+    function review(unit) {
+        kaiwa.openReview(unit)
+        showTab(2)
+    }
     function t(de, en) { return kaiwa.lang === "en" ? en : de }
 
-    readonly property var nodes: kaiwa.path.length > 0 ? JSON.parse(kaiwa.path) : []
-    // The levels in path order, each with its nodes.
-    readonly property var levels: {
-        var out = []
-        for (var i = 0; i < nodes.length; i++) {
-            var l = nodes[i].level || ""
-            if (out.length === 0 || out[out.length - 1].level !== l)
-                out.push({ level: l, nodes: [] })
-            out[out.length - 1].nodes.push(nodes[i])
-        }
-        return out
-    }
+    readonly property var levels: kaiwa.path.length > 0 ? JSON.parse(kaiwa.path) : []
     readonly property var learner: kaiwa.learner.length > 0 ? JSON.parse(kaiwa.learner) : ({})
     contentWidth: availableWidth
 
@@ -74,6 +70,7 @@ QQC2.ScrollView {
             delegate: ColumnLayout {
                 id: level
                 required property var modelData
+                property bool expanded: false
                 Layout.fillWidth: true
                 Layout.leftMargin: KanteStyle.unit(18)
                 Layout.rightMargin: KanteStyle.unit(18)
@@ -85,21 +82,69 @@ QQC2.ScrollView {
                     text: level.modelData.level
                     rule: true
                 }
-                KantePath {
-                    Layout.fillWidth: true
-                    model: level.modelData.nodes
-                    doneText: page.t("erledigt", "done")
-                    currentText: page.t("jetzt", "now")
-                    reviewText: page.t("Wiederholung", "review")
-                    lockedText: page.t("gesperrt", "locked")
-                    openText: page.t("offen", "open")
-                    onActivated: function (i) {
-                        var n = level.modelData.nodes[i]
-                        if (n.kind !== "review") { page.talk(n.id); return }
-                        // This unit's due items, not all of them.
-                        page.kaiwa.openReview(n.id)
-                        page.showTab(2)
+                Repeater {
+                    model: level.modelData.units.filter(u => !u.folded || level.expanded)
+                    delegate: ColumnLayout {
+                        id: unit
+                        required property var modelData
+                        Layout.fillWidth: true
+                        spacing: KanteStyle.unit(4)
+
+                        KantePath {
+                            Layout.fillWidth: true
+                            model: [{
+                                title: unit.modelData.number + " · " + unit.modelData.title,
+                                meta: unit.modelData.note,
+                                text: unit.modelData.showCanDo ? unit.modelData.canDo : "",
+                                state: unit.modelData.state
+                            }]
+                            doneText: page.t("erledigt", "done")
+                            currentText: page.t("aktuell", "current")
+                            lockedText: page.t("gesperrt", "locked")
+                            openText: page.t("offen", "open")
+                            onActivated: function () {
+                                // What a click does is the view's: a scenario or a review.
+                                var open = unit.modelData.open
+                                if (!open) { return }
+                                if (open.review) { page.review(open.review) } else { page.talk(open.scenario) }
+                            }
+                        }
+                        Repeater {
+                            model: unit.modelData.showScenarios ? unit.modelData.scenarios : []
+                            delegate: KanteButton {
+                                required property var modelData
+                                Layout.leftMargin: KanteStyle.unit(40)
+                                Layout.fillWidth: true
+                                text: modelData.label
+                                emphasis: modelData.emphasis === "primary" ? KanteButton.Emphasis.Primary
+                                    : modelData.emphasis === "quiet" ? KanteButton.Emphasis.Quiet
+                                    : KanteButton.Emphasis.Normal
+                                onClicked: page.talk(modelData.id)
+                            }
+                        }
+                        // The unit's due words: a review of its own, named with the unit.
+                        KanteButton {
+                            Layout.leftMargin: KanteStyle.unit(40)
+                            Layout.fillWidth: true
+                            visible: !!unit.modelData.review
+                            emphasis: KanteButton.Emphasis.Quiet
+                            text: unit.modelData.review ? unit.modelData.review.label : ""
+                            Accessible.name: text
+                            onClicked: page.review(unit.modelData.id)
+                        }
                     }
+                }
+                // The names wrap under the count, so a long list is read in full.
+                KanteListRow {
+                    Layout.fillWidth: true
+                    visible: level.modelData.foldedCount > 0 && !level.expanded
+                    overflow: KanteListRow.Overflow.Wrap
+                    text: level.modelData.foldedCount === 1
+                          ? page.t("+ 1 weitere gesperrte Einheit", "+ 1 more locked unit")
+                          : page.t("+ " + level.modelData.foldedCount + " weitere gesperrte Einheiten",
+                                   "+ " + level.modelData.foldedCount + " more locked units")
+                    subtitle: level.modelData.foldedNames
+                    onClicked: level.expanded = true
                 }
             }
         }

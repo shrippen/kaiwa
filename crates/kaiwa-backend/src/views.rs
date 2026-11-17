@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use kaiwa_core::clock::Moment;
-use kaiwa_core::curriculum::{NodeState, Unit};
+use kaiwa_core::curriculum::Unit;
 use kaiwa_core::difficulty::KNOBS;
 use kaiwa_core::learner::SKILLS;
 use kaiwa_core::progress::{DailyGoal, streak_note};
@@ -12,8 +12,9 @@ use kaiwa_store::{FeedbackSource, Script};
 use serde_json::{Value, json};
 
 use crate::Backend;
+pub use crate::path::path;
 
-fn scenario_title(st: &Backend, id: &str, lang: &str) -> String {
+pub(crate) fn scenario_title(st: &Backend, id: &str, lang: &str) -> String {
     st.scenarios
         .get(id)
         .map(|s| s.title.get(lang).to_string())
@@ -96,64 +97,6 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         "lang": lang,
         "style": p.style,
     }))
-}
-
-/// The learning path (/LF600/): one node per scenario, units as meta, states with words, and
-/// the level each belongs to („N5 · A1“, Q-03).
-pub fn path(st: &Backend) -> anyhow::Result<Value> {
-    let p = st.store.profile()?;
-    let lang = p.ui_lang.as_str();
-    let learning = st.store.learning()?;
-    let items = st.store.items()?;
-    let today = crate::now().day();
-    let mut nodes = Vec::new();
-    for unit in st.curriculum.path(&learning.course, lang) {
-        let number = unit.id.to_uppercase();
-        for sc in &unit.scenarios {
-            let state = match sc.state {
-                NodeState::Done => "done",
-                NodeState::Current => "current",
-                NodeState::Open => "open",
-                NodeState::Locked => "locked",
-            };
-            // A locked node says what unlocks it; an open one says what it teaches, as a
-            // sentence of its own that wraps (/LL303/: narrow windows).
-            let (meta, text) = match (&unit.locked_because, sc.state) {
-                (Some(why), NodeState::Locked) => (format!("{number} · {why}"), String::new()),
-                _ => (number.clone(), unit.can_do.clone()),
-            };
-            nodes.push(json!({
-                "kind": "scenario",
-                "id": sc.id,
-                "title": scenario_title(st, &sc.id, lang),
-                "meta": meta,
-                "text": text,
-                "state": state,
-                "level": unit.level,
-            }));
-        }
-        let due = items
-            .iter()
-            .filter(|i| i.unit.as_deref() == Some(unit.id.as_str()) && i.is_due(today))
-            .count();
-        if due > 0 && unit.state != NodeState::Locked {
-            nodes.push(json!({
-                "kind": "review",
-                "id": unit.id,
-                "title": if lang == "de" { format!("Wiederholung: {}", unit.title) } else { format!("Review: {}", unit.title) },
-                // Reviews that go badly are recommended, they lock nothing (T-06).
-                "meta": match (lang == "de", unit.shaky) {
-                    (true, false) => format!("{due} fällig"),
-                    (true, true) => format!("{due} fällig · empfohlen, bevor es weitergeht"),
-                    (false, false) => format!("{due} due"),
-                    (false, true) => format!("{due} due · recommended before you go on"),
-                },
-                "state": "review",
-                "level": unit.level,
-            }));
-        }
-    }
-    Ok(Value::Array(nodes))
 }
 
 /// The items to review now, at most `limit` (/LF230/, /LF502/: five in the plasmoid).
@@ -879,46 +822,6 @@ mod tests {
     }
 
     #[test]
-    fn reviews_that_go_badly_are_recommended_and_lock_nothing() {
-        let b = crate::TempBackend::new("shaky", false).unwrap();
-        let first = b.curriculum.units[0].clone();
-        let second = b.curriculum.units[1].clone();
-        assert!(second.requires.contains(&first.id));
-        let mut l = b.store.learning().unwrap();
-        l.course.scenarios_done.extend(first.scenarios.clone());
-        for _ in 0..3 {
-            l.course.reviewed(&first.id, false);
-        }
-        b.store.set_learning(&l).unwrap();
-        let mut item = kaiwa_core::srs::Item::new(
-            "はじめまして",
-            kaiwa_core::srs::ItemKind::Phrase,
-            kaiwa_core::srs::Source::NewWord,
-            crate::now(),
-        );
-        item.unit = Some(first.id.clone());
-        item.due = crate::now().day();
-        b.store.put_item(&item).unwrap();
-        let nodes = path(&b).unwrap();
-        let nodes = nodes.as_array().unwrap();
-        let review = nodes.iter().find(|n| n["kind"] == "review").unwrap();
-        assert_eq!(review["id"], first.id.as_str());
-        assert_eq!(review["meta"], "1 fällig · empfohlen, bevor es weitergeht");
-        // T-06: the next unit is open all the same.
-        let next = nodes
-            .iter()
-            .find(|n| n["id"] == second.scenarios[0].as_str())
-            .unwrap();
-        assert_eq!(next["state"], "current");
-        assert!(
-            today(&b, crate::now())
-                .unwrap()
-                .to_string()
-                .contains(&second.scenarios[0])
-        );
-    }
-
-    #[test]
     fn a_review_node_opens_the_review_of_its_unit() {
         let b = crate::TempBackend::new("review-unit", false).unwrap();
         let now = crate::now();
@@ -1372,28 +1275,6 @@ mod tests {
         // Her own pick: no band.
         b.store.set_feedback(kaiwa_core::Amount::Little).unwrap();
         assert!(profile(&b).unwrap()["feedbackBand"].is_null());
-    }
-
-    #[test]
-    fn a_path_node_says_what_it_teaches_in_its_own_line() {
-        let b = crate::TempBackend::new("path-text", false).unwrap();
-        let nodes = path(&b).unwrap();
-        let nodes = nodes.as_array().unwrap();
-        let open = nodes.iter().find(|n| n["state"] == "current").unwrap();
-        let locked = nodes.iter().find(|n| n["state"] == "locked").unwrap();
-
-        // The unit's number alone as meta, the can-do sentence apart, so it can wrap.
-        assert_eq!(
-            open["meta"].as_str().unwrap().len(),
-            "N5-01".len(),
-            "{open}"
-        );
-        assert!(
-            open["text"].as_str().unwrap().starts_with("Ich kann"),
-            "{open}"
-        );
-        assert!(locked["meta"].as_str().unwrap().contains(" · "), "{locked}");
-        assert_eq!(locked["text"], "");
     }
 
     #[test]
