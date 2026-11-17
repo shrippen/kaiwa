@@ -37,26 +37,25 @@ impl Store {
         Ok(id)
     }
 
-    /// Appends `event` as the next of this device.
+    /// Appends `event` as the next of this device. The number is taken in the statement that
+    /// inserts, so two windows on one profile never take the same one.
     pub fn append_event(&self, event: &Event, at: Moment) -> Result<Stored> {
         let device = self.device()?;
+        self.db.busy_timeout(crate::shared::BUSY_WAIT)?;
         let seq: i64 = self.db.query_row(
-            "SELECT coalesce(max(seq), 0) + 1 FROM events WHERE device = ?1",
-            params![device],
-            |r| r.get(0),
-        )?;
-        let id = format!("{device}-{seq}");
-        self.db.execute(
-            "INSERT INTO events (id, device, seq, at, offset_min, body) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO events (id, device, seq, at, offset_min, body)
+             SELECT ?1 || '-' || n, ?1, n, ?2, ?3, ?4
+             FROM (SELECT coalesce(max(seq), 0) + 1 AS n FROM events WHERE device = ?1)
+             RETURNING seq",
             params![
-                id,
                 device,
-                seq,
                 at.unix,
                 at.offset_min,
                 serde_json::to_string(event)?
             ],
+            |r| r.get(0),
         )?;
+        let id = format!("{device}-{seq}");
         Ok(Stored {
             id,
             device,
@@ -132,6 +131,36 @@ mod tests {
     use kaiwa_core::srs::Grade;
 
     use super::*;
+
+    #[test]
+    fn two_windows_appending_at_once_lose_no_event() {
+        // Two stores on one file, as the app and the widget would hold it.
+        const EACH: usize = 40;
+        let dir = std::env::temp_dir().join(format!("kaiwa-append-race-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("p.kaiwa");
+        let first = Store::open(&path).unwrap();
+        first.device().unwrap();
+        let start = std::sync::Arc::new(std::sync::Barrier::new(2));
+        let threads: Vec<_> = (0..2)
+            .map(|_| {
+                let store = Store::open(&path).unwrap();
+                let start = start.clone();
+                std::thread::spawn(move || {
+                    start.wait();
+                    for i in 0..EACH {
+                        let at = Moment::new(1_791_100_000 + i as i64, 0);
+                        store.append_event(&setting("10"), at).unwrap();
+                    }
+                })
+            })
+            .collect();
+        let joined: Vec<_> = threads.into_iter().map(|t| t.join()).collect();
+        let events = first.events().unwrap().len();
+        std::fs::remove_dir_all(&dir).unwrap();
+        assert!(joined.iter().all(|j| j.is_ok()), "an append failed");
+        assert_eq!(events, 2 * EACH);
+    }
 
     fn setting(value: &str) -> Event {
         Event::Setting {

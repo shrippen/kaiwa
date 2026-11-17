@@ -7,8 +7,8 @@
 use std::path::Path;
 use std::sync::{Mutex, OnceLock};
 
-use kaiwa_core::Moment;
 use kaiwa_core::srs::{Item, ItemKind, Source};
+use kaiwa_core::{Event, Moment};
 use kaiwa_lang::{Dictionary, LineWord, Words, annotate, dictionary_path};
 use serde_json::{Value, json};
 
@@ -156,9 +156,28 @@ pub fn remember(
     unit: Option<&str>,
     now: Moment,
 ) -> anyhow::Result<bool> {
+    if backend.store.item(text)?.is_some() {
+        return Ok(false);
+    }
+    let event = Event::WordAdded {
+        text: text.into(),
+        unit: unit.map(str::to_string),
+    };
+    crate::journal::record(backend, &event, now)?;
+    Ok(true)
+}
+
+/// What a journaled [`remember`] does.
+pub(crate) fn add_word(
+    backend: &Backend,
+    text: &str,
+    unit: Option<&str>,
+    now: Moment,
+) -> anyhow::Result<()> {
     let mut item = Item::new(text, ItemKind::Word, Source::Lookup, now);
     item.unit = unit.map(str::to_string);
-    Ok(backend.store.add_item(&item)?)
+    backend.store.add_item(&item)?;
+    Ok(())
 }
 
 #[cfg(test)]

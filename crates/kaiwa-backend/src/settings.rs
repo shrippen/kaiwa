@@ -106,12 +106,7 @@ fn apply_rest(p: &mut Profile, key: Key, value: &str) {
     }
 }
 
-/// How a skill felt to the learner, for [`Backend::nudge`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Felt {
-    TooEasy,
-    TooHard,
-}
+pub use kaiwa_core::difficulty::Felt;
 
 /// Why a setting did not fully take.
 #[derive(Debug)]
@@ -222,10 +217,16 @@ impl Backend {
     /// "I know this already" or "too hard" for a skill (/LF202/); an unknown skill changes
     /// nothing.
     pub fn nudge(&self, skill: &str, felt: Felt) -> anyhow::Result<()> {
-        let up = felt == Felt::TooEasy;
         let Ok(skill) = serde_json::from_value::<Skill>(json!(skill)) else {
             return Ok(());
         };
+        journal::record(self, &Event::Nudged { skill, felt }, crate::now())?;
+        Ok(())
+    }
+
+    /// What [`Backend::nudge`] journaled.
+    pub(crate) fn apply_nudge(&self, skill: Skill, felt: Felt) -> anyhow::Result<()> {
+        let up = felt == Felt::TooEasy;
         let mut l = self.store.learning()?;
 
         // "Too easy" for listening lifts the speed one step at once (Selin, /LF202/).
@@ -248,7 +249,8 @@ impl Backend {
             .unwrap_or(1.0)
     }
 
-    /// The learner's pick of "louder" and "clearer" for the tutor's voice.
+    /// The learner's pick of "louder" and "clearer" for the tutor's voice; per device, so not
+    /// journaled (ADR-010).
     pub fn set_sound(&self, louder: bool, clear: bool) -> anyhow::Result<()> {
         self.store.update_profile(|p| {
             p.louder = louder;
@@ -275,12 +277,13 @@ impl Backend {
 
     /// Takes the levels a placement measured (/LF200/); mistakes and pronunciation stay.
     pub fn set_placement(&self, model: kaiwa_core::learner::LearnerModel) -> anyhow::Result<()> {
-        Ok(self.store.set_placement(model)?)
+        journal::record(self, &Event::Placed { model }, crate::now())?;
+        Ok(())
     }
 
     /// The learner leaves the placement out (/LF200/).
     pub fn leave_out_placement(&self) -> anyhow::Result<()> {
-        self.store.update_profile(|p| p.placed = true)?;
+        journal::record(self, &Event::PlacementLeftOut, crate::now())?;
         Ok(())
     }
 }

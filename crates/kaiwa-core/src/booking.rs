@@ -71,15 +71,11 @@ pub struct Placed {
 /// show (typed turns count too). An amount of feedback the learner did not choose follows the
 /// speaking level. A placement is no progress, so the store also restarts the week's
 /// comparison ([`crate::progress::DayRecord::restart`]).
-pub fn book_placement(
-    old: &mut LearnerModel,
-    placed: LearnerModel,
-    source: FeedbackSource,
-) -> Placed {
+pub fn book_placement(old: LearnerModel, placed: LearnerModel, source: FeedbackSource) -> Placed {
     let mut model = placed;
-    model.errors = std::mem::take(&mut old.errors);
-    model.corrections_by_learner = old.corrections_by_learner;
     model.set(Skill::Pronunciation, old.level(Skill::Pronunciation));
+    model.corrections_by_learner = old.corrections_by_learner;
+    model.errors = old.errors;
     let feedback =
         (source != FeedbackSource::Chosen).then(|| Amount::for_level(model.level(Skill::Speaking)));
     Placed {
@@ -149,7 +145,7 @@ mod tests {
         let mut placed = LearnerModel::default();
         placed.set(Skill::Speaking, 5.0);
 
-        let p = book_placement(&mut old.clone(), placed.clone(), FeedbackSource::Default);
+        let p = book_placement(old.clone(), placed.clone(), FeedbackSource::Default);
         assert_eq!(p.model.level(Skill::Pronunciation), 2.0);
         assert_eq!(p.model.corrections_by_learner, 3);
         assert_eq!(p.feedback, Some(Amount::Normal));
@@ -158,7 +154,7 @@ mod tests {
             Regulator::new(Difficulty::for_learner(&p.model))
         );
 
-        let p = book_placement(&mut old, placed, FeedbackSource::Chosen);
+        let p = book_placement(old, placed, FeedbackSource::Chosen);
         assert_eq!(p.feedback, None);
     }
 }
