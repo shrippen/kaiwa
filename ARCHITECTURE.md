@@ -92,15 +92,14 @@ A change that needs more places than its row lists is a finding for the next aud
 ## Known deviations
 
 - The app still depends on `kaiwa-core`, `kaiwa-ai` and `kaiwa-lang` directly, all in
-  `conversation.rs`: the input kind, the tutor's error kinds, the lookup's words. Found
-  after `AUDIT.md` finding 7 was fixed.
+  `conversation.rs`: the input kind, the tutor's error kinds, the lookup's words.
 - `kaiwa-sim` sets up and reads test state through the backend's `seed` (feature `sim`,
   only the sim turns it on) and still depends on `kaiwa-store`, `kaiwa-core`, `kaiwa-ai`
-  and `kaiwa-lang` directly for its own checks. Talks on
-  recorded answers take only scenario and recorded tutor from the backend (`talk.rs`);
-  help, turns and translation then run on a bare core `Session` (`run.rs`), not through
-  the backend's flow. `AUDIT.md`, finding 4. The free-talk check in `engine.rs` and the day simulation (`days.rs`) still build a `Session`
-  with their own tutor. The load-time check (`fast`, `profile.rs`) still opens a profile in
+  and `kaiwa-lang` directly for its own checks. Talks on recorded answers take only
+  scenario and recorded tutor from the backend (`talk.rs`); help, turns and translation
+  then run on a bare core `Session` (`run.rs`), not through the backend's flow.
+  `AUDIT.md`, finding 4. The free-talk check in `engine.rs` and the day simulation
+  (`days.rs`) still build a `Session` with their own tutor. The load-time check (`fast`, `profile.rs`) still opens a profile in
   `kaiwa-store`: it needs `batch` and a timed load. The dispute check reads the QA list
   through `seed`, which no backend command offers.
 - The conversation page does not take the backend's background troubles: a chosen tutor
@@ -119,8 +118,9 @@ A change that needs more places than its row lists is a finding for the next aud
   (difficulty, the week's comparison, the amount of corrections), when a gap counts as a
   new break, and which daily goal a talk over midnight gets. `AUDIT.md`, finding 3.
 - The settings page keeps its own lists for the amount of corrections, how long
-  recordings are kept and the reminder times; the backend accepts any number for the
-  last two. `AUDIT.md`, finding 2.
+  recordings are kept and the reminder times. The backend accepts any number for
+  recordings, reminder and unload time, and any daily goal from 1 to 120 minutes, though
+  the pages offer only the steps. `AUDIT.md`, finding 2.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
   then the app is the only front end and runs the backend in its own process. On that
   branch `kaiwad` drives microphone and recognition itself; M4 moves that into the
