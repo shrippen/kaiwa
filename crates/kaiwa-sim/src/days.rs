@@ -1075,40 +1075,47 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
         found.push("no kinds of mistakes in four weeks of corrections".into());
     }
     for m in &mistakes {
-        let trend = m["trend"].as_str().unwrap_or_default();
-        if !progress::blameless(trend) {
-            found.push(format!("blame in: {trend}"));
-        }
-        // As the run had it: mistakes per talk, the later half of her talks against the
-        // earlier; the run is shorter than the chart's twelve weeks, so the chart shows all.
-        let kind = m["kind"].as_str().unwrap_or_default();
-        let counted = |s: &SimSession| {
-            s.mistakes
-                .iter()
-                .take(s.turns as usize)
-                .filter(|(k, severity)| k == kind && severity != "style")
-                .count() as f64
-        };
-        let shown = &run.sessions[..];
-        let mean = |half: &[SimSession]| half.iter().map(counted).sum::<f64>() / half.len() as f64;
-        let (early, late) = shown.split_at(shown.len() / 2);
-        let want = match (mean(early), mean(late)) {
-            // Under four talks or three mistakes there is no trend, only the line.
-            _ if shown.len() < 4 || shown.iter().map(counted).sum::<f64>() < 3.0 => "",
-            (e, l) if l < 0.75 * e => "seltener",
-            (e, l) if l > 1.25 * e => "häufiger",
-            _ => "gleich oft",
-        };
-        if trend != want {
-            found.push(format!("{kind} should read \"{want}\": \"{trend}\""));
-        }
-        // Her promise: particles and counters fade over the run, so they never read as rising.
-        if ["particle", "counter"].contains(&kind) && trend == "häufiger" {
-            let counts = &m["counts"];
-            found.push(format!("a faded mistake reads as rising: {kind} {counts}"));
-        }
+        found.extend(trend_findings(run, m));
     }
     Ok((!found.is_empty()).then(|| found.join("; ")))
+}
+
+/// What is wrong with the trend word of the kind of mistake `m` in the profile.
+fn trend_findings(run: &DaysRun, m: &Value) -> Vec<String> {
+    let mut found = Vec::new();
+    let trend = m["trend"].as_str().unwrap_or_default();
+    if !progress::blameless(trend) {
+        found.push(format!("blame in: {trend}"));
+    }
+    // As the run had it: mistakes per talk, the later half of her talks against the
+    // earlier; the run is shorter than the chart's twelve weeks, so the chart shows all.
+    let kind = m["kind"].as_str().unwrap_or_default();
+    let counted = |s: &SimSession| {
+        s.mistakes
+            .iter()
+            .take(s.turns as usize)
+            .filter(|(k, severity)| k == kind && severity != "style")
+            .count() as f64
+    };
+    let shown = &run.sessions[..];
+    let mean = |half: &[SimSession]| half.iter().map(counted).sum::<f64>() / half.len() as f64;
+    let (early, late) = shown.split_at(shown.len() / 2);
+    let want = match (mean(early), mean(late)) {
+        // Under four talks or three mistakes there is no trend, only the line.
+        _ if shown.len() < 4 || shown.iter().map(counted).sum::<f64>() < 3.0 => "",
+        (e, l) if l < 0.75 * e => "seltener",
+        (e, l) if l > 1.25 * e => "häufiger",
+        _ => "gleich oft",
+    };
+    if trend != want {
+        found.push(format!("{kind} should read \"{want}\": \"{trend}\""));
+    }
+    // Her promise: particles and counters fade over the run, so they never read as rising.
+    if ["particle", "counter"].contains(&kind) && trend == "häufiger" {
+        let counts = &m["counts"];
+        found.push(format!("a faded mistake reads as rising: {kind} {counts}"));
+    }
+    found
 }
 
 #[cfg(test)]
