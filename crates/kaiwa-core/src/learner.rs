@@ -11,6 +11,8 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::jlpt::{N3_FROM, N4_FROM};
+
 pub const LEVELS: [&str; 9] = [
     "none",
     "a0",
@@ -335,9 +337,9 @@ fn describe_level(s: Skill, v: f64, lang: &str) -> String {
         x if x < 0.5 => 0,
         x if x < 1.5 => 1,
         x if x < 2.5 => 2,
-        x if x < 3.5 => 3,
+        x if x < N4_FROM => 3,
         x if x < 4.5 => 4,
-        x if x < 5.5 => 5,
+        x if x < N3_FROM => 5,
         _ => 6,
     };
     let what = s.word(lang);
@@ -482,5 +484,14 @@ mod tests {
         m.nudge(Skill::Listening, true);
         assert!(m.level(Skill::Listening) > before);
         assert_eq!(m.corrections_by_learner, 1);
+    }
+
+    #[test]
+    fn the_words_change_at_the_n4_and_n3_borders() {
+        let words = |v| describe_level(Skill::Listening, v, "en");
+        assert!(words(3.49).contains("at N5"));
+        assert!(words(3.5).contains("first N4"));
+        assert!(words(5.49).contains("confident at N4"));
+        assert!(words(5.5).contains("beyond N4"));
     }
 }

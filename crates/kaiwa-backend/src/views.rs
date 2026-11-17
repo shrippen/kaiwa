@@ -418,9 +418,9 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "goal": goal,
         "gamification": p.gamification,
         "feedback": p.feedback,
-        // Set by a placement's speaking level (V-02): the amount it gave names the band; the
-        // model moves on with practice, the placement's band does not.
-        "feedbackBand": (p.feedback_source == FeedbackSource::Level).then_some(p.feedback),
+        // Set by a placement (V-02): the levels its amount covers ("up to N5"), kept in practice.
+        "feedbackLevel": (p.feedback_source == FeedbackSource::Level)
+            .then(|| p.feedback.level_words(&p.ui_lang)),
         "script": match p.script { Script::Furigana => 0, Script::Kana => 1, Script::Hidden => 2 },
         "endPause": p.end_pause_secs,
         "pauseSteps": kaiwa_core::turn_end::PAUSE_STEPS,
@@ -1087,24 +1087,24 @@ mod tests {
     #[test]
     fn the_settings_name_the_band_only_when_a_placement_set_it() {
         let b = crate::TempBackend::new("feedback-band", false).unwrap();
-        assert!(profile(&b).unwrap()["feedbackBand"].is_null());
+        assert!(profile(&b).unwrap()["feedbackLevel"].is_null());
 
         // A skipped placement sets nothing.
         b.store.update_profile(|p| p.placed = true).unwrap();
-        assert!(profile(&b).unwrap()["feedbackBand"].is_null());
+        assert!(profile(&b).unwrap()["feedbackLevel"].is_null());
 
         let n3 = kaiwa_core::LearnerModel::placed(&[(kaiwa_core::learner::Skill::Speaking, "n3")]);
         b.store.set_placement(n3).unwrap();
-        assert_eq!(profile(&b).unwrap()["feedbackBand"], "much");
+        assert_eq!(profile(&b).unwrap()["feedbackLevel"], "ab N3");
 
         // Practice moves the model on; the band stays the placement's.
         let mut l = b.store.learning().unwrap();
         l.model.set(kaiwa_core::learner::Skill::Speaking, 3.0);
         b.store.set_learning(&l).unwrap();
-        assert_eq!(profile(&b).unwrap()["feedbackBand"], "much");
+        assert_eq!(profile(&b).unwrap()["feedbackLevel"], "ab N3");
 
         // Her own pick: no band.
         b.store.set_feedback(kaiwa_core::Amount::Little).unwrap();
-        assert!(profile(&b).unwrap()["feedbackBand"].is_null());
+        assert!(profile(&b).unwrap()["feedbackLevel"].is_null());
     }
 }

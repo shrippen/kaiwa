@@ -2,6 +2,7 @@
 //! the wording is tried against real models in the owner's local test, not in CI.
 
 use crate::difficulty::{Difficulty, Knob};
+use crate::jlpt::Jlpt;
 use crate::scenario::{Register, Scenario};
 
 fn register_words(r: Register) -> &'static str {
@@ -29,12 +30,7 @@ fn jlpt(unit: Option<&str>, own: Option<f64>) -> &str {
     }
     match own {
         None => "N5/N4",
-        // Up to n5, up to n4, n3, n2, beyond.
-        Some(l) if l < 3.5 => "N5",
-        Some(l) if l < 5.5 => "N4",
-        Some(l) if l < 6.5 => "N3",
-        Some(l) if l < 7.5 => "N2",
-        Some(_) => "N1",
+        Some(l) => Jlpt::of(l).name(),
     }
 }
 
@@ -211,6 +207,22 @@ mod tests {
                 "{own}: {p}"
             );
             assert!(!p.contains("N5/N4"), "{own}");
+        }
+    }
+
+    #[test]
+    fn the_level_changes_at_its_borders() {
+        for (own, level) in [
+            (3.49, "N5"),
+            (3.5, "N4"),
+            (5.49, "N4"),
+            (5.5, "N3"),
+            (6.49, "N3"),
+            (6.5, "N2"),
+            (7.49, "N2"),
+            (7.5, "N1"),
+        ] {
+            assert_eq!(jlpt(None, Some(own)), level, "{own}");
         }
     }
 }
