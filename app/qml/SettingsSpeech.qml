@@ -113,6 +113,7 @@ KanteSettingGroup {
                 warnAt: -12
                 dangerAt: -3
                 showScale: true
+                scaleUnit: "dB"
                 Accessible.name: host.t("Eingangspegel", "Input level")
             }
             Text {
