@@ -80,6 +80,16 @@ impl DayRecord {
         self.speaking_secs >= m * 60
     }
 
+    /// Whether `day` counts as met: a past day by the goal it had, `today` by `goal`, the
+    /// goal as it is now (/LF602/). The one rule of the streak and the week's bars.
+    pub fn met_on(&self, day: Day, today: Day, goal: DailyGoal) -> bool {
+        self.met(if day == today {
+            goal
+        } else {
+            self.goal.unwrap_or(goal)
+        })
+    }
+
     /// Progress towards the goal, 0..1 (the ring of the plasmoid and the start page).
     pub fn fraction(&self, goal: DailyGoal) -> f64 {
         let DailyGoal::Minutes(m) = goal;
@@ -124,14 +134,7 @@ pub fn streak(
     let mut d = first;
     while d <= today {
         let paused = pauses.iter().any(|p| p.from <= d && d <= p.to);
-        // A past day by the goal it had; today by the goal as it is now.
-        let met = records.get(&d).is_some_and(|r| {
-            r.met(if d == today {
-                goal
-            } else {
-                r.goal.unwrap_or(goal)
-            })
-        });
+        let met = records.get(&d).is_some_and(|r| r.met_on(d, today, goal));
         if met {
             s.days += 1;
             s.longest = s.longest.max(s.days);
