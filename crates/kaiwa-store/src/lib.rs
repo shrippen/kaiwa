@@ -29,7 +29,8 @@ use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
 /// The export format; 2 named the tutor by its preset (migration 3), 3 added the monthly
-/// costs (V-04). Only the current format is read (no release yet).
+/// costs (V-04), 4 the journal and talk ids as text (ADR-010). Only the current format is
+/// read (no release yet).
 pub const EXPORT_SCHEMA: &str = "kaiwa-export/4";
 
 /// The device state of a month's costs is `cost.<year>-<month>`; the export keeps the months.
