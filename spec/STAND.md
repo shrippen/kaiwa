@@ -1,4 +1,4 @@
-# Stand und Übergabe (2026-11-13)
+# Stand und Übergabe (2026-11-17)
 
 Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die nächste Session zuerst lesen, dann `ROADMAP.md`. Welche Anforderung wo umgesetzt und geprüft ist, zeigt [`RUECKVERFOLGUNG.md`](RUECKVERFOLGUNG.md) (erzeugt mit `cargo run -p kaiwa-sim -- trace --write`). Starten und prüfen: `./start.sh` (`demo`, `sim`, `check`).
 
@@ -18,6 +18,16 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 | QA | `kaiwa-sim`: 60 von 89 Prüfregeln automatisch (Textmodus, 30-Tage-Läufe, Profil, Engine, QML-Prüfungen); Inhaltsprüfungen /LF221/ als Tests: Grammatik-Lint, Niveau der Hilfesätze, Register, Kernwörter, Review-Hash; `kaiwa-sim review-sheet` für das Muttersprachler-Review | laufend |
 
 **Geparkt:** Plasmoid und Dienst `kaiwad` (M4) auf dem Zweig `later/plasmoid`, bis die App nahe 1.0 ist. Dort sind Kurzgespräch, fünf Wiederholungen, Sprechtaste über den Dienst und Erinnerungen gebaut. **Offen:** In der CI lädt `plasmoidviewer` das Plasmoid ohne QML-Fehler, aber sein `Today`-Aufruf kommt bei `kaiwad` nicht an (Lauf 1530, „plasmoid: no call reached kaiwad“). Ob das am Offscreen-Betrieb, an der Wartezeit (20 s) oder am D-Bus-Modul von Plasma liegt, ist beim Wiederaufnehmen als Erstes zu klären. Die Erinnerungs-Einstellung der App ist bis dahin ausgeblendet.
+
+## Nacht zum 2026-11-17
+
+Alle Funde des dritten Audits behoben (Eigentümer, 16.11.2026: „korrigiere alle funde im audit“), je ein PR: #159 (Simulation öffnet Gespräche und Profile über das Backend, `kaiwa-sim/src/talk.rs`; teilweise, Rest in `ARCHITECTURE.md`), #160 (Keigo-Regel für das Überspringen einmal im Kern, `LearnerModel::may_skip`; `skips.rs`; `leave_out_placement` und `take_placement_offer` statt zweimal `skip_placement`), #161 (jedes Backend hat seinen eigenen Kostenzähler statt eines globalen), #162 (Fehler neben dem Gespräch erreichen den Lernenden über `Backend::take_troubles`; ein unlesbares Profil startet ein Ersatzprofil im Speicher mit dauerhaftem Hinweis statt abzustürzen), #165 (Hilfe, Hörhilfen und Übersetzung als Befehle des Gesprächs im Backend; `session_mut` geschlossen), Fund 4 als #167 (Fehlersätze aus `kaiwa-backend/src/words.rs`, Meldungen werden angehängt; der nicht einsatzbereite Tutor erreicht den Lernenden). Dazu #163 (Kante-Abgleich), #166 (abgelaufene Aufnahmen auch am Ende eines Gesprächs löschen; Kosten in einer Transaktion buchen) und #168 (eine Übersetzung, die während eines Zuges ankommt, zählt nur, wenn der Zug scheitert, /LF212/).
+
+Sync begonnen (M6, /LF700/): [ADR-010](adr/010-sync.md) (vorgeschlagen) synchronisiert über ein Journal: Jede Handlung des Lernenden ist ein Ereignis, der Stand ist dessen Faltung durch dieselben Befehle wie live; Ablage später als eine `age`-Datei je Gerät in einem Ordner oder per WebDAV. Schritt 1 ist gemergt (#164): Tabelle `events` (Migration 5), Geräte-Id, Wiederholungen und Einstellungen als Ereignisse, Test „Faltung = live“. Nächster Schritt: Gespräche als Ereignisse und Export `kaiwa-export/4` mit dem Journal. Offen für den Eigentümer: welche Einstellungen je Gerät gelten, und die Bestätigung der Schichten für den Baustein `kaiwa-sync` (Schritt 5).
+
+## Tage 2026-11-13 bis 16
+
+Fragenpaket 14 umgesetzt (#122 bis #126, #128, #129). Strukturprüfung in der CI (#131), `ARCHITECTURE.md` (#134) und drei Code-Audits (#132, #147, #158) mit ihren Umbauten (#137 bis #146, #148 bis #156): der Gesprächsablauf, die Einstufung, die Bilanz, der Gesprächsverlauf und die Regeln der Einstellungen stehen einmal im Backend; Mikrofon, Erkennung, Stimme und Downloads sind Bausteine des Backends (Feature `speech`). Einstellungen in Kacheln wie Kontra (#157).
 
 ## Entscheidungen aus Fragenpaket 4
 
@@ -209,6 +219,11 @@ Dazu geklärt (ohne Entscheidung nötig): Tae Kims Guide steht unter CC BY-NC-SA
     - Erinnerung: „Später“ über Mitternacht verschiebt die Erinnerung auf den nächsten Tag (wirkt erst mit M4).
     - Nachschlagen: IPADIC liefert für かって/よんだ die Grundform かつ/よぶ; ohne Beugungsform im `LineWord` nicht zu lösen. Noch Zwillinge (auch vor #114): こと → 琴, そう/よう, と als „if“ statt „with“. IPADIC trennt こうちゃ in こう + ちゃ; ちゃ zeigt dann ては. じゃ für das Orts-では (ここじゃ) zeigt die Kopula „be; is“.
     - Export: Exporte im Format 1 vom 9. bis 14.10.2026 tragen alte Einheiten-Ids (nur Testdaten).
+14. **Aus den Reviews der Nacht zum 17.11., offen:**
+    - Die Gesprächsseite holt keine Hintergrundfehler ab: Ein gewählter Tutor ohne Schlüssel heißt dort „kein Tutor“, die Hauptseiten sagen nach dem Gespräch, warum (`ARCHITECTURE.md`).
+    - Profilwechsel und neues Profil zeigen bei einem Fehler den englischen Prüftext aus `profiles.rs`.
+    - Der Download ersetzt beim Ende die Meldungszeile, auch wenn inzwischen eine andere Meldung kam.
+    - Sync, Schritt 3: Die Kostenbuchung öffnet eine eigene Transaktion (`Store::update_state_value`); im Neufalten muss sie als Savepoint laufen. Ereignis schreiben und anwenden laufen noch in zwei Transaktionen (ADR-010, Risiken).
 
 ## Lessons learned
 
