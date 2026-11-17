@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::clock::Day;
 use crate::learner::Skill;
-use crate::session::Input;
+use crate::session::{Input, TurnRecord};
 
 /// The daily goal (/LF601/), chosen by the learner: minutes of speaking only (V-03). Default:
 /// five minutes.
@@ -323,16 +323,64 @@ impl SessionXp {
     }
 }
 
-/// Seconds a spoken turn takes, estimated from its length (for recognised text without a
-/// recording, and for `kaiwa-sim`): about 6 morae per second plus a second to start.
-pub fn speaking_secs(text: &str) -> u32 {
-    let morae = crate::norm(text).chars().count() as f64;
-    (1.0 + morae / 6.0).round() as u32
+/// Longest wall time of one talk that counts as practice.
+const MAX_TALK_SECS: f64 = 3600.0;
+
+/// All turns of a talk and the typed ones among them, turns with an analysis gap included
+/// (T-11): the counts [`talk_secs`] takes.
+pub fn turn_counts(turns: &[TurnRecord]) -> (u32, u32) {
+    let typed = turns.iter().filter(|t| t.input == Input::Typed).count();
+    (turns.len() as u32, typed as u32)
+}
+
+/// Speaking time a finished talk adds to the day (daily goal): its wall time, at most an
+/// hour, in the share of spoken turns (`turns` counts the turns that count, `typed` the typed
+/// ones among them). E.g. 600 s with 4 of 5 turns spoken: 480 s.
+pub fn talk_secs(wall_secs: f64, turns: u32, typed: u32) -> u32 {
+    if turns == 0 {
+        return 0;
+    }
+    let spoken_share = f64::from(turns - typed) / f64::from(turns);
+    (wall_secs.clamp(0.0, MAX_TALK_SECS) * spoken_share).round() as u32
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn turn_counts_cover_all_turns() {
+        let turn = |input, incomplete| TurnRecord {
+            learner: String::new(),
+            input,
+            corrections: vec![],
+            new_words: vec![],
+            understood: true,
+            aided: false,
+            from_help: false,
+            xp: 0,
+            reply: String::new(),
+            misrecognized: false,
+            disputed: vec![],
+            markup: String::new(),
+            incomplete,
+        };
+        let turns = [
+            turn(Input::Spoken, true),
+            turn(Input::Typed, false),
+            turn(Input::Typed, true),
+        ];
+        assert_eq!(turn_counts(&turns), (3, 2));
+    }
+
+    #[test]
+    fn talk_secs_by_spoken_share() {
+        assert_eq!(talk_secs(600.0, 5, 1), 480);
+        assert_eq!(talk_secs(600.0, 5, 5), 0);
+        assert_eq!(talk_secs(600.0, 0, 0), 0);
+        assert_eq!(talk_secs(7200.0, 2, 0), 3600);
+        assert_eq!(talk_secs(-5.0, 2, 0), 0);
+    }
 
     fn rec(min: u32) -> DayRecord {
         DayRecord {

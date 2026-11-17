@@ -28,7 +28,7 @@ crates/kaiwa-core/src/difficulty.rs	words	ccn=32
 crates/kaiwa-core/src/learner.rs	describe_level	ccn=36 nesting=6
 crates/kaiwa-core/src/progress.rs	streak	nesting=5
 crates/kaiwa-core/src/romaji.rs	word_to_kana	ccn=18
-crates/kaiwa-core/src/session.rs	-	lines=1324
+crates/kaiwa-core/src/session.rs	-	lines=1322
 crates/kaiwa-core/src/session.rs	take	length=90
 crates/kaiwa-lang/examples/excerpt.rs	main	ccn=34 length=102
 crates/kaiwa-lang/examples/levels.rs	main	ccn=38 length=136
@@ -49,7 +49,7 @@ crates/kaiwa-lang/tests/lookup.rs	content_words_are_in_the_dictionary	nesting=5
 crates/kaiwa-sim/src/days.rs	-	lines=1177
 crates/kaiwa-sim/src/days.rs	check	ccn=66 length=213
 crates/kaiwa-sim/src/days.rs	progress_views	ccn=54 length=210
-crates/kaiwa-sim/src/days.rs	simulate	ccn=51 length=392 nesting=5
+crates/kaiwa-sim/src/days.rs	simulate	ccn=51 length=391 nesting=5
 crates/kaiwa-sim/src/engine.rs	-	lines=959
 crates/kaiwa-sim/src/engine.rs	analysis_gaps	ccn=37 length=97
 crates/kaiwa-sim/src/engine.rs	check	ccn=24
@@ -88,9 +88,9 @@ crates/kaiwa-speech/src/g2p/numbers.rs	below_10000	ccn=20
 crates/kaiwa-speech/src/mora.rs	-	lines=875
 crates/kaiwa-speech/src/mora.rs	from_dir	ccn=17
 crates/kaiwa-speech/src/mora.rs	variants	ccn=28 length=93
-crates/kaiwa-store/src/lib.rs	-	lines=1404
-crates/kaiwa-store/src/lib.rs	correct_in	ccn=22 length=100
+crates/kaiwa-store/src/lib.rs	-	lines=1390
+crates/kaiwa-store/src/lib.rs	correct_in	ccn=19 length=89
 crates/kaiwa-store/src/lib.rs	import	ccn=46
-crates/kaiwa-store/src/lib.rs	record_on	length=92
+crates/kaiwa-store/src/lib.rs	record_on	length=89
 crates/kaiwa-store/src/tests.rs	-	lines=1167
 crates/kaiwa-store/src/tests.rs	recording_a_session_feeds_model_path_review_and_day	length=110

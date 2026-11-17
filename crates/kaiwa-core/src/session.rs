@@ -12,7 +12,7 @@ use crate::difficulty::{Difficulty, Live};
 use crate::feedback::{Amount, Shown, cross_check, visible};
 use crate::learner::{Evidence, Skill};
 use crate::plain;
-use crate::progress::{SessionXp, XP_GOAL, XpReason, speaking_secs, turn_xp};
+use crate::progress::{SessionXp, XP_GOAL, XpReason, talk_secs, turn_counts, turn_xp};
 use crate::prompts::{analysis_system, reply_system};
 use crate::scenario::{Goal, Register, Scenario};
 
@@ -127,7 +127,6 @@ pub struct Summary {
     pub spoken_turns: usize,
     pub typed_turns: usize,
     pub helps_used: u32,
-    pub speaking_secs: u32,
     pub xp: SessionXp,
 }
 
@@ -143,7 +142,6 @@ pub struct Stats {
     pub goals_unaided: u32,
     pub helps: u32,
     pub aids: u32,
-    pub speaking_secs: u32,
     pub typed_turns: u32,
     /// Corrections of severity unnatural or above, per kind (not misrecognised, not disputed).
     pub mistakes: BTreeMap<String, u32>,
@@ -712,6 +710,12 @@ impl Session {
         &self.turns
     }
 
+    /// Speaking time the talk adds to the day ([`talk_secs`]), a turn with gaps included.
+    pub fn spoken_secs(&self, wall_secs: f64) -> u32 {
+        let (turns, typed) = turn_counts(&self.turns);
+        talk_secs(wall_secs, turns, typed)
+    }
+
     /// The character's line that learner turn `turn` answered (with furigana markup for the
     /// opening): the opening for the first turn, otherwise the reply before it.
     pub fn cue(&self, turn: usize) -> Option<&str> {
@@ -793,7 +797,6 @@ impl Session {
                 .filter(|t| t.input == Input::Typed)
                 .count(),
             helps_used: self.helps_used,
-            speaking_secs: self.stats().speaking_secs,
             xp,
         }
     }
@@ -807,10 +810,6 @@ impl Session {
             ..Default::default()
         };
         for t in &self.turns {
-            // Time spoken is time practised, whatever the tutor made of the turn.
-            if t.input == Input::Spoken {
-                s.speaking_secs += speaking_secs(&t.learner);
-            }
             // A turn the tutor analysed with gaps is no evidence (T-11).
             if t.incomplete {
                 continue;
@@ -1246,7 +1245,6 @@ mod tests {
         assert_eq!((st.goals_met, st.goals_unaided), (2, 1));
         assert!((st.success() - 0.5).abs() < 1e-9);
         assert_eq!((st.helps, st.aids), (1, 1));
-        assert!(st.speaking_secs > 0);
     }
 
     #[test]

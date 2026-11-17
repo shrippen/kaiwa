@@ -308,6 +308,26 @@ pub struct Corrected {
     pub cue: Option<String>,
 }
 
+/// The longest text, in characters, that a card counts as a word rather than a phrase.
+const WORD_CHARS: usize = 6;
+
+/// What a new card is: a pattern when a correction made it, else a word (up to six
+/// characters, e.g. 駅) or a phrase.
+pub fn card_kind(text: &str, correction: Option<&Corrected>) -> (ItemKind, Source) {
+    if let Some(c) = correction {
+        return (
+            ItemKind::Pattern,
+            Source::Correction {
+                kind: c.kind.clone(),
+            },
+        );
+    }
+    if text.chars().count() <= WORD_CHARS {
+        return (ItemKind::Word, Source::NewWord);
+    }
+    (ItemKind::Phrase, Source::NewWord)
+}
+
 /// Adds the forms from a session's summary to the items, without duplicates (by the
 /// comparison key). Returns how many were new.
 pub fn add_from_summary(
@@ -324,16 +344,7 @@ pub fn add_from_summary(
             continue;
         }
         let found = corrections.iter().find(|c| crate::norm(&c.better) == key);
-        let (kind, source) = match found {
-            Some(c) => (
-                ItemKind::Pattern,
-                Source::Correction {
-                    kind: c.kind.clone(),
-                },
-            ),
-            None if text.chars().count() <= 6 => (ItemKind::Word, Source::NewWord),
-            None => (ItemKind::Phrase, Source::NewWord),
-        };
+        let (kind, source) = card_kind(text, found);
         let mut item = Item::new(text.clone(), kind, source, at);
         item.unit = unit.map(str::to_string);
         item.cue = found.and_then(|c| c.cue.clone());
@@ -347,6 +358,26 @@ pub fn add_from_summary(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn card_kind_by_correction_and_length() {
+        let c = Corrected {
+            better: "x".into(),
+            kind: "particle".into(),
+            original: None,
+            cue: None,
+        };
+        let (kind, source) = card_kind("ありがとうございます", Some(&c));
+        assert_eq!(kind, ItemKind::Pattern);
+        assert_eq!(
+            source,
+            Source::Correction {
+                kind: "particle".into()
+            }
+        );
+        assert_eq!(card_kind("えきまで", None).0, ItemKind::Word);
+        assert_eq!(card_kind("ありがとうございます", None).0, ItemKind::Phrase);
+    }
 
     fn at(day: i64) -> Moment {
         Day::from_ymd(2026, 10, 1)
