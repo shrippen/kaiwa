@@ -258,12 +258,17 @@ impl Backend {
 
     /// Takes the pause the app offered after a cut-off turn (/LF101/): it only ever makes
     /// the end-of-turn pause longer, and stays within the limits of the setting.
-    pub fn take_longer_pause(&self, secs: f32) -> anyhow::Result<()> {
+    /// Journaled as the setting it changes, so a fold ends with the same pause (ADR-010).
+    pub fn take_longer_pause(&self, secs: f32, now: Moment) -> anyhow::Result<()> {
         let secs = kaiwa_core::turn_end::clamp_pause(secs);
         if secs <= self.store.profile()?.end_pause_secs {
             return Ok(());
         }
-        self.store.update_profile(|p| p.end_pause_secs = secs)?;
+        let event = Event::Setting {
+            key: "endPause".into(),
+            value: secs.to_string(),
+        };
+        journal::record(self, &event, now)?;
         Ok(())
     }
 
@@ -539,20 +544,36 @@ mod tests {
         let b = backend("longer-pause");
         let start = b.profile().unwrap().end_pause_secs;
 
-        b.take_longer_pause(start - 0.1).unwrap();
+        b.take_longer_pause(start - 0.1, T0).unwrap();
         assert_eq!(b.profile().unwrap().end_pause_secs, start);
 
-        b.take_longer_pause(start + 0.5).unwrap();
+        b.take_longer_pause(start + 0.5, T0).unwrap();
         assert_eq!(b.profile().unwrap().end_pause_secs, start + 0.5);
 
-        b.take_longer_pause(start).unwrap();
+        b.take_longer_pause(start, T0).unwrap();
         assert_eq!(b.profile().unwrap().end_pause_secs, start + 0.5);
+    }
+
+    #[test]
+    fn a_longer_pause_is_journaled() {
+        // ADR-010: a fold must end with the same pause as live.
+        let live = backend("longer-pause-journal");
+        let start = live.profile().unwrap().end_pause_secs;
+        live.take_longer_pause(start + 0.37, T0).unwrap();
+
+        let folded = backend("longer-pause-folded");
+        for e in live.store.events().unwrap() {
+            journal::apply(&folded, &e.event, e.at).unwrap();
+        }
+        let pause = |b: &Backend| b.profile().unwrap().end_pause_secs;
+        assert!(pause(&live) > start);
+        assert_eq!(pause(&folded), pause(&live));
     }
 
     #[test]
     fn a_longer_pause_stays_within_the_limit() {
         let b = backend("longer-pause-limit");
-        b.take_longer_pause(99.0).unwrap();
+        b.take_longer_pause(99.0, T0).unwrap();
         let top = kaiwa_core::turn_end::clamp_pause(99.0);
         assert_eq!(b.profile().unwrap().end_pause_secs, top);
     }
