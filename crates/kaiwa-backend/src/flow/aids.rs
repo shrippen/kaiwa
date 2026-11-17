@@ -180,7 +180,7 @@ mod tests {
 
         assert_eq!(helped.step.expect("a step").level, 1);
         assert!(helped.failed.is_empty());
-        let kept = b.store.session_state(t.id().unwrap()).unwrap();
+        let kept = b.store.session_state(&t.id().unwrap()).unwrap();
         assert_eq!(kept.helps_used, 1);
     }
 
@@ -193,7 +193,7 @@ mod tests {
 
         assert!(heard.expect("counted").failed.is_empty());
         assert_eq!(aids(&t), 1);
-        let kept = b.store.session_state(t.id().unwrap()).unwrap();
+        let kept = b.store.session_state(&t.id().unwrap()).unwrap();
         assert_eq!(kept.aids.values().sum::<u32>(), 1);
     }
 

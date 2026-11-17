@@ -97,10 +97,10 @@ mod tests {
     #[test]
     fn a_review_that_was_not_saved_says_so() {
         let v = answer("袋", "袋", false, Ok(None), |_| {
-            Err(StoreError::NoSession(1))
+            Err(StoreError::NoSession("x-1".into()))
         });
         assert!(
-            v["error"].as_str().unwrap().contains("no session 1"),
+            v["error"].as_str().unwrap().contains("no session x-1"),
             "the page gets the error: {v}"
         );
         assert!(v.get("next").is_none(), "no date for what was not saved");
@@ -108,9 +108,13 @@ mod tests {
 
     #[test]
     fn an_unreadable_item_is_no_answer() {
-        let v = answer("袋", "袋", false, Err(StoreError::NoSession(2)), |_| {
-            Ok::<_, StoreError>(None)
-        });
+        let v = answer(
+            "袋",
+            "袋",
+            false,
+            Err(StoreError::NoSession("x-2".into())),
+            |_| Ok::<_, StoreError>(None),
+        );
         assert!(v["error"].is_string(), "the item is not guessed: {v}");
         assert!(v.get("right").is_none());
     }

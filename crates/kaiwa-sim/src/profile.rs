@@ -73,11 +73,11 @@ fn three_sessions(root: &Path, path: &Path) -> Result<Backend> {
         for t in ["マラです。よろしくおねがいします。", "コーヒーを好きです。"]
         {
             s.turn(t, Input::Spoken)?;
-            store.seed().save_session(id, &s.snapshot())?;
+            store.seed().save_session(&id, &s.snapshot())?;
         }
         store
             .seed()
-            .record(id, &s, at(d, 9 * 3600), at(d, 9 * 3600 + 400), Some(&c))?;
+            .record(&id, &s, at(d, 9 * 3600), at(d, 9 * 3600 + 400), Some(&c))?;
     }
     Ok(store)
 }
@@ -189,13 +189,13 @@ fn own_profile(root: &Path) -> Result<Option<String>> {
     let now = at(3, 19 * 3600);
     let talk = |b: &Backend, day: i64| -> Result<()> {
         let mut s = session()?;
-        let id = b.seed().begin_session(&s.snapshot(), at(day, 9 * 3600))?;
+        let t0 = at(day, 9 * 3600);
+        let id = b.seed().begin_session(&s.snapshot(), t0)?;
         for t in ["マラです。よろしくおねがいします。", "コーヒーを好きです。"]
         {
             s.turn(t, Input::Spoken)?;
         }
-        b.seed()
-            .record(id, &s, at(day, 9 * 3600), at(day, 9 * 3600 + 400), Some(&c))?;
+        b.seed().record(&id, &s, t0, t0.plus_secs(400), Some(&c))?;
         Ok(())
     };
     // Everything the app shows of a profile, and what it keeps.
@@ -399,7 +399,7 @@ fn srs_keigo(root: &Path) -> Result<Option<String>> {
         Input::Spoken,
     )?;
     store.seed().record(
-        id,
+        &id,
         &s,
         at(0, 9 * 3600),
         at(0, 9 * 3600 + 300),
@@ -476,7 +476,7 @@ fn local_switch(root: &Path) -> Result<Option<String>> {
             }
             store
                 .seed()
-                .record(id, &s, at(d, 9 * 3600), at(d, 9 * 3600 + 400), Some(&c))?;
+                .record(&id, &s, at(d, 9 * 3600), at(d, 9 * 3600 + 400), Some(&c))?;
         }
         Ok((store, dir))
     };
@@ -520,7 +520,7 @@ fn resume() -> Result<Option<String>> {
             "ドイツのハンブルクから来ました。",
         ] {
             s.turn(t, Input::Spoken)?;
-            store.seed().save_session(id, &s.snapshot())?;
+            store.seed().save_session(&id, &s.snapshot())?;
         }
         // The plasmoid closes in the middle of the character's answer: nothing more is saved.
     }
@@ -639,7 +639,7 @@ fn fast(root: &Path) -> Result<Option<String>> {
         let state = s.snapshot();
         store.batch(|st| {
             for n in 0..10_000 {
-                st.begin_session(&state, at(n / 4, (n % 4) * 3600))?;
+                st.begin_local(&state, at(n / 4, (n % 4) * 3600))?;
             }
             for n in 0..20_000 {
                 let mut item = Item::new(

@@ -47,11 +47,11 @@ impl Seed<'_> {
         self.0.store.set_state_value(key, v)
     }
 
-    pub fn begin_session(&self, state: &SessionState, at: Moment) -> Result<i64> {
-        self.0.store.begin_session(state, at)
+    pub fn begin_session(&self, state: &SessionState, at: Moment) -> Result<String> {
+        self.0.store.begin_local(state, at)
     }
 
-    pub fn save_session(&self, id: i64, state: &SessionState) -> Result<()> {
+    pub fn save_session(&self, id: &str, state: &SessionState) -> Result<()> {
         self.0.store.save_session(id, state)
     }
 
@@ -65,7 +65,7 @@ impl Seed<'_> {
 
     pub fn record(
         &self,
-        id: i64,
+        id: &str,
         s: &Session,
         started: Moment,
         ended: Moment,
@@ -80,7 +80,7 @@ impl Seed<'_> {
         started: Moment,
         ended: Moment,
         success: f64,
-    ) -> Result<i64> {
+    ) -> Result<String> {
         self.0
             .store
             .put_finished_session(state, started, ended, success)
@@ -94,7 +94,7 @@ impl Seed<'_> {
         self.0.store.finished_since(from)
     }
 
-    pub fn session_state(&self, id: i64) -> Result<SessionState> {
+    pub fn session_state(&self, id: &str) -> Result<SessionState> {
         self.0.store.session_state(id)
     }
 

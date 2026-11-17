@@ -1,6 +1,6 @@
 # ADR-010: Sync zwischen Geräten
 
-**Status:** Angenommen (Eigentümer, 17.11.2026; Schritt 1 umgesetzt) · **Bezug:** /LF700/, /LF507/, /LF710/, /LF711/, /LF713/, `jonas_sync`, `jonas_local_switch`
+**Status:** Angenommen (Eigentümer, 17.11.2026; Schritt 1 und 2 umgesetzt) · **Bezug:** /LF700/, /LF507/, /LF710/, /LF711/, /LF713/, `jonas_sync`, `jonas_local_switch`
 
 ## Kontext
 

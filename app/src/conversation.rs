@@ -1222,7 +1222,7 @@ impl qobject::Conversation {
         // Kept only with the opt-in, for the chosen days (/LF712/).
         if let Some(id) = self.talk.as_ref().and_then(|t| t.lock().ok()?.id()) {
             let turn = self.log.turns();
-            let kept = state().keep_recording(id, turn, rec.samples(), rec.sample_rate(), now());
+            let kept = state().keep_recording(&id, turn, rec.samples(), rec.sample_rate(), now());
             if let Err(e) = kept {
                 self.as_mut().say_unsaved(&format!("{e:#}"));
             }

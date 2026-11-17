@@ -326,7 +326,7 @@ pub fn stats(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     // The talks in order, for the trend: the turns of each and its mistakes per kind.
     let mut talks: Vec<(u32, BTreeMap<String, u32>)> = Vec::new();
     for row in st.store.finished_since(from)? {
-        let Ok(state) = st.store.session_state(row.id) else {
+        let Ok(state) = st.store.session_state(&row.id) else {
             continue;
         };
         let w = ((row.started.day().0 - start.0) / 7).clamp(0, 11) as usize;
@@ -426,7 +426,7 @@ pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     // Turns understood without help or a listening aid, per week (misheard turns left out).
     let mut unaided = [(0usize, 0usize); 2];
     for row in st.store.finished_since(start(before))? {
-        let Ok(state) = st.store.session_state(row.id) else {
+        let Ok(state) = st.store.session_state(&row.id) else {
             continue;
         };
         let w = usize::from(row.started.unix >= start(this));
