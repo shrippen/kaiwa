@@ -23,6 +23,8 @@ pub enum Trouble {
     /// The keys moved, but the note that says so could not be written: the next start tries
     /// again.
     KeysMarkerLost(String),
+    /// The tutor the settings or the environment name cannot be built (no key, model or base).
+    TutorUnready(String),
 }
 
 impl Backend {
@@ -143,5 +145,28 @@ mod tests {
         let mut spare = spare_at("spare-wipe");
         spare.wipe().unwrap();
         assert!(!spare.is_spare());
+    }
+
+    #[test]
+    fn a_tutor_that_cannot_be_set_up_reaches_the_learner() {
+        // The local test's environment wins over the settings.
+        if std::env::var_os("KAIWA_PROVIDER").is_some()
+            || std::env::var_os("ANTHROPIC_API_KEY").is_some()
+        {
+            return;
+        }
+        let b = crate::TempBackend::new("tutor-no-key", false).unwrap();
+        b.store
+            .update_profile(|p| p.tutor.provider = "anthropic".into())
+            .unwrap();
+
+        // Chosen, but no key anywhere.
+        b.provider("n5-01-aisatsu");
+
+        let troubles = b.take_troubles();
+        assert!(
+            matches!(troubles.as_slice(), [Trouble::TutorUnready(_)]),
+            "the unready tutor was only logged"
+        );
     }
 }

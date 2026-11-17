@@ -383,6 +383,8 @@ impl Talk {
         };
         self.finished = true;
         failed.extend(b.track_grammar(&self.session, now).err());
+        // A profile kept open for days still honours the keep deadline (/LF712/).
+        failed.extend(b.purge_recordings(now).err());
         Some(recorded)
     }
 
@@ -522,6 +524,26 @@ mod tests {
             .expect("the talk's row");
         assert_eq!(row.ended, Some(end));
         assert!(row.finished);
+    }
+
+    #[test]
+    fn finishing_a_talk_deletes_expired_recordings() {
+        // A profile kept open for days: the deadline holds at the end of a talk (/LF712/).
+        let b = backend("flow-purge");
+        let now = Moment::new(1_791_100_000, 120);
+        b.store
+            .update_profile(|p| p.keep_recordings_days = Some(7))
+            .unwrap();
+        let old = b
+            .keep_recording(1, 0, &[0.1; 1600], 16_000, now)
+            .unwrap()
+            .unwrap();
+        let later = now.plus_secs(8 * 86_400);
+        let mut t = open(&b, SCENARIO, later, Length::Short);
+
+        finish(&b, &mut t, later);
+
+        assert!(!old.exists(), "expired recording still there");
     }
 
     #[test]

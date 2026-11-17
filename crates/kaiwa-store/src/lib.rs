@@ -1442,7 +1442,7 @@ impl Store {
 
 mod events;
 mod migrations;
+mod shared;
 pub use events::Stored;
-
 #[cfg(test)]
 mod tests;

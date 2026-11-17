@@ -24,5 +24,14 @@ ConversationTest {
             t.conv.notice = ""
             verify(!callout().visible, "cleared with the next talk")
         }
+
+        function test_two_notices_are_both_shown() {
+            // The app object adds a notice below the last one (`append_notice`), one per line.
+            const both = "Das Profil ließ sich nicht lesen oder schreiben: disk full\nGespeichert, aber nicht ganz umgesetzt: locked"
+            t.conv.notice = both
+            verify(callout().visible)
+            compare(callout().text, both)
+            t.conv.notice = ""
+        }
     }
 }
