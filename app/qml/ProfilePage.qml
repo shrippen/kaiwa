@@ -13,7 +13,7 @@ QQC2.ScrollView {
     signal place()
     function t(de, en) { return kaiwa.lang === "en" ? en : de }
 
-    readonly property var learner: kaiwa.learner.length > 0 ? JSON.parse(kaiwa.learner) : ({ skills: [], scale: [], weak: [], knobs: [] })
+    readonly property var learner: kaiwa.learner.length > 0 ? JSON.parse(kaiwa.learner) : ({ skills: [], weak: [], knobs: [] })
     readonly property var stats: kaiwa.stats.length > 0 ? JSON.parse(kaiwa.stats) : ({ heat: [] })
     // Narrow (/LL303/): figures in two columns, the settings Kaiwa chose in one.
     readonly property bool compact: applicationWindow().compact
@@ -56,7 +56,6 @@ QQC2.ScrollView {
             Layout.rightMargin: KanteStyle.unit(6)
             kaiwa: page.kaiwa
             skills: page.learner.skills
-            marks: page.learner.scale || []
             compact: page.compact
         }
 

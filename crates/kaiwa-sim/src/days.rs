@@ -1039,7 +1039,7 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
     }
 
     // /LF610/: the heat map marks exactly the days with a minute of speaking or more; the
-    // words per level add up; the mistakes that faded do not read as rising.
+    // words per level add up; the trend of a kind of mistake is the one of the line shown.
     let stats = kaiwa_backend::views::stats(&b, now)?;
     let heat: Vec<u64> = stats["heat"]
         .as_array()
@@ -1075,11 +1075,12 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
         found.push("no kinds of mistakes in four weeks of corrections".into());
     }
     for m in &mistakes {
-        let text = m["text"].as_str().unwrap_or_default();
-        if !progress::blameless(text) {
-            found.push(format!("blame in: {text}"));
+        let trend = m["trend"].as_str().unwrap_or_default();
+        if !progress::blameless(trend) {
+            found.push(format!("blame in: {trend}"));
         }
-        // As the run had it: per turn, the later half of her talks against the earlier.
+        // As the run had it: mistakes per talk, the later half of her last ten talks against
+        // the earlier, the talks the chart shows.
         let kind = m["kind"].as_str().unwrap_or_default();
         let counted = |s: &SimSession| {
             s.mistakes
@@ -1088,33 +1089,18 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
                 .filter(|(k, severity)| k == kind && severity != "style")
                 .count() as f64
         };
-        let rate = |half: &[SimSession]| {
-            half.iter().map(counted).sum::<f64>()
-                / half
-                    .iter()
-                    .map(|s| f64::from(s.turns))
-                    .sum::<f64>()
-                    .max(1.0)
-        };
-        let (early, late) = run.sessions.split_at(run.sessions.len() / 2);
-        let want = match (rate(early), rate(late)) {
-            // Under four talks or three mistakes there is no trend, only the count.
-            _ if run.sessions.len() < 4 || run.sessions.iter().map(counted).sum::<f64>() < 3.0 => {
-                "bisher"
-            }
+        let shown = &run.sessions[run.sessions.len().saturating_sub(kaiwa_core::trend::WINDOW)..];
+        let mean = |half: &[SimSession]| half.iter().map(counted).sum::<f64>() / half.len() as f64;
+        let (early, late) = shown.split_at(shown.len() / 2);
+        let want = match (mean(early), mean(late)) {
+            // Under four talks or three mistakes there is no trend, only the line.
+            _ if shown.len() < 4 || shown.iter().map(counted).sum::<f64>() < 3.0 => "",
             (e, l) if l < 0.75 * e => "seltener",
             (e, l) if l > 1.25 * e => "häufiger",
-            _ => "gleich",
+            _ => "gleich oft",
         };
-        if !text.contains(want) {
-            found.push(format!("{kind} should read {want}: {text}"));
-        }
-        // Mara's particle and counter mistakes fade after four corrections each.
-        if ["particle", "counter"].contains(&m["kind"].as_str().unwrap_or_default())
-            && (text.contains("häufiger") || text.contains("more often"))
-        {
-            let counts = &m["counts"];
-            found.push(format!("a faded mistake reads as rising: {text} {counts}"));
+        if trend != want {
+            found.push(format!("{kind} should read \"{want}\": \"{trend}\""));
         }
     }
     Ok((!found.is_empty()).then(|| found.join("; ")))

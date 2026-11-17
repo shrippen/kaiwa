@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use kaiwa_core::clock::Moment;
 use kaiwa_core::curriculum::Unit;
 use kaiwa_core::difficulty::KNOBS;
-use kaiwa_core::learner::{SCALE_MARKS, SKILLS};
+use kaiwa_core::learner::SKILLS;
 use kaiwa_core::progress::{DailyGoal, streak_note};
 use kaiwa_store::{FeedbackSource, Script};
 use serde_json::{Value, json};
@@ -175,6 +175,7 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
                 "words": words.split_once(": ").map(|(_, w)| w.to_string()).unwrap_or(words.clone()),
                 "short": l.model.level_word(*s, lang),
                 "share": l.model.share(*s),
+                "marks": s.marks().iter().map(|(name, at)| json!({ "name": name, "at": at })).collect::<Vec<_>>(),
             })
         })
         .collect();
@@ -214,7 +215,6 @@ pub fn learner(st: &Backend) -> anyhow::Result<Value> {
     let offer = crate::skips::skip_offer(st)?;
     Ok(json!({
         "skills": skills,
-        "scale": SCALE_MARKS.iter().map(|(name, at)| json!({ "name": name, "at": at })).collect::<Vec<_>>(),
         "weak": weak,
         "grammar": grammar,
         "knobs": knobs,

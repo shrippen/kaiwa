@@ -3,17 +3,19 @@ import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import Kante
 
-// The skills (/LF202/): one row each, the level as a bar on a common scale with the levels
-// named over it, the level in words at its end. A click opens the row: its sentence and the
+// The skills (/LF202/): one row each, the level as a bar with the levels it is measured in
+// named over it, the level in words at its end. The view gives each skill its own marks (the
+// JLPT levels; the politeness its own steps): the head names those of the first skill, a row
+// with other marks (the skills of one scale are listed together) names its own under its bar. A click opens the row: its sentence and the
 // two corrections, "I know this" and "too hard". The view says where the bar ends and where
 // the heads sit; this holds no rule.
 ColumnLayout {
     id: rows
 
-    // The app object (`kaiwa`), the learner view's `skills` and `scale` (as `marks`).
+    // The app object (`kaiwa`), the learner view's `skills`, each with its `marks`.
     required property var kaiwa
     property var skills: []
-    property var marks: []
+    readonly property var headMarks: skills.length > 0 ? skills[0].marks : []
     property bool compact: false
     /** The skill whose row is open, "" for none; it survives a refresh of the view. */
     property string opened: ""
@@ -27,6 +29,11 @@ ColumnLayout {
 
     spacing: 0
 
+    function namesOf(marks) { return marks.map(m => m.name).join("|") }
+    // Where a mark sits on a bar `width` long, centred on its level, kept inside the bar.
+    function markX(mark, width, labelWidth) {
+        return Math.max(0, Math.min(width - labelWidth, mark.at * width - labelWidth / 2))
+    }
     // Column heads: "Skill · Start N5 N4 N3 · Level"; the levels at the share of the bar
     // where the view puts them.
     RowLayout {
@@ -43,14 +50,13 @@ ColumnLayout {
             Layout.preferredHeight: startHead.implicitHeight
             KanteSectionLabel { id: startHead; x: 0; visible: !rows.compact; text: rows.t("Start", "Start") }
             Repeater {
-                model: rows.marks
+                model: rows.headMarks
                 delegate: KanteSectionLabel {
                     required property int index
                     required property var modelData
-                    // Not over the head before it where the bar is too short for both.
-                    visible: index === 0 || (modelData.at - rows.marks[index - 1].at) * rows.barWidth > width + KanteStyle.unit(6)
-                    // Centred on its level, kept inside the bar's end.
-                    x: Math.min(rows.barWidth - width, modelData.at * rows.barWidth - width / 2)
+                    // Not over the mark before it where the bar is too short for both.
+                    visible: index === 0 || (modelData.at - rows.headMarks[index - 1].at) * rows.barWidth > width + KanteStyle.unit(6)
+                    x: rows.markX(modelData, rows.barWidth, width)
                     text: modelData.name
                 }
             }
@@ -79,10 +85,30 @@ ColumnLayout {
                 onClicked: rows.opened = line.open ? "" : modelData.skill
                 trailing: RowLayout {
                     spacing: rows.gap
-                    KanteProgressBar {
+                    ColumnLayout {
                         Layout.preferredWidth: rows.barWidth
-                        value: modelData.share
-                        Accessible.name: modelData.name
+                        spacing: KanteStyle.unit(2)
+                        KanteProgressBar {
+                            Layout.fillWidth: true
+                            value: modelData.share
+                            Accessible.name: modelData.name
+                        }
+                        // Marks other than the head's: this skill's own.
+                        Item {
+                            readonly property bool own: rows.namesOf(modelData.marks) !== rows.namesOf(rows.headMarks)
+                            visible: own && modelData.marks.length > 0
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: visible ? ownProbe.implicitHeight : 0
+                            KanteSectionLabel { id: ownProbe; visible: false; text: "0" }
+                            Repeater {
+                                model: parent.own ? modelData.marks : []
+                                delegate: KanteSectionLabel {
+                                    required property var modelData
+                                    x: rows.markX(modelData, rows.barWidth, width)
+                                    text: modelData.name
+                                }
+                            }
+                        }
                     }
                     QQC2.Label {
                         Layout.preferredWidth: rows.wordsWidth

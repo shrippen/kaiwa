@@ -15,12 +15,12 @@ Item {
     Component { id: appObject; AppObject { } }
 
     // As the views deliver them (kaiwa-backend `learner`, `stats`): the page holds no rule.
+    readonly property var nMarks: [{ name: "N5", at: 0.375 }, { name: "N4", at: 0.625 }]
     readonly property var learner: ({
         skills: [
-            { skill: "listening", name: "Hören", words: "Hören: Anfang N5 mit Hilfe.", short: "Anfang N5", share: 0.25 },
-            { skill: "register", name: "Höflichkeitsformen", words: "Spricht locker wie unter Freunden.", short: "です/ます fehlt", share: 0.25 }
+            { skill: "listening", name: "Hören", words: "Hören: Anfang N5 mit Hilfe.", short: "Anfang N5", share: 0.25, marks: root.nMarks },
+            { skill: "register", name: "Höflichkeitsformen", words: "Spricht locker wie unter Freunden.", short: "です/ます fehlt", share: 0.25, marks: [{ name: "です/ます", at: 0.5 }, { name: "敬語", at: 1.0 }] }
         ],
-        scale: [{ name: "N5", at: 0.375 }, { name: "N4", at: 0.625 }],
         weak: [], knobs: []
     })
     readonly property var stats: ({
@@ -82,6 +82,10 @@ Item {
             verify(heads.indexOf("N5") >= 0)
             verify(heads.indexOf("N4") >= 0)
             verify(heads.indexOf("Stufe") >= 0)
+            // The politeness has its own marks under its bar, not the N levels of the head.
+            verify(heads.indexOf("です/ます") >= 0)
+            verify(heads.indexOf("敬語") >= 0)
+            compare(heads.filter(h => h === "N5").length, 1)
         }
 
         function test_a_click_opens_a_row_and_shows_its_buttons() {
