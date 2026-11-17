@@ -186,6 +186,18 @@ mod tests {
         }
     }
 
+    #[test]
+    fn the_amount_changes_at_its_borders() {
+        for (level, amount) in [
+            (3.49, Amount::Little),
+            (3.5, Amount::Normal),
+            (5.49, Amount::Normal),
+            (5.5, Amount::Much),
+        ] {
+            assert_eq!(Amount::for_level(level), amount, "{level}");
+        }
+    }
+
     fn c(severity: Severity, better: &str) -> Correction {
         Correction {
             severity,

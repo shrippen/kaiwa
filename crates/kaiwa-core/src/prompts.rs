@@ -213,4 +213,20 @@ mod tests {
             assert!(!p.contains("N5/N4"), "{own}");
         }
     }
+
+    #[test]
+    fn the_level_changes_at_its_borders() {
+        for (own, level) in [
+            (3.49, "N5"),
+            (3.5, "N4"),
+            (5.49, "N4"),
+            (5.5, "N3"),
+            (6.49, "N3"),
+            (6.5, "N2"),
+            (7.49, "N2"),
+            (7.5, "N1"),
+        ] {
+            assert_eq!(jlpt(None, Some(own)), level, "{own}");
+        }
+    }
 }

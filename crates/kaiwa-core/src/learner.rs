@@ -404,4 +404,13 @@ mod tests {
         assert!(m.level(Skill::Listening) > before);
         assert_eq!(m.corrections_by_learner, 1);
     }
+
+    #[test]
+    fn the_words_change_at_the_n4_and_n3_borders() {
+        let words = |v| describe_level(Skill::Listening, v, "en");
+        assert!(words(3.49).contains("at N5"));
+        assert!(words(3.5).contains("first N4"));
+        assert!(words(5.49).contains("confident at N4"));
+        assert!(words(5.5).contains("beyond N4"));
+    }
 }
