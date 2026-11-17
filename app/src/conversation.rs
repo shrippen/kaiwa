@@ -33,6 +33,7 @@ pub mod qobject {
         #[qproperty(i32, talk_state, cxx_name = "talkState")]
         #[qproperty(f64, level)]
         #[qproperty(QString, speech_error, cxx_name = "speechError")]
+        #[qproperty(bool, speech_missing, cxx_name = "speechMissing")]
         /// The character's voice when one is loaded ("" without), e.g. "Übergangsstimme".
         #[qproperty(QString, voice)]
         /// Whether the character speaks its replies (the learner can mute it).
@@ -202,7 +203,7 @@ use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use kaiwa_ai::AiError;
 use kaiwa_backend::ears::{
-    self, Clip, Ears, Hands, Heard, Mic, MoraFailure, Moras, Offer, Patience, Recognition,
+    self, Clip, Ears, Hands, Heard, Mic, MoraFailure, Moras, Offer, Patience,
 };
 use kaiwa_backend::flow::{self, Hear, Length, Talk, VoiceState};
 use kaiwa_backend::log::Log;
@@ -214,6 +215,9 @@ use serde_json::Value;
 
 use crate::state::{now, state};
 use crate::util::{append_notice, book_latency, keep_mark, or_default};
+
+mod recognizer;
+use recognizer::load_recognizer;
 
 #[derive(Default)]
 pub struct ConversationRust {
@@ -231,6 +235,7 @@ pub struct ConversationRust {
     talk_state: i32,
     level: f64,
     speech_error: QString,
+    speech_missing: bool,
     voice: QString,
     voice_on: bool,
     louder: bool,
@@ -1402,26 +1407,6 @@ impl qobject::Conversation {
             self.as_mut().set_help_level(i32::from(step.level));
         }
     }
-}
-
-/// Loads ReazonSpeech; without the model the talk button shows why.
-fn load_recognizer(thread: &CxxQtThread<qobject::Conversation>, lang: &str) {
-    let lang = lang.to_string();
-    let loaded = Recognition::load();
-    let _ = thread.queue(move |mut q| match loaded {
-        Ok(rec) => {
-            q.as_mut().rust_mut().ears.set_recognition(rec);
-            q.as_mut().set_speech_error(QString::default());
-            if *q.talk_state() != SPEAKING {
-                q.as_mut().set_talk_state(READY);
-            }
-        }
-        Err(e) => {
-            let text = ears::recognizer_text(&e, &lang);
-            q.as_mut().set_speech_error(QString::from(&text));
-            q.as_mut().set_talk_state(ERROR);
-        }
-    });
 }
 
 /// Loads Kokoro and opens the speaker, then says the opening line.

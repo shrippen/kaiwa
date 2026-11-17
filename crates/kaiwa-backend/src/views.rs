@@ -53,17 +53,8 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         .as_ref()
         .map(|r| json!({ "id": r.id, "title": scenario_title(st, &r.scenario, lang) }));
     let DailyGoal::Minutes(goal_value) = p.daily_goal;
-    let goal_text = if de {
-        format!(
-            "{} von {goal_value} Minuten gesprochen",
-            t.record.speaking_secs / 60
-        )
-    } else {
-        format!(
-            "{} of {goal_value} minutes spoken",
-            t.record.speaking_secs / 60
-        )
-    };
+    let (spoken, rest) = crate::week::goal_words(de, goal_value, t.record.speaking_secs);
+    let week = crate::week::bars(st, now, p.daily_goal, de)?;
     // Free talk (/LF116/): the topic scenarios outside the path, at the learner's difficulty.
     let free: Vec<Value> = st
         .scenarios
@@ -83,13 +74,17 @@ pub fn today(st: &Backend, now: Moment) -> anyhow::Result<Value> {
         "name": p.name,
         "gamification": p.gamification,
         "goalFraction": t.goal_fraction,
-        "goalText": goal_text,
+        "goalText": format!("{spoken} {rest}"),
+        "goalSpoken": spoken,
+        "goalRest": rest,
         "goalValue": goal_value,
         "goalMet": t.record.met(p.daily_goal),
         "streakDays": t.streak.days,
         "streakNote": if p.gamification { streak_note(&t.streak, t.day, lang) } else { String::new() },
         "xpToday": t.record.xp,
         "due": t.due,
+        "reviewMinutes": kaiwa_core::srs::review_minutes(t.due),
+        "week": week,
         "refresher": t.refresher,
         "open": open,
         "next": next,

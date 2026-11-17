@@ -10,5 +10,6 @@ Kirigami.ApplicationWindow {
     readonly property bool compact: false
     readonly property Component conversation: Component { ConversationPage { } }
     readonly property Component path: Component { PathPage { } }
+    readonly property Component start: Component { StartPage { } }
     readonly property Component settings: Component { SettingsPage { } }
 }

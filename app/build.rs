@@ -17,6 +17,8 @@ fn main() {
         "qml/MainTabs.qml",
         "qml/NoticeLine.qml",
         "qml/SpareLine.qml",
+        "qml/SpeechMissingLine.qml",
+        "qml/LeaveDialog.qml",
         "qml/leave.js",
         "qml/record.js",
     ]))

@@ -26,6 +26,8 @@ pub const RETENTION: f64 = 0.9;
 /// A break this long starts with a refresher.
 pub const BREAK_DAYS: i64 = 7;
 pub const REFRESHER_SIZE: usize = 10;
+/// What one review item takes on average, for the estimate on the start page.
+const REVIEW_SECS_PER_ITEM: usize = 30;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -252,6 +254,11 @@ pub fn due(items: &[Item], now: Moment, limit: usize) -> Vec<&Item> {
     list
 }
 
+/// About how many minutes `items` reviews take, rounded up: 7 items are 4 minutes.
+pub fn review_minutes(items: usize) -> usize {
+    (items * REVIEW_SECS_PER_ITEM).div_ceil(60)
+}
+
 /// The re-entry after a break (/LF231/, T-07): the `REFRESHER_SIZE` due items closest to being
 /// forgotten stay due, the refresher. The rest of what is due moves to the next days,
 /// `REFRESHER_SIZE` a day, the most at risk first, so no answer pulls up another one today and
@@ -357,6 +364,14 @@ pub fn add_from_summary(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn review_minutes_round_up() {
+        assert_eq!(super::review_minutes(0), 0);
+        assert_eq!(super::review_minutes(1), 1);
+        assert_eq!(super::review_minutes(7), 4);
+        assert_eq!(super::review_minutes(10), 5);
+    }
+
     use super::*;
 
     #[test]
