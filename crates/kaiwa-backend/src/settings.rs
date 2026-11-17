@@ -557,16 +557,17 @@ mod tests {
     #[test]
     fn a_longer_pause_is_journaled() {
         // ADR-010: a fold must end with the same pause as live.
-        let b = backend("longer-pause-journal");
-        let start = b.profile().unwrap().end_pause_secs;
-        b.take_longer_pause(start + 0.5, T0).unwrap();
-        let journaled = b
-            .store
-            .events()
-            .unwrap()
-            .into_iter()
-            .any(|e| matches!(e.event, Event::Setting { ref key, .. } if key == "endPause"));
-        assert!(journaled, "no endPause event");
+        let live = backend("longer-pause-journal");
+        let start = live.profile().unwrap().end_pause_secs;
+        live.take_longer_pause(start + 0.37, T0).unwrap();
+
+        let folded = backend("longer-pause-folded");
+        for e in live.store.events().unwrap() {
+            journal::apply(&folded, &e.event, e.at).unwrap();
+        }
+        let pause = |b: &Backend| b.profile().unwrap().end_pause_secs;
+        assert!(pause(&live) > start);
+        assert_eq!(pause(&folded), pause(&live));
     }
 
     #[test]
