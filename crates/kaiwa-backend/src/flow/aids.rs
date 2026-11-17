@@ -8,8 +8,8 @@
 //! ```
 //!
 //! No aid counts while the tutor works on a sent turn: it would count for a turn whose answer
-//! came without it. A translation asked before the turn and arriving during it is shown, not
-//! counted.
+//! came without it. A translation asked before the turn and arriving during it is shown and
+//! held: it counts only if that turn fails and the line stays open.
 
 use kaiwa_ai::AiError;
 use kaiwa_core::Moment;
@@ -130,6 +130,9 @@ impl Talk {
         let mut failed: Vec<anyhow::Error> = b.book_costs(now, false).err().into_iter().collect();
         // The learner has it now; during a sent turn it would count for an answer given
         // without it (/LF212/).
+        if got.result.is_ok() && self.asking {
+            self.held = Some(got.line);
+        }
         if got.result.is_ok() && !self.asking {
             self.session.aid(Aid::Translate, got.line);
             failed.extend(self.save(b).err());
