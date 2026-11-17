@@ -568,6 +568,18 @@ mod tests {
     }
 
     #[test]
+    fn a_unit_talk_tells_the_tutor_its_level() {
+        // The unit's level from its curriculum file, started and continued (AUDIT.md, 4).
+        let b = backend("flow-unit-level");
+        let n4 = b.scenarios.get("n4-01-keiken").cloned().unwrap();
+        let (started, _) = b.new_talk(n4.clone()).unwrap();
+        assert!(started.reply_instructions().contains("JLPT N4"));
+
+        let (continued, _) = b.continued_talk(n4, started.snapshot()).unwrap();
+        assert!(continued.reply_instructions().contains("JLPT N4"));
+    }
+
+    #[test]
     fn an_unstored_talk_saves_nothing() {
         let b = backend("flow-unstored");
         let now = Moment::new(1_791_100_000, 120);
