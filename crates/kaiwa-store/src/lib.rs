@@ -21,8 +21,8 @@ use kaiwa_core::curriculum::{CourseProgress, Curriculum};
 use kaiwa_core::difficulty::{Change, Difficulty, Regulator};
 use kaiwa_core::feedback::Amount;
 use kaiwa_core::learner::{LearnerModel, Skill};
-use kaiwa_core::progress::{DailyGoal, DayRecord, Pause, Streak, XP_REVIEW, streak};
-use kaiwa_core::session::{Input, Session, SessionState};
+use kaiwa_core::progress::{DailyGoal, DayRecord, Pause, Streak, XP_REVIEW, streak, turn_counts};
+use kaiwa_core::session::{Session, SessionState};
 use kaiwa_core::srs::{self, Grade, Item};
 use migrations::MIGRATIONS;
 use rusqlite::{Connection, OptionalExtension, params};
@@ -833,13 +833,10 @@ impl Store {
                 .collect(),
         };
 
-        // Practice time: the session's wall time, at most an hour, in the share of spoken turns;
-        // a turn whose analysis had gaps was spoken too (T-11).
-        let wall = (ended.unix - started.unix).clamp(0, 3600) as f64;
-        let turns = s.turns();
-        let spoken = turns.iter().filter(|t| t.input == Input::Spoken).count();
-        let spoken_share = spoken as f64 / turns.len().max(1) as f64;
-        let speaking = (wall * spoken_share).round() as u32;
+        // A turn whose analysis had gaps was spoken too (T-11), so the share and the day's
+        // typed turns count all turns.
+        let typed = turn_counts(s.turns()).1;
+        let speaking = s.spoken_secs((ended.unix - started.unix) as f64);
         let xp = summary.xp.xp;
         let mut rec = self.day(day)?;
         // The goal of the day, for the streak later (/LF602/). A talk that ends after
@@ -851,7 +848,7 @@ impl Store {
         rec.add_talk(
             levels_before,
             speaking,
-            stats.typed_turns,
+            typed,
             xp,
             scenario_done || s.done(),
         );
@@ -960,18 +957,7 @@ impl Store {
             let found = corrections
                 .iter()
                 .find(|c| kaiwa_core::norm(&c.better) == *key);
-            (item.kind, item.source) = match found {
-                Some(c) => (
-                    srs::ItemKind::Pattern,
-                    srs::Source::Correction {
-                        kind: c.kind.clone(),
-                    },
-                ),
-                None if item.text.chars().count() <= 6 => {
-                    (srs::ItemKind::Word, srs::Source::NewWord)
-                }
-                None => (srs::ItemKind::Phrase, srs::Source::NewWord),
-            };
+            (item.kind, item.source) = srs::card_kind(&item.text, found);
             item.cue = found.and_then(|c| c.cue.clone());
             item.original = found.and_then(|c| c.original.clone());
             self.put_item(&item)?;

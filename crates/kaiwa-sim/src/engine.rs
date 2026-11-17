@@ -304,7 +304,7 @@ fn analysis_gaps() -> Result<Option<String>> {
             st.turns, st.clean_turns, st.mistakes
         ));
     }
-    if st.speaking_secs == 0 {
+    if s.spoken_secs(60.0) == 0 {
         found.push("the time spoken does not count for the day".into());
     }
     if !s.evidence().at_level.is_empty() {
@@ -559,10 +559,10 @@ fn typed() -> Result<Option<String>> {
     let mut s = session("n5-06-eki")?;
     s.turn(&kana, Input::Typed)?;
     let st = s.stats();
-    if st.typed_turns != 1 || st.speaking_secs != 0 {
+    if st.typed_turns != 1 || s.spoken_secs(60.0) != 0 {
         return Ok(Some(format!(
-            "typed {}, speaking {} s",
-            st.typed_turns, st.speaking_secs
+            "typed {}, booked speaking time not 0",
+            st.typed_turns
         )));
     }
     Ok((s.summary().typed_turns != 1).then(|| "the summary does not count it as typed".into()))

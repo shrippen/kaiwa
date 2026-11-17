@@ -20,6 +20,7 @@ use kaiwa_core::difficulty::{Difficulty, KNOBS, Regulator};
 use kaiwa_core::learner::{Evidence, LearnerModel, Skill, level_index};
 use kaiwa_core::progress::{
     self, DailyGoal, DayRecord, XP_GOAL, XP_REVIEW, XP_SPOKEN, XP_TYPED, streak, streak_note,
+    talk_secs,
 };
 use kaiwa_core::srs::{self, Grade, Item};
 use serde::{Deserialize, Serialize};
@@ -496,13 +497,12 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                 *a += 0.05 * (1.0 - (-minutes / 20.0).exp());
             }
 
-            let spoken_share = 1.0 - f64::from(typed) / f64::from(turns);
             let rec = records.entry(at.day()).or_default();
             rec.goal = Some(goal);
             rec.reviews_done += reviews;
             rec.add_talk(
                 levels_before,
-                (minutes * 60.0 * spoken_share).round() as u32,
+                talk_secs(minutes * 60.0, turns, typed),
                 typed,
                 xp,
                 st.goals_met == goals,
