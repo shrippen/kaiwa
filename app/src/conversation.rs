@@ -848,10 +848,10 @@ impl qobject::Conversation {
         let secs = *self.longer_pause() as f32;
         let mut failed = None;
         if secs > 0.0 {
-            failed = state().take_longer_pause(secs).err().map(|e| e.to_string());
+            failed = state().take_longer_pause(secs, now()).err();
         }
         if let Some(e) = failed {
-            self.as_mut().say_unsaved(&e);
+            self.as_mut().say_unsaved(&e.to_string());
         }
         self.as_mut().rust_mut().patience.take_offer();
         self.as_mut().set_longer_pause(0.0);
