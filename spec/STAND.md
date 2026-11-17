@@ -24,7 +24,7 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 Im Artefakt der Nacht beantwortet:
 
 - **E-1, E-2 (Sync):** Vorschläge angenommen, eingetragen in [ADR-010](adr/010-sync.md).
-- **E-3:** Die Zeit nach dem letzten Zug zählt weiter nicht; kein Schritt „Fertig“.
+- **E-3:** Die Zeit nach dem letzten Zug zählt weiter nicht; der vorgeschlagene Knopf „Fertig“ unter der Bilanz entfällt.
 - **E-4 (Gestaltung):** alle Vorschläge, vorher je eine Skizze als Artefakt: Lernpfad in Gruppen je Einheit mit den Namen der Sperren, die der Pfad zeigt; Japanisch im Gespräch größer; Demo-Banner verweist auf die Einstellungen; Aussprache-Hinweise ohne Modell als „Braucht Modell“ statt Schalter; „Kein Sprechen“ als ruhige Zeile; Heute in zwei Spalten; Fähigkeiten im Profil als Balken, Knöpfe auf Klick; Verlaufslinien mit Achse und Tooltip; dB an der Pegelskala. Die Wochenkarte behält Di, Do, Sa.
 - **E-5 (Audit):** alle sechs Funde des vierten Audits beheben, 3 und 6 vor Sync-Schritt 2.
 
@@ -32,7 +32,7 @@ Im Artefakt der Nacht beantwortet:
 
 Alle Funde des dritten Audits behoben (Eigentümer, 16.11.2026: „korrigiere alle funde im audit“), je ein PR: #159 (Simulation öffnet Gespräche und Profile über das Backend, `kaiwa-sim/src/talk.rs`; teilweise, Rest in `ARCHITECTURE.md`), #160 (Keigo-Regel für das Überspringen einmal im Kern, `LearnerModel::may_skip`; `skips.rs`; `leave_out_placement` und `take_placement_offer` statt zweimal `skip_placement`), #161 (jedes Backend hat seinen eigenen Kostenzähler statt eines globalen), #162 (Fehler neben dem Gespräch erreichen den Lernenden über `Backend::take_troubles`; ein unlesbares Profil startet ein Ersatzprofil im Speicher mit dauerhaftem Hinweis statt abzustürzen), #165 (Hilfe, Hörhilfen und Übersetzung als Befehle des Gesprächs im Backend; `session_mut` geschlossen), Fund 4 als #167 (Fehlersätze aus `kaiwa-backend/src/words.rs`, Meldungen werden angehängt; der nicht einsatzbereite Tutor erreicht den Lernenden). Dazu #163 (Kante-Abgleich), #166 (abgelaufene Aufnahmen auch am Ende eines Gesprächs löschen; Kosten in einer Transaktion buchen) und #168 (eine Übersetzung, die während eines Zuges ankommt, zählt nur, wenn der Zug scheitert, /LF212/).
 
-Sync begonnen (M6, /LF700/): [ADR-010](adr/010-sync.md) (vorgeschlagen) synchronisiert über ein Journal: Jede Handlung des Lernenden ist ein Ereignis, der Stand ist dessen Faltung durch dieselben Befehle wie live; Ablage später als eine `age`-Datei je Gerät in einem Ordner oder per WebDAV. Schritt 1 ist gemergt (#164): Tabelle `events` (Migration 5), Geräte-Id, Wiederholungen und Einstellungen als Ereignisse, Test „Faltung = live“. Nächster Schritt: Gespräche als Ereignisse und Export `kaiwa-export/4` mit dem Journal. Offen für den Eigentümer: welche Einstellungen je Gerät gelten, und die Bestätigung der Schichten für den Baustein `kaiwa-sync` (Schritt 5).
+Sync begonnen (M6, /LF700/): [ADR-010](adr/010-sync.md) (angenommen) synchronisiert über ein Journal: Jede Handlung des Lernenden ist ein Ereignis, der Stand ist dessen Faltung durch dieselben Befehle wie live; Ablage später als eine `age`-Datei je Gerät in einem Ordner oder per WebDAV. Schritt 1 ist gemergt (#164): Tabelle `events` (Migration 5), Geräte-Id, Wiederholungen und Einstellungen als Ereignisse, Test „Faltung = live“. Nächster Schritt: Gespräche als Ereignisse und Export `kaiwa-export/4` mit dem Journal.
 
 ## Tage 2026-11-13 bis 16
 

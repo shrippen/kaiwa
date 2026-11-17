@@ -40,7 +40,7 @@ Das Profil ist eine SQLite-Datei. Lernstand (`learning`), Karten (`items`) und T
 2. Gespräche als Ereignisse über `Session::restore`; Gesprächs-Id als Text; Export `kaiwa-export/4` mit dem Journal (es sind Daten des Lernenden, /LF710/), Schema in `spec/export.schema.json`.
 3. Die übrigen Ereignisse; danach schreibt nichts mehr am Journal vorbei.
 4. `Backend::merge` und Beitritt, mit zwei Profilen getestet: beide üben am selben Tag getrennt, danach sind beide gleich und die Tageszähler die Summe.
-5. Baustein `kaiwa-sync` mit Ordner, Speicher und `age`; `Backend::sync_now`; `jonas_sync` in `kaiwa-sim` über einen Ordner. Ändert die Schichten in `ARCHITECTURE.md`: der Eigentümer bestätigt.
+5. Baustein `kaiwa-sync` mit Ordner, Speicher und `age`; `Backend::sync_now`; `jonas_sync` in `kaiwa-sim` über einen Ordner. Ändert die Schichten in `ARCHITECTURE.md` (vom Eigentümer bestätigt, E-2, 17.11.2026).
 6. WebDAV, Kachel in den Einstellungen, Zeile in „Was verlässt das Gerät?“ (/LF711/).
 
 ## Risiken
