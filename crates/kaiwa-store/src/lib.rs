@@ -25,7 +25,7 @@ use kaiwa_core::progress::{DailyGoal, DayRecord, Pause, Streak, XP_REVIEW, strea
 use kaiwa_core::session::{Session, SessionState};
 use kaiwa_core::srs::{self, Grade, Item};
 use kaiwa_core::{Lang, feedback::Amount};
-use migrations::MIGRATIONS;
+use migrations::{MIGRATIONS, rename_unit_ids};
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
@@ -368,97 +368,6 @@ pub fn delete_profile(path: &Path) -> Result<()> {
         let p = PathBuf::from(p);
         if p.exists() {
             std::fs::remove_file(p)?;
-        }
-    }
-    Ok(())
-}
-
-/// A required array of an export; missing is an error, so a cut-off file imports nothing.
-fn array<'a>(v: &'a serde_json::Value, key: &str) -> Result<&'a Vec<serde_json::Value>> {
-    v[key]
-        .as_array()
-        .ok_or_else(|| StoreError::WrongFormat(key.into()))
-}
-
-/// Migration 2: unit ids before → after (scenario ids carry the unit id as prefix). Frozen;
-/// one pass per text, so n5-13 → n5-03 and n5-03 → n5-04 do not chain.
-const UNIT_IDS_2: &[(&str, &str)] = &[
-    ("n5-13", "n5-03"),
-    ("n5-03", "n5-04"),
-    ("n5-04", "n5-05"),
-    ("n5-05", "n5-06"),
-    ("n5-06", "n5-07"),
-    ("n5-16", "n5-08"),
-    ("n5-07", "n5-09"),
-    ("n5-08", "n5-10"),
-    ("n5-14", "n5-11"),
-    ("n5-09", "n5-12"),
-    ("n5-10", "n5-13"),
-    ("n5-11", "n5-14"),
-    ("n5-12", "n5-16"),
-    ("n4-07", "n4-06"),
-    ("n4-06", "n4-07"),
-    ("n4-13", "n4-09"),
-    ("n4-09", "n4-10"),
-    ("n4-10", "n4-11"),
-    ("n4-14", "n4-12"),
-    ("n4-11", "n4-13"),
-    ("n4-12", "n4-14"),
-];
-
-/// Every unit id token (`n5-13`, also inside `n5-13-jugyou`) in `text`, renamed in one pass.
-fn renamed(text: &str) -> String {
-    let b = text.as_bytes();
-    let mut out = String::with_capacity(text.len());
-    let mut i = 0;
-    while i < b.len() {
-        let token = b.get(i..i + 5).filter(|t| {
-            (t[0] == b'n')
-                && (t[1] == b'4' || t[1] == b'5')
-                && t[2] == b'-'
-                && t[3].is_ascii_digit()
-                && t[4].is_ascii_digit()
-        });
-        let before_ok = i == 0 || !b[i - 1].is_ascii_alphanumeric();
-        let after_ok = b.get(i + 5).is_none_or(|c| !c.is_ascii_digit());
-        if let (Some(t), true, true) = (token, before_ok, after_ok) {
-            let t = std::str::from_utf8(t).unwrap_or_default();
-            if let Some((_, new)) = UNIT_IDS_2.iter().find(|(old, _)| *old == t) {
-                out.push_str(new);
-                i += 5;
-                continue;
-            }
-        }
-        let ch = text[i..].chars().next().unwrap_or_default();
-        out.push(ch);
-        i += ch.len_utf8();
-    }
-    out
-}
-
-/// Rewrites the stored ids of migration 2 in every JSON text of the profile.
-fn rename_unit_ids(db: &Connection) -> Result<()> {
-    for (table, key, cols) in [
-        ("learning", "id", &["value"][..]),
-        ("sessions", "id", &["scenario", "state"][..]),
-        ("items", "key", &["value"][..]),
-        ("days", "day", &["value"][..]),
-        ("disputes", "id", &["value"][..]),
-    ] {
-        for col in cols {
-            let rows: Vec<(rusqlite::types::Value, String)> = db
-                .prepare(&format!("SELECT {key}, {col} FROM {table}"))?
-                .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
-                .collect::<rusqlite::Result<_>>()?;
-            for (k, v) in rows {
-                let new = renamed(&v);
-                if new != v {
-                    db.execute(
-                        &format!("UPDATE {table} SET {col} = ?1 WHERE {key} = ?2"),
-                        params![new, k],
-                    )?;
-                }
-            }
         }
     }
     Ok(())
@@ -1232,103 +1141,9 @@ impl Store {
             .map(|s| serde_json::from_str(s).map_err(StoreError::from))
             .collect()
     }
-
-    // ── Export, import (/LF710/) ──
-
-    /// Everything of the profile as one JSON value (`spec/export.schema.json`).
-    pub fn export(&self, now: Moment) -> Result<serde_json::Value> {
-        let mut stmt = self
-            .db
-            .prepare(&format!("{} ORDER BY started", Self::ROW))?;
-        let rows: Vec<SessionRow> = stmt
-            .query_map([], Self::row)?
-            .collect::<rusqlite::Result<_>>()?;
-        let mut sessions = Vec::new();
-        for r in rows {
-            let state = self.session_state(&r.id)?;
-            sessions.push(serde_json::json!({ "row": r, "state": state }));
-        }
-        let days: Vec<serde_json::Value> = self
-            .days()?
-            .into_iter()
-            .map(|(d, r)| serde_json::json!({ "day": d.iso(), "n": d.0, "record": r }))
-            .collect();
-        Ok(serde_json::json!({
-            "schema": EXPORT_SCHEMA,
-            "exported_at": now,
-            "profile": self.profile()?,
-            "learning": self.learning()?,
-            "sessions": sessions,
-            "items": self.items()?,
-            "days": days,
-            "pauses": self.pauses()?,
-            "disputes": self.disputes()?,
-            "costs": self.state_values(COST_STATE_PREFIX)?,
-            "events": self.events_json()?,
-        }))
-    }
-
-    /// Reads an export into this (new, empty) profile.
-    pub fn import(&self, v: &serde_json::Value) -> Result<()> {
-        if v["schema"].as_str() != Some(EXPORT_SCHEMA) {
-            return Err(StoreError::WrongFormat(v["schema"].to_string()));
-        }
-        let profile = v["profile"].clone();
-        let empty: i64 = self
-            .db
-            .query_row("SELECT COUNT(*) FROM sessions", [], |r| r.get(0))?;
-        // A file without sessions or items leaves no trace but the marker.
-        let imported: Option<bool> = self.state_value(IMPORTED_STATE)?;
-        if empty > 0 || !self.items()?.is_empty() || imported.is_some() {
-            return Err(StoreError::NotEmpty);
-        }
-        let tx = self.db.unchecked_transaction()?;
-        self.set_profile(&serde_json::from_value(profile)?)?;
-        self.set_learning(&serde_json::from_value(v["learning"].clone())?)?;
-        self.import_sessions(v)?;
-        self.import_events(v)?;
-        let mut reviewed: Option<Moment> = None;
-        for i in array(v, "items")? {
-            let item: Item = serde_json::from_value(i.clone())?;
-            reviewed = reviewed.max(item.last_review);
-            self.put_item(&item)?;
-        }
-        // `state` is not exported; without this, reviewing since the last talk reads as a break.
-        if let Some(at) = reviewed {
-            self.set_state_value("reviewed", &at)?;
-        }
-        for d in array(v, "days")? {
-            let n = d["n"]
-                .as_i64()
-                .ok_or_else(|| StoreError::WrongFormat("day".into()))?;
-            self.put_day(Day(n), &serde_json::from_value(d["record"].clone())?)?;
-        }
-        for p in array(v, "pauses")? {
-            self.add_pause(serde_json::from_value(p.clone())?)?;
-        }
-        for d in array(v, "disputes")? {
-            self.add_dispute(&serde_json::from_value(d.clone())?)?;
-        }
-        // A placement may have booked costs before the import: the file's month adds to them.
-        let wrong = || StoreError::WrongFormat("costs".into());
-        for (month, m) in v["costs"].as_object().ok_or_else(wrong)? {
-            let add: CostMonth = serde_json::from_value(m.clone()).map_err(|_| wrong())?;
-            if !is_month_key(month) {
-                return Err(wrong());
-            }
-            let key = format!("{COST_STATE_PREFIX}{month}");
-            let mut sum: CostMonth = self.state_value(&key)?.unwrap_or_default();
-            sum.add(&add);
-            self.set_state_value(&key, &sum)?;
-        }
-        self.set_state_value(IMPORTED_STATE, &true)?;
-        tx.commit()?;
-        Ok(())
-    }
 }
 
 mod events;
-mod import;
 mod migrations;
 mod shared;
 pub use events::Stored;
@@ -1336,3 +1151,4 @@ pub use events::Stored;
 mod tests;
 #[cfg(test)]
 mod text_ids;
+mod transfer;

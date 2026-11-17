@@ -15,7 +15,7 @@ app/src/conversation.rs	submit	length=92
 crates/kaiwa-ai/src/privacy.rs	flows	length=84
 crates/kaiwa-backend/src/demo.rs	seed	ccn=28 length=195
 crates/kaiwa-backend/src/reminder.rs	reminder	ccn=21
-crates/kaiwa-backend/src/views.rs	-	lines=1106
+crates/kaiwa-backend/src/views.rs	-	lines=966
 crates/kaiwa-backend/src/views.rs	key_view	ccn=17
 crates/kaiwa-backend/src/views.rs	tutor_view	ccn=24 nesting=6
 crates/kaiwa-backend/src/views.rs	week	ccn=18 length=82
@@ -85,9 +85,9 @@ crates/kaiwa-speech/src/g2p/numbers.rs	below_10000	ccn=20
 crates/kaiwa-speech/src/mora.rs	-	lines=875
 crates/kaiwa-speech/src/mora.rs	from_dir	ccn=17
 crates/kaiwa-speech/src/mora.rs	variants	ccn=28 length=93
-crates/kaiwa-store/src/lib.rs	-	lines=1338
+crates/kaiwa-store/src/lib.rs	-	lines=1154
 crates/kaiwa-store/src/lib.rs	correct_in	ccn=19 length=89
-crates/kaiwa-store/src/lib.rs	import	ccn=42
 crates/kaiwa-store/src/lib.rs	record_on	length=84
 crates/kaiwa-store/src/tests.rs	-	lines=1173
 crates/kaiwa-store/src/tests.rs	recording_a_session_feeds_model_path_review_and_day	length=110
+crates/kaiwa-store/src/transfer.rs	import	ccn=42

@@ -578,7 +578,7 @@ fn migration_2_moves_old_unit_ids_to_path_order() {
         .unwrap();
     assert!(item.contains("\"n5-13\""), "{item}");
     assert_eq!(
-        super::renamed("2026-10-13 n5-131 an5-13"),
+        super::migrations::renamed("2026-10-13 n5-131 an5-13"),
         "2026-10-13 n5-131 an5-13"
     );
 }

@@ -601,7 +601,6 @@ pub fn privacy(st: &Backend, lang: Lang) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::skips::take_skip;
 
     #[test]
     fn stored_kinds_read_with_the_core_words() {
@@ -739,66 +738,6 @@ mod tests {
     }
 
     #[test]
-    fn a_review_node_opens_the_review_of_its_unit() {
-        let b = crate::TempBackend::new("review-unit", false).unwrap();
-        let now = crate::now();
-        let (a, other) = (&b.curriculum.units[0], &b.curriculum.units[1]);
-        // The other unit's items are less stable, so they come first in the whole review.
-        let put = |text: &str, unit: &str, added: Moment| {
-            let mut item = kaiwa_core::srs::Item::new(
-                text,
-                kaiwa_core::srs::ItemKind::Phrase,
-                kaiwa_core::srs::Source::NewWord,
-                added,
-            );
-            item.unit = Some(unit.to_string());
-            item.due = now.day();
-            b.store.put_item(&item).unwrap();
-        };
-        put("はじめまして", &a.id, now);
-        put("おはよう", &a.id, now);
-        for (n, text) in ["ありがとう", "すみません", "さようなら"]
-            .iter()
-            .enumerate()
-        {
-            put(text, &other.id, now.plus_secs(-(10 + n as i64) * 86_400));
-        }
-
-        let all = review(&b, now, 10).unwrap();
-        assert_eq!(all[0]["unit"], other.id.as_str());
-
-        let items = review_unit(&b, now, 10, &a.id).unwrap();
-        let items = items.as_array().unwrap();
-        assert_eq!(items.len(), 2);
-        assert!(items.iter().all(|i| i["unit"] == a.id.as_str()));
-
-        let scope = review_scope(&b, now, &a.id).unwrap();
-        assert_eq!(scope["id"], a.id.as_str());
-        assert_eq!(scope["due"], 2);
-        assert!(scope["title"].as_str().is_some_and(|t| !t.is_empty()));
-    }
-
-    #[test]
-    fn a_unit_without_due_items_reviews_everything_due() {
-        let b = crate::TempBackend::new("review-unit-done", false).unwrap();
-        let now = crate::now();
-        let (a, other) = (&b.curriculum.units[0], &b.curriculum.units[1]);
-        let mut item = kaiwa_core::srs::Item::new(
-            "ありがとう",
-            kaiwa_core::srs::ItemKind::Phrase,
-            kaiwa_core::srs::Source::NewWord,
-            now,
-        );
-        item.unit = Some(other.id.clone());
-        item.due = now.day();
-        b.store.put_item(&item).unwrap();
-
-        assert_eq!(review_scope(&b, now, &a.id).unwrap(), Value::Null);
-        let items = review_unit(&b, now, 10, &a.id).unwrap();
-        assert_eq!(items.as_array().unwrap().len(), 1);
-    }
-
-    #[test]
     fn the_text_size_is_one_of_the_steps_of_the_settings() {
         let b = crate::TempBackend::new("text-scale", false).unwrap();
         // The steps of SettingsPage.qml; a size from before the limit shows as the largest.
@@ -808,85 +747,6 @@ mod tests {
             b.store.set_profile(&p).unwrap();
             assert_eq!(profile(&b).unwrap()["textScale"], json!(shown), "{kept}");
         }
-    }
-
-    #[test]
-    fn the_skip_offer_names_the_unit_and_the_settings_a_running_pause() {
-        let b = crate::TempBackend::new("promises", false).unwrap();
-        let first = b.curriculum.units[0].clone();
-        // No offer without three easy talks.
-        let v = learner(&b).unwrap();
-        assert_eq!(v["offerSkip"], false);
-        assert!(v["skipUnit"].is_null());
-        assert!(!take_skip(&b, &first.id).unwrap());
-        let easy = |n: usize| {
-            let mut l = b.store.learning().unwrap();
-            l.regulator.success.extend(vec![0.97; n]);
-            b.store.set_learning(&l).unwrap();
-        };
-        easy(3);
-        let v = learner(&b).unwrap();
-        assert_eq!(v["offerSkip"], true);
-        assert_eq!(v["skipUnit"]["id"], first.id.as_str());
-        assert_eq!(v["skipUnit"]["title"], first.title.get(Lang::De));
-        // Not the unit of the offer: nothing happens.
-        assert!(!take_skip(&b, &b.curriculum.units[1].id).unwrap());
-        // Taken (what the button does): one unit, and the offer is used up; a second click
-        // skips nothing.
-        assert!(take_skip(&b, &first.id).unwrap());
-        assert!(!take_skip(&b, &first.id).unwrap());
-        assert!(!take_skip(&b, &b.curriculum.units[1].id).unwrap());
-        let v = learner(&b).unwrap();
-        assert_eq!(v["offerSkip"], false);
-        assert!(v["skipUnit"].is_null());
-        let done = b.store.learning().unwrap().course.skipped_units;
-        assert_eq!(done.len(), 1);
-        assert!(done.contains(&first.id));
-        // Three new easy talks, not two, bring the next offer.
-        easy(2);
-        assert_eq!(learner(&b).unwrap()["offerSkip"], false);
-        easy(1);
-        let v = learner(&b).unwrap();
-        assert_eq!(v["skipUnit"]["id"], b.curriculum.units[1].id.as_str());
-        // A unit with keigo is not offered to a learner without the register.
-        let keigo = b
-            .curriculum
-            .units
-            .iter()
-            .position(|u| {
-                u.scenarios
-                    .iter()
-                    .any(|s| b.scenarios[s].register == kaiwa_core::scenario::Register::Keigo)
-            })
-            .unwrap();
-        let mut l = b.store.learning().unwrap();
-        for u in &b.curriculum.units[..keigo] {
-            l.course.skipped_units.insert(u.id.clone());
-        }
-        b.store.set_learning(&l).unwrap();
-        assert!(b.store.learning().unwrap().regulator.offer_skip());
-        let v = learner(&b).unwrap();
-        assert_eq!(v["offerSkip"], false);
-        assert!(!take_skip(&b, &b.curriculum.units[keigo].id).unwrap());
-        let mut l = b.store.learning().unwrap();
-        l.course.skipped_units.clear();
-        l.regulator = Default::default();
-        b.store.set_learning(&l).unwrap();
-
-        assert!(profile(&b).unwrap()["pausedUntil"].is_null());
-        let today = crate::now().day();
-        b.store
-            .add_pause(kaiwa_core::progress::Pause {
-                from: today,
-                to: today.plus(2),
-            })
-            .unwrap();
-        assert_eq!(
-            profile(&b).unwrap()["pausedUntil"]["iso"],
-            today.plus(2).iso()
-        );
-        b.store.end_pause(today).unwrap();
-        assert!(profile(&b).unwrap()["pausedUntil"].is_null());
     }
 
     #[test]

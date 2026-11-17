@@ -1,4 +1,8 @@
-//! The schema versions of the profile file.
+//! The schema versions of the profile file, and the rewrite of migration 2.
+
+use rusqlite::{Connection, params};
+
+use crate::Result;
 
 /// Schema versions; each entry migrates from the version before.
 pub(super) const MIGRATIONS: &[&str] = &[
@@ -72,3 +76,87 @@ pub(super) const MIGRATIONS: &[&str] = &[
      ALTER TABLE sessions_new RENAME TO sessions;
      CREATE INDEX sessions_started ON sessions(started);",
 ];
+
+/// Migration 2: unit ids before → after (scenario ids carry the unit id as prefix). Frozen;
+/// one pass per text, so n5-13 → n5-03 and n5-03 → n5-04 do not chain.
+const UNIT_IDS_2: &[(&str, &str)] = &[
+    ("n5-13", "n5-03"),
+    ("n5-03", "n5-04"),
+    ("n5-04", "n5-05"),
+    ("n5-05", "n5-06"),
+    ("n5-06", "n5-07"),
+    ("n5-16", "n5-08"),
+    ("n5-07", "n5-09"),
+    ("n5-08", "n5-10"),
+    ("n5-14", "n5-11"),
+    ("n5-09", "n5-12"),
+    ("n5-10", "n5-13"),
+    ("n5-11", "n5-14"),
+    ("n5-12", "n5-16"),
+    ("n4-07", "n4-06"),
+    ("n4-06", "n4-07"),
+    ("n4-13", "n4-09"),
+    ("n4-09", "n4-10"),
+    ("n4-10", "n4-11"),
+    ("n4-14", "n4-12"),
+    ("n4-11", "n4-13"),
+    ("n4-12", "n4-14"),
+];
+
+/// Every unit id token (`n5-13`, also inside `n5-13-jugyou`) in `text`, renamed in one pass.
+pub(super) fn renamed(text: &str) -> String {
+    let b = text.as_bytes();
+    let mut out = String::with_capacity(text.len());
+    let mut i = 0;
+    while i < b.len() {
+        let token = b.get(i..i + 5).filter(|t| {
+            (t[0] == b'n')
+                && (t[1] == b'4' || t[1] == b'5')
+                && t[2] == b'-'
+                && t[3].is_ascii_digit()
+                && t[4].is_ascii_digit()
+        });
+        let before_ok = i == 0 || !b[i - 1].is_ascii_alphanumeric();
+        let after_ok = b.get(i + 5).is_none_or(|c| !c.is_ascii_digit());
+        if let (Some(t), true, true) = (token, before_ok, after_ok) {
+            let t = std::str::from_utf8(t).unwrap_or_default();
+            if let Some((_, new)) = UNIT_IDS_2.iter().find(|(old, _)| *old == t) {
+                out.push_str(new);
+                i += 5;
+                continue;
+            }
+        }
+        let ch = text[i..].chars().next().unwrap_or_default();
+        out.push(ch);
+        i += ch.len_utf8();
+    }
+    out
+}
+
+/// Rewrites the stored ids of migration 2 in every JSON text of the profile.
+pub(super) fn rename_unit_ids(db: &Connection) -> Result<()> {
+    for (table, key, cols) in [
+        ("learning", "id", &["value"][..]),
+        ("sessions", "id", &["scenario", "state"][..]),
+        ("items", "key", &["value"][..]),
+        ("days", "day", &["value"][..]),
+        ("disputes", "id", &["value"][..]),
+    ] {
+        for col in cols {
+            let rows: Vec<(rusqlite::types::Value, String)> = db
+                .prepare(&format!("SELECT {key}, {col} FROM {table}"))?
+                .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
+                .collect::<rusqlite::Result<_>>()?;
+            for (k, v) in rows {
+                let new = renamed(&v);
+                if new != v {
+                    db.execute(
+                        &format!("UPDATE {table} SET {col} = ?1 WHERE {key} = ?2"),
+                        params![new, k],
+                    )?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
