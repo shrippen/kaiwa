@@ -15,6 +15,8 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+use kaiwa_core::Lang;
+
 pub use kaiwa_speech::SpeechError;
 use kaiwa_speech::Transcriber;
 use kaiwa_speech::capture::{self, Capture, Recording, Verdict};
@@ -132,7 +134,7 @@ impl Check {
     }
 
     /// The verdict in words: what it means and what to do.
-    pub fn text(&self, lang: &str) -> &'static str {
+    pub fn text(&self, lang: Lang) -> &'static str {
         text::verdict_text(self.verdict, lang)
     }
 }

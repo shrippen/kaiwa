@@ -5,6 +5,7 @@
 use std::path::{Path, PathBuf};
 
 use kaiwa_ai::secrets::KeyError;
+use kaiwa_core::Lang;
 use kaiwa_store::{Store, profiles_in};
 use serde_json::{Value, json};
 
@@ -69,13 +70,13 @@ fn file_for(dir: &Path, name: &str) -> String {
 }
 
 /// Creates a profile called `name` (UI language taken over from `lang`) and makes it current.
-pub fn create(dir: &Path, name: &str, lang: &str) -> anyhow::Result<PathBuf> {
+pub fn create(dir: &Path, name: &str, lang: Lang) -> anyhow::Result<PathBuf> {
     std::fs::create_dir_all(dir)?;
     let file = file_for(dir, name);
     let store = Store::open(&dir.join(&file))?;
     let mut p = store.profile()?;
     p.name = name.trim().to_string();
-    p.ui_lang = lang.to_string();
+    p.ui_lang = lang;
     store.set_profile(&p)?;
     drop(store);
     set_current(dir, &file)
@@ -111,7 +112,7 @@ impl Backend {
         if let Some(lang) = lang {
             let event = kaiwa_core::Event::Setting {
                 key: crate::keys::Key::UiLang.name().into(),
-                value: lang,
+                value: lang.code().into(),
             };
             crate::journal::record(self, &event, crate::now())?;
         }
@@ -130,12 +131,8 @@ impl Backend {
         if name.trim().is_empty() {
             return Ok(None);
         }
-        let lang = self
-            .store
-            .profile()
-            .map(|p| p.ui_lang)
-            .unwrap_or_else(|_| "de".into());
-        let path = create(&self.dir(), name, &lang)?;
+        let lang = self.store.profile().map(|p| p.ui_lang).unwrap_or_default();
+        let path = create(&self.dir(), name, lang)?;
         Ok(Some(Backend::open_at(path, false)?))
     }
 
@@ -226,9 +223,9 @@ impl Backend {
 }
 
 /// Why a key was not stored, in words.
-pub fn key_error(e: &kaiwa_ai::secrets::KeyError, lang: &str) -> String {
+pub fn key_error(e: &kaiwa_ai::secrets::KeyError, lang: Lang) -> String {
     use kaiwa_ai::secrets::KeyError;
-    let de = lang != "en";
+    let de = lang == Lang::De;
     match (e, de) {
         (KeyError::Empty, true) => "Kein Schlüssel eingegeben.".to_string(),
         (KeyError::Empty, false) => "No key entered.".to_string(),
@@ -298,15 +295,12 @@ mod tests {
         p.daily_goal = kaiwa_core::progress::DailyGoal::Minutes(10);
         mara.store.set_profile(&p).unwrap();
 
-        let tom = create(&dir, "Tom Müller", "en").unwrap();
+        let tom = create(&dir, "Tom Müller", Lang::En).unwrap();
         assert_eq!(tom, dir.join("tom-m-ller.kaiwa"));
         assert_eq!(current_in(&dir), tom);
         let tom = Backend::open_at(tom, false).unwrap();
         let tp = tom.store.profile().unwrap();
-        assert_eq!(
-            (tp.name.as_str(), tp.ui_lang.as_str()),
-            ("Tom Müller", "en")
-        );
+        assert_eq!((tp.name.as_str(), tp.ui_lang), ("Tom Müller", Lang::En));
         assert_ne!(tp.daily_goal, p.daily_goal, "settings stay per profile");
         assert!(!tp.placed, "a new profile starts with the placement");
 
@@ -317,7 +311,7 @@ mod tests {
                 .any(|v| v["name"] == "Mara" && v["current"] == false)
         );
         assert_eq!(
-            create(&dir, "Tom Müller", "de").unwrap(),
+            create(&dir, "Tom Müller", Lang::De).unwrap(),
             dir.join("tom-m-ller-2.kaiwa")
         );
         set_current(&dir, "default.kaiwa").unwrap();
@@ -372,7 +366,7 @@ mod tests {
         let k = Keyed::new("keys");
         let mut a = k.open("keya.kaiwa");
         let b = k.open("keyb.kaiwa");
-        let ready = |b: &Backend| crate::views::tutor_view(b, "en")["ready"] == true;
+        let ready = |b: &Backend| crate::views::tutor_view(b, Lang::En)["ready"] == true;
 
         // The key of A makes A ready, not B.
         a.store_key("sk-a").unwrap().unwrap();
@@ -470,7 +464,7 @@ mod tests {
         b.set_setting("uiLang", "en", crate::now()).unwrap();
         let lena = b.add_profile(" Lena ").unwrap().unwrap();
         let p = lena.store.profile().unwrap();
-        assert_eq!((p.name.as_str(), p.ui_lang.as_str()), ("Lena", "en"));
+        assert_eq!((p.name.as_str(), p.ui_lang), ("Lena", Lang::En));
         assert_eq!(current_in(&b.dir()), lena.path);
     }
 

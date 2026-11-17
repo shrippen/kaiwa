@@ -4,6 +4,7 @@
 //! The plasmoid (M4, before 1.0) asks for it every minute and shows it as a notification;
 //! until then the setting is hidden.
 
+use kaiwa_core::Lang;
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::progress::blameless;
 use serde_json::{Value, json};
@@ -51,13 +52,13 @@ impl Backend {
         if paused || t.record.met(p.daily_goal) {
             return Ok(None);
         }
-        let de = p.ui_lang != "en";
+        let de = p.ui_lang == Lang::De;
         let learning = self.store.learning()?;
         let next = self
             .curriculum
             .next_scenario(&learning.course)
             .and_then(|id| self.scenarios.get(&id))
-            .map(|s| s.title.get(&p.ui_lang).to_string());
+            .map(|s| s.title.get(p.ui_lang).to_string());
         let text = match (next, de) {
             (Some(n), true) => format!("Fünf Minuten Japanisch? Als Nächstes wartet: {n}."),
             (Some(n), false) => format!("Five minutes of Japanese? Next up: {n}."),

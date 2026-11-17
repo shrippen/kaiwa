@@ -20,7 +20,7 @@ use anyhow::{Context, Result, bail};
 use kaiwa_ai::Severity;
 use kaiwa_backend::flow::Talk;
 use kaiwa_core::session::HelpStep;
-use kaiwa_core::{Amount, Input, Scenario, Summary, TurnOutcome, norm};
+use kaiwa_core::{Amount, Input, Lang, Scenario, Summary, TurnOutcome, norm};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -170,12 +170,12 @@ pub fn play_with(
 ) -> Result<Run> {
     let scenario = talk::scenario(&script.scenario)?;
     let amount = amount_of(persona);
-    let session = talk::start(
-        scenario.clone(),
-        provider,
-        amount,
-        persona["profile"]["ui_language"].as_str().unwrap_or("de"),
+    let lang = Lang::of(
+        persona["profile"]["ui_language"]
+            .as_str()
+            .unwrap_or_default(),
     );
+    let session = talk::start(scenario.clone(), provider, amount, lang);
     // The backend's flow plays the talk (turn, help, translation); unstored, as a talk the
     // profile does not keep.
     let b = kaiwa_backend::TempBackend::new("run", false)?;

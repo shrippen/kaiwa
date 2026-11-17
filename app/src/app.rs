@@ -139,6 +139,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use cxx_qt::Threading;
 
 use cxx_qt_lib::QString;
+use kaiwa_backend::Lang;
 use kaiwa_backend::Trouble;
 use kaiwa_backend::models::{self, Fetch};
 use kaiwa_backend::settings::{Felt, SettingError};
@@ -198,8 +199,8 @@ fn q(v: &serde_json::Value) -> QString {
 }
 
 impl qobject::KaiwaApp {
-    fn ui_lang(&self) -> String {
-        self.lang().to_string()
+    fn ui_lang(&self) -> Lang {
+        Lang::of(&self.lang().to_string())
     }
 
     /// Adds `msg` below what the notice already says, once: a second failure does not wipe
@@ -218,33 +219,33 @@ impl qobject::KaiwaApp {
 
     /// Tells the learner the profile was left as it is (it could not be read or written).
     fn say_unreadable(self: Pin<&mut Self>, e: &anyhow::Error) {
-        let msg = words::unreadable(e, &self.ui_lang());
+        let msg = words::unreadable(e, self.ui_lang());
         self.add_notice(&msg);
     }
 
     /// Tells the learner why a change is refused while the stand-in profile runs.
     fn say_spare(self: Pin<&mut Self>) {
-        let msg = words::spare(&self.ui_lang());
+        let msg = words::spare(self.ui_lang());
         self.add_notice(msg);
     }
 
     /// Tells the learner the setting is saved but its effect failed (today's goal, deleting
     /// recordings).
     fn say_unapplied(self: Pin<&mut Self>, e: &anyhow::Error) {
-        let msg = words::unapplied(e, &self.ui_lang());
+        let msg = words::unapplied(e, self.ui_lang());
         self.add_notice(&msg);
     }
 
     /// Tells the learner a page or the profile could not be loaded; what the page shows is
     /// then empty or the defaults.
     fn say_unloaded(self: Pin<&mut Self>, e: &anyhow::Error) {
-        let msg = words::unloaded(e, &self.ui_lang());
+        let msg = words::unloaded(e, self.ui_lang());
         self.add_notice(&msg);
     }
 
     /// Tells the learner what went wrong in the background (`Backend::take_troubles`).
     fn say_trouble(self: Pin<&mut Self>, t: &Trouble) {
-        let msg = words::trouble(t, &self.ui_lang());
+        let msg = words::trouble(t, self.ui_lang());
         self.add_notice(&msg);
     }
 
@@ -260,7 +261,7 @@ impl qobject::KaiwaApp {
                 failed.get_or_insert(e);
                 Default::default()
             });
-            let privacy = views::privacy(&st, &p.ui_lang);
+            let privacy = views::privacy(&st, p.ui_lang);
             (
                 views::today(&st, now),
                 views::path(&st),
@@ -275,7 +276,7 @@ impl qobject::KaiwaApp {
                 views::learner(&st),
                 views::stats(&st, now),
                 views::profile(&st),
-                p.ui_lang.clone(),
+                p.ui_lang,
                 p.gamification,
                 privacy,
             )
@@ -309,8 +310,8 @@ impl qobject::KaiwaApp {
         });
         self.as_mut().set_profile(ok(profile, &mut failed));
         self.as_mut().set_privacy(q(&privacy));
-        self.as_mut().set_models(q(&models::list(&lang)));
-        self.as_mut().set_lang(QString::from(&lang));
+        self.as_mut().set_models(q(&models::list(lang)));
+        self.as_mut().set_lang(QString::from(lang.code()));
         self.as_mut().set_gamification(gam);
         if let Some(e) = failed {
             self.as_mut().say_unloaded(&e);
@@ -347,7 +348,7 @@ impl qobject::KaiwaApp {
             let outcome = fetch.run(&stop, &progress);
             let _ = thread.queue(move |mut app| {
                 app.as_mut().set_download(QString::default());
-                let notice = outcome.text(&app.ui_lang());
+                let notice = outcome.text(app.ui_lang());
                 app.as_mut().say_result(&notice);
                 app.as_mut().refresh();
             });
@@ -395,14 +396,14 @@ impl qobject::KaiwaApp {
 
     fn export_profile(self: Pin<&mut Self>, file: &QString) {
         let result = state().export_to(&file.to_string(), now());
-        let msg = words::exported(&result, &self.ui_lang());
+        let msg = words::exported(&result, self.ui_lang());
         self.say_result(&msg);
     }
 
     fn delete_profile(mut self: Pin<&mut Self>) {
         self.as_mut().set_answer(QString::default());
         let result = state().wipe();
-        let msg = words::wiped(&result, &self.ui_lang());
+        let msg = words::wiped(&result, self.ui_lang());
         self.as_mut().say_result(&msg);
         self.as_mut().refresh();
     }
@@ -416,7 +417,7 @@ impl qobject::KaiwaApp {
                 let streak = st.profile().map(|p| p.gamification).unwrap_or(true);
                 (added, streak)
             };
-            let msg = words::pause_set(&added, streak, &self.ui_lang());
+            let msg = words::pause_set(&added, streak, self.ui_lang());
             self.as_mut().say_result(&msg);
         }
         self.as_mut().refresh();
@@ -424,7 +425,7 @@ impl qobject::KaiwaApp {
 
     fn stop_pause(mut self: Pin<&mut Self>) {
         let result = state().end_pause(now().day());
-        let msg = words::pause_ended(&result, &self.ui_lang());
+        let msg = words::pause_ended(&result, self.ui_lang());
         self.as_mut().say_result(&msg);
         self.as_mut().refresh();
     }
@@ -439,7 +440,7 @@ impl qobject::KaiwaApp {
         // The import brings its own UI language: say it in the one the profile has now.
         self.as_mut().set_notice(QString::default());
         self.as_mut().refresh();
-        let msg = words::imported(&result, &file, &self.ui_lang());
+        let msg = words::imported(&result, &file, self.ui_lang());
         self.add_notice(&msg);
     }
 
@@ -491,7 +492,7 @@ impl qobject::KaiwaApp {
         let Some(result) = state().store_key(&key.to_string()) else {
             return;
         };
-        let msg = words::key_stored(&result, &self.ui_lang());
+        let msg = words::key_stored(&result, self.ui_lang());
         self.as_mut().say_result(&msg);
         self.as_mut().refresh();
     }
@@ -500,7 +501,7 @@ impl qobject::KaiwaApp {
         let Some(result) = state().remove_key() else {
             return;
         };
-        let msg = words::key_removed(&result, &self.ui_lang());
+        let msg = words::key_removed(&result, self.ui_lang());
         self.as_mut().say_result(&msg);
         self.as_mut().refresh();
     }

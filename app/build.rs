@@ -21,6 +21,7 @@ fn main() {
         "qml/SpareLine.qml",
         "qml/SpeechMissingLine.qml",
         "qml/LeaveDialog.qml",
+        "qml/lang.js",
         "qml/leave.js",
         "qml/record.js",
     ]))

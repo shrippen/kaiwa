@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import Kante
+import "lang.js" as Lang
 
 // The skills (/LF202/): one row each, the level as a bar with the levels it is measured in
 // named over it, the level in words at its end. The view gives each skill its own marks (the
@@ -20,7 +21,7 @@ ColumnLayout {
     /** The skill whose row is open, "" for none; it survives a refresh of the view. */
     property string opened: ""
 
-    function t(de, en) { return kaiwa.lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(kaiwa.lang, de, en) }
     readonly property real barWidth: KanteStyle.unit(compact ? 110 : 240)
     readonly property real wordsWidth: KanteStyle.unit(compact ? 110 : 150)
     readonly property real gap: KanteStyle.unit(12)

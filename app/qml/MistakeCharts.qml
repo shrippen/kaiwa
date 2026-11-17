@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import Kante
+import "lang.js" as Lang
 
 // Mistakes per talk (/LF610/): per kind of mistake a line over the twelve weeks' talks, its trend
 // in a word; on hover the day, the scenario and the number of mistakes of that talk. The
@@ -15,7 +16,7 @@ ColumnLayout {
     property var mistakes: []
     property bool compact: false
 
-    function t(de, en) { return kaiwa.lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(kaiwa.lang, de, en) }
     // All lines on one scale so they compare; the axis has four steps, the top a multiple of
     // four so that its labels are whole numbers.
     readonly property real scaleTop: {
@@ -25,11 +26,11 @@ ColumnLayout {
         }
         return Math.ceil(m / 4) * 4
     }
-    readonly property var locale: Qt.locale(kaiwa.lang === "en" ? "en_GB" : "de_DE")
+    readonly property var locale: Qt.locale(Lang.pick(kaiwa.lang, "de_DE", "en_GB"))
     // "2026-11-03" as "3.11." (en: "3 Nov"), from the date's parts: no time zone shifts it.
     function dayText(iso) {
         const [y, m, d] = iso.split("-").map(Number)
-        return new Date(y, m - 1, d).toLocaleDateString(locale, kaiwa.lang === "en" ? "d MMM" : "d.M.")
+        return new Date(y, m - 1, d).toLocaleDateString(locale, Lang.pick(kaiwa.lang, "d.M.", "d MMM"))
     }
     function tip(i) { return dayText(talks[i].date) + " · " + talks[i].scenario }
 

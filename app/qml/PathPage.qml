@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import Kante
+import "lang.js" as Lang
 
 // The learning path (Lastenheft /LF600/, /LF220/): one group per unit of the curriculum, its
 // scenarios inside and, where words are due, the review in the same group. Done, next, open
@@ -19,7 +20,7 @@ QQC2.ScrollView {
         kaiwa.openReview(unit)
         showTab(2)
     }
-    function t(de, en) { return kaiwa.lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(kaiwa.lang, de, en) }
 
     readonly property var levels: kaiwa.path.length > 0 ? JSON.parse(kaiwa.path) : []
     readonly property var learner: kaiwa.learner.length > 0 ? JSON.parse(kaiwa.learner) : ({})

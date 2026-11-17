@@ -9,6 +9,7 @@
 
 use std::collections::BTreeMap;
 
+use crate::Lang;
 use serde::{Deserialize, Serialize};
 
 use crate::jlpt::{N3_FROM, N4_FROM};
@@ -75,8 +76,8 @@ impl Skill {
             .collect()
     }
 
-    pub fn word(self, lang: &str) -> &'static str {
-        let de = lang == "de";
+    pub fn word(self, lang: Lang) -> &'static str {
+        let de = lang == Lang::De;
         match self {
             Skill::Listening => {
                 if de {
@@ -278,7 +279,7 @@ impl LearnerModel {
     }
 
     /// The profile in words, no raw numbers (/LF202/).
-    pub fn describe(&self, lang: &str) -> Vec<(Skill, String)> {
+    pub fn describe(&self, lang: Lang) -> Vec<(Skill, String)> {
         SKILLS
             .iter()
             .map(|s| (*s, describe_level(*s, self.level(*s), lang)))
@@ -291,14 +292,14 @@ impl LearnerModel {
     }
 
     /// A skill's level in a few words, for a line of the profile ("Anfang N5").
-    pub fn level_word(&self, s: Skill, lang: &str) -> &'static str {
+    pub fn level_word(&self, s: Skill, lang: Lang) -> &'static str {
         let band = self.level(s).round() as usize;
         let (de, en) = if s == Skill::Register {
             REGISTER_WORDS[band.min(REGISTER_WORDS.len() - 1)]
         } else {
             LEVEL_WORDS[band.min(LEVEL_WORDS.len() - 1)]
         };
-        if lang == "de" { de } else { en }
+        lang.pick(de, en)
     }
 
     /// The kinds of mistakes that still come up most, worst first.
@@ -315,8 +316,8 @@ impl LearnerModel {
     }
 }
 
-fn describe_level(s: Skill, v: f64, lang: &str) -> String {
-    let de = lang == "de";
+fn describe_level(s: Skill, v: f64, lang: Lang) -> String {
+    let de = lang == Lang::De;
     if s == Skill::Register {
         return match (v.round() as i32, de) {
             (..=0, true) => "Noch keine Höflichkeitsformen.".into(),
@@ -371,13 +372,13 @@ mod tests {
         m.set(Skill::Register, 4.0);
         m.set(Skill::Speaking, 0.0);
         m.set(Skill::ReadingKanji, 8.0);
-        assert_eq!(m.level_word(Skill::Listening, "de"), "N5");
-        assert_eq!(m.level_word(Skill::Speaking, "en"), "not started yet");
+        assert_eq!(m.level_word(Skill::Listening, Lang::De), "N5");
+        assert_eq!(m.level_word(Skill::Speaking, Lang::En), "not started yet");
         assert_eq!(
-            m.level_word(Skill::ReadingKanji, "de"),
+            m.level_word(Skill::ReadingKanji, Lang::De),
             "Muttersprachniveau"
         );
-        assert_eq!(m.level_word(Skill::Register, "en"), "basics of 敬語");
+        assert_eq!(m.level_word(Skill::Register, Lang::En), "basics of 敬語");
         assert_eq!(m.share(Skill::Listening), 3.0 / 8.0);
         assert_eq!(m.share(Skill::Register), 1.0);
         // The marks sit where their levels are on the skill's own scale.
@@ -464,7 +465,7 @@ mod tests {
         ]);
         assert_eq!(m.level(Skill::Listening), 5.0);
         assert_eq!(m.level(Skill::Register), 1.0);
-        let words = m.describe("de");
+        let words = m.describe(Lang::De);
         assert!(
             words
                 .iter()
@@ -488,7 +489,7 @@ mod tests {
 
     #[test]
     fn the_words_change_at_the_n4_and_n3_borders() {
-        let words = |v| describe_level(Skill::Listening, v, "en");
+        let words = |v| describe_level(Skill::Listening, v, Lang::En);
         assert!(words(3.49).contains("at N5"));
         assert!(words(3.5).contains("first N4"));
         assert!(words(5.49).contains("confident at N4"));

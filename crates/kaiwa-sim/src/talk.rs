@@ -8,6 +8,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use kaiwa_ai::ChatProvider;
 use kaiwa_ai::mock::MockProvider;
+use kaiwa_core::Lang;
 use kaiwa_core::{Amount, Scenario, Session};
 
 /// The scenario `id`, as the backend ships it.
@@ -25,7 +26,7 @@ pub fn start(
     scenario: Scenario,
     provider: Arc<dyn ChatProvider>,
     amount: Amount,
-    lang: &str,
+    lang: Lang,
 ) -> Session {
     let unit_jlpt = kaiwa_backend::bundled_unit_jlpt(&scenario.id);
     Session::new(scenario, provider, amount, lang).with_unit_jlpt(unit_jlpt)
@@ -33,5 +34,10 @@ pub fn start(
 
 /// A German talk on scenario `id` against its recorded answers.
 pub fn open(id: &str, amount: Amount) -> Result<Session> {
-    Ok(start(scenario(id)?, Arc::new(recorded(id)), amount, "de"))
+    Ok(start(
+        scenario(id)?,
+        Arc::new(recorded(id)),
+        amount,
+        Lang::De,
+    ))
 }

@@ -1,6 +1,7 @@
 //! Scenarios (/LF115/, /LF117/): a role, a register, an opening line, goals the learner has
 //! to reach, and help in three steps per goal (/LF114/). Stored as JSON in `data/scenarios/`.
 
+use crate::Lang;
 use serde::{Deserialize, Serialize};
 
 /// Text in the UI languages.
@@ -11,8 +12,8 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn get(&self, lang: &str) -> &str {
-        if lang == "de" { &self.de } else { &self.en }
+    pub fn get(&self, lang: Lang) -> &str {
+        lang.pick(&self.de, &self.en)
     }
 }
 

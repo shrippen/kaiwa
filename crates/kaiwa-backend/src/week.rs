@@ -1,5 +1,6 @@
 //! The start page's daily goal in words and its week of minutes per day.
 
+use kaiwa_core::Lang;
 use kaiwa_core::clock::Moment;
 use kaiwa_core::progress::DailyGoal;
 use serde_json::{Value, json};
@@ -7,26 +8,29 @@ use serde_json::{Value, json};
 use crate::Backend;
 
 /// The minutes spoken today and the rest of the sentence: "2" and "von 5 Minuten gesprochen".
-pub(crate) fn goal_words(de: bool, goal_minutes: u32, speaking_secs: u32) -> (u32, String) {
-    let rest = if de {
-        format!("von {goal_minutes} Minuten gesprochen")
-    } else {
-        format!("of {goal_minutes} minutes spoken")
-    };
+pub(crate) fn goal_words(lang: Lang, goal_minutes: u32, speaking_secs: u32) -> (u32, String) {
+    let rest = lang.pick(
+        format!("von {goal_minutes} Minuten gesprochen"),
+        format!("of {goal_minutes} minutes spoken"),
+    );
     (speaking_secs / 60, rest)
 }
 
 /// The calendar week, Monday to Sunday, for the start page's bars: its labels, the minutes
 /// spoken per day, whether the goal was met, and which index is today.
-pub(crate) fn bars(st: &Backend, now: Moment, goal: DailyGoal, de: bool) -> anyhow::Result<Value> {
+pub(crate) fn bars(
+    st: &Backend,
+    now: Moment,
+    goal: DailyGoal,
+    lang: Lang,
+) -> anyhow::Result<Value> {
     let days = st.store.days()?;
     let today = now.day();
     let monday = today.plus(-i64::from(today.weekday()));
-    let labels = if de {
-        ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
-    } else {
-        ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
-    };
+    let labels = lang.pick(
+        ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+        ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+    );
     let week: Vec<_> = (0..7).map(|i| days.get(&monday.plus(i))).collect();
     Ok(json!({
         "labels": labels,
@@ -39,6 +43,7 @@ pub(crate) fn bars(st: &Backend, now: Moment, goal: DailyGoal, de: bool) -> anyh
 #[cfg(test)]
 mod tests {
     use crate::views::today;
+    use kaiwa_core::Lang;
 
     #[test]
     fn a_past_day_is_met_by_the_goal_it_had() {
@@ -58,7 +63,7 @@ mod tests {
         let five = Some(kaiwa_core::progress::DailyGoal::Minutes(5));
         b.store.put_day(monday, &rec(360, five)).unwrap();
         let ten = kaiwa_core::progress::DailyGoal::Minutes(10);
-        let w = super::bars(&b, now, ten, true).unwrap();
+        let w = super::bars(&b, now, ten, Lang::De).unwrap();
         assert_eq!(w["met"][0], true, "{w}");
     }
 

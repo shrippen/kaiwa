@@ -23,6 +23,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
+use kaiwa_core::Lang;
 
 #[derive(Parser)]
 #[command(version, about = "QA runner for the Kaiwa personas")]
@@ -327,12 +328,12 @@ fn print_days(root: &std::path::Path, persona: &str, journey: &str) -> anyhow::R
         st.ended_on.len(),
         run.items.len(),
         run.curriculum
-            .path(&run.course, "de")
+            .path(&run.course, Lang::De)
             .iter()
             .filter(|u| u.state == kaiwa_core::curriculum::NodeState::Done)
             .count()
     );
-    for (skill, words) in run.learner.describe("de") {
+    for (skill, words) in run.learner.describe(Lang::De) {
         println!("  {skill:?}: {words}");
     }
     println!("errors (corrected, reviewed while open): {:?}", run.errors);

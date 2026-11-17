@@ -1,7 +1,7 @@
 //! Talk ids as text (ADR-010 step 2) and the journal in the export.
 
 use kaiwa_core::session::Session;
-use kaiwa_core::{Amount, Event, Moment};
+use kaiwa_core::{Amount, Event, Lang, Moment};
 
 use crate::Store;
 use crate::tests::{at, provider, scenario, schema_version};
@@ -14,7 +14,7 @@ fn migration_7_makes_talk_ids_text() {
     }
     db.pragma_update(None, "user_version", 6).unwrap();
     let state = serde_json::to_string(
-        &Session::new(scenario(), provider(), Amount::Little, "de").snapshot(),
+        &Session::new(scenario(), provider(), Amount::Little, Lang::De).snapshot(),
     )
     .unwrap();
     // One finished talk with a stored recording, one open.

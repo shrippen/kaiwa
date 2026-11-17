@@ -11,10 +11,10 @@ use serde::{Deserialize, Serialize};
 use crate::difficulty::{Difficulty, Live};
 use crate::feedback::{Amount, Shown, cross_check, visible};
 use crate::learner::{Evidence, Skill};
-use crate::plain;
 use crate::progress::{SessionXp, XP_GOAL, XpReason, talk_secs, turn_counts, turn_xp};
 use crate::prompts::{analysis_system, reply_system};
 use crate::scenario::{Goal, Register, Scenario};
+use crate::{Lang, plain};
 
 /// How the learner gave the turn. Typed turns do not count as speaking (/LF120/).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -166,7 +166,7 @@ impl Stats {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SessionState {
     pub scenario: String,
-    pub lang: String,
+    pub lang: Lang,
     pub amount: Amount,
     pub difficulty: Difficulty,
     pub messages: Vec<ChatMessage>,
@@ -233,7 +233,7 @@ impl Asking {
 pub struct Translating {
     provider: Arc<dyn ChatProvider>,
     line: String,
-    lang: String,
+    lang: Lang,
     known: Option<String>,
 }
 
@@ -241,7 +241,7 @@ impl Translating {
     pub fn run(&self) -> Result<String, AiError> {
         match &self.known {
             Some(t) => Ok(t.clone()),
-            None => self.provider.translate(&self.line, &self.lang),
+            None => self.provider.translate(&self.line, self.lang.code()),
         }
     }
 }
@@ -263,7 +263,7 @@ pub enum Coaching {
 
 pub struct Session {
     pub scenario: Scenario,
-    pub lang: String,
+    pub lang: Lang,
     pub amount: Amount,
     /// Ask a second analysis and keep serious corrections only when both agree (ADR-004).
     pub cross_check: bool,
@@ -300,12 +300,12 @@ impl Session {
         scenario: Scenario,
         provider: Arc<dyn ChatProvider>,
         amount: Amount,
-        lang: &str,
+        lang: Lang,
     ) -> Self {
         let opening = ChatMessage::assistant(plain(&scenario.opening));
         Self {
             scenario,
-            lang: lang.into(),
+            lang,
             amount,
             cross_check: false,
             difficulty: Difficulty::default(),
@@ -335,7 +335,7 @@ impl Session {
     pub fn reply_instructions(&self) -> String {
         reply_system(
             &self.scenario,
-            &self.lang,
+            self.lang,
             &self.difficulty,
             &self.grammar,
             self.unit_jlpt.as_deref(),
@@ -424,7 +424,7 @@ impl Session {
     pub fn snapshot(&self) -> SessionState {
         SessionState {
             scenario: self.scenario.id.clone(),
-            lang: self.lang.clone(),
+            lang: self.lang,
             amount: self.amount,
             difficulty: self.difficulty.clone(),
             messages: self.messages.clone(),
@@ -539,11 +539,11 @@ impl Session {
             .opening_translation
             .as_ref()
             .filter(|_| line == plain(&self.scenario.opening))
-            .map(|t| t.get(&self.lang).to_string());
+            .map(|t| t.get(self.lang).to_string());
         Translating {
             provider: self.provider.clone(),
             line: line.to_string(),
-            lang: self.lang.clone(),
+            lang: self.lang,
             known,
         }
     }
@@ -569,7 +569,7 @@ impl Session {
         };
         Asking {
             provider: self.provider.clone(),
-            analysis: request(analysis_system(&self.scenario, &self.lang, &self.grammar)),
+            analysis: request(analysis_system(&self.scenario, self.lang, &self.grammar)),
             reply: request(self.reply_instructions()),
             cross_check: self.cross_check,
             register: self.scenario.register,
@@ -945,7 +945,7 @@ mod tests {
 
     #[test]
     fn a_correction_remembers_the_line_it_answered() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         s.turn("マラです。よろしくおねがいします。", Input::Typed)
             .unwrap();
         s.turn("コーヒーを好きです。", Input::Typed).unwrap();
@@ -990,7 +990,7 @@ mod tests {
                 .unwrap()
                 .with_fallback("そうなんだ。"),
         );
-        let mut s = Session::new(scenario, tutor, Amount::Much, "de");
+        let mut s = Session::new(scenario, tutor, Amount::Much, Lang::De);
         let out = s.turn("うん、行く！", Input::Spoken).unwrap();
         assert!(
             out.shown.iter().any(|x| x.correction.also_possible),
@@ -1008,7 +1008,7 @@ mod tests {
 
     #[test]
     fn a_failed_tutor_call_leaves_the_session_as_it_was() {
-        let mut s = Session::new(scenario(), strict(), Amount::Normal, "de");
+        let mut s = Session::new(scenario(), strict(), Amount::Normal, Lang::De);
         s.turn("マラです。よろしくおねがいします。", Input::Spoken)
             .unwrap();
         let before = s.snapshot();
@@ -1022,9 +1022,9 @@ mod tests {
     #[test]
     fn asking_without_the_session_gives_the_same_turn() {
         let line = "コーヒーを好きです。";
-        let mut whole = Session::new(scenario(), provider(), Amount::Normal, "de");
+        let mut whole = Session::new(scenario(), provider(), Amount::Normal, Lang::De);
         let a = whole.turn(line, Input::Spoken).unwrap();
-        let mut halves = Session::new(scenario(), provider(), Amount::Normal, "de");
+        let mut halves = Session::new(scenario(), provider(), Amount::Normal, Lang::De);
         let asking = halves.ask(line);
         // Asking changes nothing; the session is free meanwhile.
         assert_eq!(halves.turns().len(), 0);
@@ -1038,7 +1038,7 @@ mod tests {
 
     #[test]
     fn a_conversation_reaches_its_goals() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         assert_eq!(s.current_goal().unwrap().id, "name");
         let out = s
             .turn("マラです。よろしくおねがいします。", Input::Spoken)
@@ -1067,7 +1067,7 @@ mod tests {
 
     #[test]
     fn help_escalates_and_resets_with_the_goal() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         assert!(!s.offer_help(Duration::from_secs(2)));
         assert!(s.offer_help(Duration::from_secs(4)));
         assert_eq!(s.help().unwrap().level, 1);
@@ -1091,7 +1091,7 @@ mod tests {
 
     #[test]
     fn unknown_turns_are_not_understood_and_reach_nothing() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         let out = s.turn("ええと…", Input::Spoken).unwrap();
         assert!(!out.understood);
         assert!(out.goals_met_now.is_empty());
@@ -1100,7 +1100,7 @@ mod tests {
 
     #[test]
     fn style_hides_with_little_feedback_and_the_summary_keeps_three() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         let out = s
             .turn(
                 "わたしはマラです。わたしはプロデューサーです。",
@@ -1129,7 +1129,7 @@ mod tests {
 
     #[test]
     fn the_opening_goes_to_the_model_without_furigana_markup() {
-        let s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         assert_eq!(s.messages[0].content, "はじめまして。田中です。お名前は？");
     }
 
@@ -1138,7 +1138,7 @@ mod tests {
         let p: Arc<dyn ChatProvider> = Arc::new(
             MockProvider::new([]).with_fallback("お{仕事|しごと}は{何|なん}ですか。{角|kado}"),
         );
-        let mut s = Session::new(scenario(), p, Amount::Little, "de");
+        let mut s = Session::new(scenario(), p, Amount::Little, Lang::De);
         let out = s.turn("こんにちは。", Input::Typed).unwrap();
         assert_eq!(out.reply, "お{仕事|しごと}は{何|なん}ですか。角");
         assert_eq!(s.messages.last().unwrap().content, "お仕事は何ですか。角");
@@ -1174,7 +1174,7 @@ mod tests {
             "analysis": { "understood": true, "goals_met": [], "corrections": [], "new_words": [],
                           "reading": "{何|なに}を{食|た}べますか。" } }]"#;
         let p: Arc<dyn ChatProvider> = Arc::new(MockProvider::from_json(fixture).unwrap());
-        let mut s = Session::new(scenario(), p, Amount::Little, "de");
+        let mut s = Session::new(scenario(), p, Amount::Little, Lang::De);
         let out = s.turn("何を食べますか。", Input::Typed).unwrap();
         assert_eq!(out.own_markup, "{何|なに}を{食|た}べますか。");
         assert_eq!(s.turns()[0].markup, out.own_markup);
@@ -1184,7 +1184,7 @@ mod tests {
 
     #[test]
     fn a_session_continues_where_it_stopped() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         s.turn("マラです。よろしくおねがいします。", Input::Spoken)
             .unwrap();
         let state = s.snapshot();
@@ -1200,7 +1200,7 @@ mod tests {
 
     #[test]
     fn translations_count_as_aids() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         let opening = crate::plain(s.opening());
         assert_eq!(
             s.translate(&opening).unwrap(),
@@ -1219,7 +1219,7 @@ mod tests {
 
     #[test]
     fn a_late_aid_does_not_mark_the_next_turn() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         // The translation of the opening is asked, the learner answers meanwhile.
         let asked_at = s.line();
         s.turn("マラです。よろしくおねがいします。", Input::Spoken)
@@ -1233,7 +1233,7 @@ mod tests {
 
     #[test]
     fn stats_count_success_without_help() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         s.turn("マラです。よろしくおねがいします。", Input::Spoken)
             .unwrap();
         s.help();
@@ -1251,7 +1251,7 @@ mod tests {
     fn marks_after_the_end_still_apply() {
         // V-05: the summary may still mark a turn; the caller then corrects the record.
         let talk = || {
-            let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+            let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
             s.turn("マラです。よろしくおねがいします。", Input::Spoken)
                 .unwrap();
             s.turn("ドイツのハンブルクから来ました。", Input::Spoken)
@@ -1279,7 +1279,7 @@ mod tests {
 
     #[test]
     fn misrecognised_and_disputed_corrections_do_not_count() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         s.turn("コーヒーを好きです。", Input::Spoken).unwrap();
         assert_eq!(s.stats().mistakes.get("particle"), Some(&1));
         let disputed = s.dispute(0, "コーヒーが好きです").unwrap();
@@ -1287,7 +1287,7 @@ mod tests {
         assert!(s.stats().mistakes.is_empty());
         assert!(s.summary().top.is_empty());
         assert_eq!(s.turns()[0].disputed.len(), 1, "kept, marked as disputed");
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         s.turn("コーヒーを好きです。", Input::Spoken).unwrap();
         assert!(s.mark_misrecognized(0));
         assert!(s.shown(0).is_empty());
@@ -1300,7 +1300,7 @@ mod tests {
 
     #[test]
     fn evasive_answers_bring_help_by_themselves() {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         assert!(s.turn("はい", Input::Spoken).unwrap().help.is_none());
         assert!(s.turn("いいですね", Input::Spoken).unwrap().help.is_none());
         let third = s.turn("はい", Input::Spoken).unwrap();
@@ -1308,12 +1308,12 @@ mod tests {
         assert!(help.level >= 2, "at least the sentence start");
         assert_eq!(third.xp, 0, "a repeat earns nothing");
         let xp = s.summary().xp;
-        assert!(!xp.explain("de").is_empty());
+        assert!(!xp.explain(Lang::De).is_empty());
     }
 
     #[test]
     fn the_difficulty_limits_the_goals() {
-        let s = Session::new(scenario(), provider(), Amount::Little, "de")
+        let s = Session::new(scenario(), provider(), Amount::Little, Lang::De)
             .with_difficulty(crate::difficulty::Difficulty::default());
         assert_eq!(s.goals().len(), 2);
         assert!(!s.offer_help(Duration::from_secs(3)));

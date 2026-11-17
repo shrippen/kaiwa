@@ -195,7 +195,7 @@ fn an_interrupted_session_continues_where_it_stopped() {
     let path = temp("resume");
     {
         let store = Store::open(&path).unwrap();
-        let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut session = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         let id = store.begin_local(&session.snapshot(), at(0, 9)).unwrap();
         assert!(store.open_session().unwrap().is_none(), "nothing said yet");
         session
@@ -222,7 +222,7 @@ fn time_spoken_counts_when_the_analysis_had_gaps() {
     // jonas_analysis_gaps (T-11): such a turn is no evidence of the level, but the time
     // spoken is practice and counts for the day.
     let store = Store::in_memory().unwrap();
-    let mut talk = Session::new(scenario(), provider(), Amount::Little, "de");
+    let mut talk = Session::new(scenario(), provider(), Amount::Little, Lang::De);
     let start = at(0, 9);
     let id = store.begin_local(&talk.snapshot(), start).unwrap();
     talk.turn("マラです。よろしくおねがいします。", Input::Spoken)
@@ -244,7 +244,7 @@ fn recording_a_session_feeds_model_path_review_and_day() {
     p.daily_goal = DailyGoal::Minutes(4);
     store.set_profile(&p).unwrap();
     let c = curriculum();
-    let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
+    let mut session = Session::new(scenario(), provider(), Amount::Little, Lang::De);
     let start = at(0, 9);
     let id = store.begin_local(&session.snapshot(), start).unwrap();
     for (t, i) in [
@@ -290,7 +290,7 @@ fn recording_a_session_feeds_model_path_review_and_day() {
             .any(|s| l.model.level(*s) != before.level(*s)),
         "the talk moved the model"
     );
-    let second = Session::new(scenario(), provider(), Amount::Little, "de");
+    let second = Session::new(scenario(), provider(), Amount::Little, Lang::De);
     let id2 = store.begin_local(&second.snapshot(), at(0, 20)).unwrap();
     let r2 = store
         .record(&id2, &second, at(0, 20), at(0, 20).plus_secs(60), Some(&c))
@@ -311,7 +311,7 @@ fn recording_a_session_feeds_model_path_review_and_day() {
             .is_empty()
     );
     // A talk of two sittings, the second after midnight: all its time, on the second day.
-    let third = Session::new(scenario(), provider(), Amount::Little, "de");
+    let third = Session::new(scenario(), provider(), Amount::Little, Lang::De);
     let id3 = store.begin_local(&third.snapshot(), at(1, 23)).unwrap();
     let end = at(2, 0).plus_secs(8 * 60);
     let r3 = store
@@ -357,7 +357,7 @@ fn export_and_import_carry_everything() {
         ..Default::default()
     };
     a.set_profile(&p).unwrap();
-    let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
+    let mut session = Session::new(scenario(), provider(), Amount::Little, Lang::De);
     let id = a.begin_local(&session.snapshot(), at(0, 9)).unwrap();
     session.turn("コーヒーを好きです。", Input::Spoken).unwrap();
     a.record(
@@ -400,7 +400,7 @@ fn export_and_import_carry_everything() {
 #[test]
 fn import_keeps_that_the_learner_reviewed() {
     let a = Store::in_memory().unwrap();
-    let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
+    let mut session = Session::new(scenario(), provider(), Amount::Little, Lang::De);
     let id = a.begin_local(&session.snapshot(), at(0, 9)).unwrap();
     session.turn("コーヒーを好きです。", Input::Spoken).unwrap();
     a.record(&id, &session, at(0, 9), at(0, 9).plus_secs(300), None)
@@ -453,7 +453,7 @@ fn a_goal_changed_during_the_day_is_the_days_goal() {
             .unwrap();
     };
     let talk = |day: i64, minutes: i64| {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         s.turn("マラです。よろしくおねがいします。", Input::Spoken)
             .unwrap();
         let start = at(day, 9);
@@ -495,7 +495,7 @@ fn a_goal_changed_during_the_day_is_the_days_goal() {
     store
         .set_day_goal(at(3, 0).day(), DailyGoal::Minutes(30))
         .unwrap();
-    let late = Session::new(scenario(), provider(), Amount::Little, "de");
+    let late = Session::new(scenario(), provider(), Amount::Little, Lang::De);
     let id = store.begin_local(&late.snapshot(), at(2, 23)).unwrap();
     let end = at(3, 0).plus_secs(180);
     store
@@ -588,7 +588,7 @@ fn every_shown_correction_comes_back_as_a_mini_conversation() {
     // Four different corrections with much feedback: the fourth is past the summary's top three
     // and still goes into the review as a correction, with its line and old words (/LF230/).
     let store = Store::in_memory().unwrap();
-    let mut session = Session::new(scenario(), provider(), Amount::Much, "de");
+    let mut session = Session::new(scenario(), provider(), Amount::Much, Lang::De);
     let start = at(0, 9);
     let id = store.begin_local(&session.snapshot(), start).unwrap();
     for t in [
@@ -877,7 +877,7 @@ fn a_failing_review_leaves_nothing_behind() {
 
 /// The talk of `recording_a_session_...`: it ends on a turn with a particle mistake.
 fn talk_ending_in_a_mistake() -> Session {
-    let mut session = Session::new(scenario(), provider(), Amount::Little, "de");
+    let mut session = Session::new(scenario(), provider(), Amount::Little, Lang::De);
     for (t, i) in [
         ("マラです。よろしくおねがいします。", Input::Spoken),
         ("ドイツのハンブルクから来ました。", Input::Spoken),
@@ -1007,7 +1007,7 @@ fn only_the_newest_talk_can_be_corrected() {
     store
         .record(&id, &first, at(0, 9), at(0, 10), Some(&c))
         .unwrap();
-    let later = Session::new(scenario(), provider(), Amount::Little, "de");
+    let later = Session::new(scenario(), provider(), Amount::Little, Lang::De);
     let id2 = store.begin_local(&later.snapshot(), at(1, 9)).unwrap();
     store
         .record(&id2, &later, at(1, 9), at(1, 10), Some(&c))
@@ -1050,7 +1050,7 @@ fn a_card_that_stays_comes_from_the_turns_that_stay() {
     let c = curriculum();
     let (start, end) = (at(0, 9), at(0, 9).plus_secs(6 * 60));
     let talk = || {
-        let mut s = Session::new(scenario(), provider(), Amount::Little, "de");
+        let mut s = Session::new(scenario(), provider(), Amount::Little, Lang::De);
         for t in [
             "コーヒーを好きです。",
             "マラです。よろしくおねがいします。",

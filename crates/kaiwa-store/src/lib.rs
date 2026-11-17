@@ -20,11 +20,11 @@ use kaiwa_core::booking::{book_placement, book_talk};
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum};
 use kaiwa_core::difficulty::{Change, Regulator};
-use kaiwa_core::feedback::Amount;
 use kaiwa_core::learner::LearnerModel;
 use kaiwa_core::progress::{DailyGoal, DayRecord, Pause, Streak, XP_REVIEW, streak, turn_counts};
 use kaiwa_core::session::{Session, SessionState};
 use kaiwa_core::srs::{self, Grade, Item};
+use kaiwa_core::{Lang, feedback::Amount};
 use migrations::MIGRATIONS;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
@@ -122,8 +122,8 @@ pub enum Script {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Profile {
     pub name: String,
-    /// "de" or "en" (/LL506/).
-    pub ui_lang: String,
+    /// Stored as "de" or "en" (/LL506/).
+    pub ui_lang: Lang,
     pub daily_goal: DailyGoal,
     /// XP, streak and ring; off shows only the path (/LF605/).
     pub gamification: bool,
@@ -188,7 +188,7 @@ impl Default for Profile {
     fn default() -> Self {
         Self {
             name: String::new(),
-            ui_lang: "de".into(),
+            ui_lang: Lang::default(),
             daily_goal: DailyGoal::default(),
             gamification: true,
             feedback: Amount::Little,

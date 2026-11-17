@@ -7,6 +7,7 @@
 //! session. Everything the page does to "this line" (misrecognised /LF113/, dispute /LF307/,
 //! the recording's number /LF712/) goes through [`Log::turn_of`].
 
+use kaiwa_core::Lang;
 use kaiwa_core::{Input, TurnOutcome, feedback, session::SessionState};
 use serde_json::{Value, json};
 
@@ -45,7 +46,7 @@ impl Log {
 
     /// The log of a continued talk: the opening, then each turn with its corrections and the
     /// character's reply. Equal to the log the same turns built live.
-    pub fn restored(opening: &str, state: &SessionState, lang: &str) -> Self {
+    pub fn restored(opening: &str, state: &SessionState, lang: Lang) -> Self {
         let mut log = Self::opened(opening);
         for t in &state.turns {
             let shown = feedback::visible(
@@ -124,7 +125,7 @@ impl Log {
 
     /// The tutor answered the learner's line at `index`: it shows what the tutor made of it,
     /// and the reply follows.
-    pub fn answer(&mut self, index: usize, outcome: &TurnOutcome, lang: &str) {
+    pub fn answer(&mut self, index: usize, outcome: &TurnOutcome, lang: Lang) {
         if let Some(line) = self.entries.get_mut(index) {
             show_outcome(line, outcome, lang);
         }
@@ -141,7 +142,7 @@ impl Log {
     }
 
     /// The mora check's hints for the learner's line at `index`, if it still says `text`.
-    pub fn add_mora(&mut self, index: usize, text: &str, notes: &[MoraNote], lang: &str) {
+    pub fn add_mora(&mut self, index: usize, text: &str, notes: &[MoraNote], lang: Lang) {
         let Some(line) = self.entries.get_mut(index) else {
             return;
         };
@@ -254,7 +255,7 @@ fn is_turn(entry: &Value) -> bool {
 }
 
 /// The learner's line of the log with what the tutor made of it.
-fn show_outcome(turn: &mut Value, outcome: &TurnOutcome, lang: &str) {
+fn show_outcome(turn: &mut Value, outcome: &TurnOutcome, lang: Lang) {
     turn["corrections"] = outcome
         .shown
         .iter()
@@ -278,8 +279,8 @@ fn show_outcome(turn: &mut Value, outcome: &TurnOutcome, lang: &str) {
 }
 
 /// A mora hint as the page shows it: cautious, in the UI language, no severity (K-02).
-fn mora_view(n: &MoraNote, lang: &str) -> Value {
-    let de = lang == "de";
+fn mora_view(n: &MoraNote, lang: Lang) -> Value {
+    let de = lang == Lang::De;
     let word = if n.surface == n.meant {
         n.meant.clone()
     } else {
@@ -316,7 +317,7 @@ mod tests {
     use kaiwa_core::Moment;
 
     const SCENARIO: &str = "n5-02-jikoshoukai";
-    const LANG: &str = "en";
+    const LANG: Lang = Lang::En;
 
     fn entry(log: &Log, i: usize) -> &Value {
         &log.entries[i]

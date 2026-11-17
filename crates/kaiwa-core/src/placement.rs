@@ -15,6 +15,7 @@
 
 use std::sync::Arc;
 
+use crate::Lang;
 use kaiwa_ai::ChatProvider;
 use serde::{Deserialize, Serialize};
 
@@ -65,7 +66,7 @@ pub fn stage_session(
     scenario: Scenario,
     provider: Arc<dyn ChatProvider>,
     amount: Amount,
-    lang: &str,
+    lang: Lang,
     i: usize,
 ) -> Session {
     Session::new(scenario, provider, amount, lang)
@@ -300,7 +301,7 @@ mod tests {
             "../../../data/scenarios/n5-02-jikoshoukai.json"
         ))
         .unwrap();
-        let mut s = stage_session(scenario, Arc::new(tutor), Amount::Little, "de", 0);
+        let mut s = stage_session(scenario, Arc::new(tutor), Amount::Little, Lang::De, 0);
         let mut p = Placement::default();
         let mut steps = Vec::new();
         let mut outs = Vec::new();
@@ -369,7 +370,7 @@ mod tests {
             "../../../data/scenarios/n5-02-jikoshoukai.json"
         ))
         .unwrap();
-        let mut s = stage_session(scenario, Arc::new(tutor), Amount::Little, "de", 0);
+        let mut s = stage_session(scenario, Arc::new(tutor), Amount::Little, Lang::De, 0);
         let mut p = Placement::default();
         let mut steps = Vec::new();
         for i in 0..2 {

@@ -1,5 +1,6 @@
 //! What the learner reads when listening does not work, in the UI language.
 
+use kaiwa_core::Lang;
 use kaiwa_speech::SpeechError;
 use kaiwa_speech::capture::Verdict;
 
@@ -13,8 +14,8 @@ pub enum MoraFailure {
 
 /// Why there are no pronunciation hints, in the UI language; speaking goes on either way. The
 /// error itself is English and stays in the log.
-pub fn mora_text(when: MoraFailure, lang: &str) -> &'static str {
-    match (when, lang == "de") {
+pub fn mora_text(when: MoraFailure, lang: Lang) -> &'static str {
+    match (when, lang == Lang::De) {
         (MoraFailure::Check, true) => "Die Aussprachehinweise fehlen, die Prüfung ist ausgefallen.",
         (MoraFailure::Check, false) => "Pronunciation hints are missing, the check failed.",
         (MoraFailure::Load, true) => {
@@ -27,8 +28,8 @@ pub fn mora_text(when: MoraFailure, lang: &str) -> &'static str {
 }
 
 /// What the learner reads when speaking does not work, in the UI language.
-pub fn speech_text(e: &SpeechError, lang: &str) -> String {
-    let de = lang == "de";
+pub fn speech_text(e: &SpeechError, lang: Lang) -> String {
+    let de = lang == Lang::De;
     match (e, de) {
         (SpeechError::NoMicrophone, true) => {
             "Kein Mikrofon gefunden. Bis dahin geht Tippen.".into()
@@ -62,8 +63,8 @@ pub fn speech_text(e: &SpeechError, lang: &str) -> String {
 }
 
 /// Why the recognition model did not load for a talk; a missing model says where to get it.
-pub fn recognizer_text(e: &SpeechError, lang: &str) -> String {
-    match (e, lang == "de") {
+pub fn recognizer_text(e: &SpeechError, lang: Lang) -> String {
+    match (e, lang == Lang::De) {
         (SpeechError::ModelMissing(_), true) => "Das Modell für die Spracherkennung fehlt. ReazonSpeech lässt sich in den Einstellungen unter „Modelle“ laden. Bis dahin geht Tippen.".to_string(),
         (SpeechError::ModelMissing(_), false) => "The speech recognition model is missing. Download ReazonSpeech in the settings under “Models”. You can type meanwhile.".to_string(),
         (e, _) => speech_text(e, lang),
@@ -72,8 +73,8 @@ pub fn recognizer_text(e: &SpeechError, lang: &str) -> String {
 
 /// Why the recognition could not check the microphone test's recording, and where to fix it
 /// (Settings › Models).
-pub fn test_text(e: &SpeechError, lang: &str) -> String {
-    match (e, lang == "de") {
+pub fn test_text(e: &SpeechError, lang: Lang) -> String {
+    match (e, lang == Lang::De) {
         (SpeechError::ModelLoad(dir), true) => format!(
             "ReazonSpeech lässt sich nicht laden. Den Ordner {dir} löschen, dann unter „Modelle“ neu laden."
         ),
@@ -86,8 +87,8 @@ pub fn test_text(e: &SpeechError, lang: &str) -> String {
 }
 
 /// The verdict in words: what it means and what to do.
-pub fn verdict_text(v: Verdict, lang: &str) -> &'static str {
-    match (v, lang == "de") {
+pub fn verdict_text(v: Verdict, lang: Lang) -> &'static str {
+    match (v, lang == Lang::De) {
         (Verdict::Silent, true) => {
             "Es kommt nichts an. Ist das Mikrofon stummgeschaltet, das falsche gewählt oder hat Kaiwa keinen Zugriff darauf?"
         }
@@ -125,11 +126,11 @@ mod tests {
     fn a_missing_microphone_is_said_in_both_languages() {
         let e = SpeechError::NoMicrophone;
         assert_eq!(
-            speech_text(&e, "de"),
+            speech_text(&e, Lang::De),
             "Kein Mikrofon gefunden. Bis dahin geht Tippen."
         );
         assert_eq!(
-            speech_text(&e, "en"),
+            speech_text(&e, Lang::En),
             "No microphone found. You can type meanwhile."
         );
     }
@@ -137,24 +138,27 @@ mod tests {
     #[test]
     fn the_reason_comes_with_the_error() {
         let e = SpeechError::Microphone("busy".into());
-        assert!(speech_text(&e, "de").contains("(busy)"));
-        assert!(speech_text(&e, "en").contains("(busy)"));
+        assert!(speech_text(&e, Lang::De).contains("(busy)"));
+        assert!(speech_text(&e, Lang::En).contains("(busy)"));
     }
 
     #[test]
     fn a_missing_recognition_model_says_where_to_get_it() {
         let e = SpeechError::ModelMissing("/m".into());
-        assert!(recognizer_text(&e, "de").contains("„Modelle“"));
-        assert!(recognizer_text(&e, "en").contains("“Models”"));
+        assert!(recognizer_text(&e, Lang::De).contains("„Modelle“"));
+        assert!(recognizer_text(&e, Lang::En).contains("“Models”"));
         let other = SpeechError::NoMicrophone;
-        assert_eq!(recognizer_text(&other, "en"), speech_text(&other, "en"));
+        assert_eq!(
+            recognizer_text(&other, Lang::En),
+            speech_text(&other, Lang::En)
+        );
     }
 
     #[test]
     fn a_broken_model_names_its_folder_in_the_test() {
         let e = SpeechError::ModelLoad("/m".into());
-        assert!(test_text(&e, "de").contains("/m"));
-        assert!(test_text(&e, "en").contains("/m"));
+        assert!(test_text(&e, Lang::De).contains("/m"));
+        assert!(test_text(&e, Lang::En).contains("/m"));
     }
 
     #[test]
@@ -166,7 +170,7 @@ mod tests {
             Verdict::Clipping,
             Verdict::Good,
         ] {
-            assert_ne!(verdict_text(v, "de"), verdict_text(v, "en"));
+            assert_ne!(verdict_text(v, Lang::De), verdict_text(v, Lang::En));
         }
     }
 }

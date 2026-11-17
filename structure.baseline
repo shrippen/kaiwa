@@ -8,17 +8,17 @@ exclude	spikes/s06-moren/*
 exclude	spikes/s07-pitch/*
 app/qml/ConversationPage.qml	-	lines=956
 app/src/app.rs	refresh	length=90
-app/src/conversation.rs	-	lines=1465
-app/src/conversation.rs	begin	length=96
+app/src/conversation.rs	-	lines=1461
+app/src/conversation.rs	begin	length=94
 app/src/conversation.rs	start	length=127
 app/src/conversation.rs	submit	length=92
 crates/kaiwa-ai/src/privacy.rs	flows	length=84
-crates/kaiwa-backend/src/demo.rs	seed	ccn=29 length=200
+crates/kaiwa-backend/src/demo.rs	seed	ccn=28 length=195
 crates/kaiwa-backend/src/reminder.rs	reminder	ccn=21
-crates/kaiwa-backend/src/views.rs	-	lines=1110
+crates/kaiwa-backend/src/views.rs	-	lines=1106
 crates/kaiwa-backend/src/views.rs	key_view	ccn=17
 crates/kaiwa-backend/src/views.rs	tutor_view	ccn=24 nesting=6
-crates/kaiwa-backend/src/views.rs	week	ccn=19 length=82
+crates/kaiwa-backend/src/views.rs	week	ccn=18 length=82
 crates/kaiwa-core/src/curriculum.rs	-	lines=843
 crates/kaiwa-core/src/difficulty.rs	target	ccn=24
 crates/kaiwa-core/src/difficulty.rs	word	ccn=16

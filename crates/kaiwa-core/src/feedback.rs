@@ -1,5 +1,6 @@
 //! Which corrections a learner sees, and how (Lastenheft /LF302/ to /LF306/, /LL110/).
 
+use crate::Lang;
 use kaiwa_ai::{Correction, Severity};
 use serde::{Deserialize, Serialize};
 
@@ -38,8 +39,8 @@ impl Amount {
 
     /// The levels a placement at this amount covers, in the UI language: "up to N5", "N4",
     /// "N3 and up".
-    pub fn level_words(self, lang: &str) -> String {
-        let de = lang != "en";
+    pub fn level_words(self, lang: Lang) -> String {
+        let de = lang == Lang::De;
         let own: Vec<Jlpt> = Jlpt::ALL
             .into_iter()
             .filter(|j| Self::for_jlpt(*j) == self)
@@ -140,8 +141,8 @@ pub fn cross_check(first: &[Correction], second: &[Correction]) -> Vec<Correctio
 }
 
 /// The word for a severity in the UI language (the tier is never colour alone).
-pub fn severity_word(s: Severity, lang: &str) -> &'static str {
-    let de = lang == "de";
+pub fn severity_word(s: Severity, lang: Lang) -> &'static str {
+    let de = lang == Lang::De;
     match s {
         Severity::BlocksUnderstanding => {
             if de {
@@ -175,7 +176,7 @@ pub fn severity_word(s: Severity, lang: &str) -> &'static str {
 }
 
 /// The word for a kind of mistake in the UI language.
-pub fn kind_word(k: kaiwa_ai::CorrectionKind, lang: &str) -> &'static str {
+pub fn kind_word(k: kaiwa_ai::CorrectionKind, lang: Lang) -> &'static str {
     use kaiwa_ai::CorrectionKind as K;
 
     // (German, English) per kind.
@@ -191,10 +192,7 @@ pub fn kind_word(k: kaiwa_ai::CorrectionKind, lang: &str) -> &'static str {
         K::Tense => ("Zeitform", "Tense"),
         K::Pronunciation => ("Aussprache", "Pronunciation"),
     };
-    if lang == "de" {
-        return de;
-    }
-    en
+    lang.pick(de, en)
 }
 
 #[cfg(test)]
@@ -232,11 +230,11 @@ mod tests {
     #[test]
     fn the_amount_names_its_levels() {
         let words = |a: Amount, lang| a.level_words(lang);
-        assert_eq!(words(Amount::Little, "de"), "bis N5");
-        assert_eq!(words(Amount::Little, "en"), "up to N5");
-        assert_eq!(words(Amount::Normal, "de"), "N4");
-        assert_eq!(words(Amount::Much, "de"), "ab N3");
-        assert_eq!(words(Amount::Much, "en"), "N3 and up");
+        assert_eq!(words(Amount::Little, Lang::De), "bis N5");
+        assert_eq!(words(Amount::Little, Lang::En), "up to N5");
+        assert_eq!(words(Amount::Normal, Lang::De), "N4");
+        assert_eq!(words(Amount::Much, Lang::De), "ab N3");
+        assert_eq!(words(Amount::Much, Lang::En), "N3 and up");
     }
 
     fn c(severity: Severity, better: &str) -> Correction {

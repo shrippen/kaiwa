@@ -7,6 +7,7 @@ use std::path::Path;
 use anyhow::Result;
 use kaiwa_backend::short::ShortTalk;
 use kaiwa_backend::{Backend, views};
+use kaiwa_core::Lang;
 use kaiwa_core::clock::Moment;
 use serde_json::Value;
 
@@ -38,10 +39,10 @@ const NOW: Moment = Moment {
     offset_min: 120,
 };
 
-fn demo(name: &str, lang: &str) -> Result<kaiwa_backend::TempBackend> {
+fn demo(name: &str, lang: Lang) -> Result<kaiwa_backend::TempBackend> {
     let b = kaiwa_backend::TempBackend::new(&format!("sim-ui-{name}"), true)?;
     let mut p = b.profile()?;
-    p.ui_lang = lang.into();
+    p.ui_lang = lang;
     b.seed().set_profile(&p)?;
     Ok(b)
 }
@@ -165,7 +166,7 @@ fn plain_words(root: &Path) -> Result<Option<String>> {
             texts.extend(bare.into_iter().filter(|s| german(s)));
         }
     }
-    let b = demo("plain-words", "de")?;
+    let b = demo("plain-words", Lang::De)?;
     for v in [
         views::today(&b, NOW)?,
         views::path(&b)?,
@@ -173,7 +174,7 @@ fn plain_words(root: &Path) -> Result<Option<String>> {
         views::learner(&b)?,
         views::stats(&b, NOW)?,
         views::profile(&b)?,
-        views::privacy(&b, "de"),
+        views::privacy(&b, Lang::De),
     ] {
         strings(&v, &mut texts);
     }
@@ -221,7 +222,7 @@ fn ui_en(root: &Path) -> Result<Option<String>> {
             );
         }
     }
-    let b = demo("en", "en")?;
+    let b = demo("en", Lang::En)?;
     let mut texts = Vec::new();
     for v in [
         views::today(&b, NOW)?,
@@ -230,7 +231,7 @@ fn ui_en(root: &Path) -> Result<Option<String>> {
         views::learner(&b)?,
         views::stats(&b, NOW)?,
         views::profile(&b)?,
-        views::privacy(&b, "en"),
+        views::privacy(&b, Lang::En),
     ] {
         strings(&v, &mut texts);
     }
@@ -246,7 +247,7 @@ fn ui_en(root: &Path) -> Result<Option<String>> {
 /// /LF712/: with recordings kept for 7 days, after 8 days they are gone and the transcripts
 /// (the sessions' turns) stay.
 fn retention() -> Result<Option<String>> {
-    let b = demo("retention", "de")?;
+    let b = demo("retention", Lang::De)?;
     let mut p = b.profile()?;
     p.keep_recordings_days = Some(7);
     b.seed().set_profile(&p)?;
@@ -294,7 +295,7 @@ fn retention() -> Result<Option<String>> {
 /// carry no streak note, a short talk ends without XP, and in the QML every XP, streak and
 /// meter display sits behind the gamification setting.
 fn gamification_off(root: &Path) -> Result<Option<String>> {
-    let b = demo("gamification", "de")?;
+    let b = demo("gamification", Lang::De)?;
     let mut p = b.profile()?;
     p.gamification = false;
     b.seed().set_profile(&p)?;
@@ -455,12 +456,12 @@ fn targets(root: &Path) -> Result<Option<String>> {
 /// That the settings page shows the suggestion is tried by `tst_latency.qml` (see
 /// [`crate::qml`]). Measuring the times needs the audio mode.
 fn suggest_smaller() -> Result<Option<String>> {
-    let b = demo("latency", "de")?;
+    let b = demo("latency", Lang::De)?;
     let before = b.profile()?;
     for ms in [3400, 3900, 4200, 3600, 5100, 3300] {
         b.add_latency(ms)?;
     }
-    let v = b.latency_view("de")?;
+    let v = b.latency_view(Lang::De)?;
     let mut found = Vec::new();
     if v["slow"] != true || v["suggestion"].as_str().is_none_or(str::is_empty) {
         found.push(format!("no suggestion at a median of {}", v["p50"]));
@@ -636,9 +637,9 @@ fn word_lookup(root: &Path) -> Result<Option<String>> {
     if markup != expected {
         found.push(format!("二人 should read {expected}, not {markup}"));
     }
-    let b = demo("lookup", "de")?;
+    let b = demo("lookup", Lang::De)?;
     let dict = root.join("data/dict/kaiwa-dict-excerpt.sqlite");
-    let v = lookup::lookup_in(&dict, &b, word, "de");
+    let v = lookup::lookup_in(&dict, &b, word, Lang::De);
     if v["found"] != true {
         return Ok(Some(format!("not found in the dictionary: {v}")));
     }

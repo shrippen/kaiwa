@@ -9,10 +9,10 @@
 //! A day script (`qa/scripts/<journey>.json` with `"days"`) sets the start date, the seed and
 //! special events (sessions over midnight, a time zone change).
 
-use std::collections::BTreeMap;
-use std::path::Path;
+use std::{collections::BTreeMap, path::Path};
 
 use anyhow::{Context, Result};
+use kaiwa_core::Lang;
 use kaiwa_core::booking::book_talk;
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum, NodeState};
@@ -331,7 +331,7 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
                 texts.push(streak_note(
                     &streak(&records, goal, &[], at.day()),
                     at.day(),
-                    "de",
+                    Lang::De,
                 ));
             }
             if refresher {
@@ -535,7 +535,7 @@ pub fn simulate(root: &Path, persona: &Value, script: &DaysScript) -> Result<Day
         texts.push(streak_note(
             &streak(&records, goal, &[], last_day),
             last_day,
-            "de",
+            Lang::De,
         ));
     }
     Ok(DaysRun {
@@ -757,7 +757,7 @@ pub fn check(id: &str, run: &DaysRun) -> Option<Outcome> {
         }
         // /LF600/, /LF220/: units unlock along the graph; states have words.
         "mara_path" | "hinnerk_pace" => {
-            let path = run.curriculum.path(&run.course, "de");
+            let path = run.curriculum.path(&run.course, Lang::De);
             for u in &path {
                 if u.state != NodeState::Locked {
                     for r in &run.curriculum.unit(&u.id)?.requires {
@@ -767,7 +767,7 @@ pub fn check(id: &str, run: &DaysRun) -> Option<Outcome> {
                         }
                     }
                 }
-                if u.state.word("de").is_empty() {
+                if u.state.word(Lang::De).is_empty() {
                     return fail("a state without a word".into());
                 }
             }
@@ -847,7 +847,7 @@ pub fn check(id: &str, run: &DaysRun) -> Option<Outcome> {
                     s.ended_on.iter().map(|d| d.iso()).collect::<Vec<_>>()
                 ));
             }
-            let note = streak_note(&s, s.ended_on[0].plus(1), "de");
+            let note = streak_note(&s, s.ended_on[0].plus(1), Lang::De);
             if !progress::blameless(&note) {
                 return fail(format!("blame in: {note}"));
             }
@@ -931,7 +931,7 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
             sc.clone(),
             provider.clone(),
             kaiwa_core::Amount::Little,
-            "de",
+            Lang::De,
         );
         let mut state = session.snapshot();
         for t in 0..s.turns {
@@ -1026,7 +1026,7 @@ fn progress_views(run: &DaysRun, path: &Path) -> Result<Option<String>> {
                 if shown["change"] != want {
                     found.push(format!("week: {s:?} moved {moved:+.2}, shown as {text}"));
                 }
-                if !progress::blameless(text) || !text.starts_with(s.word("de")) {
+                if !progress::blameless(text) || !text.starts_with(s.word(Lang::De)) {
                     found.push(format!("week: {s:?} reads: {text}"));
                 }
             }

@@ -4,6 +4,7 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import Kante
 import org.shrippen.kaiwa
+import "lang.js" as Lang
 
 // Kaiwa's window (Lastenheft Kap. 7): tabs for today, the learning path, review, profile and
 // settings; a conversation opens as its own page on top. The GUI comes from Kante (/LL301/;
@@ -37,7 +38,7 @@ Kirigami.ApplicationWindow {
         var i = args.indexOf(name)
         return i >= 0 && i + 1 < args.length ? args[i + 1] : fallback
     }
-    function t(de, en) { return kaiwa.lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(kaiwa.lang, de, en) }
 
     // With --check-text the screenshot mode says which texts of the page do not fit: elided,
     // wider than their place, or beyond the window's right edge (hinnerk_font, /LL202/;

@@ -4,6 +4,7 @@
 
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
+use kaiwa_core::Lang;
 use kaiwa_speech::download::{self, DownloadError, MODELS, Model};
 use kaiwa_speech::models::{KANA_CTC_URL, models_dir};
 use kaiwa_speech::mora;
@@ -35,8 +36,8 @@ pub fn offer(dir: &str) -> Option<Value> {
     MODELS.iter().find(|m| m.dir == dir).map(offer_of)
 }
 
-fn purpose(name: &str, lang: &str) -> &'static str {
-    match (name, lang == "de") {
+fn purpose(name: &str, lang: Lang) -> &'static str {
+    match (name, lang == Lang::De) {
         ("ReazonSpeech", true) => "Spracherkennung: versteht, was du sagst",
         ("ReazonSpeech", false) => "Speech recognition: understands what you say",
         ("Kokoro", true) => "Übergangsstimme der Figur",
@@ -56,7 +57,7 @@ fn purpose(name: &str, lang: &str) -> &'static str {
 
 /// The models for the settings: what each is for, where it comes from, its size and licence,
 /// and whether it is there (F-08).
-pub fn list(lang: &str) -> Value {
+pub fn list(lang: Lang) -> Value {
     let rows: Vec<Value> = MODELS
         .iter()
         .map(|m| {
@@ -132,9 +133,9 @@ fn due(done: u64, last: u64, total: u64) -> bool {
 
 impl Outcome {
     /// What the learner reads, in the UI language.
-    pub fn text(&self, lang: &str) -> String {
+    pub fn text(&self, lang: Lang) -> String {
         let name = self.name;
-        match (&self.result, lang == "de") {
+        match (&self.result, lang == Lang::De) {
             (Ok(()), true) => format!("{name} ist geladen."),
             (Ok(()), false) => format!("{name} is downloaded."),
             (Err(DownloadError::Stopped), true) => "Download abgebrochen.".to_string(),
@@ -164,7 +165,7 @@ mod tests {
 
     #[test]
     fn every_model_is_listed_with_its_purpose_and_size() {
-        let v = list("en");
+        let v = list(Lang::En);
         let rows = v.as_array().unwrap();
         assert_eq!(rows.len(), MODELS.len());
         for (row, m) in rows.iter().zip(MODELS.iter()) {
@@ -173,7 +174,7 @@ mod tests {
             assert!(row["downloadMB"].as_u64().unwrap() > 0);
             assert!(row["present"].is_boolean());
         }
-        assert_ne!(list("de")[0]["purpose"], list("en")[0]["purpose"]);
+        assert_ne!(list(Lang::De)[0]["purpose"], list(Lang::En)[0]["purpose"]);
     }
 
     #[test]
@@ -216,21 +217,21 @@ mod tests {
 
     #[test]
     fn a_download_ends_in_words_in_both_languages() {
-        assert_eq!(outcome(Ok(())).text("de"), "Kokoro ist geladen.");
-        assert_eq!(outcome(Ok(())).text("en"), "Kokoro is downloaded.");
+        assert_eq!(outcome(Ok(())).text(Lang::De), "Kokoro ist geladen.");
+        assert_eq!(outcome(Ok(())).text(Lang::En), "Kokoro is downloaded.");
         let stopped = || outcome(Err(DownloadError::Stopped));
-        assert_eq!(stopped().text("de"), "Download abgebrochen.");
-        assert_eq!(stopped().text("en"), "Download stopped.");
+        assert_eq!(stopped().text(Lang::De), "Download abgebrochen.");
+        assert_eq!(stopped().text(Lang::En), "Download stopped.");
         let stalled = || outcome(Err(DownloadError::Stalled(30)));
-        assert!(stalled().text("de").contains("30 s lang keine Daten"));
-        assert!(stalled().text("en").contains("no data for 30 s"));
+        assert!(stalled().text(Lang::De).contains("30 s lang keine Daten"));
+        assert!(stalled().text(Lang::En).contains("no data for 30 s"));
         let failed = || outcome(Err(DownloadError::Http("503".into())));
         assert_eq!(
-            failed().text("de"),
+            failed().text(Lang::De),
             "Kokoro ließ sich nicht laden: download failed: 503"
         );
         assert_eq!(
-            failed().text("en"),
+            failed().text(Lang::En),
             "Kokoro could not be downloaded: download failed: 503"
         );
     }

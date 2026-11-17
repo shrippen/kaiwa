@@ -26,7 +26,7 @@ pub fn skip_offer(st: &Backend) -> anyhow::Result<Option<kaiwa_core::curriculum:
     let lang = st.store.profile()?.ui_lang;
     let Some(unit) = st
         .curriculum
-        .path(&l.course, &lang)
+        .path(&l.course, lang)
         .into_iter()
         .find(|u| u.state == NodeState::Current)
     else {
@@ -78,7 +78,7 @@ pub fn placement_offer(st: &Backend) -> anyhow::Result<PlacementOffer> {
     let Some(last) = units.last().and_then(|id| st.curriculum.unit(id)) else {
         return Ok(PlacementOffer::default());
     };
-    let title = last.title.get(&st.store.profile()?.ui_lang).to_string();
+    let title = last.title.get(st.store.profile()?.ui_lang).to_string();
     Ok(PlacementOffer { units, title })
 }
 

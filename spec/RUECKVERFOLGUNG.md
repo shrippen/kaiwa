@@ -115,7 +115,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LL503/ | M | Eine Codebasis: Rust-Kern und Qt-6-QML-Oberfläche. | – | Vorgabe | – |
 | /LL504/ | M | Anbieter für STT, LLM und TTS sind austauschbar (Trait). | app, backend, speech | geprüft | 1 von 1 automatisch grün: `jonas_local_switch` |
 | /LL505/ | M | Der Kern ist ohne GUI testbar (Headless-API, `kaiwa-sim`). | core | Vorgabe | – |
-| /LL506/ | M | Mehrsprachigkeit der UI über die KDE-Infrastruktur (ki18n/gettext). | store | geprüft | 1 von 1 automatisch grün: `theo_ui_en` |
+| /LL506/ | M | Mehrsprachigkeit der UI über die KDE-Infrastruktur (ki18n/gettext). | core, store | geprüft | 1 von 1 automatisch grün: `theo_ui_en` |
 | /LL600/ | M | Jede Persona hat ein Startprofil, ein Lernverhalten, typische Fehler … | sim | Code | – |
 | /LL601/ | M | `kaiwa-sim` simuliert Lernende in drei Stufen: Text (Headless-API) … | sim | Code | – |
 | /LL602/ | M | Langzeitläufe mit beschleunigter Uhr (30 simulierte Tage) prüfen … | core, sim | Code | – |

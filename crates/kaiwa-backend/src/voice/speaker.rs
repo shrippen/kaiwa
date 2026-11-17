@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
 
+use kaiwa_core::Lang;
 use kaiwa_speech::models::kokoro_dir;
 use kaiwa_speech::playback::{self, Player};
 use kaiwa_speech::tts::{self, SpeechCache};
@@ -150,13 +151,13 @@ fn render(
 
 /// Why the character answers without a voice, in the UI language; a missing model says where
 /// to get it.
-pub fn voice_text(e: &SpeechError, lang: &str) -> String {
-    let de = lang == "de";
+pub fn voice_text(e: &SpeechError, lang: Lang) -> String {
+    let de = lang == Lang::De;
     match (e, de) {
         (SpeechError::ModelMissing(_), true) => "Die Figur antwortet ohne Stimme. Die Übergangsstimme Kokoro lässt sich in den Einstellungen unter „Modelle“ laden.".to_string(),
         (SpeechError::ModelMissing(_), false) => "The character answers without a voice. Download the interim voice Kokoro in the settings under “Models”.".to_string(),
-        (e, true) => format!("Die Figur antwortet ohne Stimme: {}", ears::speech_text(e, "de")),
-        (e, false) => format!("The character answers without a voice: {}", ears::speech_text(e, "en")),
+        (e, true) => format!("Die Figur antwortet ohne Stimme: {}", ears::speech_text(e, Lang::De)),
+        (e, false) => format!("The character answers without a voice: {}", ears::speech_text(e, Lang::En)),
     }
 }
 
@@ -296,13 +297,13 @@ mod tests {
     #[test]
     fn a_voice_that_is_missing_says_where_to_get_it() {
         let e = SpeechError::ModelMissing("x".into());
-        assert!(voice_text(&e, "de").contains("Modelle"));
-        assert!(voice_text(&e, "en").contains("Models"));
+        assert!(voice_text(&e, Lang::De).contains("Modelle"));
+        assert!(voice_text(&e, Lang::En).contains("Models"));
         let e = SpeechError::NoSpeaker;
         assert_eq!(
-            voice_text(&e, "en"),
+            voice_text(&e, Lang::En),
             "The character answers without a voice: No speaker found."
         );
-        assert!(voice_text(&e, "de").starts_with("Die Figur antwortet ohne Stimme: Kein"));
+        assert!(voice_text(&e, Lang::De).starts_with("Die Figur antwortet ohne Stimme: Kein"));
     }
 }

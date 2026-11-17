@@ -5,28 +5,31 @@ use std::collections::BTreeMap;
 
 use serde_json::{Value, json};
 
+use kaiwa_core::Lang;
 use kaiwa_core::trend::{Change, change};
 
 use crate::Backend;
 use crate::views::{kind_word, scenario_title};
 
 /// The trend in one word for the chart's head; empty when there is none yet.
-fn trend_word(counts: &[u32], de: bool) -> &'static str {
-    match (change(counts), de) {
-        (None, _) => "",
-        (Some(Change::Less), true) => "seltener",
-        (Some(Change::Less), false) => "less often",
-        (Some(Change::More), true) => "häufiger",
-        (Some(Change::More), false) => "more often",
-        (Some(Change::Same), true) => "gleich oft",
-        (Some(Change::Same), false) => "as often",
+fn trend_word(counts: &[u32], lang: Lang) -> &'static str {
+    let Some(c) = change(counts) else {
+        return "";
+    };
+    match c {
+        Change::Less => lang.pick("seltener", "less often"),
+        Change::More => lang.pick("häufiger", "more often"),
+        Change::Same => lang.pick("gleich oft", "as often"),
     }
 }
 
 /// The three kinds that came up most in the talks finished since `from` (unix seconds): the
 /// view's `mistakes` and the `talks` (day and scenario) their `counts` are aligned with.
-pub(crate) fn view(st: &Backend, from: i64, de: bool) -> anyhow::Result<(Vec<Value>, Vec<Value>)> {
-    let lang = if de { "de" } else { "en" };
+pub(crate) fn view(
+    st: &Backend,
+    from: i64,
+    lang: Lang,
+) -> anyhow::Result<(Vec<Value>, Vec<Value>)> {
     let mut totals: BTreeMap<String, u32> = BTreeMap::new();
     // The talks in order, for the charts and the trend: the mistakes of each per kind, with its
     // day and scenario.
@@ -62,7 +65,7 @@ pub(crate) fn view(st: &Backend, from: i64, de: bool) -> anyhow::Result<(Vec<Val
         .iter()
         .take(3)
         .map(|(k, _)| {
-            let word = kind_word(k, de);
+            let word = kind_word(k, lang);
             let of_kind: Vec<u32> = talks
                 .iter()
                 .map(|made| made.get(k).copied().unwrap_or(0))
@@ -71,7 +74,7 @@ pub(crate) fn view(st: &Backend, from: i64, de: bool) -> anyhow::Result<(Vec<Val
                 "kind": k,
                 "word": word,
                 "counts": of_kind,
-                "trend": trend_word(&of_kind, de),
+                "trend": trend_word(&of_kind, lang),
             })
         })
         .collect();
@@ -85,10 +88,13 @@ mod tests {
 
     #[test]
     fn the_trend_word_names_the_core_change() {
-        assert_eq!(trend_word(&[3, 3, 2, 2, 1, 1, 0, 0], true), "seltener");
-        assert_eq!(trend_word(&[3, 3, 2, 2, 1, 1, 0, 0], false), "less often");
-        assert_eq!(trend_word(&[0, 0, 1, 1, 2, 2], true), "häufiger");
-        assert_eq!(trend_word(&[1], true), "");
+        assert_eq!(trend_word(&[3, 3, 2, 2, 1, 1, 0, 0], Lang::De), "seltener");
+        assert_eq!(
+            trend_word(&[3, 3, 2, 2, 1, 1, 0, 0], Lang::En),
+            "less often"
+        );
+        assert_eq!(trend_word(&[0, 0, 1, 1, 2, 2], Lang::De), "häufiger");
+        assert_eq!(trend_word(&[1], Lang::De), "");
     }
 
     #[test]
@@ -105,7 +111,7 @@ mod tests {
                 scenario.clone(),
                 provider,
                 kaiwa_core::Amount::Little,
-                "de",
+                Lang::De,
             );
             for turn in 0..4 + misrecognised {
                 let line = if turn < *mistakes || turn >= 4 {

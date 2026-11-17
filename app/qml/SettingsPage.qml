@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtQuick.Controls as QQC2
 import Kante
+import "lang.js" as Lang
 
 // Settings (Lastenheft Kap. 7): daily goal (/LF601/), feedback amount (/LF304/), script
 // (/LF110/), end of a spoken turn (/LF101/), the microphone and its test (/LF104/), mora hints (/LF320/), gamification (/LF605/),
@@ -16,7 +17,7 @@ import Kante
 Item {
     id: page
     required property var kaiwa
-    function t(de, en) { return kaiwa.lang === "en" ? en : de }
+    function t(de, en) { return Lang.pick(kaiwa.lang, de, en) }
 
     readonly property var p: kaiwa.profile.length > 0 ? JSON.parse(kaiwa.profile) : ({ goal: {} })
     readonly property var privacy: kaiwa.privacy.length > 0 ? JSON.parse(kaiwa.privacy) : []
@@ -216,8 +217,8 @@ Item {
                     title: page.t("Sprache", "Language")
                     Choice {
                         model: ["Deutsch", "English"]
-                        shown: page.p.uiLang === "en" ? 1 : 0
-                        onActivated: function (i) { page.kaiwa.setSetting("uiLang", i === 1 ? "en" : "de") }
+                        shown: Lang.indexOf(page.p.uiLang)
+                        onActivated: function (i) { page.kaiwa.setSetting("uiLang", Lang.code(i)) }
                     }
                 }
             }

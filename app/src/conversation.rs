@@ -209,7 +209,7 @@ use kaiwa_backend::flow::{self, Hear, Length, Talk, VoiceState};
 use kaiwa_backend::log::Log;
 use kaiwa_backend::placing::{self, Next, Placing, Stage};
 use kaiwa_backend::voice::{self, Debt, Enhance, Line, Owed, Pace, Said, Speaker};
-use kaiwa_backend::words;
+use kaiwa_backend::{Lang, words};
 use kaiwa_core::Input;
 use serde_json::Value;
 
@@ -259,7 +259,7 @@ pub struct ConversationRust {
     stage: QString,
     placement_ask: bool,
     placement: Option<Placing>,
-    lang: String,
+    lang: Lang,
     /// Since when the time in this talk has not been added to the session.
     sitting: Option<std::time::Instant>,
     talk: Option<Arc<Mutex<Talk>>>,
@@ -304,12 +304,12 @@ impl qobject::Conversation {
         let Some(talk) = self.talk.clone() else {
             return;
         };
-        let lang = self.lang.clone();
+        let lang = self.lang;
         let (goals, done, summary) = {
             let talk = talk.lock().expect("talk lock");
             let session = talk.session();
-            let goals = kaiwa_backend::summary::goals_view(session, &lang);
-            let summary = kaiwa_backend::summary::summary_view(session, &lang).to_string();
+            let goals = kaiwa_backend::summary::goals_view(session, lang);
+            let summary = kaiwa_backend::summary::summary_view(session, lang).to_string();
             (goals, session.done(), summary)
         };
         self.as_mut()
@@ -352,12 +352,11 @@ impl qobject::Conversation {
 
     /// Shows the stage the placement opened.
     fn begin_stage(mut self: Pin<&mut Self>, stage: Stage) {
-        self.as_mut().rust_mut().lang = stage.lang.clone();
+        self.as_mut().rust_mut().lang = stage.lang;
         self.as_mut().say_all_failed(&stage.opened.failed);
         let log = Log::opened(&stage.opening);
-        self.as_mut()
-            .begin(stage.opened.talk, log, stage.lang.clone());
-        let word = if stage.lang == "en" {
+        self.as_mut().begin(stage.opened.talk, log, stage.lang);
+        let word = if stage.lang == Lang::En {
             "Placement"
         } else {
             "Einstufung"
@@ -422,18 +421,16 @@ impl qobject::Conversation {
     }
 
     /// Shows a session (new or restored) and loads speech once.
-    fn begin(mut self: Pin<&mut Self>, talk: Talk, log: Log, lang: String) {
+    fn begin(mut self: Pin<&mut Self>, talk: Talk, log: Log, lang: Lang) {
         let demo = talk.demo();
         let session = talk.session();
-        let title = session.scenario.title.get(&lang).to_string();
+        let title = session.scenario.title.get(lang).to_string();
         let scenario = session.scenario.id.clone();
-        let character = session.scenario.name.clone().unwrap_or_else(|| {
-            if lang == "de" {
-                "Figur".into()
-            } else {
-                "Character".into()
-            }
-        });
+        let character = session
+            .scenario
+            .name
+            .clone()
+            .unwrap_or_else(|| lang.pick("Figur", "Character").into());
         let voice = session
             .scenario
             .voice
@@ -482,13 +479,13 @@ impl qobject::Conversation {
             );
             if missing != (false, false, false) {
                 let thread = self.qt_thread();
-                let lang = self.lang.clone();
+                let lang = self.lang;
                 std::thread::spawn(move || {
                     if missing.0 {
-                        load_recognizer(&thread, &lang);
+                        load_recognizer(&thread, lang);
                     }
                     if missing.1 {
-                        load_voice(&thread, &voice, &lang);
+                        load_voice(&thread, &voice, lang);
                     }
                     if missing.2 {
                         load_mora(&thread);
@@ -510,11 +507,11 @@ impl qobject::Conversation {
         self.as_mut().set_voice_on(true);
         self.as_mut().set_talk_state(THINKING);
         let thread = self.qt_thread();
-        let lang = self.lang.clone();
+        let lang = self.lang;
         // One after the other: both models share ONNX Runtime, which the first sets up.
         std::thread::spawn(move || {
-            load_recognizer(&thread, &lang);
-            load_voice(&thread, &voice, &lang);
+            load_recognizer(&thread, lang);
+            load_voice(&thread, &voice, lang);
             load_mora(&thread);
         });
     }
@@ -527,7 +524,7 @@ impl qobject::Conversation {
     /// Tells the learner a save or load failed (it was only logged before). The page shows
     /// `notice` as the settings page does; it is cleared when the next talk begins.
     fn say_unsaved(self: Pin<&mut Self>, e: &str) {
-        let msg = words::unsaved(e, &self.lang);
+        let msg = words::unsaved(e, self.lang);
         self.add_notice(&msg);
     }
 
@@ -541,7 +538,7 @@ impl qobject::Conversation {
     /// Tells the learner why there are no pronunciation hints; the talk goes on without.
     fn say_mora_failed(self: Pin<&mut Self>, e: &ears::SpeechError, when: MoraFailure) {
         eprintln!("kaiwa: mora check: {e}");
-        let msg = ears::mora_text(when, &self.lang);
+        let msg = ears::mora_text(when, self.lang);
         self.add_notice(msg);
     }
 
@@ -618,12 +615,12 @@ impl qobject::Conversation {
     /// record, the learner model and the review, and the summary shows the corrected result.
     fn show_marked(mut self: Pin<&mut Self>, talk: &Arc<Mutex<Talk>>, marked: flow::Marked) {
         self.as_mut().say_all_failed(&marked.failed);
-        let lang = self.lang.clone();
+        let lang = self.lang;
         let (finished, shown) = {
             let talk = talk.lock().expect("talk lock");
             let shown = marked.recorded.as_ref().map(|r| {
-                let summary = kaiwa_backend::summary::summary_view(talk.session(), &lang);
-                (state().recorded_view(r, talk.session(), &lang), summary)
+                let summary = kaiwa_backend::summary::summary_view(talk.session(), lang);
+                (state().recorded_view(r, talk.session(), lang), summary)
             });
             (talk.finished(), shown)
         };
@@ -651,16 +648,16 @@ impl qobject::Conversation {
             let lang = or_default(st.profile(), &mut failed).ui_lang;
             (Talk::resume(&st, now()), lang)
         };
-        self.as_mut().rust_mut().lang = lang.clone();
+        self.as_mut().rust_mut().lang = lang;
         self.as_mut().say_all_unsaved(&failed);
         let opened = match opened {
             Ok(Some(opened)) => opened,
             Ok(None) => return,
-            Err(e) => return self.cannot_open(&e, &lang),
+            Err(e) => return self.cannot_open(&e, lang),
         };
         self.as_mut().say_all_failed(&opened.failed);
         let session = opened.talk.session();
-        let log = Log::restored(&session.scenario.opening, &session.snapshot(), &lang);
+        let log = Log::restored(&session.scenario.opening, &session.snapshot(), lang);
         self.begin(opened.talk, log, lang);
     }
 
@@ -687,11 +684,11 @@ impl qobject::Conversation {
                 .then(|| Talk::begin(&st, &id, now(), Length::Full));
             (opened, lang)
         };
-        self.as_mut().rust_mut().lang = lang.clone();
+        self.as_mut().rust_mut().lang = lang;
         self.as_mut().say_all_unsaved(&failed);
         let opened = match opened {
             Some(Ok(opened)) => opened,
-            Some(Err(e)) => return self.cannot_open(&e, &lang),
+            Some(Err(e)) => return self.cannot_open(&e, lang),
             None => return,
         };
         self.as_mut().say_all_failed(&opened.failed);
@@ -700,7 +697,7 @@ impl qobject::Conversation {
     }
 
     /// The profile could not be read for a talk: the page says so instead of staying empty.
-    fn cannot_open(mut self: Pin<&mut Self>, e: &anyhow::Error, lang: &str) {
+    fn cannot_open(mut self: Pin<&mut Self>, e: &anyhow::Error, lang: Lang) {
         eprintln!("kaiwa: {e:#}");
         let msg = words::talk_unopened(e, lang);
         self.as_mut().set_error(QString::from(&msg));
@@ -775,7 +772,7 @@ impl qobject::Conversation {
             let failed = speaker.say(&said, &line, &still, &mut on_sound);
             let _ = thread.queue(move |mut q| {
                 // A failed sentence leaves a note until a line plays without one.
-                let note = failed.map(|e| voice::voice_text(&e, &q.lang));
+                let note = failed.map(|e| voice::voice_text(&e, q.lang));
                 q.as_mut()
                     .set_voice_note(QString::from(&note.unwrap_or_default()));
                 if q.utterance.load(Ordering::SeqCst) == id {
@@ -823,11 +820,11 @@ impl qobject::Conversation {
         }
         let voice = self.voice_name.clone();
         let thread = self.qt_thread();
-        let lang = self.lang.clone();
+        let lang = self.lang;
         self.as_mut().set_talk_state(THINKING);
         std::thread::spawn(move || {
-            load_recognizer(&thread, &lang);
-            load_voice(&thread, &voice, &lang);
+            load_recognizer(&thread, lang);
+            load_voice(&thread, &voice, lang);
             load_mora(&thread);
         });
     }
@@ -936,7 +933,7 @@ impl qobject::Conversation {
         let Some(asking) = asking else {
             return;
         };
-        let lang = self.lang.clone();
+        let lang = self.lang;
         let thread = self.qt_thread();
         self.as_mut().rust_mut().log.translating(i);
         self.as_mut().publish_turns();
@@ -957,7 +954,7 @@ impl qobject::Conversation {
                 match taken.result {
                     Ok(text) => q.as_mut().rust_mut().log.translation(i, &text),
                     Err(e) => {
-                        let msg = words::translation_failed(&e, &lang);
+                        let msg = words::translation_failed(&e, lang);
                         q.as_mut().set_error(QString::from(&msg));
                     }
                 }
@@ -978,15 +975,15 @@ impl qobject::Conversation {
         let Some(w) = self.line_word(log_index, word) else {
             return QString::from("null");
         };
-        let lang = self.lang.clone();
+        let lang = self.lang;
         let st = state();
-        let v = kaiwa_backend::lookup::lookup(&st, &w, &lang);
+        let v = kaiwa_backend::lookup::lookup(&st, &w, lang);
         QString::from(&v.to_string())
     }
 
     fn grammar(&self) -> QString {
         let st = state();
-        let v = kaiwa_backend::views::grammar(&st, &self.scenario().to_string(), &self.lang);
+        let v = kaiwa_backend::views::grammar(&st, &self.scenario().to_string(), self.lang);
         QString::from(&v.to_string())
     }
 
@@ -994,9 +991,9 @@ impl qobject::Conversation {
         let Some(w) = self.line_word(log_index, word) else {
             return false;
         };
-        let lang = self.lang.clone();
+        let lang = self.lang;
         let st = state();
-        let found = kaiwa_backend::lookup::lookup(&st, &w, &lang);
+        let found = kaiwa_backend::lookup::lookup(&st, &w, lang);
         let text = found["word"].as_str().unwrap_or(&w.key).to_string();
         // The unit as the review counts it (the curriculum's id, as for words from mistakes).
         let unit = st.unit_id_of(&self.scenario().to_string());
@@ -1015,8 +1012,8 @@ impl qobject::Conversation {
         };
         // The voice says the word as the popup shows it: the entry's spelling and reading
         // (IPADIC reads 四人 よんにん, the dictionary よにん); without the dictionary as written.
-        let lang = self.lang.clone();
-        let entry = kaiwa_backend::lookup::lookup(&state(), &w, &lang);
+        let lang = self.lang;
+        let entry = kaiwa_backend::lookup::lookup(&state(), &w, lang);
         let markup = match (entry["word"].as_str(), entry["reading"].as_str()) {
             (Some(word), Some(reading)) if word != reading => format!("{{{word}|{reading}}}"),
             (Some(word), _) => word.to_string(),
@@ -1123,7 +1120,7 @@ impl qobject::Conversation {
                 self.as_mut().set_talk_state(LISTENING);
             }
             Err(e) => {
-                let text = ears::speech_text(&e, &self.lang);
+                let text = ears::speech_text(&e, self.lang);
                 self.as_mut().set_speech_error(QString::from(&text));
                 self.as_mut().set_talk_state(ERROR);
             }
@@ -1186,7 +1183,7 @@ impl qobject::Conversation {
         match mic.stop() {
             Ok(rec) => self.recognize(rec),
             Err(e) => {
-                let text = ears::speech_text(&e, &self.lang);
+                let text = ears::speech_text(&e, self.lang);
                 self.as_mut().set_speech_error(QString::from(&text));
                 self.as_mut().set_talk_state(ERROR);
             }
@@ -1215,7 +1212,7 @@ impl qobject::Conversation {
         if rec.check().no_voice() {
             let by_pause = std::mem::take(&mut self.as_mut().rust_mut().ended_by_pause);
             self.as_mut().set_talk_state(READY);
-            let msg = words::no_sound(&self.lang);
+            let msg = words::no_sound(self.lang);
             self.as_mut().set_error(QString::from(msg));
             // Hands-free goes on listening when the pause ended the turn; a click on the
             // button closed the microphone, and it stays closed.
@@ -1251,7 +1248,7 @@ impl qobject::Conversation {
                     }
                     return;
                 }
-                let msg = words::not_understood(&q.lang);
+                let msg = words::not_understood(q.lang);
                 q.as_mut().set_error(QString::from(msg));
                 if by_pause {
                     q.listen_after_nothing();
@@ -1270,7 +1267,7 @@ impl qobject::Conversation {
         if !state().profile().is_ok_and(|p| p.mora_hints) {
             return;
         }
-        let lang = self.lang.clone();
+        let lang = self.lang;
         let thread = self.qt_thread();
         std::thread::spawn(move || {
             let notes = match check.check(&rec, &text) {
@@ -1288,7 +1285,7 @@ impl qobject::Conversation {
                 q.as_mut()
                     .rust_mut()
                     .log
-                    .add_mora(index, &text, &notes, &lang);
+                    .add_mora(index, &text, &notes, lang);
                 q.as_mut().publish_turns();
             });
         });
@@ -1342,7 +1339,7 @@ impl qobject::Conversation {
                             let shown = turned
                                 .recorded
                                 .as_ref()
-                                .map(|r| state().recorded_view(r, t.session(), &q.lang));
+                                .map(|r| state().recorded_view(r, t.session(), q.lang));
                             Ok((turned, shown))
                         }
                         Err(e) => Err((e, t.failed_call(&state(), now()))),
@@ -1353,8 +1350,8 @@ impl qobject::Conversation {
                         let outcome = turned.outcome;
                         {
                             let mut rust = q.as_mut().rust_mut();
-                            let lang = rust.lang.clone();
-                            rust.log.answer(index, &outcome, &lang);
+                            let lang = rust.lang;
+                            rust.log.answer(index, &outcome, lang);
                         }
                         q.as_mut().set_error(QString::default());
                         q.as_mut().say_all_failed(&turned.failed);
@@ -1377,7 +1374,7 @@ impl qobject::Conversation {
                         q.as_mut().say_all_failed(&failed);
                         // The line stays to be read, but it is no turn of the session.
                         q.as_mut().rust_mut().log.fail(index);
-                        let msg = words::tutor_failed(&e, &q.lang);
+                        let msg = words::tutor_failed(&e, q.lang);
                         q.as_mut().set_error(QString::from(&msg));
                     }
                 }
@@ -1410,15 +1407,14 @@ impl qobject::Conversation {
 }
 
 /// Loads Kokoro and opens the speaker, then says the opening line.
-fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: &str) {
-    let lang = lang.to_string();
+fn load_voice(thread: &CxxQtThread<qobject::Conversation>, name: &str, lang: Lang) {
     let loaded = Speaker::load(name);
     let _ = thread.queue(move |mut q| {
         q.as_mut().set_speech_ready(true);
         let speaker = match loaded {
             Ok(speaker) => speaker,
             Err(e) => {
-                let text = voice::voice_text(&e, &lang);
+                let text = voice::voice_text(&e, lang);
                 q.as_mut().set_voice_note(QString::from(&text));
                 q.as_mut().rust_mut().debt.forgive();
                 // Without a voice nothing is spoken: hands-free listens right away, in a new
