@@ -62,7 +62,7 @@ Item {
             const p = page(view)
             const legend = Tree.find(p, n => n.hasOwnProperty("keySize") && n.hasOwnProperty("model"))
             verify(legend)
-            compare(legend.model.map(m => m.text), ["heute", "Ziel erreicht"])
+            compare(legend.model.map(m => m.text), ["heute", "Ziel erreicht", "Ziel nicht erreicht", "Ziellinie (gestrichelt)"])
         }
 
         function test_without_gamification_no_chart_streak_or_xp() {

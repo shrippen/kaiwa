@@ -27,11 +27,11 @@ pub(crate) fn bars(st: &Backend, now: Moment, goal: DailyGoal, de: bool) -> anyh
     } else {
         ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
     };
-    let week: Vec<_> = (0..7).map(|i| days.get(&monday.plus(i)).cloned()).collect();
+    let week: Vec<_> = (0..7).map(|i| days.get(&monday.plus(i))).collect();
     Ok(json!({
         "labels": labels,
-        "minutes": week.iter().map(|r| r.as_ref().map_or(0, |r| r.speaking_secs / 60)).collect::<Vec<_>>(),
-        "met": week.iter().map(|r| r.as_ref().is_some_and(|r| r.met(goal))).collect::<Vec<_>>(),
+        "minutes": week.iter().map(|r| r.map_or(0, |r| r.speaking_secs / 60)).collect::<Vec<_>>(),
+        "met": (0..7).map(|i| week[i].is_some_and(|r| r.met_on(monday.plus(i as i64), today, goal))).collect::<Vec<_>>(),
         "today": today.weekday(),
     }))
 }
@@ -39,6 +39,28 @@ pub(crate) fn bars(st: &Backend, now: Moment, goal: DailyGoal, de: bool) -> anyh
 #[cfg(test)]
 mod tests {
     use crate::views::today;
+
+    #[test]
+    fn a_past_day_is_met_by_the_goal_it_had() {
+        let b = crate::TempBackend::new("week-goal", true).unwrap();
+        // Not a Monday, so Monday is a past day.
+        let mut now = crate::now();
+        if now.day().weekday() == 0 {
+            now = now.plus_secs(86_400);
+        }
+        let monday = now.day().plus(-i64::from(now.day().weekday()));
+        let rec = |secs, goal| kaiwa_core::progress::DayRecord {
+            speaking_secs: secs,
+            goal,
+            ..Default::default()
+        };
+        // Monday: goal 5, spoke 6. Later the goal became 10.
+        let five = Some(kaiwa_core::progress::DailyGoal::Minutes(5));
+        b.store.put_day(monday, &rec(360, five)).unwrap();
+        let ten = kaiwa_core::progress::DailyGoal::Minutes(10);
+        let w = super::bars(&b, now, ten, true).unwrap();
+        assert_eq!(w["met"][0], true, "{w}");
+    }
 
     #[test]
     fn today_carries_the_week_and_the_review_estimate() {

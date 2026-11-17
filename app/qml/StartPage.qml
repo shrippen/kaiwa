@@ -307,7 +307,9 @@ QQC2.ScrollView {
                             Layout.fillWidth: true
                             model: [
                                 { color: KanteStyle.accentColor, text: page.t("heute", "today") },
-                                { color: KanteStyle.positiveTextColor, text: page.t("Ziel erreicht", "goal reached") }
+                                { color: KanteStyle.positiveTextColor, text: page.t("Ziel erreicht", "goal reached") },
+                                { color: KanteStyle.frameColor, text: page.t("Ziel nicht erreicht", "goal not reached") },
+                                { color: KanteStyle.accentColor, text: page.t("Ziellinie (gestrichelt)", "goal line (dashed)") }
                             ]
                         }
                     }
