@@ -77,7 +77,7 @@ Kirigami.ScrollablePage {
             Layout.fillWidth: true
             visible: conv.demo
             title: "Demo"
-            text: page.t("Aufgezeichnete Antworten. Ein echter Tutor kommt über KAIWA_PROVIDER (siehe README).", "Recorded answers. A real tutor comes through KAIWA_PROVIDER (see the README).")
+            text: page.t("Aufgezeichnete Antworten. Einen echten Tutor wählst du in den Einstellungen unter Tutor.", "Recorded answers. Choose a real tutor in the settings under Tutor.")
         }
     }
 
