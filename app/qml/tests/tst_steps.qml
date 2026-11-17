@@ -29,7 +29,9 @@ Item {
             kaiwa.profile = JSON.stringify({
                 goal: { kind: "minutes", value: 7 }, goalSteps: [2, 7, 9],
                 unloadAfter: null, unloadSteps: [1, 4, null],
-                textScale: 1.1, textScaleSteps: [1.0, 1.1, 1.75]
+                textScale: 1.1, textScaleSteps: [1.0, 1.1, 1.75],
+                feedback: "much", feedbackSteps: ["much", "little"],
+                keepRecordings: 3, keepSteps: [null, 3, 9]
             })
             const page = createTemporaryObject(appWindow.settings, root, { kaiwa: kaiwa, width: root.width, height: root.height })
 
@@ -50,6 +52,18 @@ Item {
             compare(size.currentIndex, 1)
             size.select(2)
             compare(JSON.stringify(kaiwa.last("setSetting")), JSON.stringify(["textScale", "1.75"]))
+
+            const amount = choice(page, "Verbesserungen")
+            compare(JSON.stringify(amount.model), JSON.stringify(["Viel", "Wenig"]))
+            compare(amount.currentIndex, 0)
+            amount.select(1)
+            compare(JSON.stringify(kaiwa.last("setSetting")), JSON.stringify(["feedback", "little"]))
+
+            const keep = choice(page, "Aufnahmen behalten")
+            compare(JSON.stringify(keep.model), JSON.stringify(["Nein", "3 Tage", "9 Tage"]))
+            compare(keep.currentIndex, 1)
+            keep.select(2)
+            compare(JSON.stringify(kaiwa.last("setSetting")), JSON.stringify(["keepRecordings", "9"]))
         }
     }
 }

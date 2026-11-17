@@ -379,6 +379,34 @@ mod tests {
     }
 
     #[test]
+    fn values_off_the_steps_leave_the_setting_as_it_is() {
+        let b = backend("off-steps");
+        let before = set(&b, "goal", "10");
+        let after = set(&b, "goal", "25");
+        assert_eq!(after.daily_goal, before.daily_goal, "goal 25");
+        assert_eq!(set(&b, "keepRecordings", "14").keep_recordings_days, None);
+        assert_eq!(set(&b, "reminder", "481").reminder, None);
+        assert_eq!(
+            set(&b, "unloadAfter", "7").unload_after_min,
+            before.unload_after_min
+        );
+        assert_eq!(set(&b, "keepRecordings", "7").keep_recordings_days, Some(7));
+        assert_eq!(
+            set(&b, "keepRecordings", "14").keep_recordings_days,
+            Some(7)
+        );
+    }
+
+    #[test]
+    fn the_profile_view_carries_the_other_lists() {
+        let b = backend("lists");
+        let v = crate::views::profile(&b).unwrap();
+        assert_eq!(v["feedbackSteps"], json!(["little", "normal", "much"]));
+        assert_eq!(v["keepSteps"], json!([null, 7, 30]));
+        assert_eq!(v["reminderSteps"], json!([null, 480, 750, 1140]));
+    }
+
+    #[test]
     fn the_end_pause_is_clamped_to_the_steps() {
         let b = backend("pause");
         let max = kaiwa_core::turn_end::clamp_pause(99.0);
