@@ -21,6 +21,7 @@ mod keys;
 pub mod latency;
 pub mod log;
 pub mod lookup;
+mod mistakes;
 #[cfg(feature = "speech")]
 pub mod models;
 mod path;

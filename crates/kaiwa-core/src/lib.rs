@@ -21,6 +21,7 @@ pub mod romaji;
 pub mod scenario;
 pub mod session;
 pub mod srs;
+pub mod trend;
 pub mod turn_end;
 
 pub use clock::{Day, Moment};
