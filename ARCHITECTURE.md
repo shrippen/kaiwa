@@ -84,6 +84,9 @@ Qt app today and, from M4, the service `kaiwad` with the Plasma widget.
 | A requirement | Its id in `spec/LASTENHEFT.md`; the feature links it. |
 | A GUI component | In the Kante repository first, then `tools/sync-kante.sh`. |
 
+A new command that writes the profile journals its event first (`kaiwa-core` `Event`,
+`kaiwa-backend` `journal.rs`, ADR-010).
+
 A change that needs more places than its row lists is a finding for the next audit.
 
 ## Known deviations

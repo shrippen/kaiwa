@@ -230,8 +230,9 @@ impl Talk {
         Ok(())
     }
 
-    /// What the tutor is asked about `text`; run it outside any lock. No aid counts until
-    /// the answer is taken ([`Talk::take`]) or the call failed ([`Talk::failed_call`]).
+    /// What the tutor is asked about `text`; run it outside any lock. Help and listening aids
+    /// do not count until the answer is taken ([`Talk::take`]) or the call failed
+    /// ([`Talk::failed_call`]).
     pub fn ask(&mut self, text: &str) -> Asking {
         self.asking = true;
         self.session.ask(text)

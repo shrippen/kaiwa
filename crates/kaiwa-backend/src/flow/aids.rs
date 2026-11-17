@@ -7,8 +7,9 @@
 //!  ask_translation ─► Translation::run (no lock) ─► take_translation ─► count, save, book
 //! ```
 //!
-//! No aid counts while the tutor works on a sent turn: it would count for a turn whose
-//! answer came without it.
+//! Help and a listening aid do not count while the tutor works on a sent turn: they would
+//! count for a turn whose answer came without them. A translation asked before the turn still
+//! counts when it arrives during it (as before; a known gap, spec/STAND.md).
 
 use kaiwa_ai::AiError;
 use kaiwa_core::Moment;

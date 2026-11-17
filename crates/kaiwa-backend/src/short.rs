@@ -4,6 +4,7 @@
 //! A short talk is an ordinary session in the profile, so the app continues it (and the other
 //! way round).
 
+use kaiwa_core::Event;
 use kaiwa_core::clock::Moment;
 use kaiwa_core::session::Input;
 use kaiwa_core::srs::{Grade, Item};
@@ -15,6 +16,8 @@ use kaiwa_store::Result as StoreResult;
 
 use crate::Backend;
 use crate::flow::{Length, Talk};
+use crate::journal;
+use crate::settings::SettingError;
 use crate::summary::goals_view;
 
 /// A short talk in progress: the talk flow with two goals.
@@ -119,18 +122,26 @@ impl Backend {
     pub fn answer_review(&self, text: &str, said: &str, helped: bool, now: Moment) -> Value {
         let item = self.store.item(text);
         answer(text, said, helped, item, |grade| {
-            self.store.review(text, grade, now)
+            let event = Event::Review {
+                text: text.into(),
+                grade,
+            };
+            journal::record(self, &event, now).map_err(|e| match e {
+                SettingError::NotSaved(e) | SettingError::NotApplied(e) => e,
+                SettingError::Spare => anyhow::anyhow!("a review never refuses on a spare"),
+            })?;
+            self.store.item(text).map_err(anyhow::Error::from)
         })
     }
 }
 
 /// The answer's words for the page; `{"error": …}` when nothing was saved.
-fn answer(
+fn answer<E: std::fmt::Display>(
     text: &str,
     said: &str,
     helped: bool,
     item: StoreResult<Option<Item>>,
-    review: impl FnOnce(Grade) -> StoreResult<Option<Item>>,
+    review: impl FnOnce(Grade) -> Result<Option<Item>, E>,
 ) -> Value {
     // A mini conversation looks for the form in the sentence, a word said after is the whole
     // answer (/LF230/).
@@ -263,7 +274,7 @@ mod tests {
     #[test]
     fn an_unreadable_item_is_no_answer() {
         let v = answer("袋", "袋", false, Err(StoreError::NoSession(2)), |_| {
-            Ok(None)
+            Ok::<_, StoreError>(None)
         });
         assert!(v["error"].is_string(), "the item is not guessed: {v}");
         assert!(v.get("right").is_none());

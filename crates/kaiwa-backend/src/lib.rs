@@ -16,6 +16,7 @@ mod demo;
 #[cfg(feature = "speech")]
 pub mod ears;
 pub mod flow;
+pub mod journal;
 pub mod latency;
 pub mod log;
 pub mod lookup;
