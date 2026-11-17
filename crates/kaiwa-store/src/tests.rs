@@ -153,6 +153,14 @@ fn migration_6_sets_the_feedback_source() {
 }
 
 #[test]
+fn migration_6_keeps_a_feedback_source_already_set() {
+    let mut row = old_profile("normal", true);
+    row["feedback_source"] = "level".into();
+    let p = before_6(&row).profile().unwrap();
+    assert_eq!(p.feedback_source, FeedbackSource::Level);
+}
+
+#[test]
 fn an_old_skipped_placement_is_not_a_placement() {
     // Skipping sets `placed` only.
     let p = before_6(&old_profile("little", true)).profile().unwrap();
