@@ -2,7 +2,7 @@
 //!
 //! A journey script (`qa/scripts/<journey>.json`) lists what the learner does: silence, asking
 //! for help, saying or typing a sentence (with the ids of the errors it plants). The engine
-//! is the real `kaiwa_core::Session`; the tutor answers from recorded fixtures
+//! plays through the backend's talk flow (`steps.rs`); the tutor answers from recorded fixtures
 //! (`qa/fixtures/<scenario>.json`, ADR-004: live providers are tried in the owner's local test).
 //! Afterwards every check of the journey runs: automated ones pass or fail, the others are
 //! listed as not automated yet (GUI, audio or hardware needed).
@@ -15,15 +15,16 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
 
 use anyhow::{Context, Result, bail};
 use kaiwa_ai::Severity;
+use kaiwa_backend::flow::Talk;
 use kaiwa_core::session::HelpStep;
 use kaiwa_core::{Amount, Input, Scenario, Summary, TurnOutcome, norm};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::steps::{Played, play_step, refuse, translate};
 use crate::talk;
 
 #[derive(Debug, Deserialize)]
@@ -169,69 +170,42 @@ pub fn play_with(
 ) -> Result<Run> {
     let scenario = talk::scenario(&script.scenario)?;
     let amount = amount_of(persona);
-    let mut session = talk::start(
+    let session = talk::start(
         scenario.clone(),
         provider,
         amount,
         persona["profile"]["ui_language"].as_str().unwrap_or("de"),
     );
+    // The backend's flow plays the talk (turn, help, translation); unstored, as a talk the
+    // profile does not keep.
+    let b = kaiwa_backend::TempBackend::new("run", false)?;
+    let now = kaiwa_backend::now();
+    let opened = Talk::unstored(&b, session, false, now);
+    refuse(opened.failed)?;
+    let mut talk = opened.talk;
     let mut events = Vec::new();
     let mut tutor_error = None;
     for step in &script.steps {
-        match step {
-            Step::Silence { silence } => events.push(Event::Silence {
-                secs: *silence,
-                help_offered: session.offer_help(Duration::from_secs_f64(*silence)),
-            }),
-            Step::Help { help } => {
-                let h = session
-                    .help()
-                    .context("help asked with every goal reached")?;
-                if h.level != *help {
-                    bail!(
-                        "{}: help reached level {}, the script expects {}",
-                        script.journey,
-                        h.level,
-                        help
-                    );
-                }
-                events.push(Event::Help(h));
-            }
-            Step::Say { say, input, plants } => {
-                let input = if input == "typed" {
-                    Input::Typed
-                } else {
-                    Input::Spoken
-                };
-                let outcome = match session.turn(say, input) {
-                    Ok(o) => o,
-                    Err(e) if live => {
-                        tutor_error = Some(format!("{e:#}"));
-                        break;
-                    }
-                    Err(e) => return Err(e.into()),
-                };
-                events.push(Event::Turn {
-                    say: say.clone(),
-                    input,
-                    plants: plants.clone(),
-                    outcome: Box::new(outcome),
-                });
+        match play_step(&b, &mut talk, step, script, live)? {
+            Played::Event(e) => events.push(e),
+            Played::TutorFailed(e) => {
+                tutor_error = Some(e);
+                break;
             }
         }
     }
-    let summary = session.summary();
+    let summary = talk.session().summary();
     let lines: Vec<String> = std::iter::once(kaiwa_core::plain(&scenario.opening))
         .chain(turns_of(&events).map(|o| kaiwa_core::plain(&o.reply)))
         .collect();
     let translations = lines
         .into_iter()
         .map(|l| {
-            let t = session.translate(&l).map_err(|e| e.to_string());
-            (l, t)
+            let t = translate(&b, &mut talk, &l, now)?;
+            Ok((l, t))
         })
-        .collect();
-    let aids = session.stats().aids;
+        .collect::<Result<_>>()?;
+    let aids = talk.session().stats().aids;
     Ok(Run {
         persona: persona.clone(),
         amount,
