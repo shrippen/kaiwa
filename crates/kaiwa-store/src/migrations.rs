@@ -50,4 +50,25 @@ pub(super) const MIGRATIONS: &[&str] = &[
         CASE WHEN json_extract(value, '$.feedback') IN ('normal', 'much')
              THEN 'chosen' ELSE 'default' END)
      WHERE key = 'profile' AND json_type(value, '$.feedback_source') IS NULL;",
+    // 7: talk ids as text (ADR-010 step 2, 2026-11-17, before the first release); talks from
+    // before the journal keep their number as `old-<n>`.
+    "CREATE TABLE sessions_new (
+        id TEXT PRIMARY KEY,
+        scenario TEXT NOT NULL,
+        started INTEGER NOT NULL,
+        offset_min INTEGER NOT NULL,
+        ended INTEGER,
+        finished INTEGER NOT NULL DEFAULT 0,
+        success REAL,
+        xp INTEGER NOT NULL DEFAULT 0,
+        speaking_secs INTEGER NOT NULL DEFAULT 0,
+        state TEXT NOT NULL,
+        recording TEXT);
+     INSERT INTO sessions_new
+        SELECT 'old-' || id, scenario, started, offset_min, ended, finished, success, xp,
+               speaking_secs, state, recording
+        FROM sessions;
+     DROP TABLE sessions;
+     ALTER TABLE sessions_new RENAME TO sessions;
+     CREATE INDEX sessions_started ON sessions(started);",
 ];

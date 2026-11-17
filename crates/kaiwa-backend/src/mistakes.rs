@@ -33,7 +33,7 @@ pub(crate) fn view(st: &Backend, from: i64, de: bool) -> anyhow::Result<(Vec<Val
     let mut talks: Vec<BTreeMap<String, u32>> = Vec::new();
     let mut talk_names: Vec<Value> = Vec::new();
     for row in st.store.finished_since(from)? {
-        let Ok(state) = st.store.session_state(row.id) else {
+        let Ok(state) = st.store.session_state(&row.id) else {
             continue;
         };
         let mut made: BTreeMap<String, u32> = BTreeMap::new();

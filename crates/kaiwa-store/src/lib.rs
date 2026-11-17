@@ -28,9 +28,9 @@ use migrations::MIGRATIONS;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
-/// The export format; 2 named the tutor by its preset (migration 3), 3 added the monthly
-/// costs (V-04). Only the current format is read (no release yet).
-pub const EXPORT_SCHEMA: &str = "kaiwa-export/3";
+/// The export format: 2 tutor preset (migration 3), 3 monthly costs (V-04), 4 journal and
+/// text talk ids (ADR-010). Only the current format is read (no release yet).
+pub const EXPORT_SCHEMA: &str = "kaiwa-export/4";
 
 /// The device state of a month's costs is `cost.<year>-<month>`; the export keeps the months.
 pub const COST_STATE_PREFIX: &str = "cost.";
@@ -95,11 +95,11 @@ pub enum StoreError {
     #[error("not a Kaiwa export ({0})")]
     WrongFormat(String),
     #[error("no session {0}")]
-    NoSession(i64),
+    NoSession(String),
     #[error("session {0} has no record to correct")]
-    NoRecording(i64),
+    NoRecording(String),
     #[error("session {0} is not the newest talk; its record stays")]
-    Superseded(i64),
+    Superseded(String),
 }
 
 pub type Result<T> = std::result::Result<T, StoreError>;
@@ -255,7 +255,8 @@ impl Learning {
 /// A session as listed (without its full state).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SessionRow {
-    pub id: i64,
+    /// The id of the talk's start event (`<device>-<seq>`); `old-<n>` before the journal.
+    pub id: String,
     pub scenario: String,
     pub started: Moment,
     pub ended: Option<Moment>,
@@ -660,17 +661,19 @@ impl Store {
 
     // ── Sessions ──
 
-    pub fn begin_session(&self, state: &SessionState, at: Moment) -> Result<i64> {
+    /// Starts the talk `id`, the id of its start event.
+    pub fn begin_session(&self, id: &str, state: &SessionState, at: Moment) -> Result<()> {
         self.db.execute(
-            "INSERT INTO sessions (scenario, started, offset_min, state) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT INTO sessions (id, scenario, started, offset_min, state) VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
+                id,
                 state.scenario,
                 at.unix,
                 at.offset_min,
                 serde_json::to_string(state)?
             ],
         )?;
-        Ok(self.db.last_insert_rowid())
+        Ok(())
     }
 
     /// A finished session as it was, without recording it again (demo history, tests).
@@ -680,8 +683,8 @@ impl Store {
         started: Moment,
         ended: Moment,
         success: f64,
-    ) -> Result<i64> {
-        let id = self.begin_session(state, started)?;
+    ) -> Result<String> {
+        let id = self.begin_local(state, started)?;
         self.db.execute(
             "UPDATE sessions SET ended = ?2, finished = 1, success = ?3 WHERE id = ?1",
             params![id, ended.unix, success],
@@ -702,18 +705,18 @@ impl Store {
     }
 
     /// Keeps the state after every turn, so an interruption loses nothing (/LF121/).
-    pub fn save_session(&self, id: i64, state: &SessionState) -> Result<()> {
+    pub fn save_session(&self, id: &str, state: &SessionState) -> Result<()> {
         let n = self.db.execute(
             "UPDATE sessions SET state = ?2 WHERE id = ?1",
             params![id, serde_json::to_string(state)?],
         )?;
         if n == 0 {
-            return Err(StoreError::NoSession(id));
+            return Err(StoreError::NoSession(id.into()));
         }
         Ok(())
     }
 
-    pub fn session_state(&self, id: i64) -> Result<SessionState> {
+    pub fn session_state(&self, id: &str) -> Result<SessionState> {
         let s: Option<String> = self
             .db
             .query_row(
@@ -722,7 +725,7 @@ impl Store {
                 |r| r.get(0),
             )
             .optional()?;
-        let s = s.ok_or(StoreError::NoSession(id))?;
+        let s = s.ok_or_else(|| StoreError::NoSession(id.into()))?;
         Ok(serde_json::from_str(&s)?)
     }
 
@@ -754,7 +757,7 @@ impl Store {
             .query_map([], Self::row)?
             .collect::<rusqlite::Result<_>>()?;
         for r in rows {
-            if !self.session_state(r.id)?.turns.is_empty() {
+            if !self.session_state(&r.id)?.turns.is_empty() {
                 return Ok(Some(r));
             }
         }
@@ -775,7 +778,7 @@ impl Store {
     /// /LF210/, /LF220/, /LF230/, /LF601/).
     pub fn record(
         &self,
-        id: i64,
+        id: &str,
         s: &Session,
         started: Moment,
         ended: Moment,
@@ -789,7 +792,7 @@ impl Store {
     /// the practice (a talk begun yesterday and finished after midnight counts for today).
     pub fn record_on(
         &self,
-        id: i64,
+        id: &str,
         s: &Session,
         started: Moment,
         ended: Moment,
@@ -886,7 +889,7 @@ impl Store {
     /// one built on its result (`Superseded`).
     pub fn correct<F: FnOnce(&mut Learning, Moment)>(
         &self,
-        id: i64,
+        id: &str,
         s: &Session,
         retrack: F,
     ) -> Result<Recorded> {
@@ -895,7 +898,7 @@ impl Store {
 
     fn correct_in<F: FnOnce(&mut Learning, Moment)>(
         &self,
-        id: i64,
+        id: &str,
         s: &Session,
         retrack: F,
     ) -> Result<Recorded> {
@@ -907,25 +910,25 @@ impl Store {
                 Self::row,
             )
             .optional()?
-            .ok_or(StoreError::NoSession(id))?;
+            .ok_or_else(|| StoreError::NoSession(id.into()))?;
         let stored: Option<String> = self.db.query_row(
             "SELECT recording FROM sessions WHERE id = ?1",
             params![id],
             |r| r.get(0),
         )?;
         let (Some(stored), true, Some(ended)) = (stored, row.finished, row.ended) else {
-            return Err(StoreError::NoRecording(id));
+            return Err(StoreError::NoRecording(id.into()));
         };
         let mut recording: Recording = serde_json::from_str(&stored)?;
         // The newest is the one recorded last: a talk begun earlier but finished later is.
         let later: i64 = self.db.query_row(
             "SELECT COUNT(*) FROM sessions
-             WHERE finished = 1 AND (ended > ?2 OR (ended = ?2 AND id > ?1))",
+             WHERE finished = 1 AND (ended > ?2 OR (ended = ?2 AND rowid > (SELECT rowid FROM sessions WHERE id = ?1)))",
             params![id, ended.unix],
             |r| r.get(0),
         )?;
         if later > 0 {
-            return Err(StoreError::Superseded(id));
+            return Err(StoreError::Superseded(id.into()));
         }
 
         // The learner side as `record_on` made it, from the evidence with the marks.
@@ -1283,7 +1286,7 @@ impl Store {
             .collect::<rusqlite::Result<_>>()?;
         let mut sessions = Vec::new();
         for r in rows {
-            let state = self.session_state(r.id)?;
+            let state = self.session_state(&r.id)?;
             sessions.push(serde_json::json!({ "row": r, "state": state }));
         }
         let days: Vec<serde_json::Value> = self
@@ -1302,6 +1305,7 @@ impl Store {
             "pauses": self.pauses()?,
             "disputes": self.disputes()?,
             "costs": self.state_values(COST_STATE_PREFIX)?,
+            "events": self.events_json()?,
         }))
     }
 
@@ -1322,26 +1326,8 @@ impl Store {
         let tx = self.db.unchecked_transaction()?;
         self.set_profile(&serde_json::from_value(profile)?)?;
         self.set_learning(&serde_json::from_value(v["learning"].clone())?)?;
-        for s in array(v, "sessions")? {
-            let row: SessionRow = serde_json::from_value(s["row"].clone())?;
-            let state: SessionState = serde_json::from_value(s["state"].clone())?;
-            self.db.execute(
-                "INSERT INTO sessions (id, scenario, started, offset_min, ended, finished, success, xp, speaking_secs, state)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-                params![
-                    row.id,
-                    row.scenario,
-                    row.started.unix,
-                    row.started.offset_min,
-                    row.ended.map(|e| e.unix),
-                    i64::from(row.finished),
-                    row.success,
-                    row.xp,
-                    row.speaking_secs,
-                    serde_json::to_string(&state)?
-                ],
-            )?;
-        }
+        self.import_sessions(v)?;
+        self.import_events(v)?;
         let mut reviewed: Option<Moment> = None;
         for i in array(v, "items")? {
             let item: Item = serde_json::from_value(i.clone())?;
@@ -1383,8 +1369,11 @@ impl Store {
 }
 
 mod events;
+mod import;
 mod migrations;
 mod shared;
 pub use events::Stored;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod text_ids;

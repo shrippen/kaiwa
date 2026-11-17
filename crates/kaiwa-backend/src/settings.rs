@@ -153,7 +153,8 @@ impl Backend {
             key: key.into(),
             value: value.into(),
         };
-        Ok(journal::record(self, &event, now)?)
+        journal::record(self, &event, now)?;
+        Ok(())
     }
 
     /// The change itself; [`journal::apply`] calls it for the journal's events too.
@@ -472,7 +473,7 @@ mod tests {
         let b = backend("rec");
         set(&b, "keepRecordings", "30");
         let f = b
-            .keep_recording(1, 0, &[0.1; 1600], 16_000, T0)
+            .keep_recording("t1", 0, &[0.1; 1600], 16_000, T0)
             .unwrap()
             .unwrap();
         set(&b, "name", "Lena");
@@ -490,7 +491,7 @@ mod tests {
         let b = backend("rec-locked");
         set(&b, "keepRecordings", "30");
         let f = b
-            .keep_recording(1, 0, &[0.1; 1600], 16_000, T0)
+            .keep_recording("t1", 0, &[0.1; 1600], 16_000, T0)
             .unwrap()
             .unwrap();
         let dir = f.parent().unwrap().to_path_buf();
@@ -563,7 +564,7 @@ mod tests {
 
         let folded = backend("longer-pause-folded");
         for e in live.store.events().unwrap() {
-            journal::apply(&folded, &e.event, e.at).unwrap();
+            journal::apply(&folded, &e.id, &e.event, e.at).unwrap();
         }
         let pause = |b: &Backend| b.profile().unwrap().end_pause_secs;
         assert!(pause(&live) > start);

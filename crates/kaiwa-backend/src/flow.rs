@@ -13,10 +13,11 @@
 use kaiwa_ai::Correction;
 use kaiwa_core::difficulty::Knob;
 use kaiwa_core::session::{Answer, Asking};
-use kaiwa_core::{Day, Input, Moment, Session, TurnOutcome};
+use kaiwa_core::{Day, Event, Input, Moment, Session, TurnOutcome};
 use kaiwa_store::{Dispute, Recorded};
 
 use crate::Backend;
+use crate::journal::{self, JournalError};
 
 mod aids;
 pub use aids::{Fetched, Hear, Heard, Helped, Translated, Translation, VoiceState};
@@ -39,7 +40,8 @@ pub enum Length {
 /// A talk in progress, stored in the profile or not (a placement stage is not).
 pub struct Talk {
     session: Session,
-    id: Option<i64>,
+    /// The id of the talk's start event.
+    id: Option<String>,
     began: Moment,
     demo: bool,
     finished: bool,
@@ -108,7 +110,7 @@ impl Talk {
         let Some(row) = b.store.open_session()? else {
             return Ok(None);
         };
-        let state = b.store.session_state(row.id)?;
+        let state = b.store.session_state(&row.id)?;
         let Some(scenario) = b.scenarios.get(&state.scenario).cloned() else {
             return Ok(None);
         };
@@ -157,8 +159,11 @@ impl Talk {
             session = session.with_difficulty(difficulty);
         }
         let mut failed: Vec<anyhow::Error> = b.arm_brake(now).err().into_iter().collect();
-        let id = match b.store.begin_session(&session.snapshot(), now) {
-            Ok(id) => Some(id),
+        let begun = Event::TalkBegun {
+            state: session.snapshot(),
+        };
+        let id = match journal::record(b, &begun, now) {
+            Ok(logged) => Some(logged.id),
             Err(e) => {
                 failed.push(e.into());
                 None
@@ -195,8 +200,8 @@ impl Talk {
         &self.session
     }
 
-    pub fn id(&self) -> Option<i64> {
-        self.id
+    pub fn id(&self) -> Option<String> {
+        self.id.clone()
     }
 
     pub fn demo(&self) -> bool {
@@ -229,10 +234,23 @@ impl Talk {
     /// Keeps the state of a running talk: after help, an aid, a translation, a failed
     /// call. A turn is kept by [`Talk::take`]. Nothing for an unstored or finished talk.
     pub fn save(&self, b: &Backend) -> anyhow::Result<()> {
-        let Some(id) = self.id.filter(|_| !self.finished) else {
+        Ok(self.save_at(b, crate::now())?)
+    }
+
+    fn save_at(&self, b: &Backend, now: Moment) -> Result<(), JournalError> {
+        let Some(id) = self.id.as_deref().filter(|_| !self.finished) else {
             return Ok(());
         };
-        b.store.save_session(id, &self.session.snapshot())?;
+        self.journal_state(b, id, now)
+    }
+
+    /// Journals the state of the talk `id`.
+    fn journal_state(&self, b: &Backend, id: &str, now: Moment) -> Result<(), JournalError> {
+        let saved = Event::TalkSaved {
+            talk: id.into(),
+            state: self.session.snapshot(),
+        };
+        journal::record(b, &saved, now)?;
         Ok(())
     }
 
@@ -279,7 +297,10 @@ impl Talk {
             self.session.aid(kaiwa_core::session::Aid::Translate, line);
         }
         let booked = b.book_costs(now, false).err();
-        booked.into_iter().chain(self.save(b).err()).collect()
+        booked
+            .into_iter()
+            .chain(self.save_at(b, now).err().map(Into::into))
+            .collect()
     }
 
     /// Takes the tutor's answer into the session, keeps the talk (the state, or the record
@@ -353,14 +374,9 @@ impl Talk {
         now: Moment,
         failed: &mut Vec<anyhow::Error>,
     ) -> Option<Recorded> {
-        let id = self.id?;
+        let id = self.id.as_deref()?;
         if !self.session.done() {
-            failed.extend(
-                b.store
-                    .save_session(id, &self.session.snapshot())
-                    .err()
-                    .map(Into::into),
-            );
+            failed.extend(self.journal_state(b, id, now).err().map(Into::into));
             return None;
         }
         if self.finished {
@@ -371,39 +387,43 @@ impl Talk {
         // begun before midnight and finished after counts for the day it was continued).
         let begun = now.plus_secs(-i64::from(self.session.spent_secs()));
         let day: Day = self.began.day();
-        let recorded = b
-            .store
-            .record_on(id, &self.session, begun, now, day, Some(&b.curriculum));
-        let recorded = match recorded {
-            Ok(r) => r,
+        let finished = Event::TalkFinished {
+            talk: id.into(),
+            state: self.session.snapshot(),
+            started: begun,
+            ended: now,
+            day,
+        };
+        // Recording also tracks the grammar and, for a profile kept open for days, honours
+        // the keep deadline (/LF712/).
+        let logged = match journal::record(b, &finished, now) {
+            Ok(logged) => logged,
             Err(e) => {
                 failed.push(e.into());
                 return None;
             }
         };
         self.finished = true;
-        failed.extend(b.track_grammar(&self.session, now).err());
-        // A profile kept open for days still honours the keep deadline (/LF712/).
-        failed.extend(b.purge_recordings(now).err());
-        Some(recorded)
+        failed.extend(logged.applied.failed);
+        logged.applied.recorded
     }
 
     /// Keeps the marks: the state of a running talk, the corrected record of a finished one.
     /// A correction that fails (a later talk was recorded) still saves the marks.
     fn keep_marks(&self, b: &Backend, failed: &mut Vec<anyhow::Error>) -> Option<Recorded> {
-        let id = self.id?;
+        let id = self.id.as_deref()?;
+        let now = crate::now();
         if self.finished {
-            match b.correct_talk(id, &self.session) {
-                Ok(recorded) => return Some(recorded),
-                Err(e) => failed.push(e),
+            let corrected = Event::TalkCorrected {
+                talk: id.into(),
+                state: self.session.snapshot(),
+            };
+            match journal::record(b, &corrected, now) {
+                Ok(logged) => return logged.applied.recorded,
+                Err(e) => failed.push(e.into()),
             }
         }
-        failed.extend(
-            b.store
-                .save_session(id, &self.session.snapshot())
-                .err()
-                .map(Into::into),
-        );
+        failed.extend(self.journal_state(b, id, now).err().map(Into::into));
         None
     }
 }
@@ -474,12 +494,12 @@ mod tests {
         let mut t = open(&b, SCENARIO, now, Length::Short);
         assert_eq!(t.session().goals().len(), 2);
         assert!(!t.session().grammar().is_empty(), "the unit's grammar");
-        let id = t.id().expect("stored at once");
-        assert_eq!(b.store.session_state(id).unwrap().turns.len(), 0);
+        let id = t.id().expect("stored at once").to_string();
+        assert_eq!(b.store.session_state(&id).unwrap().turns.len(), 0);
 
         let turned = t.say(&b, "はい", Input::Typed, now).unwrap().unwrap();
         assert!(turned.recorded.is_none() && turned.failed.is_empty());
-        assert_eq!(b.store.session_state(id).unwrap().turns.len(), 1);
+        assert_eq!(b.store.session_state(&id).unwrap().turns.len(), 1);
     }
 
     #[test]
@@ -520,7 +540,7 @@ mod tests {
         assert_eq!(spoken, r.day.speaking_secs - before);
         assert_eq!(spoken, 600, "the time spent, on the day it began");
         let row = (b.store.sessions(100).unwrap().into_iter())
-            .find(|r| Some(r.id) == t.id())
+            .find(|r| Some(&r.id) == t.id().as_ref())
             .expect("the talk's row");
         assert_eq!(row.ended, Some(end));
         assert!(row.finished);
@@ -535,7 +555,7 @@ mod tests {
             .update_profile(|p| p.keep_recordings_days = Some(7))
             .unwrap();
         let old = b
-            .keep_recording(1, 0, &[0.1; 1600], 16_000, now)
+            .keep_recording("t1", 0, &[0.1; 1600], 16_000, now)
             .unwrap()
             .unwrap();
         let later = now.plus_secs(8 * 86_400);
@@ -619,7 +639,7 @@ mod tests {
         assert_eq!(marked.failed.len(), 1, "only the correction failed");
         assert!(marked.failed[0].to_string().contains(&superseded));
         assert!(marked.recorded.is_none());
-        let kept = b.store.session_state(first.id().unwrap()).unwrap();
+        let kept = b.store.session_state(&first.id().unwrap()).unwrap();
         assert!(kept.turns[0].misrecognized, "the mark is saved");
     }
 
@@ -711,7 +731,7 @@ mod tests {
 
         t.save(&b).unwrap();
 
-        let kept = b.store.session_state(t.id().unwrap()).unwrap();
+        let kept = b.store.session_state(&t.id().unwrap()).unwrap();
         assert_eq!(kept.spent_secs, 42);
     }
 }

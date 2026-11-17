@@ -1,6 +1,6 @@
 # ADR-010: Sync zwischen Geräten
 
-**Status:** Angenommen (Eigentümer, 17.11.2026; Schritt 1 umgesetzt) · **Bezug:** /LF700/, /LF507/, /LF710/, /LF711/, /LF713/, `jonas_sync`, `jonas_local_switch`
+**Status:** Angenommen (Eigentümer, 17.11.2026; Schritt 1 und 2 umgesetzt) · **Bezug:** /LF700/, /LF507/, /LF710/, /LF711/, /LF713/, `jonas_sync`, `jonas_local_switch`
 
 ## Kontext
 
@@ -51,6 +51,7 @@ Das Profil ist eine SQLite-Datei. Lernstand (`learning`), Karten (`items`) und T
 - Eine falsch gehende Uhr verschiebt die Reihenfolge; das Ergebnis bleibt auf allen Geräten gleich, kann aber überraschen.
 - Die Korrektur nach dem Ende (V-05) ersetzt im Journal das beendete Gespräch; die gespeicherte Aufzeichnung davor kann dann entfallen. Eigener Schritt.
 - Größe: Transkripte liegen im Journal; verdichtet (neue `base`) wird erst, wenn es messbar stört.
+- Vor Schritt 4 (offen aus dem Review von Schritt 2): Ein offenes Gespräch von vor dem Journal läuft als `old-<n>` ohne `TalkBegun` weiter; erst `Base` macht es faltbar. Ein Import in ein Profil mit Journal schreibt am Journal vorbei; der Beitritt nimmt nur ein leeres Journal. Eine Korrektur, die ein späteres Gespräch überholt hat, steht als scheiterndes Ereignis im Journal; das Neufalten überspringt einzelne Fehler. Das Wiederherstellen eines Gesprächs beim Falten braucht keinen Tutor.
 
 ## Entschieden (Eigentümer, 17.11.2026)
 

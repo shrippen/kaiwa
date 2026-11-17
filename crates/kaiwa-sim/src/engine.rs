@@ -490,7 +490,7 @@ fn free_talk(p: &Value) -> Result<Option<String>> {
         let start = now.plus_secs(k * 900);
         let sid = b.seed().begin_session(&s.snapshot(), start)?;
         b.seed()
-            .record(sid, &s, start, start.plus_secs(300), Some(b.curriculum()))?;
+            .record(&sid, &s, start, start.plus_secs(300), Some(b.curriculum()))?;
     }
     let after = b.seed().learning()?.course;
     if b.curriculum().next_scenario(&after) != next
@@ -697,7 +697,7 @@ fn marked_after_the_end(how: Mark) -> Result<Option<String>> {
         s.turn(text, input)?;
     }
     let end = begun.plus_secs(300);
-    b.seed().record(id, &s, begun, end, Some(b.curriculum()))?;
+    b.seed().record(&id, &s, begun, end, Some(b.curriculum()))?;
     b.track_grammar(&s, end)?;
     if !b.seed().learning()?.model.errors.contains_key("particle") {
         return Ok(Some("the mistake was never recorded".into()));
@@ -710,7 +710,7 @@ fn marked_after_the_end(how: Mark) -> Result<Option<String>> {
     if !marked {
         return Ok(Some("the mark after the end is refused".into()));
     }
-    b.correct_talk(id, &s)?;
+    b.correct_talk(&id, &s)?;
     if b.seed().learning()?.model.errors.contains_key("particle") {
         return Ok(Some("the mistake stays in the learner model".into()));
     }

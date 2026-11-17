@@ -347,7 +347,7 @@ pub fn week(st: &Backend, now: Moment) -> anyhow::Result<Value> {
     // Turns understood without help or a listening aid, per week (misheard turns left out).
     let mut unaided = [(0usize, 0usize); 2];
     for row in st.store.finished_since(start(before))? {
-        let Ok(state) = st.store.session_state(row.id) else {
+        let Ok(state) = st.store.session_state(&row.id) else {
             continue;
         };
         let w = usize::from(row.started.unix >= start(this));

@@ -24,7 +24,7 @@ impl Backend {
     /// Keeps a spoken turn if the learner opted in; the file, or `None`.
     pub fn keep_recording(
         &self,
-        session: i64,
+        session: &str,
         turn: usize,
         samples: &[f32],
         sample_rate: u32,
@@ -113,7 +113,7 @@ mod tests {
     fn nothing_without_the_opt_in() {
         let b = backend("off", None);
         assert!(
-            b.keep_recording(1, 0, &[0.1; 1600], 16_000, T0)
+            b.keep_recording("t1", 0, &[0.1; 1600], 16_000, T0)
                 .unwrap()
                 .is_none()
         );
@@ -124,7 +124,7 @@ mod tests {
     fn kept_for_the_chosen_days_then_gone() {
         let b = backend("keep", Some(7));
         let f = b
-            .keep_recording(1, 0, &[0.1; 1600], 16_000, T0)
+            .keep_recording("t1", 0, &[0.1; 1600], 16_000, T0)
             .unwrap()
             .unwrap();
         assert!(f.exists());
@@ -137,7 +137,7 @@ mod tests {
     fn turning_it_off_deletes_them() {
         let b = backend("toggle", Some(30));
         let f = b
-            .keep_recording(1, 0, &[0.1; 1600], 16_000, T0)
+            .keep_recording("t1", 0, &[0.1; 1600], 16_000, T0)
             .unwrap()
             .unwrap();
         let mut p = b.store.profile().unwrap();
@@ -154,7 +154,7 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
         let b = backend("open-locked", Some(30));
         let f = b
-            .keep_recording(1, 0, &[0.1; 1600], 16_000, T0)
+            .keep_recording("t1", 0, &[0.1; 1600], 16_000, T0)
             .unwrap()
             .unwrap();
         b.store

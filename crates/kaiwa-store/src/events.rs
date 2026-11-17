@@ -1,6 +1,7 @@
 //! The journal (ADR-010): everything the learner did, one row per event, in the order every
 //! device folds them.
 
+use kaiwa_core::session::SessionState;
 use kaiwa_core::{Event, Moment};
 use rusqlite::params;
 
@@ -11,7 +12,7 @@ const DEVICE_STATE: &str = "device";
 const DEVICE_ID_BYTES: usize = 8;
 
 /// An event as the journal keeps it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Stored {
     /// `<device>-<seq>`.
     pub id: String,
@@ -63,6 +64,36 @@ impl Store {
             at,
             event: event.clone(),
         })
+    }
+
+    /// Starts a talk outside the journal (demo history, tests, the simulation's setup); its id
+    /// is `local-<random>`, which no journal id can equal.
+    pub fn begin_local(&self, state: &SessionState, at: Moment) -> Result<String> {
+        let id: String = self.db.query_row(
+            &format!("SELECT 'local-' || lower(hex(randomblob({DEVICE_ID_BYTES})))"),
+            [],
+            |r| r.get(0),
+        )?;
+        self.begin_session(&id, state, at)?;
+        Ok(id)
+    }
+
+    /// The journal as the export keeps it (`spec/export.schema.json`).
+    pub fn events_json(&self) -> Result<Vec<serde_json::Value>> {
+        let events = self.events()?;
+        Ok(events
+            .into_iter()
+            .map(|e| {
+                serde_json::json!({
+                    "id": e.id,
+                    "device": e.device,
+                    "seq": e.seq,
+                    "at": e.at.unix,
+                    "offset_min": e.at.offset_min,
+                    "body": e.event,
+                })
+            })
+            .collect())
     }
 
     /// All events in fold order: time, then device, then number.
