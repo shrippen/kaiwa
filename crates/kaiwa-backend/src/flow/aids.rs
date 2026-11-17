@@ -262,6 +262,22 @@ mod tests {
         assert_eq!(aids(&t), 0);
     }
 
+    /// The turn the translation waited for failed: the learner answers the same line again
+    /// with the translation in view, so now it counts.
+    #[test]
+    fn a_translation_held_during_a_failed_turn_counts() {
+        let b = TempBackend::new("aids-translate-failed", true).unwrap();
+        let mut t = open(&b);
+        let asked = t.ask_translation(&t.session().scenario.opening.clone(), 0);
+        let got = asked.unwrap().run();
+
+        let _asking = t.ask("はい");
+        t.take_translation(&b, now(), got);
+        t.failed_call(&b, now());
+
+        assert_eq!(aids(&t), 1);
+    }
+
     #[test]
     fn a_failed_translation_does_not_count() {
         let b = TempBackend::new("aids-nofixture", true).unwrap();
