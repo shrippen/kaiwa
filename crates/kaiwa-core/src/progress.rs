@@ -75,6 +75,23 @@ impl DayRecord {
         }
     }
 
+    /// A placement is no progress: the levels the day started from belong to the old model,
+    /// so the week's comparison starts again with the next talk (/LF604/). Whether it changed.
+    pub fn restart(&mut self) -> bool {
+        let had = !self.levels_at_start.is_empty();
+        self.levels_at_start.clear();
+        had
+    }
+
+    /// The goal of the day for the streak later (/LF602/), set when a talk that `began` on
+    /// this day and `ended` is booked. A talk that ends after midnight counts for the day it
+    /// began, which keeps the goal it had: a goal chosen after midnight is today's.
+    pub fn keep_goal(&mut self, began: Day, ended: Day, goal: DailyGoal) {
+        if self.goal.is_none() || began == ended {
+            self.goal = Some(goal);
+        }
+    }
+
     pub fn met(&self, goal: DailyGoal) -> bool {
         let DailyGoal::Minutes(m) = goal;
         self.speaking_secs >= m * 60
