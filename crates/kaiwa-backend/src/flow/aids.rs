@@ -7,9 +7,9 @@
 //!  ask_translation ─► Translation::run (no lock) ─► take_translation ─► count, save, book
 //! ```
 //!
-//! Help and a listening aid do not count while the tutor works on a sent turn: they would
-//! count for a turn whose answer came without them. A translation asked before the turn still
-//! counts when it arrives during it (as before; a known gap, spec/STAND.md).
+//! No aid counts while the tutor works on a sent turn: it would count for a turn whose answer
+//! came without it. A translation asked before the turn and arriving during it is shown and
+//! held: it counts only if that turn fails and the line stays open.
 
 use kaiwa_ai::AiError;
 use kaiwa_core::Moment;
@@ -124,10 +124,16 @@ impl Talk {
     }
 
     /// Books what the translation cost (/LF714/), also when it failed. It counts as help
-    /// once the learner has it, for the line it was asked on only (/LF212/), and is saved.
+    /// once the learner has it, for the line it was asked on only, and is saved (/LF212/).
+    /// During a sent turn it is held: it counts only if that turn fails.
     pub fn take_translation(&mut self, b: &Backend, now: Moment, got: Fetched) -> Translated {
         let mut failed: Vec<anyhow::Error> = b.book_costs(now, false).err().into_iter().collect();
-        if got.result.is_ok() {
+        // During a sent turn it would count for an answer given without it: held until the
+        // turn is taken (dropped) or fails (counted, `Talk::failed_call`).
+        if got.result.is_ok() && self.asking {
+            self.held = Some(got.line);
+        }
+        if got.result.is_ok() && !self.asking {
             self.session.aid(Aid::Translate, got.line);
             failed.extend(self.save(b).err());
         }
@@ -242,6 +248,37 @@ mod tests {
         let before = aids(&t);
         assert!(t.take_translation(&b, now(), late).result.is_ok());
         assert_eq!(aids(&t), before);
+    }
+
+    /// /LF212/: asked before a turn, a translation that arrives while the tutor works on the
+    /// turn does not count; the answer to that turn came without it.
+    #[test]
+    fn a_translation_arriving_during_a_turn_does_not_count() {
+        let b = TempBackend::new("aids-translate-busy", true).unwrap();
+        let mut t = open(&b);
+        let asked = t.ask_translation(&t.session().scenario.opening.clone(), 0);
+        let got = asked.unwrap().run();
+
+        let _asking = t.ask("はい");
+        assert!(t.take_translation(&b, now(), got).result.is_ok());
+
+        assert_eq!(aids(&t), 0);
+    }
+
+    /// The turn the translation waited for failed: the learner answers the same line again
+    /// with the translation in view, so now it counts.
+    #[test]
+    fn a_translation_held_during_a_failed_turn_counts() {
+        let b = TempBackend::new("aids-translate-failed", true).unwrap();
+        let mut t = open(&b);
+        let asked = t.ask_translation(&t.session().scenario.opening.clone(), 0);
+        let got = asked.unwrap().run();
+
+        let _asking = t.ask("はい");
+        t.take_translation(&b, now(), got);
+        t.failed_call(&b, now());
+
+        assert_eq!(aids(&t), 1);
     }
 
     #[test]

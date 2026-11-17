@@ -45,6 +45,9 @@ pub struct Talk {
     finished: bool,
     /// A turn is with the tutor ([`Talk::ask`] until it is taken or failed).
     asking: bool,
+    /// The line of a translation that arrived while a turn was with the tutor: it counts if
+    /// that turn fails (the line stays open), not if it is taken.
+    held: Option<usize>,
 }
 
 /// A talk that opened, with what went wrong on the way: the brake not armed, the talk not
@@ -118,6 +121,7 @@ impl Talk {
             demo,
             finished: false,
             asking: false,
+            held: None,
         };
         Ok(Some(Opened { talk, failed }))
     }
@@ -167,6 +171,7 @@ impl Talk {
             demo,
             finished: false,
             asking: false,
+            held: None,
         };
         Ok(Opened { talk, failed })
     }
@@ -180,6 +185,7 @@ impl Talk {
             demo,
             finished: false,
             asking: false,
+            held: None,
         };
         let failed = b.arm_brake(now).err().into_iter().collect();
         Opened { talk, failed }
@@ -230,9 +236,8 @@ impl Talk {
         Ok(())
     }
 
-    /// What the tutor is asked about `text`; run it outside any lock. Help and listening aids
-    /// do not count until the answer is taken ([`Talk::take`]) or the call failed
-    /// ([`Talk::failed_call`]).
+    /// What the tutor is asked about `text`; run it outside any lock. No aid counts until the
+    /// answer is taken ([`Talk::take`]) or the call failed ([`Talk::failed_call`]).
     pub fn ask(&mut self, text: &str) -> Asking {
         self.asking = true;
         self.session.ask(text)
@@ -270,6 +275,9 @@ impl Talk {
     /// that is returned; a front end that runs the call itself ([`Talk::ask`]) calls this.
     pub fn failed_call(&mut self, b: &Backend, now: Moment) -> Vec<anyhow::Error> {
         self.asking = false;
+        if let Some(line) = self.held.take() {
+            self.session.aid(kaiwa_core::session::Aid::Translate, line);
+        }
         let booked = b.book_costs(now, false).err();
         booked.into_iter().chain(self.save(b).err()).collect()
     }
@@ -286,6 +294,7 @@ impl Talk {
         now: Moment,
     ) -> Turned {
         self.asking = false;
+        self.held = None;
         let outcome = self.session.take(text, input, answer);
         let mut failed = Vec::new();
         let recorded = self.keep(b, now, &mut failed);
