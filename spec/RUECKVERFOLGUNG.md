@@ -53,7 +53,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF301/ | M | Jeder Vorschlag zeigt: eigene Form → bessere Form (als Diff), eine … | app | geprüft | 1 von 1 automatisch grün: `mara_diff_audio` |
 | /LF302/ | M | Vorschläge haben einen Schweregrad: *verhindert Verständnis* … | ai, core | geprüft | 1 von 2 automatisch grün: `emi_keigo_detect`, `selin_register_flag` |
 | /LF303/ | M | Bei korrekten Äußerungen gibt es keinen Verbesserungsvorschlag. | ai, core | geprüft | 1 von 3 automatisch grün: `selin_casual_ok`, `theo_fp`, `theo_pitch_no_nitpick` |
-| /LF304/ | M | Wie viel Feedback angezeigt wird, ist einstellbar: *wenig* (nur … | app, core, store | geprüft | 2 von 2 automatisch grün: `emi_feedback_level`, `mara_little_feedback` |
+| /LF304/ | M | Wie viel Feedback angezeigt wird, ist einstellbar: *wenig* (nur … | app, core | geprüft | 2 von 2 automatisch grün: `emi_feedback_level`, `mara_little_feedback` |
 | /LF305/ | M | Recast: Die KI greift Fehler im Gespräch natürlich auf, indem sie die … | core | geprüft | 1 von 1 automatisch grün: `selin_recast` |
 | /LF306/ | M | Nur Fehler mit dem Schweregrad *verhindert Verständnis* unterbrechen … | core | geprüft | 1 von 1 automatisch grün: `mara_little_feedback` |
 | /LF307/ | S | Lernende können einem Vorschlag widersprechen („Das ist korrekt“). | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `theo_dispute` |
@@ -80,7 +80,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF604/ | S | Wochenrückblick: Sprechzeit, neue Wörter, Fortschritt pro Fähigkeit. | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `mara_progress` |
 | /LF605/ | M | Gamification lässt sich ganz abschalten (keine XP, keine Serie, nur … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_gamification_off` |
 | /LF606/ | M | Es gibt keine Herzen, Leben oder Sperren nach Fehlern. | core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_hearts` |
-| /LF610/ | S | Statistik: Heatmap der Übungstage, Wortschatz pro Niveau, Sprechzeit … | app, backend | geprüft | 1 von 1 automatisch grün: `mara_progress` |
+| /LF610/ | S | Statistik: Heatmap der Übungstage, Wortschatz pro Niveau, Sprechzeit … | app, backend, core | geprüft | 1 von 1 automatisch grün: `mara_progress` |
 | /LF620/ | M | Benachrichtigungen sind abschaltbar, höchstens eine pro Tag und ohne … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
 | /LF700/ | K | Sync zwischen Geräten über eine Ende-zu-Ende-verschlüsselte Datei auf … | – | offen | 0 von 1 automatisch grün: `jonas_sync` |
 | /LF710/ | M | Export aller eigenen Daten (Profil, Verlauf, Wiederholung) als offene … | app, backend, store | geprüft | 3 von 3 automatisch grün: `lena_delete`, `lena_export`, `lena_import` |

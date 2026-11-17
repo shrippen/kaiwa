@@ -22,6 +22,8 @@ const TESTS: &[(&str, &[&str])] = &[
     ("hinnerk_tts_slow", &["tst_sound.qml"]),
     ("lena_suggest_smaller", &["tst_latency.qml"]),
     ("lena_download_announced", &["tst_models.qml"]),
+    ("selin_profile_visible", &["tst_profile.qml"]),
+    ("mara_progress", &["tst_profile.qml"]),
     ("hinnerk_gamification_off", &["tst_start.qml"]),
 ];
 

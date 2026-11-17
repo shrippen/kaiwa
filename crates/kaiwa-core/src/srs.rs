@@ -285,6 +285,19 @@ pub fn refresher(now: Moment, last_practice: Option<Moment>) -> bool {
     last_practice.is_some_and(|l| now.day().0 - l.day().0 >= BREAK_DAYS)
 }
 
+/// Whether opening at `now` starts a new break to spread (/LF231/, T-07): a refresher is due
+/// and the learner practised since the last re-entry (`reentered`), or has been away as long
+/// again since it. A break in which nothing was practised is not spread again the day after.
+pub fn new_break(now: Moment, last_practice: Option<Moment>, reentered: Option<Day>) -> bool {
+    if !refresher(now, last_practice) {
+        return false;
+    }
+    match (reentered, last_practice) {
+        (Some(day), Some(last)) => last.day() >= day || now.day().0 - day.0 >= BREAK_DAYS,
+        _ => true,
+    }
+}
+
 /// Characters of the learner's sentence kept before the old words.
 pub const CONTEXT: usize = 2;
 
@@ -496,6 +509,25 @@ mod tests {
         };
         assert!(next(Grade::Easy) > next(Grade::Good));
         assert!(next(Grade::Good) > next(Grade::Hard));
+    }
+
+    #[test]
+    fn a_break_is_spread_once_until_practice_or_another_break() {
+        // Away 11 days, never re-entered: a break.
+        assert!(new_break(at(20), Some(at(9)), None));
+        // Re-entered on day 20 without practice: not again on day 21, but after BREAK_DAYS.
+        assert!(!new_break(at(21), Some(at(9)), Some(at(20).day())));
+        assert!(new_break(
+            at(20 + BREAK_DAYS),
+            Some(at(9)),
+            Some(at(20).day())
+        ));
+        // Practised on the re-entry day, then away again: a new break.
+        assert!(new_break(
+            at(20 + BREAK_DAYS),
+            Some(at(20)),
+            Some(at(20).day())
+        ));
     }
 
     #[test]
