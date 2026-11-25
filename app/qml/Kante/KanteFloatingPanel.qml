@@ -5,8 +5,9 @@ import "."
 
 /**
  * Floating panel (Kante 1.81, for Klappe): a palette that floats over content, such as the
- * tools over a borderless floor plan. A Kante card with a hard shadow, a head line with the
- * title in `KanteSectionLabel` style and a sign to fold it; folded, only the head shows.
+ * tools over a borderless floor plan. A `KanteFloatingCard` (Kante card, hard shadow) with a
+ * head line with the title in `KanteSectionLabel` style and a sign to fold it; folded, only
+ * the head shows.
  * The caller places it (`x`, `y`, or anchors) and puts the content inside as children, which
  * it sizes itself (a Column of buttons, say); the panel is as wide and high as they and the head.
  *
@@ -38,23 +39,8 @@ Item {
     implicitWidth: Math.max(KanteStyle.unit(160), head.implicitWidth, body.implicitWidth + 2 * pad)
     implicitHeight: headerHeight + (collapsed ? 0 : body.implicitHeight + 2 * pad)
 
-    // The hard shadow: the card's shape again, 3 px down and right (Kante only).
-    KantePolygon {
-        visible: KanteStyle.themed
-        x: KanteStyle.unit(3)
-        y: KanteStyle.unit(3)
-        z: -1
-        width: panel.width
-        height: panel.height
-        fillColor: KanteStyle.tint(KanteStyle.strongTextColor, 0.2)
-        cutTopRight: KanteStyle.chamferSmall
-    }
-
-    KanteCard {
+    KanteFloatingCard {
         anchors.fill: parent
-        color: KanteStyle.dialogColor
-        borderColor: KanteStyle.frameColor
-        chamfer: KanteStyle.chamferSmall
     }
 
     Item {
