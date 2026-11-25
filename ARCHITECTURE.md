@@ -96,13 +96,14 @@ A change that needs more places than its row lists is a finding for the next aud
 - `kaiwa-sim` sets up and reads test state through the backend's `seed` (feature `sim`,
   only the sim turns it on) and still depends on `kaiwa-store`, `kaiwa-core`, `kaiwa-ai`
   and `kaiwa-lang` directly for its own checks. The main path of every persona (`run.rs`,
-  `steps.rs`) plays help, turns and translation through the backend's flow (`Talk`, unstored,
-  on the recorded tutor), but builds its `Session` itself (`talk.rs`) instead of
-  `Backend::new_talk`, so the profile's difficulty, learner level, unit grammar, amount of
-  corrections and language do not apply. Still on a bare core `Session` (some with their
-  own tutor): most checks in `engine.rs`, the profile checks in `profile.rs` and the day
-  simulation (`days.rs`, `simulate`). The load-time check (`fast`, `profile.rs`) still opens a profile in
-  `kaiwa-store`: it needs `batch` and a timed load. The dispute check reads the QA list
+  `steps.rs`) sets up the persona's profile (amount of corrections, language, placement) through
+  `seed` and starts its talk with the backend's flow (`Talk`, unstored, on the recorded or the
+  live tutor, handed in through `seed().talk_with`), so difficulty, learner level, unit grammar,
+  amount of corrections and language apply. The talk-recording checks of `engine.rs`
+  (marks after the end) play through `Talk` too. Still on a bare core `Session` (some with
+  their own tutor): the other checks in `engine.rs` (`talk.rs`), the profile checks in
+  `profile.rs` and the day simulation (`days.rs`, `simulate`). The load-time check (`fast`,
+  `profile.rs`) still opens a profile in `kaiwa-store`: it needs `batch` and a timed load. The dispute check reads the QA list
   through `seed`, which no backend command offers.
 - The conversation page does not take the backend's background troubles: a chosen tutor
   that cannot be set up (no key) reads there as "no tutor"; the main pages say why after

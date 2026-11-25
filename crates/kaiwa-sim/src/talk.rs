@@ -32,6 +32,25 @@ pub fn start(
     Session::new(scenario, provider, amount, lang).with_unit_jlpt(unit_jlpt)
 }
 
+/// A talk on `scenario` as the backend starts it, on the profile of `persona`: the amount of
+/// corrections is her choice (the placement keeps it), then come her levels. The pair is the
+/// amount and the language she chose.
+pub fn for_persona(
+    b: &kaiwa_backend::Backend,
+    persona: &serde_json::Value,
+    scenario: Scenario,
+    provider: Arc<dyn ChatProvider>,
+    (amount, lang): (Amount, Lang),
+) -> Result<Session> {
+    let profile = kaiwa_store::Profile {
+        ui_lang: lang,
+        ..b.seed().set_feedback(amount)?
+    };
+    b.seed().set_profile(&profile)?;
+    b.set_placement(crate::engine::simulate_placement(persona).result())?;
+    b.seed().talk_with(scenario, provider)
+}
+
 /// A German talk on scenario `id` against its recorded answers.
 pub fn open(id: &str, amount: Amount) -> Result<Session> {
     Ok(start(

@@ -35,6 +35,16 @@ impl Seed<'_> {
         self.0.store.set_feedback(a)
     }
 
+    /// A new talk with a tutor of the simulation's choosing (live, or its own recorded one),
+    /// the rest as the profile has it.
+    pub fn talk_with(
+        &self,
+        scenario: kaiwa_core::Scenario,
+        provider: std::sync::Arc<dyn kaiwa_ai::ChatProvider>,
+    ) -> anyhow::Result<Session> {
+        self.0.talk_with(scenario, provider)
+    }
+
     pub fn learning(&self) -> Result<Learning> {
         self.0.store.learning()
     }

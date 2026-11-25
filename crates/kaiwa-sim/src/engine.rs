@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use kaiwa_ai::mock::MockProvider;
-use kaiwa_backend::flow::Talk;
+use kaiwa_backend::flow::{Length, Talk};
 use kaiwa_backend::voice::{self, Pace};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum};
 use kaiwa_core::difficulty::{Difficulty, Knob, learner_says};
@@ -685,32 +685,32 @@ enum Mark {
 /// that turn on the summary takes its mistake out of the learner model and the review.
 fn marked_after_the_end(how: Mark) -> Result<Option<String>> {
     let b = kaiwa_backend::TempBackend::new("marked-after-the-end", false)?;
-    let mut s = session("n5-02-jikoshoukai")?;
     let begun = kaiwa_backend::now();
-    let id = b.seed().begin_session(&s.snapshot(), begun)?;
+    let mut talk = Talk::begin(&b, "n5-02-jikoshoukai", begun, Length::Full)?.talk;
     for (text, input) in [
         ("マラです。よろしくおねがいします。", Input::Spoken),
-        ("ドイツのハンブルクから来ました。", Input::Spoken),
-        ("仕事はプロデューサーです。", Input::Typed),
         ("コーヒーを好きです。", Input::Spoken),
+        ("ドイツのハンブルクから来ました。", Input::Spoken),
     ] {
-        s.turn(text, input)?;
+        talk.spend(75);
+        talk.say(&b, text, input, begun.plus_secs(300))?;
     }
-    let end = begun.plus_secs(300);
-    b.seed().record(&id, &s, begun, end, Some(b.curriculum()))?;
-    b.track_grammar(&s, end)?;
+    if !talk.finished() {
+        return Ok(Some("the talk does not end with its goals".into()));
+    }
     if !b.seed().learning()?.model.errors.contains_key("particle") {
         return Ok(Some("the mistake was never recorded".into()));
     }
 
     let marked = match how {
-        Mark::Misrecognized => s.mark_misrecognized(3),
-        Mark::Dispute => s.dispute(3, "コーヒーが好きです").is_some(),
+        Mark::Misrecognized => talk.mark_misrecognized(&b, 1),
+        Mark::Dispute => talk.dispute(&b, 1, "コーヒーが好きです"),
     };
-    if !marked {
-        return Ok(Some("the mark after the end is refused".into()));
+    match marked {
+        None => return Ok(Some("the mark after the end is refused".into())),
+        Some(m) if !m.failed.is_empty() => return Ok(Some("the mark is not kept".into())),
+        Some(_) => {}
     }
-    b.correct_talk(&id, &s)?;
     if b.seed().learning()?.model.errors.contains_key("particle") {
         return Ok(Some("the mistake stays in the learner model".into()));
     }

@@ -175,10 +175,8 @@ pub fn play_with(
             .as_str()
             .unwrap_or_default(),
     );
-    let session = talk::start(scenario.clone(), provider, amount, lang);
-    // The backend's flow plays the talk (turn, help, translation); unstored, as a talk the
-    // profile does not keep.
     let b = kaiwa_backend::TempBackend::new("run", false)?;
+    let session = talk::for_persona(&b, persona, scenario.clone(), provider, (amount, lang))?;
     let now = kaiwa_backend::now();
     let opened = Talk::unstored(&b, session, false, now);
     refuse(opened.failed)?;
