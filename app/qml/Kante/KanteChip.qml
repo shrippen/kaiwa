@@ -48,21 +48,23 @@ Item {
     readonly property color ink: checked ? KanteStyle.onStateColor : (nearGround ? KanteStyle.textColor : chipColor)
     readonly property color edge: nearGround ? KanteStyle.frameColor : chipColor
     /** The name is shown (false when compact or squeezed below a few letters). */
-    readonly property bool textShown: !compact && textRoom >= Math.min(KanteStyle.unit(20), Math.ceil(labelMetrics.advanceWidth))
+    readonly property bool textShown: !compact && textRoom >= Math.min(KanteStyle.unit(20), Math.ceil(natural.implicitWidth))
     readonly property real textRoom: width - KanteStyle.unit(16) - squareSize - row.spacing
                                      - (iconName !== "" ? iconSize + row.spacing : 0)
-                                     - (removable ? cross.implicitWidth + row.spacing : 0)
+                                     - (removable ? Math.ceil(cross.implicitWidth) + row.spacing : 0)
 
     implicitHeight: compact ? KanteStyle.unit(14) : KanteStyle.unit(24)
     implicitWidth: compact ? implicitHeight
-                           : KanteStyle.unit(16) + squareSize + row.spacing + Math.ceil(labelMetrics.advanceWidth)
+                           : KanteStyle.unit(16) + squareSize + row.spacing + Math.ceil(natural.implicitWidth)
                              + (iconName !== "" ? iconSize + row.spacing : 0)
-                             + (removable ? cross.implicitWidth + row.spacing : 0)
+                             + (removable ? Math.ceil(cross.implicitWidth) + row.spacing : 0)
     activeFocusOnTab: interactive
 
     // Natural width of the name: the elided label's own implicitWidth follows its width.
-    TextMetrics {
-        id: labelMetrics
+    // A Text measures as the label does (TextMetrics.advanceWidth can be narrower).
+    Text {
+        id: natural
+        visible: false
         font: label.font
         text: chip.text
     }
@@ -133,6 +135,7 @@ Item {
         }
         Text {
             id: label
+            objectName: "chipLabel"
             visible: chip.textShown
             Layout.fillWidth: true
             text: chip.text

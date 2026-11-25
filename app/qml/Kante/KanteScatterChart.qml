@@ -26,6 +26,15 @@ import "."
  *   equalAspect the same unit per pixel on both axes (a map, a top view); the shorter axis
  *               grows, centred, and both axes tick at the same step
  *   xMin, xMax, yMin, yMax   fixed ends (NaN: from the points, rounded out to a step)
+ *   xTickMarks, yTickMarks   own ticks, [{ value, label }]: a grid line and the label at each
+ *               value inside the axis, in place of the automatic ticks, e.g. dioptres labelled
+ *               in metres: [{ value: 0, label: "∞" }, { value: 0.5, label: "2" }]. The ends
+ *               stay as without ticks, so fix them (`yMin`, `yMax`) to show every tick; a tick
+ *               outside is left out. [] (default): automatic ticks
+ *   yFormatter  function (value) -> string for the y coordinate in the tooltip (default null:
+ *               `formatter`, else the number), so it can speak the language of `yTickMarks`
+ *   yInverted   larger y lies lower (default false); with ticks that start at 0 = "∞" the
+ *               far end then lies at the top
  *   xTitle, yTitle, xUnit, yUnit   axis names; the unit follows the title in brackets and the
  *               numbers in the tooltip ("1,2 m"); `unit` sets both units
  *   legend      a KanteLegend under the chart (default true when it has entries):
@@ -63,6 +72,9 @@ Item {
     property real xMax: NaN
     property real yMin: NaN
     property real yMax: NaN
+    property var xTickMarks: []
+    property var yTickMarks: []
+    property bool yInverted: false
     property string xTitle: ""
     property string yTitle: ""
     property string unit: ""
@@ -70,6 +82,9 @@ Item {
     property string yUnit: unit
     /** function (value) -> string for the tooltip and the legend; default by locale. */
     property var formatter: null
+    /** function (value) -> string for the y value in the tooltip only, before `formatter`; for
+     *  own y ticks in another unit (dioptres shown as metres). null: as `formatter`. */
+    property var yFormatter: null
     /** Colour of a point without value and series. */
     property color pointColor: KanteStyle.dataColor(0)
     /** Base of the value scale (level 4 is this colour, lower levels fade it). */
@@ -117,11 +132,21 @@ Item {
 
     // ── Data range ──────────────────────────────────────────────────────
 
-    /** Extent of the points: { x0, x1, y0, y1, mark }; an empty chart spans 0..1. `mark`: largest mark in point sizes. */
-    readonly property var bounds: {
-        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, mark = 1
+    /** One pass over the points: `bounds` ({ x0, x1, y0, y1, mark }: largest mark in point sizes), value ends, and per point its value and mark. */
+    readonly property var _scan: {
+        const pts = points
+        const key = valueKey
+        const vals = new Array(count)
+        const marks = new Array(count)
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, mark = 1, lo = Infinity, hi = -Infinity
         for (let i = 0; i < count; i++) {
-            const p = points[i]
+            const p = pts[i]
+            vals[i] = p && key !== "" && p[key] !== undefined && p[key] !== null ? Number(p[key]) : NaN
+            marks[i] = markScale(p)
+            if (isFinite(vals[i])) {
+                lo = Math.min(lo, vals[i])
+                hi = Math.max(hi, vals[i])
+            }
             if (!p || !isFinite(p.x) || !isFinite(p.y)) {
                 continue
             }
@@ -129,27 +154,17 @@ Item {
             x1 = Math.max(x1, p.x)
             y0 = Math.min(y0, p.y)
             y1 = Math.max(y1, p.y)
-            mark = Math.max(mark, markScale(p))
+            mark = Math.max(mark, marks[i])
         }
-        if (x0 > x1) {
-            return { x0: 0, x1: 1, y0: 0, y1: 1, mark: 1 }
-        }
-        return { x0: x0, x1: x1, y0: y0, y1: y1, mark: mark }
+        return { x0: x0, x1: x1, y0: y0, y1: y1, mark: mark, lo: lo, hi: hi, vals: vals, marks: marks }
     }
+    readonly property var bounds: _scan.x0 > _scan.x1 ? { x0: 0, x1: 1, y0: 0, y1: 1, mark: 1 } : _scan
     /** Ends of the value scale: { low, high }; NaN without values. */
     readonly property var valueRange: {
-        let lo = Infinity, hi = -Infinity
-        for (let i = 0; valueKey !== "" && i < count; i++) {
-            const v = rawValue(i)
-            if (!isFinite(v)) {
-                continue
-            }
-            lo = Math.min(lo, v)
-            hi = Math.max(hi, v)
-        }
+        const found = _scan.lo <= _scan.hi
         return {
-            low: isFinite(minValue) ? minValue : (lo <= hi ? lo : NaN),
-            high: isFinite(maxValue) ? maxValue : (lo <= hi ? hi : NaN)
+            low: isFinite(minValue) ? minValue : (found ? _scan.lo : NaN),
+            high: isFinite(maxValue) ? maxValue : (found ? _scan.hi : NaN)
         }
     }
 
@@ -184,6 +199,9 @@ Item {
     }
     readonly property var xTicks: ticksOf(axes.x0, axes.x1, axes.xStep)
     readonly property var yTicks: ticksOf(axes.y0, axes.y1, axes.yStep)
+    /** The ticks drawn: [{ value, label }], the own ones inside the axis or else the automatic ones. */
+    readonly property var xTickItems: tickItems(xTickMarks, xTicks, axes.x0, axes.x1, xDecimals)
+    readonly property var yTickItems: tickItems(yTickMarks, yTicks, axes.y0, axes.y1, yDecimals)
     readonly property int xDecimals: decimalsOf(axes.xStep)
     readonly property int yDecimals: decimalsOf(axes.yStep)
 
@@ -313,6 +331,23 @@ Item {
         }
         return out
     }
+    function tickItems(marks, values, lo, hi, digits) {
+        const out = []
+        if (marks && marks.length > 0) {
+            const slack = (hi - lo) * 1e-9
+            for (let i = 0; i < marks.length; i++) {
+                const m = marks[i]
+                if (m && isFinite(m.value) && m.value >= lo - slack && m.value <= hi + slack) {
+                    out.push({ value: Number(m.value), label: String(m.label) })
+                }
+            }
+            return out
+        }
+        for (let i = 0; i < values.length; i++) {
+            out.push({ value: values[i], label: Number(values[i]).toLocaleString(Qt.locale(), 'f', digits) })
+        }
+        return out
+    }
     /** Decimals a step needs: 2 → 0, 2.5 → 1, 0.25 → 2. */
     function decimalsOf(step) {
         let d = 0
@@ -334,13 +369,10 @@ Item {
     function xOf(v) {
         return padLeft + inset + (v - axes.x0) / (axes.x1 - axes.x0) * (plotWidth - 2 * inset)
     }
-    /** y of a value in the chart's coordinates (up is larger). */
+    /** y of a value in the chart's coordinates (up is larger; `yInverted`: down is larger). */
     function yOf(v) {
-        return padTop + inset + (axes.y1 - v) / (axes.y1 - axes.y0) * (plotHeight - 2 * inset)
-    }
-    function rawValue(i) {
-        const p = points[i]
-        return p && valueKey !== "" && p[valueKey] !== undefined && p[valueKey] !== null ? Number(p[valueKey]) : NaN
+        const up = yInverted ? v - axes.y0 : axes.y1 - v
+        return padTop + inset + up / (axes.y1 - axes.y0) * (plotHeight - 2 * inset)
     }
     /** Level 1..4 of a value on the scale; 0 without a value. */
     function levelOf(v) {
@@ -363,15 +395,14 @@ Item {
     }
     /** Extent of point i's mark in pixels. */
     function markSize(i) {
-        return pointSize * markScale(points[i])
+        return pointSize * _scan.marks[i]
     }
-    /** Colour key: "v<level>", "s<series>" or "d" (pointColor). */
-    function colorKeyOf(i) {
-        const level = levelOf(rawValue(i))
+    /** Colour key of point p with value v: "v<level>", "s<series>" or "d" (pointColor). */
+    function colorKeyOf(p, v) {
+        const level = levelOf(v)
         if (level > 0) {
             return "v" + level
         }
-        const p = points[i]
         return p && p.series !== undefined && p.series !== null ? "s" + p.series : "d"
     }
     function colorOfKey(key) {
@@ -381,7 +412,7 @@ Item {
         return key[0] === "s" ? KanteStyle.dataColor(Number(key.slice(1))) : pointColor
     }
     function colorOf(i) {
-        return colorOfKey(colorKeyOf(i))
+        return colorOfKey(colorKeyOf(points[i], _scan.vals[i]))
     }
 
     /** Tooltip and accessible text: "Kamera 3\nx 1,20 m · y 3,40 m\nAnsichten 12". */
@@ -395,8 +426,8 @@ Item {
             lines.push(String(p.label))
         }
         const u = function (t) { return t === "" ? "" : " " + t }
-        lines.push("x " + numberText(p.x, xDecimals + 1) + u(xUnit) + " · y " + numberText(p.y, yDecimals + 1) + u(yUnit))
-        const v = rawValue(i)
+        lines.push("x " + numberText(p.x, xDecimals + 1) + u(xUnit) + " · y " + (yFormatter ? yFormatter(p.y) : numberText(p.y, yDecimals + 1)) + u(yUnit))
+        const v = _scan.vals[i]
         if (isFinite(v)) {
             const name = valueTitle !== "" ? valueTitle : valueKey
             lines.push(name + " " + numberText(v, Number.isInteger(v) ? 0 : 2))
@@ -414,7 +445,7 @@ Item {
     readonly property real hitRadius: KanteStyle.unit(8)
     /** Largest hit distance: the hit radius or half of the biggest mark. Sets the grid's cell. */
     readonly property real hitReach: Math.max(hitRadius, pointSize * bounds.mark / 2)
-    readonly property string layoutKey: [count, width, height, axes.x0, axes.x1, axes.y0, axes.y1,
+    readonly property string layoutKey: [count, width, height, axes.x0, axes.x1, axes.y0, axes.y1, yInverted,
         padLeft, padTop, plotWidth, plotHeight, valueKey, valueRange.low, valueRange.high, levelScale.start, levelScale.step, levelScale.count, pointSize].join(",")
     onLayoutKeyChanged: invalidate()
     onPointsChanged: invalidate()
@@ -432,6 +463,7 @@ Item {
             return
         }
         _dirty = false
+        const vals = _scan.vals
         const xs = new Array(count)
         const ys = new Array(count)
         const byKey = {}
@@ -447,9 +479,10 @@ Item {
             xs[i] = xOf(p.x)
             ys[i] = yOf(p.y)
             const shape = shapeOf(i)
-            const key = shape + "|" + colorKeyOf(i)
+            const color = colorKeyOf(p, vals[i])
+            const key = shape + "|" + color
             if (!byKey[key]) {
-                byKey[key] = { shape: shape, color: colorKeyOf(i), idx: [] }
+                byKey[key] = { shape: shape, color: color, idx: [] }
             }
             byKey[key].idx.push(i)
             const g = Math.floor(xs[i] / cell) + ":" + Math.floor(ys[i] / cell)
@@ -599,10 +632,10 @@ Item {
 
     // Grid lines at the ticks; the bottom and left edges of the plot as the axes.
     Repeater {
-        model: chart.xTicks
+        model: chart.xTickItems
         delegate: Rectangle {
             required property var modelData
-            x: Math.round(chart.xOf(modelData))
+            x: Math.round(chart.xOf(modelData.value))
             y: chart.padTop
             width: 1
             height: chart.plotHeight
@@ -610,11 +643,11 @@ Item {
         }
     }
     Repeater {
-        model: chart.yTicks
+        model: chart.yTickItems
         delegate: Rectangle {
             required property var modelData
             x: chart.padLeft
-            y: Math.round(chart.yOf(modelData))
+            y: Math.round(chart.yOf(modelData.value))
             width: chart.plotWidth
             height: 1
             color: KanteStyle.ruleColor
@@ -637,25 +670,25 @@ Item {
 
     // Tick labels and captions.
     Repeater {
-        model: chart.xTicks
+        model: chart.xTickItems
         delegate: Text {
             required property var modelData
             objectName: "kanteScatterXTick"
-            x: Math.max(0, Math.min(chart.width - width, chart.xOf(modelData) - width / 2))
+            x: Math.max(0, Math.min(chart.width - width, chart.xOf(modelData.value) - width / 2))
             y: chart.padTop + chart.plotHeight + KanteStyle.unit(4)
-            text: Number(modelData).toLocaleString(Qt.locale(), 'f', chart.xDecimals)
+            text: modelData.label
             color: KanteStyle.mutedTextColor
             font: captionProbe.font
         }
     }
     Repeater {
-        model: chart.yTicks
+        model: chart.yTickItems
         delegate: Text {
             required property var modelData
             objectName: "kanteScatterYTick"
             x: chart.padLeft - width - KanteStyle.unit(6)
-            y: Math.max(0, Math.min(chart.padTop + chart.plotHeight - height, chart.yOf(modelData) - height / 2))
-            text: Number(modelData).toLocaleString(Qt.locale(), 'f', chart.yDecimals)
+            y: Math.max(0, Math.min(chart.padTop + chart.plotHeight - height, chart.yOf(modelData.value) - height / 2))
+            text: modelData.label
             color: KanteStyle.mutedTextColor
             font: captionProbe.font
         }
@@ -692,6 +725,8 @@ Item {
         width: chart.plotWidth
         height: chart.plotHeight
         property int paints: 0
+        // A path of 20 000 marks takes about a second to fill: off the GUI thread.
+        renderStrategy: Canvas.Threaded
         onPaint: {
             const ctx = getContext("2d")
             ctx.reset()
@@ -704,6 +739,9 @@ Item {
                 const grp = groups[g]
                 const tone = chart.colorOfKey(grp.color)
                 const idx = grp.idx
+                ctx.lineWidth = KanteStyle.lineWidth
+                ctx.strokeStyle = tone
+                ctx.fillStyle = tone
                 ctx.beginPath()
                 for (let k = 0; k < idx.length; k++) {
                     const i = idx[k]
@@ -735,14 +773,8 @@ Item {
                         ctx.rect(cx - s / 2, cy - s / 2, s, s)
                     }
                 }
-                if (grp.shape === "cross") {
-                    ctx.lineWidth = KanteStyle.lineWidth
-                    ctx.strokeStyle = tone
-                    ctx.stroke()
-                } else {
-                    ctx.fillStyle = tone
-                    ctx.fill()
-                }
+                // One path per group: overlapping translucent marks blend once, not twice.
+                ctx[grp.shape === "cross" ? "stroke" : "fill"]()
             }
             paints++
         }
