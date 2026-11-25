@@ -1,4 +1,4 @@
-//! Test setup for the QA driver `kaiwa-sim` (AUDIT.md finding 6).
+//! Test setup for the QA driver `kaiwa-sim` (ARCHITECTURE.md, known deviations).
 //!
 //! The simulation must put a profile into states no front end can reach: a finished
 //! session of last month, a day record, a learner model with a planted mistake. These

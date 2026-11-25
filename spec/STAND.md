@@ -19,6 +19,10 @@ Wo Kaiwa steht, was offen ist und was die Arbeit bisher gelehrt hat. Für die n�
 
 **Geparkt:** Plasmoid und Dienst `kaiwad` (M4) auf dem Zweig `later/plasmoid`, bis die App nahe 1.0 ist. Dort sind Kurzgespräch, fünf Wiederholungen, Sprechtaste über den Dienst und Erinnerungen gebaut. **Offen:** In der CI lädt `plasmoidviewer` das Plasmoid ohne QML-Fehler, aber sein `Today`-Aufruf kommt bei `kaiwad` nicht an (Lauf 1530, „plasmoid: no call reached kaiwad“). Ob das am Offscreen-Betrieb, an der Wartezeit (20 s) oder am D-Bus-Modul von Plasma liegt, ist beim Wiederaufnehmen als Erstes zu klären. Die Erinnerungs-Einstellung der App ist bis dahin ausgeblendet.
 
+## Entscheidung vom 2026-11-25
+
+- **E-8 (sechstes Audit):** Funde 1 bis 4 beheben, Fund 2 vor Sync-Schritt 4; von Fund 5 nur die Nähte im Speicher (`kaiwa-store`). Die Nähte in `app/src/conversation.rs` kommen mit M4.
+
 ## Entscheidungen vom 2026-11-17
 
 Im Artefakt der Nacht beantwortet:

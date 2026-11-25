@@ -1,4 +1,4 @@
-//! Where the simulation starts a talk on recorded tutor answers (AUDIT.md finding 6): the
+//! Where the simulation starts a talk on recorded tutor answers: the
 //! scenario and the recorded tutor come from `kaiwa-backend`, the same ones the demo build
 //! uses, and every such talk is made by [`start`]. Talks with another tutor (`days.rs`, the
 //! free talk in `engine.rs`) do not come through here.
