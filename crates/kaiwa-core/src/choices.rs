@@ -19,3 +19,7 @@ pub const KEEP_STEPS: [Option<u32>; 3] = [None, Some(7), Some(30)];
 /// The reminder times the settings offer, in minutes after midnight (8:00, 12:30, 19:00);
 /// `None` is off.
 pub const REMINDER_STEPS: [Option<u32>; 4] = [None, Some(480), Some(750), Some(1140)];
+
+/// The monthly limits the settings offer for a cloud tutor, in cents; `None` is no limit
+/// (/LF714/).
+pub const COST_STEPS: [Option<u32>; 5] = [None, Some(200), Some(500), Some(1000), Some(2000)];

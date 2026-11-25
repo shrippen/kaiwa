@@ -5,7 +5,7 @@
 
 use kaiwa_core::Event;
 use kaiwa_core::Lang;
-use kaiwa_core::choices::{GOAL_STEPS, KEEP_STEPS, REMINDER_STEPS, UNLOAD_STEPS};
+use kaiwa_core::choices::{COST_STEPS, GOAL_STEPS, KEEP_STEPS, REMINDER_STEPS, UNLOAD_STEPS};
 use kaiwa_core::clock::Moment;
 use kaiwa_core::learner::Skill;
 use kaiwa_core::progress::DailyGoal;
@@ -184,7 +184,10 @@ impl Backend {
         match key {
             // The brake follows the new limit at once (/LF714/).
             Key::CostLimit => {
-                self.set_cost_limit(value.parse().ok(), now)?;
+                // Only a step: a value that is none must not switch the brake off.
+                if let Some(limit) = step_of(value, &COST_STEPS) {
+                    self.set_cost_limit(limit, now)?;
+                }
             }
             // The pick is the learner's: a placement leaves it (V-02).
             Key::Feedback => {
@@ -413,6 +416,7 @@ mod tests {
         assert_eq!(v["feedbackSteps"], json!(["little", "normal", "much"]));
         assert_eq!(v["keepSteps"], json!([null, 7, 30]));
         assert_eq!(v["reminderSteps"], json!([null, 480, 750, 1140]));
+        assert_eq!(v["costSteps"], json!([null, 200, 500, 1000, 2000]));
     }
 
     #[test]
@@ -549,6 +553,14 @@ mod tests {
         let b = backend("cost");
         assert_eq!(set(&b, "costLimit", "500").cost_limit_cents, Some(500));
         assert_eq!(set(&b, "costLimit", "").cost_limit_cents, None);
+    }
+
+    #[test]
+    fn an_unknown_cost_limit_is_refused() {
+        let b = backend("cost-unknown");
+        set(&b, "costLimit", "500");
+        assert_eq!(set(&b, "costLimit", "700").cost_limit_cents, Some(500));
+        assert_eq!(set(&b, "costLimit", "abc").cost_limit_cents, Some(500));
     }
 
     #[test]
