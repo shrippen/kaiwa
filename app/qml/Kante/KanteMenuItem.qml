@@ -23,6 +23,10 @@ import "."
 QQC2.MenuItem {
     id: item
 
+    // A Menu's ListView lays items out by height, so a hidden item would leave a blank row.
+    // `visible` is also false while the menu is closed: then every item keeps its height.
+    height: visible || (parent && !parent.visible) ? implicitHeight : 0
+
     property string valueText: ""
     property string shortcutText: ""
     property bool destructive: false
