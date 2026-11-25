@@ -4,7 +4,6 @@
 
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::session::SessionState;
-use kaiwa_core::srs::Grade;
 use kaiwa_core::{Event, Session};
 use kaiwa_store::Recorded;
 
@@ -72,7 +71,8 @@ pub(crate) fn apply(
     at: Moment,
 ) -> Result<Applied, JournalError> {
     match event {
-        Event::Review { text, grade } => review(b, text, *grade, at),
+        // A card that is gone changes nothing, as live.
+        Event::Review { text, grade } => plain(b.store.review(text, *grade, at)),
         Event::Setting { key, value } => setting(b, key, value, at),
         Event::TalkBegun { state } => plain(b.store.begin_session(id, state, at)),
         Event::TalkSaved { talk, state } => plain(b.store.save_session(talk, state)),
@@ -128,11 +128,6 @@ pub(crate) fn apply(
 fn plain<T, E: Into<anyhow::Error>>(done: Result<T, E>) -> Result<Applied, JournalError> {
     done.map(|_| Applied::default())
         .map_err(|e| JournalError::NotSaved(e.into()))
-}
-
-/// A card that is gone changes nothing, as live.
-fn review(b: &Backend, text: &str, grade: Grade, at: Moment) -> Result<Applied, JournalError> {
-    plain(b.store.review(text, grade, at))
 }
 
 /// A key this version does not know (from a newer device) changes nothing.
