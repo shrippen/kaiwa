@@ -2,8 +2,9 @@
 //! applied. Folding the journal later calls [`apply`] too, so live state and folded state
 //! come from the same code.
 
-use kaiwa_core::clock::Moment;
+use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::session::SessionState;
+use kaiwa_core::srs::Grade;
 use kaiwa_core::{Event, Session};
 use kaiwa_store::Recorded;
 
@@ -71,102 +72,42 @@ pub(crate) fn apply(
     at: Moment,
 ) -> Result<Applied, JournalError> {
     match event {
-        Event::Review { text, grade } => {
-            // A card that is gone changes nothing, as live.
-            b.store
-                .review(text, *grade, at)
-                .map(|_| Applied::default())
-                .map_err(not_saved)
-        }
-        Event::Setting { key, value } => {
-            // A key this version does not know (from a newer device) changes nothing.
-            let Some(key) = Key::parse(key) else {
-                return Ok(Applied::default());
-            };
-            b.change_setting(key, value, at)?;
-            Ok(Applied::default())
-        }
-        Event::TalkBegun { state } => {
-            let begun = b.store.begin_session(id, state, at);
-            begun.map(|()| Applied::default()).map_err(not_saved)
-        }
-        Event::TalkSaved { talk, state } => {
-            let saved = b.store.save_session(talk, state);
-            saved.map(|()| Applied::default()).map_err(not_saved)
-        }
+        Event::Review { text, grade } => review(b, text, *grade, at),
+        Event::Setting { key, value } => setting(b, key, value, at),
+        Event::TalkBegun { state } => plain(b.store.begin_session(id, state, at)),
+        Event::TalkSaved { talk, state } => plain(b.store.save_session(talk, state)),
         Event::TalkFinished {
             talk,
             state,
             started,
             ended,
             day,
-        } => {
-            let session = restored(b, state)?;
-            let curriculum = Some(&b.curriculum);
-            let recorded = b
-                .store
-                .record_on(talk, &session, *started, *ended, *day, curriculum)
-                .map_err(not_saved)?;
-            let failed = [
-                b.track_grammar(&session, *ended),
-                b.purge_recordings(*ended).map(|_| ()),
-            ];
-            Ok(Applied {
-                recorded: Some(recorded),
-                failed: failed.into_iter().filter_map(Result::err).collect(),
-            })
+        } => finish_talk(b, talk, state, (*started, *ended, *day)),
+        Event::TalkCorrected { talk, state } => corrected(b, talk, state),
+        Event::Placed { model } => plain(b.store.set_placement(model.clone())),
+        Event::PlacementLeftOut => plain(b.store.update_profile(|p| p.placed = true)),
+        Event::Nudged { skill, felt } => plain(b.apply_nudge(*skill, *felt)),
+        Event::Skipped { units, offer } => plain(crate::skips::apply(b, units, *offer)),
+        Event::WordAdded { text, unit } => {
+            plain(crate::lookup::add_word(b, text, unit.as_deref(), at))
         }
-        Event::TalkCorrected { talk, state } => {
-            let session = restored(b, state)?;
-            let recorded = b
-                .correct_talk(talk, &session)
-                .map_err(JournalError::NotSaved)?;
-            Ok(Applied {
-                recorded: Some(recorded),
-                failed: Vec::new(),
-            })
-        }
-        _ => apply_other(b, event, at)
-            .map(|()| Applied::default())
-            .map_err(JournalError::NotSaved),
-    }
-}
-
-/// The events that change the learning state outside a talk or a review.
-fn apply_other(b: &Backend, event: &Event, at: Moment) -> anyhow::Result<()> {
-    match event {
-        Event::Placed { model } => b.store.set_placement(model.clone())?,
-        Event::PlacementLeftOut => {
-            b.store.update_profile(|p| p.placed = true)?;
-        }
-        Event::Nudged { skill, felt } => b.apply_nudge(*skill, *felt)?,
-        Event::Skipped { units, offer } => crate::skips::apply(b, units, *offer)?,
-        Event::WordAdded { text, unit } => crate::lookup::add_word(b, text, unit.as_deref(), at)?,
-        Event::BreakSpread => b.store.reenter(at)?,
-        _ => apply_kept(b, event, at)?,
-    }
-    Ok(())
-}
-
-/// The events that only add to what the profile keeps: pauses, disputes, costs.
-fn apply_kept(b: &Backend, event: &Event, at: Moment) -> anyhow::Result<()> {
-    match event {
-        Event::Paused { pause } => b.store.add_pause(*pause)?,
-        Event::PauseEnded { day } => b.store.end_pause(*day)?,
+        Event::BreakSpread => plain(b.store.reenter(at)),
+        Event::Paused { pause } => plain(b.store.add_pause(*pause)),
+        Event::PauseEnded { day } => plain(b.store.end_pause(*day)),
         Event::Disputed {
             scenario,
             learner,
             original,
             better,
             explanation,
-        } => b.store.add_dispute(&kaiwa_store::Dispute {
+        } => plain(b.store.add_dispute(&kaiwa_store::Dispute {
             at,
             scenario: scenario.clone(),
             learner: learner.clone(),
             original: original.clone(),
             better: better.clone(),
             explanation: explanation.clone(),
-        })?,
+        })),
         Event::CostsBooked {
             cents,
             calls,
@@ -178,12 +119,64 @@ fn apply_kept(b: &Backend, event: &Event, at: Moment) -> anyhow::Result<()> {
                 calls: *calls,
                 unknown_calls: *unknown_calls,
             };
-            b.add_costs(spent, at, *talk_ended)?
+            plain(b.add_costs(spent, at, *talk_ended))
         }
-        // Their own arms in `apply` and `apply_other`.
-        _ => {}
     }
-    Ok(())
+}
+
+/// An applied event that gave nothing back and set nothing off.
+fn plain<T, E: Into<anyhow::Error>>(done: Result<T, E>) -> Result<Applied, JournalError> {
+    done.map(|_| Applied::default())
+        .map_err(|e| JournalError::NotSaved(e.into()))
+}
+
+/// A card that is gone changes nothing, as live.
+fn review(b: &Backend, text: &str, grade: Grade, at: Moment) -> Result<Applied, JournalError> {
+    plain(b.store.review(text, grade, at))
+}
+
+/// A key this version does not know (from a newer device) changes nothing.
+fn setting(b: &Backend, key: &str, value: &str, at: Moment) -> Result<Applied, JournalError> {
+    let Some(key) = Key::parse(key) else {
+        return Ok(Applied::default());
+    };
+    b.change_setting(key, value, at)?;
+    Ok(Applied::default())
+}
+
+/// A finished talk the learner marked turns of: its record again.
+fn corrected(b: &Backend, talk: &str, state: &SessionState) -> Result<Applied, JournalError> {
+    let session = restored(b, state)?;
+    let recorded = b
+        .correct_talk(talk, &session)
+        .map_err(JournalError::NotSaved)?;
+    Ok(Applied {
+        recorded: Some(recorded),
+        failed: Vec::new(),
+    })
+}
+
+/// A talk that ended: its record, then what that sets off (grammar, recordings).
+fn finish_talk(
+    b: &Backend,
+    talk: &str,
+    state: &SessionState,
+    (started, ended, day): (Moment, Moment, Day),
+) -> Result<Applied, JournalError> {
+    let session = restored(b, state)?;
+    let curriculum = Some(&b.curriculum);
+    let recorded = b
+        .store
+        .record_on(talk, &session, started, ended, day, curriculum)
+        .map_err(not_saved)?;
+    let failed = [
+        b.track_grammar(&session, ended),
+        b.purge_recordings(ended).map(|_| ()),
+    ];
+    Ok(Applied {
+        recorded: Some(recorded),
+        failed: failed.into_iter().filter_map(Result::err).collect(),
+    })
 }
 
 fn not_saved(e: kaiwa_store::StoreError) -> JournalError {
