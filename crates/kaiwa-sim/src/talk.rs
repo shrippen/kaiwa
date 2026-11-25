@@ -1,7 +1,9 @@
-//! Where the simulation starts a talk on recorded tutor answers (AUDIT.md finding 6): the
-//! scenario and the recorded tutor come from `kaiwa-backend`, the same ones the demo build
-//! uses, and every such talk is made by [`start`]. Talks with another tutor (`days.rs`, the
-//! free talk in `engine.rs`) do not come through here.
+//! Where the simulation starts a talk. The main path of every persona comes through
+//! [`for_persona`]: the persona's profile, then the talk as the backend builds it, on the
+//! recorded or the live tutor. The other checks on recorded tutor answers use [`start`],
+//! with the scenario and the recorded tutor from `kaiwa-backend`, the ones the demo build
+//! uses. Talks with another tutor (`days.rs`, the free talk in `engine.rs`) and the check
+//! that marks turns after the end (`Talk::begin` in `engine.rs`) do not come through here.
 
 use std::sync::Arc;
 

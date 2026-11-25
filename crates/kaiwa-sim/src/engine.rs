@@ -686,14 +686,18 @@ enum Mark {
 fn marked_after_the_end(how: Mark) -> Result<Option<String>> {
     let b = kaiwa_backend::TempBackend::new("marked-after-the-end", false)?;
     let begun = kaiwa_backend::now();
-    let mut talk = Talk::begin(&b, "n5-02-jikoshoukai", begun, Length::Full)?.talk;
+    let opened = Talk::begin(&b, "n5-02-jikoshoukai", begun, Length::Full)?;
+    crate::steps::refuse(opened.failed)?;
+    let mut talk = opened.talk;
     for (text, input) in [
         ("マラです。よろしくおねがいします。", Input::Spoken),
         ("コーヒーを好きです。", Input::Spoken),
         ("ドイツのハンブルクから来ました。", Input::Spoken),
     ] {
         talk.spend(75);
-        talk.say(&b, text, input, begun.plus_secs(300))?;
+        let turned = talk.say(&b, text, input, begun.plus_secs(300))?;
+        let turned = turned.with_context(|| format!("no turn for: {text}"))?;
+        crate::steps::refuse(turned.failed)?;
     }
     if !talk.finished() {
         return Ok(Some("the talk does not end with its goals".into()));
