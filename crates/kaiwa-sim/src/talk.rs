@@ -33,8 +33,8 @@ pub fn start(
 }
 
 /// A talk on `scenario` as the backend starts it, on the profile of `persona`: the amount of
-/// corrections is her choice (the placement keeps it), then come her levels. The pair is the
-/// amount and the language she chose.
+/// corrections is the persona's choice (the placement keeps it), then come its levels. The
+/// pair is the amount and the language the persona chose.
 pub fn for_persona(
     b: &kaiwa_backend::Backend,
     persona: &serde_json::Value,
