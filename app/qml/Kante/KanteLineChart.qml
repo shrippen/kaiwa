@@ -9,7 +9,10 @@ import "."
  * a single line (default: the first data colour).
  * Hover (or `hoverIndex` set by the caller) shows a read-out: a rule at the nearest point,
  * a square mark per line and a box with `labels[i]` and the values; `readout: false` turns it off.
- * `axis` labels the scale on the left (every quarter, in `unit`) and keeps room for it.
+ * `axis` labels the scale on the left (every quarter, in `unit`) and keeps room for it. The labels
+ * carry as many decimals as the step needs (0.25 reads "0,25", not "0,3"), in `locale`; so does the
+ * read-out. `minSpan` is the least height of the scale above `minValue` (default 1, so a series that
+ * stays below 1 sits in the bottom of the plot); 0 fits the scale to the data.
  * `thresholds` draw dashed horizontal lines (a limit, a target); `xStart`, `xEnd`, `xTitle` and
  * `yTitle` name the axes. The chart lays them out itself: it keeps a row below the plot for the
  * x labels and one above it for `yTitle`, so a caller needs no margins of its own.
@@ -33,6 +36,10 @@ Item {
     property real lineWidth: compact ? 1.6 : 2
     property bool readout: !compact
     property bool axis: false
+    /** Least height of the scale above `minValue`; 0 takes the scale from the data alone. */
+    property real minSpan: 1
+    /** Decimal point and grouping of the labels and the read-out. */
+    property var locale: Qt.locale()
     /** Captions of the points, e.g. the days; optional. */
     property var labels: []
     property string unit: ""
@@ -58,7 +65,7 @@ Item {
         if (maxValue > 0) {
             return maxValue
         }
-        let m = minValue + 1
+        let m = minValue + minSpan
         for (let i = 0; i < series.length; i++) {
             for (let k = 0; k < series[i].length; k++) {
                 m = Math.max(m, series[i][k])
@@ -66,6 +73,10 @@ Item {
         }
         for (let t = 0; t < thresholds.length; t++) {
             m = Math.max(m, thresholds[t].value)
+        }
+        // Nothing above the bottom of the scale (no data, all zeros): a span of 1 stays drawable.
+        if (m <= minValue) {
+            m = minValue + 1
         }
         // A gap (NaN) in the values leaves the scale undefined.
         if (!axis || isNaN(m)) {
@@ -90,6 +101,33 @@ Item {
     /** y of a value in the chart's coordinates. */
     function yOf(v) {
         return padTop + mark / 2 + (plotHeight - mark) - (v - minValue) / (scaleTop - minValue) * (plotHeight - mark)
+    }
+
+    /** Decimals `x` needs, at most 6 (a smaller step repeats its labels): 0.25 -> 2, 2.5 -> 1, 5 -> 0. */
+    function decimalsOf(x) {
+        for (let d = 0; d < 6; d++) {
+            const scale = Math.pow(10, d)
+            if (Math.abs(x * scale - Math.round(x * scale)) < 1e-9) {
+                return d
+            }
+        }
+        return 6
+    }
+
+    /** Decimals the axis labels need: those of the step and of `minValue`. */
+    function stepDecimals(step) {
+        return Math.max(decimalsOf(step), decimalsOf(minValue))
+    }
+
+    /** The label of axis line `index` (0 = bottom, 4 = top), in `locale` with `unit`. */
+    function tickText(index) {
+        const step = (scaleTop - minValue) / 4
+        return Number(minValue + index * step).toLocaleString(locale, 'f', stepDecimals(step)) + unit
+    }
+
+    /** A value of the read-out in `locale`: fixed notation, up to 6 decimals, none trailing, with `unit`. */
+    function valueText(v) {
+        return Number(v).toLocaleString(locale, 'f', decimalsOf(v)) + unit
     }
 
     function colorOfThreshold(t) {
@@ -134,7 +172,7 @@ Item {
             required property int index
             x: chart.padLeft - width - KanteStyle.unit(6)
             y: Math.max(chart.padTop, Math.min(chart.padTop + chart.plotHeight - height, chart.padTop + chart.plotHeight - 1 - index * (chart.plotHeight - 1) / 4 - height / 2))
-            text: { const v = chart.minValue + index * (chart.scaleTop - chart.minValue) / 4; return Number(v).toLocaleString(Qt.locale(), 'f', (chart.scaleTop - chart.minValue) / 4 < 1 ? 1 : 0) + chart.unit }
+            text: chart.tickText(index)
             color: KanteStyle.mutedTextColor
             font: KanteStyle.monoFont(KanteStyle.labelFont().pointSize, false)
         }
@@ -330,7 +368,7 @@ Item {
                             color: KanteStyle.dataColor(chart.series.length === 1 ? chart.colorIndex : parent.index)
                         }
                         Text {
-                            text: parent.visible ? parent.values[chart.hoverIndex] + chart.unit : ""
+                            text: parent.visible ? chart.valueText(parent.values[chart.hoverIndex]) : ""
                             color: KanteStyle.strongTextColor
                             font: KanteStyle.monoFont(KanteStyle.labelFont().pointSize, true)
                         }
