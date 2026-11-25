@@ -117,11 +117,21 @@ Item {
 
     // ── Data range ──────────────────────────────────────────────────────
 
-    /** Extent of the points: { x0, x1, y0, y1, mark }; an empty chart spans 0..1. `mark`: largest mark in point sizes. */
-    readonly property var bounds: {
-        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, mark = 1
+    /** One pass over the points: `bounds` ({ x0, x1, y0, y1, mark }: largest mark in point sizes), value ends, and per point its value and mark. */
+    readonly property var _scan: {
+        const pts = points
+        const key = valueKey
+        const vals = new Array(count)
+        const marks = new Array(count)
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, mark = 1, lo = Infinity, hi = -Infinity
         for (let i = 0; i < count; i++) {
-            const p = points[i]
+            const p = pts[i]
+            vals[i] = p && key !== "" && p[key] !== undefined && p[key] !== null ? Number(p[key]) : NaN
+            marks[i] = markScale(p)
+            if (isFinite(vals[i])) {
+                lo = Math.min(lo, vals[i])
+                hi = Math.max(hi, vals[i])
+            }
             if (!p || !isFinite(p.x) || !isFinite(p.y)) {
                 continue
             }
@@ -129,27 +139,17 @@ Item {
             x1 = Math.max(x1, p.x)
             y0 = Math.min(y0, p.y)
             y1 = Math.max(y1, p.y)
-            mark = Math.max(mark, markScale(p))
+            mark = Math.max(mark, marks[i])
         }
-        if (x0 > x1) {
-            return { x0: 0, x1: 1, y0: 0, y1: 1, mark: 1 }
-        }
-        return { x0: x0, x1: x1, y0: y0, y1: y1, mark: mark }
+        return { x0: x0, x1: x1, y0: y0, y1: y1, mark: mark, lo: lo, hi: hi, vals: vals, marks: marks }
     }
+    readonly property var bounds: _scan.x0 > _scan.x1 ? { x0: 0, x1: 1, y0: 0, y1: 1, mark: 1 } : _scan
     /** Ends of the value scale: { low, high }; NaN without values. */
     readonly property var valueRange: {
-        let lo = Infinity, hi = -Infinity
-        for (let i = 0; valueKey !== "" && i < count; i++) {
-            const v = rawValue(i)
-            if (!isFinite(v)) {
-                continue
-            }
-            lo = Math.min(lo, v)
-            hi = Math.max(hi, v)
-        }
+        const found = _scan.lo <= _scan.hi
         return {
-            low: isFinite(minValue) ? minValue : (lo <= hi ? lo : NaN),
-            high: isFinite(maxValue) ? maxValue : (lo <= hi ? hi : NaN)
+            low: isFinite(minValue) ? minValue : (found ? _scan.lo : NaN),
+            high: isFinite(maxValue) ? maxValue : (found ? _scan.hi : NaN)
         }
     }
 
@@ -338,10 +338,6 @@ Item {
     function yOf(v) {
         return padTop + inset + (axes.y1 - v) / (axes.y1 - axes.y0) * (plotHeight - 2 * inset)
     }
-    function rawValue(i) {
-        const p = points[i]
-        return p && valueKey !== "" && p[valueKey] !== undefined && p[valueKey] !== null ? Number(p[valueKey]) : NaN
-    }
     /** Level 1..4 of a value on the scale; 0 without a value. */
     function levelOf(v) {
         if (!isFinite(v) || !valued) {
@@ -363,15 +359,14 @@ Item {
     }
     /** Extent of point i's mark in pixels. */
     function markSize(i) {
-        return pointSize * markScale(points[i])
+        return pointSize * _scan.marks[i]
     }
-    /** Colour key: "v<level>", "s<series>" or "d" (pointColor). */
-    function colorKeyOf(i) {
-        const level = levelOf(rawValue(i))
+    /** Colour key of point p with value v: "v<level>", "s<series>" or "d" (pointColor). */
+    function colorKeyOf(p, v) {
+        const level = levelOf(v)
         if (level > 0) {
             return "v" + level
         }
-        const p = points[i]
         return p && p.series !== undefined && p.series !== null ? "s" + p.series : "d"
     }
     function colorOfKey(key) {
@@ -381,7 +376,7 @@ Item {
         return key[0] === "s" ? KanteStyle.dataColor(Number(key.slice(1))) : pointColor
     }
     function colorOf(i) {
-        return colorOfKey(colorKeyOf(i))
+        return colorOfKey(colorKeyOf(points[i], _scan.vals[i]))
     }
 
     /** Tooltip and accessible text: "Kamera 3\nx 1,20 m · y 3,40 m\nAnsichten 12". */
@@ -396,7 +391,7 @@ Item {
         }
         const u = function (t) { return t === "" ? "" : " " + t }
         lines.push("x " + numberText(p.x, xDecimals + 1) + u(xUnit) + " · y " + numberText(p.y, yDecimals + 1) + u(yUnit))
-        const v = rawValue(i)
+        const v = _scan.vals[i]
         if (isFinite(v)) {
             const name = valueTitle !== "" ? valueTitle : valueKey
             lines.push(name + " " + numberText(v, Number.isInteger(v) ? 0 : 2))
@@ -432,6 +427,7 @@ Item {
             return
         }
         _dirty = false
+        const vals = _scan.vals
         const xs = new Array(count)
         const ys = new Array(count)
         const byKey = {}
@@ -447,9 +443,10 @@ Item {
             xs[i] = xOf(p.x)
             ys[i] = yOf(p.y)
             const shape = shapeOf(i)
-            const key = shape + "|" + colorKeyOf(i)
+            const color = colorKeyOf(p, vals[i])
+            const key = shape + "|" + color
             if (!byKey[key]) {
-                byKey[key] = { shape: shape, color: colorKeyOf(i), idx: [] }
+                byKey[key] = { shape: shape, color: color, idx: [] }
             }
             byKey[key].idx.push(i)
             const g = Math.floor(xs[i] / cell) + ":" + Math.floor(ys[i] / cell)
@@ -692,6 +689,8 @@ Item {
         width: chart.plotWidth
         height: chart.plotHeight
         property int paints: 0
+        // A path of 20 000 marks takes about a second to fill: off the GUI thread.
+        renderStrategy: Canvas.Threaded
         onPaint: {
             const ctx = getContext("2d")
             ctx.reset()
@@ -704,6 +703,9 @@ Item {
                 const grp = groups[g]
                 const tone = chart.colorOfKey(grp.color)
                 const idx = grp.idx
+                ctx.lineWidth = KanteStyle.lineWidth
+                ctx.strokeStyle = tone
+                ctx.fillStyle = tone
                 ctx.beginPath()
                 for (let k = 0; k < idx.length; k++) {
                     const i = idx[k]
@@ -735,14 +737,8 @@ Item {
                         ctx.rect(cx - s / 2, cy - s / 2, s, s)
                     }
                 }
-                if (grp.shape === "cross") {
-                    ctx.lineWidth = KanteStyle.lineWidth
-                    ctx.strokeStyle = tone
-                    ctx.stroke()
-                } else {
-                    ctx.fillStyle = tone
-                    ctx.fill()
-                }
+                // One path per group: overlapping translucent marks blend once, not twice.
+                ctx[grp.shape === "cross" ? "stroke" : "fill"]()
             }
             paints++
         }
