@@ -33,6 +33,12 @@ impl std::fmt::Display for JournalError {
 
 impl std::error::Error for JournalError {}
 
+impl From<kaiwa_store::StoreError> for JournalError {
+    fn from(e: kaiwa_store::StoreError) -> Self {
+        Self::NotSaved(e.into())
+    }
+}
+
 /// What applying an event gave and what came with it.
 #[derive(Default)]
 pub(crate) struct Applied {
@@ -50,17 +56,27 @@ pub(crate) struct Logged {
     pub applied: Applied,
 }
 
-/// Journals `event`, then applies it. An event that cannot be written is not applied.
+/// Journals `event`, then applies it, in one transaction: an event that cannot be written
+/// is not applied, and one that cannot be applied is not kept. One whose effect alone
+/// failed (`NotApplied`) is kept, as it is applied.
 pub(crate) fn record(b: &Backend, event: &Event, at: Moment) -> Result<Logged, JournalError> {
-    let stored = b
-        .store
-        .append_event(event, at)
-        .map_err(|e| JournalError::NotSaved(e.into()))?;
-    let applied = apply(b, &stored.id, event, at)?;
-    Ok(Logged {
-        id: stored.id,
-        applied,
-    })
+    let (logged, effect) = b.store.batch(|st| {
+        let stored = st.append_event(event, at)?;
+        let (applied, effect) = match apply(b, &stored.id, event, at) {
+            Ok(applied) => (applied, None),
+            Err(JournalError::NotApplied(e)) => (Applied::default(), Some(e)),
+            Err(e) => return Err(e),
+        };
+        let logged = Logged {
+            id: stored.id,
+            applied,
+        };
+        Ok((logged, effect))
+    })?;
+    match effect {
+        Some(e) => Err(JournalError::NotApplied(e)),
+        None => Ok(logged),
+    }
 }
 
 /// Does what `event` (journal id `id`) says, through the commands live uses.
@@ -71,6 +87,8 @@ pub(crate) fn apply(
     at: Moment,
 ) -> Result<Applied, JournalError> {
     match event {
+        // The device's own settings are put back after the fold (`merge::refold`).
+        Event::Base { state } => plain(b.store.load_state(state)),
         // A card that is gone changes nothing, as live.
         Event::Review { text, grade } => plain(b.store.review(text, *grade, at)),
         Event::Setting { key, value } => setting(b, key, value, at),
@@ -461,6 +479,20 @@ mod tests {
         let folded = backend("acts-folded");
         fold(&folded, &events);
         assert_eq!(export(&live), export(&folded));
+    }
+
+    #[test]
+    fn an_event_that_cannot_be_applied_is_not_journaled() {
+        // A correction of a talk this profile does not have: applying it fails.
+        let b = backend("unapplied");
+        let state = play(&b, 1).session().snapshot();
+        let event = Event::TalkCorrected {
+            talk: "gone".into(),
+            state,
+        };
+        let before = b.store.events().unwrap().len();
+        assert!(record(&b, &event, T0).is_err());
+        assert_eq!(b.store.events().unwrap().len(), before);
     }
 
     #[test]

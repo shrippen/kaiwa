@@ -1,15 +1,15 @@
 //! Export and import of the whole profile (/LF710/, `spec/export.schema.json`).
 
-use kaiwa_core::Event;
 use kaiwa_core::session::SessionState;
 use rusqlite::params;
 
 use kaiwa_core::clock::{Day, Moment};
 use kaiwa_core::srs::Item;
 
+use crate::events::{Stored, stored_of};
 use crate::{
-    COST_STATE_PREFIX, CostMonth, EXPORT_SCHEMA, IMPORTED_STATE, Result, SessionRow, Store,
-    StoreError, is_month_key,
+    COST_STATE_PREFIX, CostMonth, EXPORT_SCHEMA, IMPORTED_STATE, REVIEWED, Result, SessionRow,
+    Store, StoreError, is_month_key,
 };
 
 impl Store {
@@ -51,20 +51,39 @@ impl Store {
         if v["schema"].as_str() != Some(EXPORT_SCHEMA) {
             return Err(StoreError::WrongFormat(v["schema"].to_string()));
         }
-        let profile = v["profile"].clone();
-        let empty: i64 = self
-            .db
-            .query_row("SELECT COUNT(*) FROM sessions", [], |r| r.get(0))?;
-        // A file without sessions or items leaves no trace but the marker.
-        let imported: Option<bool> = self.state_value(IMPORTED_STATE)?;
-        if empty > 0 || !self.items()?.is_empty() || imported.is_some() {
+        if !self.is_empty()? {
             return Err(StoreError::NotEmpty);
         }
-        let tx = self.db.unchecked_transaction()?;
-        self.set_profile(&serde_json::from_value(profile)?)?;
+        self.batch(|st| {
+            st.load_state(v)?;
+            st.import_events(v)?;
+            st.set_state_value(IMPORTED_STATE, &true)
+        })
+    }
+
+    /// No talk, no card, no import and no sync yet: an import or another device's journal
+    /// may come in. A file without sessions or items leaves no trace but the import's
+    /// marker. A profile that syncs folds its state from the journal, so an import would be
+    /// lost there.
+    pub fn is_empty(&self) -> Result<bool> {
+        let talks: i64 = self
+            .db
+            .query_row("SELECT COUNT(*) FROM sessions", [], |r| r.get(0))?;
+        let imported: Option<bool> = self.state_value(IMPORTED_STATE)?;
+        let syncs: bool = self.db.query_row(
+            "SELECT EXISTS (SELECT 1 FROM events WHERE json_extract(body, '$.kind') = 'base')",
+            [],
+            |r| r.get(0),
+        )?;
+        Ok(talks == 0 && self.items()?.is_empty() && imported.is_none() && !syncs)
+    }
+
+    /// Reads the state of an export (all but its journal) into this profile: the import, and
+    /// the journal's start (ADR-010 `Base`) when it is folded.
+    pub fn load_state(&self, v: &serde_json::Value) -> Result<()> {
+        self.set_profile(&serde_json::from_value(v["profile"].clone())?)?;
         self.set_learning(&serde_json::from_value(v["learning"].clone())?)?;
         self.import_sessions(v)?;
-        self.import_events(v)?;
         let mut reviewed: Option<Moment> = None;
         for i in array(v, "items")? {
             let item: Item = serde_json::from_value(i.clone())?;
@@ -73,7 +92,7 @@ impl Store {
         }
         // `state` is not exported; without this, reviewing since the last talk reads as a break.
         if let Some(at) = reviewed {
-            self.set_state_value("reviewed", &at)?;
+            self.set_state_value(REVIEWED, &at)?;
         }
         for d in array(v, "days")? {
             let n = d["n"]
@@ -99,8 +118,6 @@ impl Store {
             sum.add(&add);
             self.set_state_value(&key, &sum)?;
         }
-        self.set_state_value(IMPORTED_STATE, &true)?;
-        tx.commit()?;
         Ok(())
     }
 
@@ -131,24 +148,11 @@ impl Store {
 
     /// The journal of an export, as it was.
     fn import_events(&self, v: &serde_json::Value) -> Result<()> {
-        let wrong = || StoreError::WrongFormat("events".into());
-        for e in array(v, "events")? {
-            let text = |k: &str| e[k].as_str().ok_or_else(wrong);
-            let num = |k: &str| e[k].as_i64().ok_or_else(wrong);
-            let body: Event = serde_json::from_value(e["body"].clone()).map_err(|_| wrong())?;
-            self.db.execute(
-                "INSERT INTO events (id, device, seq, at, offset_min, body) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params![
-                    text("id")?,
-                    text("device")?,
-                    num("seq")?,
-                    num("at")?,
-                    num("offset_min")?,
-                    serde_json::to_string(&body)?
-                ],
-            )?;
-        }
-        Ok(())
+        let events: Vec<Stored> = array(v, "events")?
+            .iter()
+            .map(stored_of)
+            .collect::<Result<_>>()?;
+        self.add_events(&events).map(|_| ())
     }
 }
 

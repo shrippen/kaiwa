@@ -69,3 +69,14 @@ impl Key {
         )
     }
 }
+
+/// Puts this device's own settings ([`Key::per_device`], louder and clear) from `device`
+/// into `profile`: after a fold, which only knows the profile's.
+pub(crate) fn keep_device(profile: &mut kaiwa_store::Profile, device: &kaiwa_store::Profile) {
+    profile.tutor = device.tutor.clone();
+    profile.microphone = device.microphone.clone();
+    profile.unload_after_min = device.unload_after_min;
+    profile.hands_free = device.hands_free;
+    profile.louder = device.louder;
+    profile.clear = device.clear;
+}

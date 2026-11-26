@@ -652,7 +652,7 @@ fn fast(root: &Path) -> Result<Option<String>> {
                 item.unit = Some(format!("n5-{:02}", n % 12 + 1));
                 st.put_item(&item)?;
             }
-            Ok(())
+            Ok::<_, kaiwa_store::StoreError>(())
         })?;
     }
     let c = curriculum(root)?;

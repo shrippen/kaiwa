@@ -100,7 +100,7 @@
     },
     "events": {
       "type": "array",
-      "description": "The journal (ADR-010) in fold order: time, then device, then number.",
+      "description": "The journal (ADR-010) in fold order: its start (`base`, the state when the profile began to sync, as this export without `events`) first, then time, then device, then number.",
       "items": {
         "type": "object",
         "required": ["id", "device", "seq", "at", "offset_min", "body"],
@@ -115,7 +115,7 @@
             "type": "object",
             "description": "What the learner did; `kind` names it.",
             "required": ["kind"],
-            "properties": { "kind": { "enum": ["review", "setting", "talk_begun", "talk_saved", "talk_finished", "talk_corrected", "placed", "placement_left_out", "nudged", "skipped", "word_added", "paused", "pause_ended", "disputed", "costs_booked", "break_spread"] } }
+            "properties": { "kind": { "enum": ["base", "review", "setting", "talk_begun", "talk_saved", "talk_finished", "talk_corrected", "placed", "placement_left_out", "nudged", "skipped", "word_added", "paused", "pause_ended", "disputed", "costs_booked", "break_spread"] } }
           }
         }
       }

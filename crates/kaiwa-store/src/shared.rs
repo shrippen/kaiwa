@@ -1,6 +1,5 @@
 //! What two processes on one profile file must not lose.
 
-use rusqlite::{Transaction, TransactionBehavior};
 use serde::{Deserialize, Serialize};
 
 use crate::{Result, Store};
@@ -15,12 +14,11 @@ impl Store {
     where
         T: Serialize + for<'de> Deserialize<'de> + Default,
     {
-        self.db.busy_timeout(BUSY_WAIT)?;
-        let tx = Transaction::new_unchecked(&self.db, TransactionBehavior::Immediate)?;
-        let mut v: T = self.state_value(key)?.unwrap_or_default();
-        let out = f(&mut v);
-        self.set_state_value(key, &v)?;
-        tx.commit()?;
-        Ok((v, out))
+        self.batch(|st| {
+            let mut v: T = st.state_value(key)?.unwrap_or_default();
+            let out = f(&mut v);
+            st.set_state_value(key, &v)?;
+            Ok((v, out))
+        })
     }
 }
