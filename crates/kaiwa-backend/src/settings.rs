@@ -126,30 +126,30 @@ fn apply_rest(p: &mut Profile, key: Key, value: &str) {
     }
 }
 
-/// The place to sync with: a folder or a WebDAV folder; a blank folder or address sets none.
-/// Whether `key` is one of the place's.
+/// The place to sync with: a folder or a WebDAV folder; whether `key` is one of the place's.
+/// The fields may come in any order: a user name alone makes a WebDAV place without address,
+/// and a blank field ends only a place of its own kind.
 fn set_sync(p: &mut Profile, key: Key, value: &str) -> bool {
-    if !matches!(key, Key::SyncFolder | Key::SyncUrl | Key::SyncUser) {
-        return false;
-    }
-    let user = match &p.sync {
-        SyncPlace::WebDav { user, .. } => user.clone(),
-        _ => String::new(),
+    let (url, user) = match &p.sync {
+        SyncPlace::WebDav { url, user } => (url.clone(), user.clone()),
+        _ => (String::new(), String::new()),
     };
+    let folder = matches!(p.sync, SyncPlace::Folder { .. });
+    let webdav = matches!(p.sync, SyncPlace::WebDav { .. });
     p.sync = match key {
         Key::SyncFolder if !value.is_empty() => SyncPlace::Folder { path: value.into() },
+        Key::SyncFolder if folder => SyncPlace::None,
         Key::SyncUrl if !value.is_empty() => SyncPlace::WebDav {
             url: value.into(),
             user,
         },
-        Key::SyncUser => match &p.sync {
-            SyncPlace::WebDav { url, .. } => SyncPlace::WebDav {
-                url: url.clone(),
-                user: value.into(),
-            },
-            other => other.clone(),
+        Key::SyncUrl if webdav => SyncPlace::None,
+        Key::SyncUser => SyncPlace::WebDav {
+            url,
+            user: value.into(),
         },
-        _ => SyncPlace::None,
+        Key::SyncFolder | Key::SyncUrl => return true,
+        _ => return false,
     };
     true
 }
@@ -576,6 +576,27 @@ mod tests {
             "{r:?}"
         );
         assert_eq!(b.store.profile().unwrap().keep_recordings_days, None);
+    }
+
+    #[test]
+    fn the_sync_place_does_not_hang_on_the_order_of_its_fields() {
+        let b = backend("sync-order");
+        let place = |b: &Backend| b.store.profile().unwrap().sync;
+        set(&b, "syncUser", "jonas");
+        set(&b, "syncUrl", "https://cloud.example.org/dav/");
+        let dav = SyncPlace::WebDav {
+            url: "https://cloud.example.org/dav/".into(),
+            user: "jonas".into(),
+        };
+        assert_eq!(place(&b), dav);
+        // A blank field of the other kind leaves the place.
+        set(&b, "syncFolder", "");
+        assert_eq!(place(&b), dav);
+        set(&b, "syncUrl", "");
+        assert_eq!(place(&b), SyncPlace::None);
+        set(&b, "syncFolder", "/home/jonas/Kaiwa");
+        set(&b, "syncUrl", "");
+        assert!(matches!(place(&b), SyncPlace::Folder { .. }));
     }
 
     #[test]

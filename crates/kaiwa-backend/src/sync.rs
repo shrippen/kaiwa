@@ -54,6 +54,11 @@ impl Secret {
 pub enum SyncError {
     /// No place or no passphrase is set up.
     NotSetUp,
+    /// The keyring holds a secret of the sync but cannot be read (locked, not running).
+    Keyring(String),
+    /// A WebDAV address without `https` to another computer: the password would go out
+    /// readable.
+    Plain,
     /// "Begin here" in a place where devices sync already: join instead.
     Taken,
     /// "Join" with a profile that has data and no device in the place yet.
@@ -72,6 +77,8 @@ impl std::fmt::Display for SyncError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NotSetUp => f.write_str("no place or no passphrase set up"),
+            Self::Keyring(e) => write!(f, "the keyring cannot be read: {e}"),
+            Self::Plain => f.write_str("a WebDAV address needs https"),
             Self::Taken => f.write_str("devices sync in this place already"),
             Self::Alone => f.write_str("no device to join in this place"),
             Self::Place(e) => write!(f, "{e}"),
@@ -114,6 +121,8 @@ impl Backend {
         match profile.sync {
             SyncPlace::None => Err(SyncError::NotSetUp),
             SyncPlace::Folder { path } => self.sync_with(&Folder::new(path), &pass, start, now),
+            SyncPlace::WebDav { url, .. } if url.is_empty() => Err(SyncError::NotSetUp),
+            SyncPlace::WebDav { url, .. } if !sealed_way(&url) => Err(SyncError::Plain),
             SyncPlace::WebDav { url, user } => {
                 let password = self.sync_secret(Secret::Password)?;
                 self.sync_with(&WebDav::new(&url, &user, &password), &pass, start, now)
@@ -122,16 +131,18 @@ impl Backend {
     }
 
     /// Keeps a secret of the sync in the keyring; a profile without a keyring home (the
-    /// environment's, a test's) keeps it for this run only.
+    /// environment's, a test's) keeps it for this run only. Spaces around it are cut, as
+    /// both ways keep it, so every device seals with the same passphrase.
     pub fn set_sync_secret(&self, secret: Secret, value: &str) -> Result<(), KeyError> {
         if self.spare {
             return Err(KeyError::Spare);
         }
+        let value = value.trim();
+        if value.is_empty() {
+            return Err(KeyError::Empty);
+        }
         if self.keys.keyring_home() {
             return self.keys.store(secret.name(), value);
-        }
-        if value.trim().is_empty() {
-            return Err(KeyError::Empty);
         }
         self.sync_secrets
             .lock()
@@ -140,23 +151,23 @@ impl Backend {
         Ok(())
     }
 
-    /// Whether `secret` is kept.
-    pub(crate) fn has_sync_secret(&self, secret: Secret) -> bool {
-        self.sync_secret(secret).is_ok()
+    /// Whether `secret` is kept; the keyring's error when it cannot be read.
+    pub(crate) fn sync_secret_kept(&self, secret: Secret) -> Result<bool, String> {
+        match self.sync_secret(secret) {
+            Ok(_) => Ok(true),
+            Err(SyncError::Keyring(e)) => Err(e),
+            Err(_) => Ok(false),
+        }
     }
 
     fn sync_secret(&self, secret: Secret) -> Result<String, SyncError> {
-        let kept = self
-            .sync_secrets
-            .lock()
-            .unwrap()
-            .get(secret.name())
-            .cloned();
-        let stored = match kept {
-            Some(v) => Some(v),
-            None => self.keys.secret(secret.name()).ok().flatten(),
-        };
-        stored.ok_or(SyncError::NotSetUp)
+        if let Some(v) = self.sync_secrets.lock().unwrap().get(secret.name()) {
+            return Ok(v.clone());
+        }
+        self.keys
+            .secret(secret.name())
+            .map_err(SyncError::Keyring)?
+            .ok_or(SyncError::NotSetUp)
     }
 
     /// [`Backend::sync_now`] with any place.
@@ -211,6 +222,16 @@ impl Backend {
             (Start::Join, false) => Ok(false),
         }
     }
+}
+
+/// Whether the login goes out sealed: `https`, or `http` to this computer only.
+pub(crate) fn sealed_way(url: &str) -> bool {
+    let url = url.to_ascii_lowercase();
+    let Some(rest) = url.strip_prefix("http://") else {
+        return url.starts_with("https://");
+    };
+    let host = rest.split(['/', ':']).next().unwrap_or_default();
+    matches!(host, "localhost" | "127.0.0.1")
 }
 
 fn not_saved(e: anyhow::Error) -> SyncError {
@@ -376,6 +397,61 @@ mod tests {
             pc.sync_with(&place, PASS, Start::Here, T0),
             Err(SyncError::Newer(_))
         ));
+    }
+
+    #[test]
+    fn webdav_without_https_goes_only_to_this_computer() {
+        assert!(sealed_way("https://cloud.example.org/dav/"));
+        assert!(sealed_way("http://localhost:8080/dav/"));
+        assert!(!sealed_way("http://cloud.example.org/dav/"));
+        assert!(!sealed_way("ftp://cloud.example.org/"));
+        let b = backend("plain");
+        b.set_setting("syncUrl", "http://cloud.example.org/dav/", T0)
+            .unwrap();
+        b.set_sync_secret(Secret::Passphrase, PASS).unwrap();
+        assert!(matches!(b.sync_now(Start::Here, T0), Err(SyncError::Plain)));
+    }
+
+    #[test]
+    fn a_passphrase_is_kept_without_its_spaces() {
+        let b = backend("spaces");
+        b.set_sync_secret(Secret::Passphrase, " kirschbluete ")
+            .unwrap();
+        assert_eq!(b.sync_secret(Secret::Passphrase).unwrap(), PASS);
+    }
+
+    #[test]
+    fn a_locked_keyring_is_named_not_a_missing_passphrase() {
+        struct Locked;
+        impl kaiwa_ai::secrets::KeyStore for Locked {
+            fn get(&self, _: &str) -> Result<Option<String>, String> {
+                Err("locked".into())
+            }
+            fn set(&self, _: &str, _: &str) -> Result<(), String> {
+                Err("locked".into())
+            }
+            fn delete(&self, _: &str) -> Result<(), String> {
+                Ok(())
+            }
+        }
+        let b = backend("locked");
+        let dir = b.dir.join("profiles");
+        std::fs::create_dir_all(&dir).unwrap();
+        let keyed = Backend::open_with(
+            dir.join("p.kaiwa"),
+            false,
+            std::sync::Arc::new(Locked),
+            Some(&dir),
+        )
+        .unwrap();
+        keyed
+            .set_setting("syncFolder", dir.to_str().unwrap(), T0)
+            .unwrap();
+        let r = keyed.sync_now(Start::Here, T0);
+        assert!(matches!(r, Err(SyncError::Keyring(_))), "{r:?}");
+        let view = crate::sync_view::sync_view(&keyed, kaiwa_core::Lang::De);
+        let text = view["text"].as_str().unwrap();
+        assert!(text.contains("Schlüsselbund"), "{text}");
     }
 
     #[test]

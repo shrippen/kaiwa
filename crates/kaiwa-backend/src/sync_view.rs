@@ -7,44 +7,87 @@ use serde_json::{Value, json};
 
 use crate::Backend;
 use crate::merge::MergeError;
-use crate::sync::{Secret, SyncError, Synced};
+use crate::sync::{Secret, SyncError, Synced, sealed_way};
 
 /// The tile: the place, which secrets are kept, whether the device syncs already, and a line
-/// that says what the next sync does.
+/// that says what is missing or what the next sync does.
 pub fn sync_view(b: &Backend, lang: Lang) -> Value {
-    let de = lang == Lang::De;
     let place = b.store.profile().map(|p| p.sync).unwrap_or_default();
+    let syncs = b.syncs().unwrap_or(false);
+    let passphrase = b.sync_secret_kept(Secret::Passphrase);
+    let password = b.sync_secret_kept(Secret::Password);
+    let text = state_text(&place, (&passphrase, &password), syncs, lang == Lang::De);
     let (kind, folder, url, user) = match &place {
         SyncPlace::None => ("none", "", "", ""),
         SyncPlace::Folder { path } => ("folder", path.as_str(), "", ""),
         SyncPlace::WebDav { url, user } => ("webdav", "", url.as_str(), user.as_str()),
-    };
-    let syncs = b.syncs().unwrap_or(false);
-    let passphrase = b.has_sync_secret(Secret::Passphrase);
-    let password = b.has_sync_secret(Secret::Password);
-    let text = match (kind, passphrase, syncs, de) {
-        ("none", _, _, true) => "Kein Ort zum Abgleichen gewählt.",
-        ("none", _, _, false) => "No place to sync with chosen.",
-        (_, false, _, true) => "Noch keine Passphrase: Sie verschlüsselt die Dateien.",
-        (_, false, _, false) => "No passphrase yet: it seals the files.",
-        (_, _, true, true) => "Dieses Gerät gleicht ab.",
-        (_, _, true, false) => "This device syncs.",
-        (_, _, false, true) => {
-            "Noch nicht abgeglichen: Beginne hier oder tritt mit einem leeren Profil bei."
-        }
-        (_, _, false, false) => "Not synced yet: begin here or join with an empty profile.",
     };
     json!({
         "kind": kind,
         "folder": folder,
         "url": url,
         "user": user,
-        "passphrase": passphrase,
-        "password": password,
+        "passphrase": passphrase == Ok(true),
+        "password": password == Ok(true),
         "syncs": syncs,
         "keyring": b.keys.keyring_home(),
         "text": text,
     })
+}
+
+/// The tile's line: a keyring that cannot be read, then what is missing, then what the next
+/// sync does.
+fn state_text(
+    place: &SyncPlace,
+    (passphrase, password): (&Result<bool, String>, &Result<bool, String>),
+    syncs: bool,
+    de: bool,
+) -> String {
+    let pick = |d: &str, e: &str| if de { d } else { e }.to_string();
+    if let Some(e) = passphrase.as_ref().err().or(password.as_ref().err()) {
+        return pick(
+            &format!("Der Schlüsselbund lässt sich nicht lesen: {e}"),
+            &format!("The keyring cannot be read: {e}"),
+        );
+    }
+    let webdav = match place {
+        SyncPlace::None => {
+            return pick(
+                "Kein Ort zum Abgleichen gewählt.",
+                "No place to sync with chosen.",
+            );
+        }
+        SyncPlace::WebDav { url, .. } if url.is_empty() => {
+            return pick("Noch keine WebDAV-Adresse.", "No WebDAV address yet.");
+        }
+        SyncPlace::WebDav { url, .. } if !sealed_way(url) => {
+            return pick(
+                "Die Adresse braucht https: Sonst ginge das Passwort lesbar hinaus.",
+                "The address needs https: else the password would go out readable.",
+            );
+        }
+        SyncPlace::WebDav { .. } => true,
+        SyncPlace::Folder { .. } => false,
+    };
+    if *passphrase != Ok(true) {
+        return pick(
+            "Noch keine Passphrase: Sie verschlüsselt die Dateien.",
+            "No passphrase yet: it seals the files.",
+        );
+    }
+    if webdav && *password != Ok(true) {
+        return pick(
+            "Noch kein Passwort für den WebDAV-Ordner.",
+            "No password for the WebDAV folder yet.",
+        );
+    }
+    if syncs {
+        return pick("Dieses Gerät gleicht ab.", "This device syncs.");
+    }
+    pick(
+        "Noch nicht abgeglichen: Beginne hier oder tritt mit einem leeren Profil bei.",
+        "Not synced yet: begin here or join with an empty profile.",
+    )
 }
 
 /// "What leaves the device?" (/LF711/): the tutor, recognition and voice from
@@ -116,6 +159,14 @@ fn error_words(e: &SyncError) -> (String, String) {
             "Erst Ort und Passphrase einrichten.".to_string(),
             "Set up a place and a passphrase first.".to_string(),
         ),
+        SyncError::Keyring(e) => (
+            format!("Der Schlüsselbund lässt sich nicht lesen: {e}"),
+            format!("The keyring cannot be read: {e}"),
+        ),
+        SyncError::Plain => (
+            "Die WebDAV-Adresse braucht https: Sonst ginge das Passwort lesbar hinaus.".into(),
+            "The WebDAV address needs https: else the password would go out readable.".into(),
+        ),
         SyncError::Taken => (
             "Hier gleicht schon ein Gerät ab: Tritt bei, mit einem leeren Profil.".into(),
             "A device syncs here already: join, with an empty profile.".into(),
@@ -181,6 +232,8 @@ mod tests {
         assert!(text(&b).contains("Passphrase"));
         b.set_sync_secret(Secret::Passphrase, "kirschbluete")
             .unwrap();
+        assert!(text(&b).contains("Passwort"));
+        b.set_sync_secret(Secret::Password, "geheim").unwrap();
         assert!(text(&b).contains("Beginne hier"));
 
         let rows = privacy(&b, Lang::De);
