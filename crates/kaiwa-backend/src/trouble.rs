@@ -130,7 +130,12 @@ mod tests {
         assert!(matches!(import, Err(crate::transfer::ImportError::Spare)));
 
         let rec = spare.set_setting("keepRecordings", "1", now);
-        assert!(matches!(rec, Err(crate::settings::SettingError::Spare)));
+        assert!(matches!(
+            rec,
+            Err(crate::settings::SettingError::Journal(
+                crate::journal::JournalError::Spare
+            ))
+        ));
         assert!(
             spare.store.events().unwrap().is_empty(),
             "a refused change is no event"

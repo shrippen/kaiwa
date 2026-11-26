@@ -141,6 +141,7 @@ use cxx_qt::Threading;
 use cxx_qt_lib::QString;
 use kaiwa_backend::Lang;
 use kaiwa_backend::Trouble;
+use kaiwa_backend::journal::JournalError;
 use kaiwa_backend::models::{self, Fetch};
 use kaiwa_backend::settings::{Felt, SettingError};
 use kaiwa_backend::words;
@@ -362,11 +363,15 @@ impl qobject::KaiwaApp {
     fn set_setting(mut self: Pin<&mut Self>, key: &QString, value: &QString) {
         let edited = state().set_setting(&key.to_string(), &value.to_string(), now());
         match edited {
-            Err(SettingError::NotSaved(e)) => self.as_mut().say_unreadable(&e),
+            Err(SettingError::Journal(JournalError::NotSaved(e))) => {
+                self.as_mut().say_unreadable(&e)
+            }
             // A key the page passes is always known: nothing changed, so say nothing.
             Err(SettingError::Unknown) => {}
-            Err(SettingError::NotApplied(e)) => self.as_mut().say_unapplied(&e),
-            Err(SettingError::Spare) => self.as_mut().say_spare(),
+            Err(SettingError::Journal(JournalError::NotApplied(e))) => {
+                self.as_mut().say_unapplied(&e)
+            }
+            Err(SettingError::Journal(JournalError::Spare)) => self.as_mut().say_spare(),
             Ok(()) => {}
         }
         // Also after a failure: the page shows what the profile now holds.
