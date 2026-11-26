@@ -38,6 +38,10 @@ pub const COST_STATE_PREFIX: &str = "cost.";
 
 /// Device state set by an import; a profile that took one takes no second (costs would double).
 const IMPORTED_STATE: &str = "imported";
+/// State: when a card was last reviewed (the break rule reads it).
+const REVIEWED: &str = "reviewed";
+/// State: the day the cards due after a break were spread.
+const REENTERED: &str = "reentered";
 
 /// What a month cost so far (/LF714/). The store owns the shape because the export carries it.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
@@ -377,6 +381,11 @@ pub struct Store {
     db: Connection,
 }
 
+/// A database error as the store's.
+fn db(e: rusqlite::Error) -> StoreError {
+    StoreError::Db(e)
+}
+
 fn moment(unix: i64, offset: i64) -> Moment {
     Moment::new(unix, offset as i32)
 }
@@ -408,11 +417,35 @@ impl Store {
         Ok(Self { db })
     }
 
-    /// Runs several writes as one transaction (fast, and all or nothing).
-    pub fn batch<T>(&self, f: impl FnOnce(&Store) -> Result<T>) -> Result<T> {
-        let tx = self.db.unchecked_transaction()?;
-        let out = f(self)?;
-        tx.commit()?;
+    /// Runs several writes as one transaction (fast, and all or nothing). Inside another
+    /// batch it is a savepoint: a failure takes back only its own writes. The outermost takes
+    /// the write lock first, so two processes on one file lose no change.
+    pub fn batch<T, E: From<StoreError>>(
+        &self,
+        f: impl FnOnce(&Store) -> std::result::Result<T, E>,
+    ) -> std::result::Result<T, E> {
+        self.db.busy_timeout(shared::BUSY_WAIT).map_err(db)?;
+        let outer = self.db.is_autocommit();
+        let begin = if outer {
+            "BEGIN IMMEDIATE"
+        } else {
+            "SAVEPOINT batch"
+        };
+        self.db.execute_batch(begin).map_err(db)?;
+        let out = f(self);
+        let end = match (&out, outer) {
+            (Ok(_), true) => "COMMIT",
+            (Ok(_), false) => "RELEASE batch",
+            (Err(_), true) => "ROLLBACK",
+            (Err(_), false) => "ROLLBACK TO batch; RELEASE batch",
+        };
+        let ended = self.db.execute_batch(end).map_err(db);
+        // A failed commit leaves the transaction open: take it back.
+        if ended.is_err() && outer && !self.db.is_autocommit() {
+            let _ = self.db.execute_batch("ROLLBACK");
+        }
+        let out = out?;
+        ended?;
         Ok(out)
     }
 
@@ -689,7 +722,7 @@ mod events;
 mod migrations;
 mod shared;
 mod talks;
-pub use events::Stored;
+pub use events::{Stored, stored_of};
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

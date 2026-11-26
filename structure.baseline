@@ -14,7 +14,7 @@ app/src/conversation.rs	start	length=127
 app/src/conversation.rs	submit	length=92
 crates/kaiwa-ai/src/privacy.rs	flows	length=84
 crates/kaiwa-backend/src/demo.rs	seed	ccn=28 length=195
-crates/kaiwa-backend/src/journal.rs	apply	ccn=16
+crates/kaiwa-backend/src/journal.rs	apply	ccn=17
 crates/kaiwa-backend/src/reminder.rs	reminder	ccn=21
 crates/kaiwa-backend/src/views.rs	-	lines=966
 crates/kaiwa-backend/src/views.rs	key_view	ccn=17
@@ -54,7 +54,6 @@ crates/kaiwa-sim/src/engine.rs	analysis_gaps	ccn=37 length=97
 crates/kaiwa-sim/src/engine.rs	check	ccn=24
 crates/kaiwa-sim/src/engine.rs	cost_limit	ccn=45 length=99
 crates/kaiwa-sim/src/engine.rs	free_talk	ccn=37 length=112
-crates/kaiwa-sim/src/engine.rs	marked_after_the_end	ccn=16
 crates/kaiwa-sim/src/engine.rs	skip	ccn=20
 crates/kaiwa-sim/src/engine.rs	skip_once	ccn=28
 crates/kaiwa-sim/src/hands_free.rs	hands_free	ccn=25 length=110
@@ -65,7 +64,7 @@ crates/kaiwa-sim/src/profile.rs	local_switch	ccn=25
 crates/kaiwa-sim/src/profile.rs	own_profile	ccn=79 length=201
 crates/kaiwa-sim/src/profile.rs	sick_pause	ccn=22
 crates/kaiwa-sim/src/review.rs	sheet	ccn=43 length=126
-crates/kaiwa-sim/src/run.rs	-	lines=1129
+crates/kaiwa-sim/src/run.rs	-	lines=1127
 crates/kaiwa-sim/src/run.rs	check	ccn=53 length=204
 crates/kaiwa-sim/src/run.rs	live_check	ccn=29 length=133
 crates/kaiwa-sim/src/run.rs	run_persona_with	ccn=25 length=99
@@ -89,4 +88,4 @@ crates/kaiwa-speech/src/mora.rs	variants	ccn=28 length=93
 crates/kaiwa-store/src/talks.rs	correct_in	ccn=19 length=89
 crates/kaiwa-store/src/talks.rs	record_on	length=84
 crates/kaiwa-store/src/talks.rs	recording_a_session_feeds_model_path_review_and_day	length=110
-crates/kaiwa-store/src/transfer.rs	import	ccn=42
+crates/kaiwa-store/src/transfer.rs	load_state	ccn=31

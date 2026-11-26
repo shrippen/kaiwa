@@ -33,6 +33,12 @@ impl std::fmt::Display for JournalError {
 
 impl std::error::Error for JournalError {}
 
+impl From<kaiwa_store::StoreError> for JournalError {
+    fn from(e: kaiwa_store::StoreError) -> Self {
+        Self::NotSaved(e.into())
+    }
+}
+
 /// What applying an event gave and what came with it.
 #[derive(Default)]
 pub(crate) struct Applied {
@@ -43,6 +49,15 @@ pub(crate) struct Applied {
     pub failed: Vec<anyhow::Error>,
 }
 
+/// Whether an event is applied as the learner acts or again when the journal is folded.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Pass {
+    Live,
+    /// Folding again: no recording is deleted by the state halfway through the fold; the
+    /// fold purges once with the state it ends with (`merge::refold`).
+    Fold,
+}
+
 /// An event that was journaled and applied.
 pub(crate) struct Logged {
     /// The event's id; a talk's id when it began one.
@@ -50,17 +65,27 @@ pub(crate) struct Logged {
     pub applied: Applied,
 }
 
-/// Journals `event`, then applies it. An event that cannot be written is not applied.
+/// Journals `event`, then applies it, in one transaction: an event that cannot be written
+/// is not applied, and one that cannot be applied is not kept. One whose effect alone
+/// failed (`NotApplied`) is kept, as it is applied.
 pub(crate) fn record(b: &Backend, event: &Event, at: Moment) -> Result<Logged, JournalError> {
-    let stored = b
-        .store
-        .append_event(event, at)
-        .map_err(|e| JournalError::NotSaved(e.into()))?;
-    let applied = apply(b, &stored.id, event, at)?;
-    Ok(Logged {
-        id: stored.id,
-        applied,
-    })
+    let (logged, effect) = b.store.batch(|st| {
+        let stored = st.append_event(event, at)?;
+        let (applied, effect) = match apply(b, &stored.id, event, at, Pass::Live) {
+            Ok(applied) => (applied, None),
+            Err(JournalError::NotApplied(e)) => (Applied::default(), Some(e)),
+            Err(e) => return Err(e),
+        };
+        let logged = Logged {
+            id: stored.id,
+            applied,
+        };
+        Ok((logged, effect))
+    })?;
+    match effect {
+        Some(e) => Err(JournalError::NotApplied(e)),
+        None => Ok(logged),
+    }
 }
 
 /// Does what `event` (journal id `id`) says, through the commands live uses.
@@ -69,11 +94,14 @@ pub(crate) fn apply(
     id: &str,
     event: &Event,
     at: Moment,
+    pass: Pass,
 ) -> Result<Applied, JournalError> {
     match event {
+        // The device's own settings are put back after the fold (`merge::refold`).
+        Event::Base { state } => plain(b.store.load_state(state)),
         // A card that is gone changes nothing, as live.
         Event::Review { text, grade } => plain(b.store.review(text, *grade, at)),
-        Event::Setting { key, value } => setting(b, key, value, at),
+        Event::Setting { key, value } => setting(b, key, value, at, pass),
         Event::TalkBegun { state } => plain(b.store.begin_session(id, state, at)),
         Event::TalkSaved { talk, state } => plain(b.store.save_session(talk, state)),
         Event::TalkFinished {
@@ -82,7 +110,7 @@ pub(crate) fn apply(
             started,
             ended,
             day,
-        } => finish_talk(b, talk, state, (*started, *ended, *day)),
+        } => finish_talk(b, talk, state, (*started, *ended, *day), pass),
         Event::TalkCorrected { talk, state } => corrected(b, talk, state),
         Event::Placed { model } => plain(b.store.set_placement(model.clone())),
         Event::PlacementLeftOut => plain(b.store.update_profile(|p| p.placed = true)),
@@ -131,11 +159,17 @@ fn plain<T, E: Into<anyhow::Error>>(done: Result<T, E>) -> Result<Applied, Journ
 }
 
 /// A key this version does not know (from a newer device) changes nothing.
-fn setting(b: &Backend, key: &str, value: &str, at: Moment) -> Result<Applied, JournalError> {
+fn setting(
+    b: &Backend,
+    key: &str,
+    value: &str,
+    at: Moment,
+    pass: Pass,
+) -> Result<Applied, JournalError> {
     let Some(key) = Key::parse(key) else {
         return Ok(Applied::default());
     };
-    b.change_setting(key, value, at)?;
+    b.change_setting(key, value, at, pass)?;
     Ok(Applied::default())
 }
 
@@ -157,6 +191,7 @@ fn finish_talk(
     talk: &str,
     state: &SessionState,
     (started, ended, day): (Moment, Moment, Day),
+    pass: Pass,
 ) -> Result<Applied, JournalError> {
     let session = restored(b, state)?;
     let curriculum = Some(&b.curriculum);
@@ -164,13 +199,14 @@ fn finish_talk(
         .store
         .record_on(talk, &session, started, ended, day, curriculum)
         .map_err(not_saved)?;
-    let failed = [
-        b.track_grammar(&session, ended),
-        b.purge_recordings(ended).map(|_| ()),
-    ];
+    let mut failed: Vec<anyhow::Error> =
+        b.track_grammar(&session, ended).err().into_iter().collect();
+    if pass == Pass::Live {
+        failed.extend(b.purge_recordings(ended).err());
+    }
     Ok(Applied {
         recorded: Some(recorded),
-        failed: failed.into_iter().filter_map(Result::err).collect(),
+        failed,
     })
 }
 
@@ -278,7 +314,7 @@ mod tests {
 
         let folded = backend("folded");
         for e in &events {
-            apply(&folded, &e.id, &e.event, e.at).unwrap();
+            apply(&folded, &e.id, &e.event, e.at, Pass::Live).unwrap();
         }
 
         // Only what the journal holds is folded: the device settings differ.
@@ -300,7 +336,7 @@ mod tests {
 
     fn fold(into: &Backend, events: &[kaiwa_store::Stored]) {
         for e in events {
-            apply(into, &e.id, &e.event, e.at).unwrap();
+            apply(into, &e.id, &e.event, e.at, Pass::Live).unwrap();
         }
     }
 
@@ -461,6 +497,20 @@ mod tests {
         let folded = backend("acts-folded");
         fold(&folded, &events);
         assert_eq!(export(&live), export(&folded));
+    }
+
+    #[test]
+    fn an_event_that_cannot_be_applied_is_not_journaled() {
+        // A correction of a talk this profile does not have: applying it fails.
+        let b = backend("unapplied");
+        let state = play(&b, 1).session().snapshot();
+        let event = Event::TalkCorrected {
+            talk: "gone".into(),
+            state,
+        };
+        let before = b.store.events().unwrap().len();
+        assert!(record(&b, &event, T0).is_err());
+        assert_eq!(b.store.events().unwrap().len(), before);
     }
 
     #[test]

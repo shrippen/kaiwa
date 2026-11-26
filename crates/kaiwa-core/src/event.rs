@@ -14,6 +14,9 @@ use crate::srs::Grade;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Event {
+    /// The journal's start when the profile begins to sync: its state then, as an export
+    /// without the journal (`spec/export.schema.json`). Folding begins with it.
+    Base { state: serde_json::Value },
     /// A review card answered: its text and the grade the answer earned.
     Review { text: String, grade: Grade },
     /// A setting changed, as `Backend::set_setting` takes it.

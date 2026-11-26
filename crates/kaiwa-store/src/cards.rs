@@ -52,13 +52,13 @@ impl Store {
             .optional()?;
         let talked = r.map(|(u, o)| moment(u, o));
         // Kept by `review`, so the start page does not read every item for it (/LL020/).
-        let reviewed: Option<Moment> = self.state_value("reviewed")?;
+        let reviewed: Option<Moment> = self.state_value(crate::REVIEWED)?;
         Ok(talked.max(reviewed))
     }
 
     /// The day of the last re-entry after a break, if there was one.
     pub fn reentered(&self) -> Result<Option<Day>> {
-        self.state_value("reentered")
+        self.state_value(crate::REENTERED)
     }
 
     /// The re-entry after a break (/LF231/, T-07), when [`srs::new_break`] says it is one: ten
@@ -78,7 +78,7 @@ impl Store {
                     st.put_item(item)?;
                 }
             }
-            st.set_state_value("reentered", &now.day())
+            st.set_state_value(crate::REENTERED, &now.day())
         };
         if self.db.is_autocommit() {
             self.batch(write)
@@ -126,7 +126,7 @@ impl Store {
         };
         item.review(grade, now);
         self.put_item(&item)?;
-        self.set_state_value("reviewed", &now)?;
+        self.set_state_value(crate::REVIEWED, &now)?;
         if let Some(unit) = &item.unit {
             let mut l = self.learning()?;
             l.course.reviewed(unit, grade != Grade::Again);

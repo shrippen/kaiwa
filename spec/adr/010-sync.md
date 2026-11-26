@@ -1,6 +1,6 @@
 # ADR-010: Sync zwischen Geräten
 
-**Status:** Angenommen (Eigentümer, 17.11.2026; Schritt 1 bis 3 umgesetzt) · **Bezug:** /LF700/, /LF507/, /LF710/, /LF711/, /LF713/, `jonas_sync`, `jonas_local_switch`
+**Status:** Angenommen (Eigentümer, 17.11.2026; Schritt 1 bis 4 umgesetzt) · **Bezug:** /LF700/, /LF507/, /LF710/, /LF711/, /LF713/, `jonas_sync`, `jonas_local_switch`
 
 ## Kontext
 
@@ -39,19 +39,19 @@ Das Profil ist eine SQLite-Datei. Lernstand (`learning`), Karten (`items`) und T
 1. Diese ADR; Tabelle `events` mit Geräte-Id; `Event` im Kern; `journal::apply` für Wiederholung und Einstellung; Test „Faltung = live“.
 2. Gespräche als Ereignisse über `Session::restore`; Gesprächs-Id als Text; Export `kaiwa-export/4` mit dem Journal (es sind Daten des Lernenden, /LF710/), Schema in `spec/export.schema.json`.
 3. Die übrigen Ereignisse; danach schreibt nichts mehr am Journal vorbei. Umgesetzt: Einstufung, eigene Einschätzung einer Fähigkeit, Überspringen, Wort in die Wiederholung, Pause und ihr Ende, Widerspruch, Kosten, Rückkehr nach einer Pause (das Verteilen geschieht nicht mehr beim Lesen im Speicher, sondern als Ereignis, bevor das Backend Fälliges zeigt). Am Journal vorbei schreiben nur noch Daten des Geräts (Geräte-Id, gemessene Wartezeiten, Stand der Erinnerung, Aufnahmen als Dateien, die gerätebezogenen Einstellungen), das Anlegen eines Profils mit Name und Sprache (sein Stand wird `Base`), der Import (beide Schritt 4) und Demo und Simulation.
-4. `Backend::merge` und Beitritt, mit zwei Profilen getestet: beide üben am selben Tag getrennt, danach sind beide gleich und die Tageszähler die Summe.
+4. `Backend::merge` und Beitritt, mit zwei Profilen getestet: beide üben am selben Tag getrennt, danach sind beide gleich und die Tageszähler die Summe. Umgesetzt (`kaiwa-backend/src/merge.rs`): `share_base` macht vor dem ersten Sync den Stand zu `Base` und ersetzt damit das Journal davor; so sind auch Profile von vor dem Journal, offene Gespräche `old-<n>`, Importe und das Anlegen mit Name und Sprache faltbar. `merge` nimmt ein fremdes Journal: Ein leeres Profil ohne `Base` tritt bei (sein Journal wird ersetzt), eines mit derselben `Base` nimmt die neuen Ereignisse. Danach wird in einer Transaktion neu gefaltet: Abgeleitetes geleert, jedes Ereignis in einem eigenen Savepoint angewendet (ein scheiterndes wird übersprungen), die gerätebezogenen Einstellungen des Geräts zurückgesetzt. `Base` steht beim Falten immer zuerst, auch wenn eine Uhr nachgeht. Abgelehnt werden: ein Journal ohne oder mit anderer `Base` (anderes Profil), ein volles Profil ohne `Base`, unlesbare Ereignisse (neueres Kaiwa); das Profil bleibt dann, wie es war. Ein Profil, das synchronisiert, nimmt keinen Import mehr.
 5. Baustein `kaiwa-sync` mit Ordner, Speicher und `age`; `Backend::sync_now`; `jonas_sync` in `kaiwa-sim` über einen Ordner. Ändert die Schichten in `ARCHITECTURE.md` (vom Eigentümer bestätigt, E-2, 17.11.2026).
 6. WebDAV, Kachel in den Einstellungen, Zeile in „Was verlässt das Gerät?“ (/LF711/).
 
 ## Risiken
 
 - Ein Schreibweg ohne Ereignis: Faltung und Live-Zustand laufen auseinander. Der Test aus Schritt 1 zeigt es.
-- Ereignis schreiben und anwenden sind noch zwei Transaktionen. Scheitert das Anwenden, steht das Ereignis trotzdem im Journal und zählt beim Neufalten mit. Vor Schritt 4 laufen beide in einer Transaktion (ein Savepoint, weil die Befehle ihre eigene öffnen).
+- Ereignis schreiben und anwenden laufen seit Schritt 4 in einer Transaktion; die Transaktionen der Befehle darin sind Savepoints. Scheitert nur eine Folge (Aufnahmen löschen), bleibt das Ereignis, weil es angewendet ist.
 - Geräte mit verschiedenem Programmstand falten verschieden: Formatversion, siehe oben.
 - Eine falsch gehende Uhr verschiebt die Reihenfolge; das Ergebnis bleibt auf allen Geräten gleich, kann aber überraschen.
 - Die Korrektur nach dem Ende (V-05) ersetzt im Journal das beendete Gespräch; die gespeicherte Aufzeichnung davor kann dann entfallen. Eigener Schritt.
 - Größe: Transkripte liegen im Journal; verdichtet (neue `base`) wird erst, wenn es messbar stört.
-- Vor Schritt 4 (offen aus dem Review von Schritt 2): Ein offenes Gespräch von vor dem Journal läuft als `old-<n>` ohne `TalkBegun` weiter; erst `Base` macht es faltbar. Ein Import in ein Profil mit Journal schreibt am Journal vorbei; der Beitritt nimmt nur ein leeres Journal. Eine Korrektur, die ein späteres Gespräch überholt hat, steht als scheiterndes Ereignis im Journal; das Neufalten überspringt einzelne Fehler. Das Wiederherstellen eines Gesprächs beim Falten braucht keinen Tutor.
+- Neufalten ersetzt die Gespräche aus dem Journal. Läuft in einer Oberfläche gerade ein Gespräch, darf `merge` nicht laufen; das regelt `sync_now` (Schritt 5).
 
 ## Entschieden (Eigentümer, 17.11.2026)
 

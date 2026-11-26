@@ -5,7 +5,7 @@ use kaiwa_core::session::SessionState;
 use kaiwa_core::{Event, Moment};
 use rusqlite::params;
 
-use crate::{Result, Store};
+use crate::{COST_STATE_PREFIX, REENTERED, REVIEWED, Result, Store, StoreError};
 
 /// Device state: this device's id in the journal, made once.
 const DEVICE_STATE: &str = "device";
@@ -95,10 +95,12 @@ impl Store {
             .collect())
     }
 
-    /// All events in fold order: time, then device, then number.
+    /// All events in fold order: the start (`Base`) first, whatever its clock said, then
+    /// time, then device, then number.
     pub fn events(&self) -> Result<Vec<Stored>> {
         let mut stmt = self.db.prepare(
-            "SELECT id, device, seq, at, offset_min, body FROM events ORDER BY at, device, seq",
+            "SELECT id, device, seq, at, offset_min, body FROM events
+             ORDER BY json_extract(body, '$.kind') = 'base' DESC, at, device, seq",
         )?;
         let rows: Vec<(String, String, i64, i64, i32, String)> = stmt
             .query_map([], |r| {
@@ -124,6 +126,74 @@ impl Store {
             })
             .collect()
     }
+
+    /// Makes `base` the whole journal: what came before is in its state. Its number follows
+    /// the ones before, so a talk begun later never takes the id of one in `base`.
+    pub fn start_journal(&self, base: &Event, at: Moment) -> Result<Stored> {
+        self.batch(|st| {
+            let stored = st.append_event(base, at)?;
+            st.db
+                .execute("DELETE FROM events WHERE id != ?1", params![stored.id])?;
+            Ok(stored)
+        })
+    }
+
+    /// Adds the events the journal does not have yet (by id); how many were new.
+    pub fn add_events(&self, events: &[Stored]) -> Result<usize> {
+        self.batch(|st| {
+            let mut added = 0;
+            for e in events {
+                added += st.db.execute(
+                    "INSERT OR IGNORE INTO events (id, device, seq, at, offset_min, body)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                    params![
+                        e.id,
+                        e.device,
+                        e.seq,
+                        e.at.unix,
+                        e.at.offset_min,
+                        serde_json::to_string(&e.event)?
+                    ],
+                )?;
+            }
+            Ok(added)
+        })
+    }
+
+    /// Takes another device's journal in place of this one's (joining).
+    pub fn replace_events(&self, events: &[Stored]) -> Result<()> {
+        self.batch(|st| {
+            st.db.execute("DELETE FROM events", [])?;
+            st.add_events(events).map(|_| ())
+        })
+    }
+
+    /// Empties what folding the journal makes again: the learner's state, the profile and
+    /// the costs. The journal and the device's own state (its id, waits, reminders) stay.
+    pub fn clear_folded(&self) -> Result<()> {
+        self.db.execute_batch(&format!(
+            "DELETE FROM learning; DELETE FROM sessions; DELETE FROM items; DELETE FROM days;
+             DELETE FROM pauses; DELETE FROM disputes;
+             DELETE FROM settings WHERE key IN ('profile', 'state.{REVIEWED}', 'state.{REENTERED}')
+                OR key LIKE 'state.{COST_STATE_PREFIX}%';"
+        ))?;
+        Ok(())
+    }
+}
+
+/// An event as the export and another device's journal hold it.
+pub fn stored_of(e: &serde_json::Value) -> Result<Stored> {
+    let wrong = || StoreError::WrongFormat("events".into());
+    let text = |k: &str| e[k].as_str().map(String::from).ok_or_else(wrong);
+    let num = |k: &str| e[k].as_i64().ok_or_else(wrong);
+    let at = i32::try_from(num("offset_min")?).map_err(|_| wrong())?;
+    Ok(Stored {
+        id: text("id")?,
+        device: text("device")?,
+        seq: num("seq")?,
+        at: Moment::new(num("at")?, at),
+        event: serde_json::from_value(e["body"].clone()).map_err(|_| wrong())?,
+    })
 }
 
 #[cfg(test)]
