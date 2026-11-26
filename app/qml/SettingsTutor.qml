@@ -131,8 +131,8 @@ KanteSettingGroup {
             + host.t(" Geschätzt aus dem Preis, den der Anbieter meldet, sonst aus den Listenpreisen. Am Limit antwortet der Cloud-Tutor bis Monatsende nicht mehr.",
                      " Estimated from the price the provider reports, else from list prices. At the limit the cloud tutor stops answering until the month ends.")
         Choice {
-            readonly property var values: [null, 200, 500, 1000, 2000]
-            model: [host.t("Ohne", "None"), "2 €", "5 €", "10 €", "20 €"]
+            readonly property var values: host.p.costSteps || []
+            model: values.map(function (c) { return c === null ? host.t("Ohne", "None") : c / 100 + " €" })
             shown: Math.max(0, values.indexOf(host.p.costLimit === undefined ? null : host.p.costLimit))
             onActivated: function (i) { host.kaiwa.setSetting("costLimit", values[i] === null ? "" : String(values[i])) }
         }
