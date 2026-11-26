@@ -13,6 +13,11 @@ KanteSettingGroup {
     readonly property var s: host.p.sync || ({ kind: "none" })
     // The kind of place the rows show; a pick shows its rows before anything is saved.
     property string kind: s.kind || "none"
+    // Where a secret is kept: the keyring, or, for a profile without one, until Kaiwa quits.
+    readonly property string keptText: s.keyring ? host.t("Liegt im Schlüsselbund.", "In the keyring.")
+                                                 : host.t("Gilt bis zum Beenden.", "Holds until Kaiwa quits.")
+    readonly property string keepText: s.keyring ? host.t("Im Schlüsselbund speichern", "Keep in the keyring")
+                                                 : host.t("Übernehmen", "Use")
     Layout.fillWidth: true
     countText: host.counted(count)
 
@@ -78,7 +83,7 @@ KanteSettingGroup {
     SettingRow {
         visible: group.kind === "webdav"
         title: host.t("Passwort", "Password")
-        hint: group.s.password ? host.t("Liegt im Schlüsselbund.", "In the keyring.") : ""
+        hint: group.s.password ? group.keptText : ""
         RowLayout {
             spacing: KanteStyle.unit(8)
             KanteTextField {
@@ -88,7 +93,7 @@ KanteSettingGroup {
                 Accessible.name: host.t("WebDAV-Passwort", "WebDAV password")
             }
             KanteButton {
-                text: host.t("Im Schlüsselbund speichern", "Keep in the keyring")
+                text: group.keepText
                 enabled: password.text.trim().length > 0
                 onClicked: { host.kaiwa.setSyncSecret("password", password.text); password.text = "" }
             }
@@ -99,7 +104,7 @@ KanteSettingGroup {
         title: host.t("Passphrase", "Passphrase")
         hint: host.t("Verschlüsselt die Dateien (age). Auf jedem Gerät dieselbe; ohne sie lassen sich die Dateien nicht öffnen, auch nicht von Kaiwa.",
                      "Seals the files (age). The same on every device; without it nobody can open the files, Kaiwa neither.")
-              + (group.s.passphrase ? host.t(" Liegt im Schlüsselbund.", " In the keyring.") : "")
+              + (group.s.passphrase ? " " + group.keptText : "")
         RowLayout {
             spacing: KanteStyle.unit(8)
             KanteTextField {
@@ -109,7 +114,7 @@ KanteSettingGroup {
                 Accessible.name: host.t("Passphrase", "Passphrase")
             }
             KanteButton {
-                text: host.t("Im Schlüsselbund speichern", "Keep in the keyring")
+                text: group.keepText
                 enabled: passphrase.text.trim().length > 0
                 onClicked: { host.kaiwa.setSyncSecret("passphrase", passphrase.text); passphrase.text = "" }
             }

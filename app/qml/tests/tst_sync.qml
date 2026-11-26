@@ -58,7 +58,7 @@ Item {
         }
 
         function test_the_passphrase_goes_to_the_keyring_through_its_button() {
-            const t = page({ kind: "folder", folder: "/home/jonas/Kaiwa", passphrase: false, syncs: false, text: "" })
+            const t = page({ kind: "folder", folder: "/home/jonas/Kaiwa", passphrase: false, syncs: false, keyring: true, text: "" })
             const field = Tree.find(t.page, i => i.echoMode !== undefined && i.Accessible.name === "Passphrase")
             verify(field !== null, "no passphrase field")
             field.text = "kirschbluete"
@@ -66,6 +66,16 @@ Item {
             click(t.page, keep)
             compare(JSON.stringify(t.kaiwa.last("setSyncSecret")), JSON.stringify(["passphrase", "kirschbluete"]))
             compare(field.text, "")
+        }
+
+        function test_without_a_keyring_the_tile_says_until_quitting() {
+            const t = page({ kind: "folder", folder: "/home/jonas/Kaiwa", passphrase: true, syncs: false, keyring: false, text: "" })
+            // The tutor tile has a keyring button of its own: only this tile counts.
+            const tile = Tree.find(t.page, i => i.title === "Abgleich" && i.countText !== undefined)
+            verify(button(tile, "Im Schlüsselbund speichern") === null, "a keyring that is not there")
+            verify(button(tile, "Übernehmen") !== null, "no button to use the passphrase")
+            const row = Tree.find(t.page, i => i.title === "Passphrase")
+            verify(row.hint.indexOf("Gilt bis zum Beenden") >= 0, row.hint)
         }
 
         function test_without_a_place_only_the_choice_shows() {

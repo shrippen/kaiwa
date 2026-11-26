@@ -112,22 +112,114 @@ pub struct Synced {
     pub devices: usize,
 }
 
+/// A sync in stages (ADR-010): [`Backend::sync_job`] and [`Backend::sync_take`] need the
+/// profile; [`SyncJob::fetch`] and [`SyncJob::send`] move and seal files, which takes
+/// seconds (scrypt, the network), and need no backend. A front end holds its profile only
+/// for the two short stages:
+///
+/// ```text
+///   sync_job (profile) ─► fetch (files) ─► sync_take (profile) ─► send (files)
+/// ```
+pub struct SyncJob {
+    place: Box<dyn Remote + Send>,
+    passphrase: String,
+    /// This device's file.
+    own: String,
+    start: Start,
+}
+
+/// The other devices' journals, opened.
+pub struct Fetched(Vec<(String, Vec<Value>)>);
+
+/// What goes out after the merge: this device's file, or nothing while an empty profile waits.
+pub struct Outgoing {
+    plain: Option<Vec<u8>>,
+    synced: Synced,
+}
+
+impl SyncJob {
+    /// Reads and opens the other devices' files.
+    pub fn fetch(&self) -> Result<Fetched, SyncError> {
+        fetch(&*self.place, &self.own, &self.passphrase)
+    }
+
+    /// Seals and writes this device's file.
+    pub fn send(&self, out: Outgoing) -> Result<Synced, SyncError> {
+        send(&*self.place, &self.own, &self.passphrase, out)
+    }
+}
+
 impl Backend {
-    /// Syncs with the place set up in the settings. `start` counts only while the device does
-    /// not sync yet. A front end calls it while no talk is open: the merge rebuilds the talks.
+    /// Syncs with the place set up in the settings, all stages at once. `start` counts only
+    /// while the device does not sync yet. A front end calls it while no talk is open: the
+    /// merge rebuilds the talks.
     pub fn sync_now(&self, start: Start, now: Moment) -> Result<Synced, SyncError> {
-        let pass = self.sync_secret(Secret::Passphrase)?;
+        let job = self.sync_job(start)?;
+        let fetched = job.fetch()?;
+        let out = self.sync_take(&job, fetched, now)?;
+        job.send(out)
+    }
+
+    /// The first stage: the place, the passphrase and this device's file from the settings.
+    pub fn sync_job(&self, start: Start) -> Result<SyncJob, SyncError> {
+        let passphrase = self.sync_secret(Secret::Passphrase)?;
         let profile = self.store.profile().map_err(|e| not_saved(e.into()))?;
-        match profile.sync {
-            SyncPlace::None => Err(SyncError::NotSetUp),
-            SyncPlace::Folder { path } => self.sync_with(&Folder::new(path), &pass, start, now),
-            SyncPlace::WebDav { url, .. } if url.is_empty() => Err(SyncError::NotSetUp),
-            SyncPlace::WebDav { url, .. } if !sealed_way(&url) => Err(SyncError::Plain),
+        let place: Box<dyn Remote + Send> = match profile.sync {
+            SyncPlace::None => return Err(SyncError::NotSetUp),
+            SyncPlace::Folder { path } => Box::new(Folder::new(path)),
+            SyncPlace::WebDav { url, .. } if url.is_empty() => return Err(SyncError::NotSetUp),
+            SyncPlace::WebDav { url, .. } if !sealed_way(&url) => return Err(SyncError::Plain),
             SyncPlace::WebDav { url, user } => {
                 let password = self.sync_secret(Secret::Password)?;
-                self.sync_with(&WebDav::new(&url, &user, &password), &pass, start, now)
+                Box::new(WebDav::new(&url, &user, &password))
             }
+        };
+        Ok(SyncJob {
+            place,
+            passphrase,
+            own: self.own_file()?,
+            start,
+        })
+    }
+
+    /// The third stage: the first sync as the learner chose, then the other journals merged;
+    /// what goes out.
+    pub fn sync_take(
+        &self,
+        job: &SyncJob,
+        fetched: Fetched,
+        now: Moment,
+    ) -> Result<Outgoing, SyncError> {
+        self.take(fetched, job.start, now)
+    }
+
+    fn own_file(&self) -> Result<String, SyncError> {
+        let device = self.store.device().map_err(|e| not_saved(e.into()))?;
+        Ok(format!("{device}{FILE_END}"))
+    }
+
+    fn take(&self, fetched: Fetched, start: Start, now: Moment) -> Result<Outgoing, SyncError> {
+        let devices = fetched.0.len();
+        if !self.syncs().map_err(not_saved)? && self.first_sync(start, devices == 0, now)? {
+            let synced = Synced {
+                taken: 0,
+                devices: 0,
+            };
+            return Ok(Outgoing {
+                plain: None,
+                synced,
+            });
         }
+        let mut taken = 0;
+        for (_, journal) in &fetched.0 {
+            taken += self.merge(journal, now)?;
+        }
+        let file = json!({ "format": FORMAT, "events": self.journal().map_err(not_saved)? });
+        let plain = serde_json::to_vec(&file).map_err(|e| not_saved(e.into()))?;
+        Ok(Outgoing {
+            plain: Some(plain),
+            synced: Synced { taken, devices },
+        })
     }
 
     /// Keeps a secret of the sync in the keyring; a profile without a keyring home (the
@@ -170,7 +262,8 @@ impl Backend {
             .ok_or(SyncError::NotSetUp)
     }
 
-    /// [`Backend::sync_now`] with any place.
+    /// All stages with any place (tests).
+    #[cfg(test)]
     pub(crate) fn sync_with(
         &self,
         place: &dyn Remote,
@@ -178,31 +271,10 @@ impl Backend {
         start: Start,
         now: Moment,
     ) -> Result<Synced, SyncError> {
-        let own = format!(
-            "{}{FILE_END}",
-            self.store.device().map_err(|e| not_saved(e.into()))?
-        );
-        let others: Vec<String> = place.list()?.into_iter().filter(|n| *n != own).collect();
-        if !self.syncs().map_err(not_saved)? && self.first_sync(start, others.is_empty(), now)? {
-            return Ok(Synced {
-                taken: 0,
-                devices: 0,
-            });
-        }
-
-        let mut taken = 0;
-        for name in &others {
-            let journal = read(place, name, passphrase)?;
-            taken += self.merge(&journal, now)?;
-        }
-
-        let file = json!({ "format": FORMAT, "events": self.journal().map_err(not_saved)? });
-        let plain = serde_json::to_vec(&file).map_err(|e| not_saved(e.into()))?;
-        place.put(&own, &kaiwa_sync::seal(&plain, passphrase)?)?;
-        Ok(Synced {
-            taken,
-            devices: others.len(),
-        })
+        let own = self.own_file()?;
+        let fetched = fetch(place, &own, passphrase)?;
+        let out = self.take(fetched, start, now)?;
+        send(place, &own, passphrase, out)
     }
 
     /// The first sync of a device as the learner chose; whether it waits. An empty profile
@@ -236,6 +308,29 @@ pub(crate) fn sealed_way(url: &str) -> bool {
 
 fn not_saved(e: anyhow::Error) -> SyncError {
     SyncError::Merge(MergeError::NotSaved(e))
+}
+
+/// Reads and opens every other device's file in `place`.
+fn fetch(place: &dyn Remote, own: &str, passphrase: &str) -> Result<Fetched, SyncError> {
+    let mut out = Vec::new();
+    for name in place.list()?.into_iter().filter(|n| n != own) {
+        let journal = read(place, &name, passphrase)?;
+        out.push((name, journal));
+    }
+    Ok(Fetched(out))
+}
+
+/// Seals and writes `own`, unless the sync waits.
+fn send(
+    place: &dyn Remote,
+    own: &str,
+    passphrase: &str,
+    out: Outgoing,
+) -> Result<Synced, SyncError> {
+    if let Some(plain) = out.plain {
+        place.put(own, &kaiwa_sync::seal(&plain, passphrase)?)?;
+    }
+    Ok(out.synced)
 }
 
 /// The events of another device's file.
@@ -397,6 +492,29 @@ mod tests {
             pc.sync_with(&place, PASS, Start::Here, T0),
             Err(SyncError::Newer(_))
         ));
+    }
+
+    #[test]
+    fn files_move_while_the_backend_is_free() {
+        // The slow stages run in another thread while the profile takes a setting.
+        let b = with_card("free");
+        let folder = b.dir.join("shared");
+        std::fs::create_dir_all(&folder).unwrap();
+        b.set_setting("syncFolder", folder.to_str().unwrap(), T0)
+            .unwrap();
+        b.set_sync_secret(Secret::Passphrase, PASS).unwrap();
+        let job = b.sync_job(Start::Here).unwrap();
+        let fetching = std::thread::spawn(move || {
+            let fetched = job.fetch();
+            (job, fetched)
+        });
+        b.set_setting("goal", "20", T0).unwrap();
+        let (job, fetched) = fetching.join().unwrap();
+        let out = b.sync_take(&job, fetched.unwrap(), T0).unwrap();
+        let sending = std::thread::spawn(move || job.send(out));
+        b.set_setting("goal", "15", T0).unwrap();
+        sending.join().unwrap().unwrap();
+        assert_eq!(Folder::new(&folder).list().unwrap().len(), 1);
     }
 
     #[test]
