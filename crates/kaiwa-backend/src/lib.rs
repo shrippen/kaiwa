@@ -532,11 +532,20 @@ impl Backend {
     /// A new talk on `scenario` as this profile has it: its tutor, its amount of feedback, the
     /// difficulty the regulator set, the unit's grammar and the learner's own speaking level,
     /// which a free talk names to the character (/LF116/). With it: whether the answers are
-    /// the recorded ones. The app and `kaiwa-sim` both start a talk here.
+    /// the recorded ones. The app and the main path of `kaiwa-sim` both start a talk here.
     pub fn new_talk(&self, scenario: Scenario) -> anyhow::Result<(kaiwa_core::Session, bool)> {
+        let (provider, demo) = self.provider(&scenario.id);
+        Ok((self.talk_with(scenario, provider)?, demo))
+    }
+
+    /// A new talk on `scenario` with `provider`, the rest as the profile has it.
+    fn talk_with(
+        &self,
+        scenario: Scenario,
+        provider: Arc<dyn ChatProvider>,
+    ) -> anyhow::Result<kaiwa_core::Session> {
         let profile = self.store.profile()?;
         let learning = self.store.learning()?;
-        let (provider, demo) = self.provider(&scenario.id);
         let grammar = self.unit_grammar(&scenario.id);
         let unit_jlpt = self.unit_jlpt(&scenario.id);
         let session =
@@ -545,7 +554,7 @@ impl Backend {
                 .with_grammar(grammar)
                 .with_unit_jlpt(unit_jlpt)
                 .with_learner_level(learning.model.level(kaiwa_core::learner::Skill::Speaking));
-        Ok((session, demo))
+        Ok(session)
     }
 
     /// A talk continued from its kept `state` (/LF121/), with what the state does not keep:

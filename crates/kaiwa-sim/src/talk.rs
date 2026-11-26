@@ -1,7 +1,9 @@
-//! Where the simulation starts a talk on recorded tutor answers: the
-//! scenario and the recorded tutor come from `kaiwa-backend`, the same ones the demo build
-//! uses, and every such talk is made by [`start`]. Talks with another tutor (`days.rs`, the
-//! free talk in `engine.rs`) do not come through here.
+//! Where the simulation starts a talk. The main path of every persona comes through
+//! [`for_persona`]: the persona's profile, then the talk as the backend builds it, on the
+//! recorded or the live tutor. The other checks on recorded tutor answers use [`start`],
+//! with the scenario and the recorded tutor from `kaiwa-backend`, the ones the demo build
+//! uses. Talks with another tutor (`days.rs`, the free talk in `engine.rs`) and the check
+//! that marks turns after the end (`Talk::begin` in `engine.rs`) do not come through here.
 
 use std::sync::Arc;
 
@@ -30,6 +32,25 @@ pub fn start(
 ) -> Session {
     let unit_jlpt = kaiwa_backend::bundled_unit_jlpt(&scenario.id);
     Session::new(scenario, provider, amount, lang).with_unit_jlpt(unit_jlpt)
+}
+
+/// A talk on `scenario` as the backend starts it, on the profile of `persona`: the amount of
+/// corrections is the persona's choice (the placement keeps it), then come its levels. The
+/// pair is the amount and the language the persona chose.
+pub fn for_persona(
+    b: &kaiwa_backend::Backend,
+    persona: &serde_json::Value,
+    scenario: Scenario,
+    provider: Arc<dyn ChatProvider>,
+    (amount, lang): (Amount, Lang),
+) -> Result<Session> {
+    let profile = kaiwa_store::Profile {
+        ui_lang: lang,
+        ..b.seed().set_feedback(amount)?
+    };
+    b.seed().set_profile(&profile)?;
+    b.set_placement(crate::engine::simulate_placement(persona).result())?;
+    b.seed().talk_with(scenario, provider)
 }
 
 /// A German talk on scenario `id` against its recorded answers.
