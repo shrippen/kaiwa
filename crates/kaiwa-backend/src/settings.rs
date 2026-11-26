@@ -131,23 +131,15 @@ pub use kaiwa_core::difficulty::Felt;
 /// Why a setting did not fully take.
 #[derive(Debug)]
 pub enum SettingError {
-    /// The profile could not be read or written: the setting is as it was.
-    NotSaved(anyhow::Error),
-    /// The setting is saved, but what it sets off failed (today's goal, deleting recordings).
-    NotApplied(anyhow::Error),
-    /// The profile could not be opened; the setting would delete recordings of the real one.
-    Spare,
+    /// The journal did not take it: not saved, not applied, or refused on a spare profile.
+    Journal(JournalError),
     /// No setting has that name; nothing is journaled or changed.
     Unknown,
 }
 
 impl From<JournalError> for SettingError {
     fn from(e: JournalError) -> Self {
-        match e {
-            JournalError::NotSaved(e) => Self::NotSaved(e),
-            JournalError::NotApplied(e) => Self::NotApplied(e),
-            JournalError::Spare => Self::Spare,
-        }
+        Self::Journal(e)
     }
 }
 
@@ -540,7 +532,10 @@ mod tests {
         }
         let r = b.set_setting("keepRecordings", "", T0);
         std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
-        assert!(matches!(r, Err(SettingError::NotApplied(_))), "{r:?}");
+        assert!(
+            matches!(r, Err(SettingError::Journal(JournalError::NotApplied(_)))),
+            "{r:?}"
+        );
         assert_eq!(b.store.profile().unwrap().keep_recordings_days, None);
     }
 
