@@ -157,7 +157,7 @@ use kaiwa_backend::Trouble;
 use kaiwa_backend::journal::JournalError;
 use kaiwa_backend::models::{self, Fetch};
 use kaiwa_backend::settings::{Felt, SettingError};
-use kaiwa_backend::sync::{Secret, Start};
+use kaiwa_backend::sync::{self, Secret, Start};
 use kaiwa_backend::sync_view;
 use kaiwa_backend::words;
 use serde_json::json;
@@ -388,14 +388,10 @@ impl qobject::KaiwaApp {
         let lang = self.ui_lang();
         self.as_mut().set_syncing(true);
         // Sealing and the network take seconds: off the GUI thread, and the profile is held
-        // only while the sync reads or merges it (each `state()` ends with its statement).
+        // only while the sync reads or merges it.
         let thread = self.qt_thread();
         std::thread::spawn(move || {
-            let result = state().sync_job(start).and_then(|job| {
-                let fetched = job.fetch()?;
-                let out = state().sync_take(&job, fetched, now())?;
-                job.send(out)
-            });
+            let result = sync::sync_locked(state, start, now());
             let msg = sync_view::sync_words(&result, lang);
             let _ = thread.queue(move |mut app| {
                 app.as_mut().set_syncing(false);

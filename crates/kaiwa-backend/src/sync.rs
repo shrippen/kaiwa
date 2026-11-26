@@ -310,6 +310,21 @@ fn not_saved(e: anyhow::Error) -> SyncError {
     SyncError::Merge(MergeError::NotSaved(e))
 }
 
+/// All stages under a front end's lock on its backend: `lock` is taken for the two short
+/// stages only and given back before the slow ones (fetch, send).
+pub fn sync_locked<G: std::ops::Deref<Target = Backend>>(
+    lock: impl Fn() -> G,
+    start: Start,
+    now: Moment,
+) -> Result<Synced, SyncError> {
+    // Each lock in a statement of its own: a guard lives to the end of its statement, and a
+    // second lock inside that statement would wait for it for good.
+    let job = lock().sync_job(start)?;
+    let fetched = job.fetch()?;
+    let out = lock().sync_take(&job, fetched, now)?;
+    job.send(out)
+}
+
 /// Reads and opens every other device's file in `place`.
 fn fetch(place: &dyn Remote, own: &str, passphrase: &str) -> Result<Fetched, SyncError> {
     let mut out = Vec::new();
@@ -492,6 +507,33 @@ mod tests {
             pc.sync_with(&place, PASS, Start::Here, T0),
             Err(SyncError::Newer(_))
         ));
+    }
+
+    #[test]
+    fn a_sync_under_the_front_ends_lock_takes_it_only_for_the_short_stages() {
+        // The app keeps its backend in a mutex and locks it per call: a stage that took the
+        // lock twice in one thread would hang for good.
+        let dir = std::env::temp_dir().join(format!("kaiwa-sync-locked-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let folder = dir.join("shared");
+        std::fs::create_dir_all(&folder).unwrap();
+        let b = Backend::open_at(dir.join("p.kaiwa"), false).unwrap();
+        let item = Item::new("駅", ItemKind::Word, Source::NewWord, T0);
+        b.store.put_item(&item).unwrap();
+        b.set_setting("syncFolder", folder.to_str().unwrap(), T0)
+            .unwrap();
+        b.set_sync_secret(Secret::Passphrase, PASS).unwrap();
+        let shared = std::sync::Arc::new(std::sync::Mutex::new(b));
+
+        let (done, finished) = std::sync::mpsc::channel();
+        let state = shared.clone();
+        std::thread::spawn(move || {
+            let r = sync_locked(|| state.lock().unwrap(), Start::Here, T0);
+            done.send(r.is_ok()).unwrap();
+        });
+        let ok = finished.recv_timeout(std::time::Duration::from_secs(60));
+        std::fs::remove_dir_all(&dir).unwrap();
+        assert_eq!(ok, Ok(true), "the sync hung or failed");
     }
 
     #[test]
