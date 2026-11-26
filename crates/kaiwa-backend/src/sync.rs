@@ -1,17 +1,17 @@
 //! Sync over a place of files (/LF700/, ADR-010 step 5). Each device keeps one sealed file
 //! there with its whole journal; syncing reads the others', merges them and writes its own
-//! again. The first device makes its state the journal's start; another joins with an empty
-//! profile.
+//! again. On its first sync the learner says whether the device begins (its state is the
+//! journal's start) or joins with an empty profile.
 //!
 //! ```text
 //!   folder/  3f9a….kaiwa-sync   (PC)     c07e….kaiwa-sync   (phone)
 //!   sync_now on the PC:  open + merge c07e…  ─►  seal + put 3f9a…
 //! ```
 
-use std::path::Path;
-
+use kaiwa_ai::secrets::{KeyError, SYNC_SECRETS};
 use kaiwa_core::clock::Moment;
-use kaiwa_sync::{FILE_END, Folder, Remote};
+use kaiwa_store::SyncPlace;
+use kaiwa_sync::{FILE_END, Folder, Remote, WebDav};
 use serde_json::{Value, json};
 
 use crate::Backend;
@@ -20,10 +20,44 @@ use crate::merge::MergeError;
 /// The shape of a journal file; a device that reads a higher one refuses it (ADR-010).
 const FORMAT: u64 = 1;
 
+/// How a device that does not sync yet takes part; the learner says it once (ADR-010).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Start {
+    /// This device's state is where the journal begins.
+    Here,
+    /// An empty profile takes the journal of the devices already in the place.
+    Join,
+}
+
+/// A secret of the sync, kept in the keyring (/LF713/).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Secret {
+    /// Seals the files (`age`).
+    Passphrase,
+    /// The WebDAV folder's password.
+    Password,
+}
+
+impl Secret {
+    /// Its name in the keyring.
+    fn name(self) -> &'static str {
+        match self {
+            Self::Passphrase => SYNC_SECRETS[0],
+            Self::Password => SYNC_SECRETS[1],
+        }
+    }
+}
+
 /// Why a sync stopped. What was merged before the error stays; this device's file is not
 /// written.
 #[derive(Debug)]
 pub enum SyncError {
+    /// No place or no passphrase is set up.
+    NotSetUp,
+    /// "Begin here" in a place where devices sync already: join instead.
+    Taken,
+    /// "Join" with a profile that has data and no device in the place yet.
+    Alone,
     /// The place could not be read or written, or the passphrase does not open a file.
     Place(kaiwa_sync::SyncError),
     /// A file is from a newer Kaiwa; this one does not fold its events.
@@ -37,6 +71,9 @@ pub enum SyncError {
 impl std::fmt::Display for SyncError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::NotSetUp => f.write_str("no place or no passphrase set up"),
+            Self::Taken => f.write_str("devices sync in this place already"),
+            Self::Alone => f.write_str("no device to join in this place"),
             Self::Place(e) => write!(f, "{e}"),
             Self::Newer(name) => write!(f, "{name} is from a newer Kaiwa"),
             Self::Broken(name) => write!(f, "{name} is no journal file"),
@@ -69,15 +106,57 @@ pub struct Synced {
 }
 
 impl Backend {
-    /// Syncs with the other devices' files in `folder`, sealed with `passphrase`. A front
-    /// end calls it while no talk is open: the merge rebuilds the talks.
-    pub fn sync_now(
-        &self,
-        folder: &Path,
-        passphrase: &str,
-        now: Moment,
-    ) -> Result<Synced, SyncError> {
-        self.sync_with(&Folder::new(folder), passphrase, now)
+    /// Syncs with the place set up in the settings. `start` counts only while the device does
+    /// not sync yet. A front end calls it while no talk is open: the merge rebuilds the talks.
+    pub fn sync_now(&self, start: Start, now: Moment) -> Result<Synced, SyncError> {
+        let pass = self.sync_secret(Secret::Passphrase)?;
+        let profile = self.store.profile().map_err(|e| not_saved(e.into()))?;
+        match profile.sync {
+            SyncPlace::None => Err(SyncError::NotSetUp),
+            SyncPlace::Folder { path } => self.sync_with(&Folder::new(path), &pass, start, now),
+            SyncPlace::WebDav { url, user } => {
+                let password = self.sync_secret(Secret::Password)?;
+                self.sync_with(&WebDav::new(&url, &user, &password), &pass, start, now)
+            }
+        }
+    }
+
+    /// Keeps a secret of the sync in the keyring; a profile without a keyring home (the
+    /// environment's, a test's) keeps it for this run only.
+    pub fn set_sync_secret(&self, secret: Secret, value: &str) -> Result<(), KeyError> {
+        if self.spare {
+            return Err(KeyError::Spare);
+        }
+        if self.keys.keyring_home() {
+            return self.keys.store(secret.name(), value);
+        }
+        if value.trim().is_empty() {
+            return Err(KeyError::Empty);
+        }
+        self.sync_secrets
+            .lock()
+            .unwrap()
+            .insert(secret.name(), value.to_string());
+        Ok(())
+    }
+
+    /// Whether `secret` is kept.
+    pub(crate) fn has_sync_secret(&self, secret: Secret) -> bool {
+        self.sync_secret(secret).is_ok()
+    }
+
+    fn sync_secret(&self, secret: Secret) -> Result<String, SyncError> {
+        let kept = self
+            .sync_secrets
+            .lock()
+            .unwrap()
+            .get(secret.name())
+            .cloned();
+        let stored = match kept {
+            Some(v) => Some(v),
+            None => self.keys.secret(secret.name()).ok().flatten(),
+        };
+        stored.ok_or(SyncError::NotSetUp)
     }
 
     /// [`Backend::sync_now`] with any place.
@@ -85,27 +164,21 @@ impl Backend {
         &self,
         place: &dyn Remote,
         passphrase: &str,
+        start: Start,
         now: Moment,
     ) -> Result<Synced, SyncError> {
-        let not_saved = |e: anyhow::Error| SyncError::Merge(MergeError::NotSaved(e));
         let own = format!(
             "{}{FILE_END}",
             self.store.device().map_err(|e| not_saved(e.into()))?
         );
         let others: Vec<String> = place.list()?.into_iter().filter(|n| *n != own).collect();
-
-        // Alone in the place: this device's state is where the journal begins. An empty
-        // profile waits instead: the first device's file may not have reached this copy of
-        // the folder yet, and a start of its own would never merge with that one.
-        if others.is_empty() {
-            if self.store.is_empty().map_err(|e| not_saved(e.into()))? {
-                return Ok(Synced {
-                    taken: 0,
-                    devices: 0,
-                });
-            }
-            self.share_base(now)?;
+        if !self.syncs().map_err(not_saved)? && self.first_sync(start, others.is_empty(), now)? {
+            return Ok(Synced {
+                taken: 0,
+                devices: 0,
+            });
         }
+
         let mut taken = 0;
         for name in &others {
             let journal = read(place, name, passphrase)?;
@@ -120,6 +193,28 @@ impl Backend {
             devices: others.len(),
         })
     }
+
+    /// The first sync of a device as the learner chose; whether it waits. An empty profile
+    /// that joins and finds no device yet waits: in a folder another program keeps in step
+    /// the first device's file may come later.
+    fn first_sync(&self, start: Start, alone: bool, now: Moment) -> Result<bool, SyncError> {
+        match (start, alone) {
+            (Start::Here, true) => {
+                self.share_base(now)?;
+                Ok(false)
+            }
+            (Start::Here, false) => Err(SyncError::Taken),
+            (Start::Join, true) if self.store.is_empty().map_err(|e| not_saved(e.into()))? => {
+                Ok(true)
+            }
+            (Start::Join, true) => Err(SyncError::Alone),
+            (Start::Join, false) => Ok(false),
+        }
+    }
+}
+
+fn not_saved(e: anyhow::Error) -> SyncError {
+    SyncError::Merge(MergeError::NotSaved(e))
 }
 
 /// The events of another device's file.
@@ -136,6 +231,7 @@ fn read(place: &dyn Remote, name: &str, passphrase: &str) -> Result<Vec<Value>, 
 
 #[cfg(test)]
 mod tests {
+    use kaiwa_core::learner::{LearnerModel, Skill};
     use kaiwa_core::srs::{Item, ItemKind, Source};
     use kaiwa_sync::Memory;
 
@@ -152,13 +248,19 @@ mod tests {
         TempBackend::new(&format!("sync-{name}"), false).unwrap()
     }
 
+    /// A device with a card: it has data of its own.
+    fn with_card(name: &str) -> TempBackend {
+        let b = backend(name);
+        let item = Item::new("駅", ItemKind::Word, Source::NewWord, T0);
+        b.store.put_item(&item).unwrap();
+        b
+    }
+
     #[test]
     fn two_devices_sync_through_one_place() {
         let place = Memory::default();
-        let pc = backend("pc");
-        let item = Item::new("駅", ItemKind::Word, Source::NewWord, T0);
-        pc.store.put_item(&item).unwrap();
-        let first = pc.sync_with(&place, PASS, T0).unwrap();
+        let pc = with_card("pc");
+        let first = pc.sync_with(&place, PASS, Start::Here, T0).unwrap();
         assert_eq!(
             first,
             Synced {
@@ -169,11 +271,12 @@ mod tests {
 
         // The phone joins with an empty profile and reviews the card.
         let phone = backend("phone");
-        assert_eq!(phone.sync_with(&place, PASS, T0).unwrap().devices, 1);
+        let joined = phone.sync_with(&place, PASS, Start::Join, T0).unwrap();
+        assert_eq!(joined.devices, 1);
         phone.answer_review("駅", "駅", false, T0.plus_secs(60));
-        phone.sync_with(&place, PASS, T0).unwrap();
+        phone.sync_with(&place, PASS, Start::Join, T0).unwrap();
 
-        let back = pc.sync_with(&place, PASS, T0).unwrap();
+        let back = pc.sync_with(&place, PASS, Start::Here, T0).unwrap();
         assert_eq!(
             back,
             Synced {
@@ -185,16 +288,29 @@ mod tests {
     }
 
     #[test]
+    fn a_device_with_only_a_placement_begins_when_told() {
+        // Only the placement: no talk, no card, so the profile counts as empty for a join.
+        let place = Memory::default();
+        let pc = backend("placed-pc");
+        let model = LearnerModel::placed(&[(Skill::Speaking, "n4")]);
+        pc.set_placement(model).unwrap();
+        pc.sync_with(&place, PASS, Start::Here, T0).unwrap();
+        assert_eq!(place.list().unwrap().len(), 1, "the PC wrote no file");
+
+        let phone = backend("placed-phone");
+        phone.sync_with(&place, PASS, Start::Join, T0).unwrap();
+        assert!(phone.store.profile().unwrap().placed);
+    }
+
+    #[test]
     fn an_empty_device_waits_for_the_first_ones_file() {
         // A folder another program keeps in step: the phone's copy has not got the PC's file
         // yet when the phone syncs.
         let (at_pc, at_phone) = (Memory::default(), Memory::default());
-        let pc = backend("wait-pc");
-        let item = Item::new("駅", ItemKind::Word, Source::NewWord, T0);
-        pc.store.put_item(&item).unwrap();
-        pc.sync_with(&at_pc, PASS, T0).unwrap();
+        let pc = with_card("wait-pc");
+        pc.sync_with(&at_pc, PASS, Start::Here, T0).unwrap();
         let phone = backend("wait-phone");
-        let alone = phone.sync_with(&at_phone, PASS, T0).unwrap();
+        let alone = phone.sync_with(&at_phone, PASS, Start::Join, T0).unwrap();
         assert_eq!(
             alone,
             Synced {
@@ -214,22 +330,41 @@ mod tests {
             }
         };
         copy(&at_pc, &at_phone);
-        phone.sync_with(&at_phone, PASS, T0).unwrap();
+        phone.sync_with(&at_phone, PASS, Start::Join, T0).unwrap();
         copy(&at_phone, &at_pc);
-        pc.sync_with(&at_pc, PASS, T0).unwrap();
+        pc.sync_with(&at_pc, PASS, Start::Here, T0).unwrap();
         assert_eq!(phone.store.items().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn a_start_that_does_not_fit_the_place_writes_nothing() {
+        let place = Memory::default();
+        let full = with_card("alone");
+        assert!(matches!(
+            full.sync_with(&place, PASS, Start::Join, T0),
+            Err(SyncError::Alone)
+        ));
+        assert!(place.list().unwrap().is_empty());
+
+        with_card("taken-pc")
+            .sync_with(&place, PASS, Start::Here, T0)
+            .unwrap();
+        let second = backend("taken");
+        assert!(matches!(
+            second.sync_with(&place, PASS, Start::Here, T0),
+            Err(SyncError::Taken)
+        ));
+        assert_eq!(place.list().unwrap().len(), 1);
     }
 
     #[test]
     fn a_wrong_passphrase_or_a_newer_file_writes_nothing() {
         let place = Memory::default();
-        let pc = backend("pass-pc");
-        let item = Item::new("駅", ItemKind::Word, Source::NewWord, T0);
-        pc.store.put_item(&item).unwrap();
-        pc.sync_with(&place, PASS, T0).unwrap();
+        let pc = with_card("pass-pc");
+        pc.sync_with(&place, PASS, Start::Here, T0).unwrap();
         let phone = backend("pass-phone");
         assert!(matches!(
-            phone.sync_with(&place, "pflaume", T0),
+            phone.sync_with(&place, "pflaume", Start::Join, T0),
             Err(SyncError::Place(kaiwa_sync::SyncError::Sealed(_)))
         ));
         assert_eq!(place.list().unwrap().len(), 1, "the phone wrote its file");
@@ -238,8 +373,33 @@ mod tests {
         let sealed = kaiwa_sync::seal(newer.to_string().as_bytes(), PASS).unwrap();
         place.put(&format!("later{FILE_END}"), &sealed).unwrap();
         assert!(matches!(
-            pc.sync_with(&place, PASS, T0),
+            pc.sync_with(&place, PASS, Start::Here, T0),
             Err(SyncError::Newer(_))
         ));
+    }
+
+    #[test]
+    fn sync_now_takes_the_place_and_the_passphrase_of_the_settings() {
+        let pc = with_card("settings");
+        assert!(matches!(
+            pc.sync_now(Start::Here, T0),
+            Err(SyncError::NotSetUp)
+        ));
+        let folder = pc.dir.join("shared");
+        std::fs::create_dir_all(&folder).unwrap();
+        pc.set_setting("syncFolder", folder.to_str().unwrap(), T0)
+            .unwrap();
+        assert!(matches!(
+            pc.sync_now(Start::Here, T0),
+            Err(SyncError::NotSetUp)
+        ));
+        // A temporary profile has no keyring home: the passphrase is kept for this run.
+        pc.set_sync_secret(Secret::Passphrase, PASS).unwrap();
+        pc.sync_now(Start::Here, T0).unwrap();
+        assert_eq!(Folder::new(&folder).list().unwrap().len(), 1);
+        assert!(pc.store.events().unwrap().iter().all(|e| !matches!(
+            &e.event,
+            kaiwa_core::Event::Setting { key, .. } if key.starts_with("sync")
+        )));
     }
 }

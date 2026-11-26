@@ -9,7 +9,7 @@ use kaiwa_core::choices::{COST_STEPS, GOAL_STEPS, KEEP_STEPS, REMINDER_STEPS, UN
 use kaiwa_core::clock::Moment;
 use kaiwa_core::learner::Skill;
 use kaiwa_core::progress::DailyGoal;
-use kaiwa_store::{Profile, Script};
+use kaiwa_store::{Profile, Script, SyncPlace};
 use serde_json::json;
 
 use crate::Backend;
@@ -126,6 +126,34 @@ fn apply_rest(p: &mut Profile, key: Key, value: &str) {
     }
 }
 
+/// The place to sync with: a folder or a WebDAV folder; a blank folder or address sets none.
+/// Whether `key` is one of the place's.
+fn set_sync(p: &mut Profile, key: Key, value: &str) -> bool {
+    if !matches!(key, Key::SyncFolder | Key::SyncUrl | Key::SyncUser) {
+        return false;
+    }
+    let user = match &p.sync {
+        SyncPlace::WebDav { user, .. } => user.clone(),
+        _ => String::new(),
+    };
+    p.sync = match key {
+        Key::SyncFolder if !value.is_empty() => SyncPlace::Folder { path: value.into() },
+        Key::SyncUrl if !value.is_empty() => SyncPlace::WebDav {
+            url: value.into(),
+            user,
+        },
+        Key::SyncUser => match &p.sync {
+            SyncPlace::WebDav { url, .. } => SyncPlace::WebDav {
+                url: url.clone(),
+                user: value.into(),
+            },
+            other => other.clone(),
+        },
+        _ => SyncPlace::None,
+    };
+    true
+}
+
 pub use kaiwa_core::difficulty::Felt;
 
 /// Why a setting did not fully take.
@@ -213,7 +241,7 @@ impl Backend {
         let p = self
             .store
             .update_profile(|p| {
-                if !apply_look(p, key, value) {
+                if !apply_look(p, key, value) && !set_sync(p, key, value.trim()) {
                     apply_rest(p, key, value);
                 }
             })

@@ -49,14 +49,18 @@ keys! {
     TutorModel => "tutorModel",
     TutorBase => "tutorBase",
     Microphone => "microphone",
+    SyncFolder => "syncFolder",
+    SyncUrl => "syncUrl",
+    SyncUser => "syncUser",
 }
 
 impl Key {
     /// Settings that belong to this device, not to the profile: applied live, never
     /// journaled, so a second device keeps its own tutor and microphone. The owner decided
     /// the list on 17.11.2026 (ADR-010): tutor, microphone, unload time, hands-free, louder
-    /// and clear. The last two are set by `set_sound`, not as a setting, and for the same
-    /// reason not journaled either.
+    /// and clear. Louder and clear are set by `set_sound`, not as a setting, and for the same
+    /// reason not journaled either. The place to sync with is the device's too: a folder path
+    /// names a place on one computer.
     pub(crate) fn per_device(self) -> bool {
         matches!(
             self,
@@ -66,6 +70,9 @@ impl Key {
                 | Self::Microphone
                 | Self::UnloadAfter
                 | Self::HandsFree
+                | Self::SyncFolder
+                | Self::SyncUrl
+                | Self::SyncUser
         )
     }
 }
@@ -79,4 +86,5 @@ pub(crate) fn keep_device(profile: &mut kaiwa_store::Profile, device: &kaiwa_sto
     profile.hands_free = device.hands_free;
     profile.louder = device.louder;
     profile.clear = device.clear;
+    profile.sync = device.sync.clone();
 }

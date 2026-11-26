@@ -593,10 +593,7 @@ pub fn key_view(st: &Backend, lang: Lang) -> Value {
 
 pub use crate::profiles::key_error;
 
-/// "What leaves the device?" (/LF711/), from `kaiwa_ai::privacy`, for the tutor set up.
-pub fn privacy(st: &Backend, lang: Lang) -> Value {
-    serde_json::to_value(kaiwa_ai::privacy::flows(st.tutor_env(), lang.code())).unwrap_or_default()
-}
+pub use crate::sync_view::privacy;
 
 #[cfg(test)]
 mod tests {

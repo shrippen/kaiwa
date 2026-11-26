@@ -174,6 +174,10 @@ fn same_dir(a: &Path, b: &Path) -> bool {
     a == b || matches!((a.canonicalize(), b.canonicalize()), (Ok(a), Ok(b)) if a == b)
 }
 
+/// Secrets of a profile besides the tutor keys: the sync passphrase and the password of a
+/// WebDAV folder (ADR-010, /LF713/). They go with the profile like the keys.
+pub const SYNC_SECRETS: [&str; 2] = ["sync-passphrase", "sync-password"];
+
 /// The keys of one profile.
 #[derive(Clone)]
 pub struct Keys {
@@ -227,6 +231,15 @@ impl Keys {
         }
     }
 
+    /// A secret of the profile from the keyring (one of [`SYNC_SECRETS`]); `None` without
+    /// one, and always for a profile without a keyring home.
+    pub fn secret(&self, name: &str) -> Result<Option<String>, String> {
+        let Some(user) = self.user(name) else {
+            return Ok(None);
+        };
+        self.store.get(&user)
+    }
+
     /// Stores a key in the keyring; a blank key is an error.
     pub fn store(&self, provider: &str, key: &str) -> Result<(), KeyError> {
         let key = usable(key)?;
@@ -242,10 +255,11 @@ impl Keys {
         self.store.delete(&user)
     }
 
-    /// Removes the profile's keys of every provider (the profile is deleted). Every provider
-    /// is tried; the errors come back together.
+    /// Removes the profile's keys of every provider and its other secrets (the profile is
+    /// deleted). Every one is tried; the errors come back together.
     pub fn remove_all(&self) -> Result<(), String> {
         let errors: Vec<String> = keyed()
+            .chain(SYNC_SECRETS)
             .filter_map(|p| self.remove(p).err().map(|e| format!("{p}: {e}")))
             .collect();
         if errors.is_empty() {
@@ -390,7 +404,13 @@ mod tests {
         a.store("anthropic", "sk-1").unwrap();
         a.store("openai", "sk-2").unwrap();
         b.store("openai", "sk-3").unwrap();
+        a.store(SYNC_SECRETS[0], "kirschbluete").unwrap();
+        assert_eq!(
+            a.secret(SYNC_SECRETS[0]).unwrap().as_deref(),
+            Some("kirschbluete")
+        );
         a.remove_all().unwrap();
+        assert_eq!(a.secret(SYNC_SECRETS[0]).unwrap(), None);
         assert_eq!(a.key("anthropic", NONE), None);
         assert_eq!(a.key("openai", NONE), None);
         assert_eq!(b.key("openai", NONE).as_deref(), Some("sk-3"));

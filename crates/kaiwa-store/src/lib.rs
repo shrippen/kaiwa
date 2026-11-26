@@ -174,6 +174,21 @@ pub struct Profile {
     /// default, and so is a device that is gone.
     #[serde(default)]
     pub microphone: Option<String>,
+    /// Where this device syncs (ADR-010); per device. The secrets are in the keyring.
+    #[serde(default)]
+    pub sync: SyncPlace,
+}
+
+/// The place a device syncs with (ADR-010).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum SyncPlace {
+    #[default]
+    None,
+    /// A folder on this computer, perhaps one Syncthing or Nextcloud keeps in step.
+    Folder { path: String },
+    /// A WebDAV folder; its password is in the keyring.
+    WebDav { url: String, user: String },
 }
 
 fn yes() -> bool {
@@ -212,6 +227,7 @@ impl Default for Profile {
             text_scale: 1.0,
             tutor: kaiwa_ai::Tutor::default(),
             microphone: None,
+            sync: SyncPlace::None,
         }
     }
 }
