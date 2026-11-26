@@ -120,6 +120,7 @@ KanteTableHeader 1.0 KanteTableHeader.qml
 KanteTagPicker 1.0 KanteTagPicker.qml
 KanteTalkButton 1.0 KanteTalkButton.qml
 KanteTechniqueMark 1.0 KanteTechniqueMark.qml
+KanteTextArea 1.0 KanteTextArea.qml
 KanteTextField 1.0 KanteTextField.qml
 KanteTick 1.0 KanteTick.qml
 KanteTile 1.0 KanteTile.qml
