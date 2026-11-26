@@ -424,7 +424,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
         "spare": st.is_spare(),
         "style": p.style,
         "reminder": p.reminder, "reminderSteps": kaiwa_core::choices::REMINDER_STEPS,
-        "costLimit": p.cost_limit_cents,
+        "costLimit": p.cost_limit_cents, "costSteps": kaiwa_core::choices::COST_STEPS,
         "moraHints": p.mora_hints,
         "unloadAfter": p.unload_after_min,
         "unloadSteps": kaiwa_store::UNLOAD_STEPS,

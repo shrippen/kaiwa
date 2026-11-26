@@ -3,7 +3,7 @@ import QtTest
 import "tree.js" as Tree
 
 // The settings' choices for daily goal, unload time and text size come from the profile view
-// (goalSteps, unloadSteps, textScaleSteps), not from the page. Run: tools/qml-tests.sh.
+// (goalSteps, unloadSteps, textScaleSteps, costSteps), not from the page. Run: tools/qml-tests.sh.
 Item {
     id: root
     width: 640
@@ -31,8 +31,10 @@ Item {
                 unloadAfter: null, unloadSteps: [1, 4, null],
                 textScale: 1.1, textScaleSteps: [1.0, 1.1, 1.75],
                 feedback: "much", feedbackSteps: ["much", "little"],
-                keepRecordings: 3, keepSteps: [null, 3, 9]
+                keepRecordings: 3, keepSteps: [null, 3, 9],
+                costLimit: 300, costSteps: [null, 300, 700]
             })
+            kaiwa.privacy = JSON.stringify([{ part: "Tutor", provider: "Cloud", sends: "Text", where: "Cloud", cloud: true }])
             const page = createTemporaryObject(appWindow.settings, root, { kaiwa: kaiwa, width: root.width, height: root.height })
 
             const goal = choice(page, "Tagesziel")
@@ -64,6 +66,12 @@ Item {
             compare(keep.currentIndex, 1)
             keep.select(2)
             compare(JSON.stringify(kaiwa.last("setSetting")), JSON.stringify(["keepRecordings", "9"]))
+
+            const cost = choice(page, "Kostenbremse")
+            compare(JSON.stringify(cost.model), JSON.stringify(["Ohne", "3 €", "7 €"]))
+            compare(cost.currentIndex, 1)
+            cost.select(2)
+            compare(JSON.stringify(kaiwa.last("setSetting")), JSON.stringify(["costLimit", "700"]))
         }
     }
 }
