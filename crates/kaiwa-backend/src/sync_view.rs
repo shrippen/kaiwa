@@ -1,6 +1,7 @@
 //! What the settings' sync tile shows (ADR-010 step 6), and a sync's outcome in words.
 
 use kaiwa_ai::privacy::Flow;
+use kaiwa_ai::secrets::KeyError;
 use kaiwa_core::Lang;
 use kaiwa_store::SyncPlace;
 use serde_json::{Value, json};
@@ -128,6 +129,28 @@ fn sync_flow(b: &Backend, lang: Lang) -> Option<Flow> {
     })
 }
 
+/// What keeping a secret of the sync came to.
+pub fn secret_words(b: &Backend, secret: Secret, r: &Result<(), KeyError>, lang: Lang) -> String {
+    let de = lang == Lang::De;
+    if let Err(e) = r {
+        return crate::profiles::key_error(e, lang);
+    }
+    let what = match (secret, de) {
+        (Secret::Passphrase, true) => "Die Passphrase",
+        (Secret::Passphrase, false) => "The passphrase",
+        (Secret::Password, true) => "Das Passwort",
+        (Secret::Password, false) => "The password",
+    };
+    match (b.keys.keyring_home(), de) {
+        (true, true) => format!("{what} liegt im Schlüsselbund."),
+        (true, false) => format!("{what} is in the keyring."),
+        (false, true) => {
+            format!("{what} gilt bis zum Beenden; dieses Profil hat keinen Schlüsselbund.")
+        }
+        (false, false) => format!("{what} holds until Kaiwa quits; this profile has no keyring."),
+    }
+}
+
 /// A sync's outcome for the learner.
 pub fn sync_words(r: &Result<Synced, SyncError>, lang: Lang) -> String {
     let de = lang == Lang::De;
@@ -248,6 +271,19 @@ mod tests {
         b.set_setting("syncUrl", " ", T0).unwrap();
         assert_eq!(sync_view(&b, Lang::En)["kind"], "none");
         assert_eq!(privacy(&b, Lang::De).as_array().unwrap().len(), 3);
+    }
+
+    #[test]
+    fn a_kept_secret_says_where_it_is_kept() {
+        let b = TempBackend::new("sync-secret-words", false).unwrap();
+        let r = b.set_sync_secret(Secret::Passphrase, "kirschbluete");
+        let text = secret_words(&b, Secret::Passphrase, &r, Lang::De);
+        assert!(
+            text.starts_with("Die Passphrase gilt bis zum Beenden"),
+            "{text}"
+        );
+        let r = b.set_sync_secret(Secret::Password, " ");
+        assert!(secret_words(&b, Secret::Password, &r, Lang::En).contains("No key entered"));
     }
 
     #[test]

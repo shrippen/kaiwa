@@ -36,6 +36,8 @@ pub mod qobject {
         #[qproperty(QString, download)]
         /// A build with the demo (screenshots, recorded answers); never a package.
         #[qproperty(bool, demo_build, cxx_name = "demoBuild")]
+        /// A sync runs (/LF700/); the tile waits for it.
+        #[qproperty(bool, syncing)]
         type KaiwaApp = super::KaiwaAppRust;
 
         /// Reads everything again from the profile.
@@ -127,6 +129,17 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "stopDownload"]
         fn stop_download(self: Pin<&mut KaiwaApp>);
+
+        /// Syncs with the place of the settings (/LF700/); `start` is "here" or "join" and
+        /// counts only on the first sync.
+        #[qinvokable]
+        #[cxx_name = "syncNow"]
+        fn sync_now(self: Pin<&mut KaiwaApp>, start: &QString);
+
+        /// Keeps the sync's "passphrase" or the WebDAV "password" in the keyring (/LF713/).
+        #[qinvokable]
+        #[cxx_name = "setSyncSecret"]
+        fn set_sync_secret(self: Pin<&mut KaiwaApp>, kind: &QString, value: &QString);
     }
 
     impl cxx_qt::Threading for KaiwaApp {}
@@ -144,6 +157,8 @@ use kaiwa_backend::Trouble;
 use kaiwa_backend::journal::JournalError;
 use kaiwa_backend::models::{self, Fetch};
 use kaiwa_backend::settings::{Felt, SettingError};
+use kaiwa_backend::sync::{Secret, Start};
+use kaiwa_backend::sync_view;
 use kaiwa_backend::words;
 use serde_json::json;
 
@@ -168,6 +183,7 @@ pub struct KaiwaAppRust {
     models: QString,
     download: QString,
     demo_build: bool,
+    syncing: bool,
     stop: Arc<AtomicBool>,
 }
 
@@ -190,6 +206,7 @@ impl Default for KaiwaAppRust {
             models: Default::default(),
             download: Default::default(),
             demo_build: kaiwa_backend::DEMO,
+            syncing: false,
             stop: Default::default(),
         }
     }
@@ -358,6 +375,44 @@ impl qobject::KaiwaApp {
 
     fn stop_download(self: Pin<&mut Self>) {
         self.stop.store(true, Ordering::Relaxed);
+    }
+
+    fn sync_now(mut self: Pin<&mut Self>, start: &QString) {
+        if *self.syncing() {
+            return;
+        }
+        let start = match start.to_string().as_str() {
+            "here" => Start::Here,
+            _ => Start::Join,
+        };
+        let lang = self.ui_lang();
+        self.as_mut().set_syncing(true);
+        // Sealing and the network take seconds: off the GUI thread.
+        let thread = self.qt_thread();
+        std::thread::spawn(move || {
+            let result = state().sync_now(start, now());
+            let msg = sync_view::sync_words(&result, lang);
+            let _ = thread.queue(move |mut app| {
+                app.as_mut().set_syncing(false);
+                app.as_mut().say_result(&msg);
+                app.as_mut().refresh();
+            });
+        });
+    }
+
+    fn set_sync_secret(mut self: Pin<&mut Self>, kind: &QString, value: &QString) {
+        let secret = match kind.to_string().as_str() {
+            "password" => Secret::Password,
+            _ => Secret::Passphrase,
+        };
+        let lang = self.ui_lang();
+        let msg = {
+            let st = state();
+            let result = st.set_sync_secret(secret, &value.to_string());
+            sync_view::secret_words(&st, secret, &result, lang)
+        };
+        self.as_mut().say_result(&msg);
+        self.as_mut().refresh();
     }
 
     fn set_setting(mut self: Pin<&mut Self>, key: &QString, value: &QString) {

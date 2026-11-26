@@ -122,8 +122,6 @@ A change that needs more places than its row lists is a finding for the next aud
   handlers and gamification text, the palette's colours, the voice's pace in
   `app/src/conversation.rs` and the one file that downloads (`kaiwa-backend/src/models.rs`).
   What a page does is checked in QML tests (`app/qml/tests`).
-- No front end syncs yet: the app's tile is ADR-010 step 6b; until then only `kaiwa-sim`
-  (`jonas_sync`) calls `sync_now`.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
   then the app is the only front end and runs the backend in its own process. On that
   branch `kaiwad` drives microphone and recognition itself; M4 moves that into the

@@ -14,6 +14,7 @@ fn main() {
         "qml/SettingsSpeech.qml",
         "qml/SettingsTutor.qml",
         "qml/SettingsModels.qml",
+        "qml/SettingsSync.qml",
         "qml/SettingRow.qml",
         "qml/Choice.qml",
         "qml/MainTabs.qml",
