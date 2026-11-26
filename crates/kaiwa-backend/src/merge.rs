@@ -86,6 +86,11 @@ impl Backend {
         Ok(())
     }
 
+    /// Whether the profile syncs: its journal has a start.
+    pub fn syncs(&self) -> anyhow::Result<bool> {
+        Ok(base_of(&self.store.events()?).is_some())
+    }
+
     /// The journal as another device's [`Backend::merge`] takes it.
     pub fn journal(&self) -> anyhow::Result<Vec<Value>> {
         Ok(self.store.events_json()?)

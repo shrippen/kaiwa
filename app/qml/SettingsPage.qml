@@ -10,10 +10,10 @@ import "lang.js" as Lang
 // pause mode (/LF602/),
 // reminder (/LF620/: at most one a day, off by default), style and language; the tutor and
 // its key (Q-15, /LF713/); what leaves the device (/LF711/); export and deletion of all data
-// (/LF710/).
+// (/LF710/); sync between devices (/LF700/).
 // Laid out as in Kontra (design A, owner 16.11.2026): a sticky header with a tab per tile
 // over the scrolling tiles; each category is a KanteSettingGroup. The big tiles live in
-// SettingsSpeech, SettingsTutor and SettingsModels.
+// SettingsSpeech, SettingsTutor, SettingsModels and SettingsSync.
 Item {
     id: page
     required property var kaiwa
@@ -34,7 +34,7 @@ Item {
     readonly property var titles: [
         t("Profil", "Profile"), t("Üben", "Practice"), t("Sprechen", "Speaking"), t("Aussehen", "Look"),
         t("Tutor", "Tutor"), t("Was verlässt das Gerät?", "What leaves the device?"), t("Modelle", "Models"),
-        t("Deine Daten", "Your data"), t("Über Kaiwa", "About Kaiwa")
+        t("Deine Daten", "Your data"), t("Abgleich", "Sync"), t("Über Kaiwa", "About Kaiwa")
     ]
 
     Flickable {
@@ -319,12 +319,18 @@ Item {
                 }
             }
 
+            SettingsSync {
+                id: syncGroup
+                host: page
+                title: page.titles[8]
+            }
+
             // About (/LD050/): version, licence and the sources of the dictionary, each with its
             // licence and attribution (tanos: Q-01).
             KanteSettingGroup {
                 id: aboutGroup
                 Layout.fillWidth: true
-                title: page.titles[8]
+                title: page.titles[9]
 
                 Text {
                     Layout.fillWidth: true

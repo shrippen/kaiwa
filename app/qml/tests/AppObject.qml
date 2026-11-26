@@ -13,6 +13,7 @@ QtObject {
     property string today: ""
     property string learner: ""
     property string stats: ""
+    property bool syncing: false
     property var calls: []
 
     function record(name, args) { calls = calls.concat([[name].concat(args)]) }
@@ -27,4 +28,6 @@ QtObject {
     function skipUnit(unit) { record("skipUnit", [unit]) }
     function nudge(skill, up) { record("nudge", [skill, up]) }
     function setSetting(key, value) { record("setSetting", [key, value]) }
+    function setSyncSecret(kind, value) { record("setSyncSecret", [kind, value]) }
+    function syncNow(start) { record("syncNow", [start]) }
 }

@@ -14,6 +14,9 @@ use std::sync::Mutex;
 
 use age::secrecy::SecretString;
 
+mod webdav;
+pub use webdav::WebDav;
+
 /// The ending of a journal file; other files in the place are left alone.
 pub const FILE_END: &str = ".kaiwa-sync";
 

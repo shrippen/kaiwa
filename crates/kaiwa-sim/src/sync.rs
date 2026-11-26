@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Result};
 use kaiwa_backend::flow::Talk;
+use kaiwa_backend::sync::{Secret, Start};
 use kaiwa_backend::{Backend, TempBackend};
 use kaiwa_core::Input;
 use kaiwa_core::clock::{Day, Moment};
@@ -33,9 +34,16 @@ pub fn devices() -> Result<Option<String>> {
         pc.seed()
             .put_item(&Item::new(w, ItemKind::Word, Source::NewWord, t))?;
     }
-    let sync = |b: &Backend| b.sync_now(&folder, PASS, t).map_err(anyhow::Error::from);
-    sync(&pc)?;
-    sync(&phone)?;
+    // Both devices are set up as the settings' tile does it: the folder, the passphrase.
+    for b in [&pc, &phone] {
+        b.set_setting("syncFolder", &folder.to_string_lossy(), t)
+            .map_err(|e| anyhow::anyhow!("{e:?}"))?;
+        b.set_sync_secret(Secret::Passphrase, PASS)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+    let sync = |b: &Backend, start: Start| b.sync_now(start, t).map_err(anyhow::Error::from);
+    sync(&pc, Start::Here)?;
+    sync(&phone, Start::Join)?;
 
     // Morning on the phone: a review, a talk left after one turn.
     phone.answer_review(WORDS[0], WORDS[0], false, t);
@@ -43,12 +51,12 @@ pub fn devices() -> Result<Option<String>> {
     let line = talk.session().goals()[0].help.example.clone();
     crate::steps::said(&mut talk, &phone, &line, Input::Spoken, t.plus_secs(120))?;
     drop(talk);
-    sync(&phone)?;
+    sync(&phone, Start::Join)?;
 
     // Noon on the PC; then both sync.
     pc.answer_review(WORDS[1], WORDS[1], false, t.plus_secs(5 * HOUR));
-    sync(&pc)?;
-    sync(&phone)?;
+    sync(&pc, Start::Here)?;
+    sync(&phone, Start::Join)?;
     evening(&pc, &phone, t.plus_secs(12 * HOUR))
 }
 

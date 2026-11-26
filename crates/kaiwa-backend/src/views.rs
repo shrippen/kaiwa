@@ -408,7 +408,7 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
     let p = st.store.profile()?;
     let DailyGoal::Minutes(m) = p.daily_goal;
     let goal = json!({ "kind": "minutes", "value": m });
-    Ok(json!({
+    let mut v = json!({
         "name": p.name,
         "uiLang": p.ui_lang,
         "goal": goal,
@@ -456,7 +456,10 @@ pub fn profile(st: &Backend) -> anyhow::Result<Value> {
                 .map(|(name, licence, by)| json!({ "name": name, "licence": licence, "by": by }))
                 .collect::<Vec<_>>(),
         },
-    }))
+    });
+    // Beside the rest: one key more is past what `json!` expands.
+    v["sync"] = crate::sync_view::sync_view(st, p.ui_lang);
+    Ok(v)
 }
 
 /// The grammar of a scenario's unit (/LF220/, /LL112/): each point with its explanation in the
@@ -593,10 +596,7 @@ pub fn key_view(st: &Backend, lang: Lang) -> Value {
 
 pub use crate::profiles::key_error;
 
-/// "What leaves the device?" (/LF711/), from `kaiwa_ai::privacy`, for the tutor set up.
-pub fn privacy(st: &Backend, lang: Lang) -> Value {
-    serde_json::to_value(kaiwa_ai::privacy::flows(st.tutor_env(), lang.code())).unwrap_or_default()
-}
+pub use crate::sync_view::privacy;
 
 #[cfg(test)]
 mod tests {

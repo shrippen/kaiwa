@@ -39,6 +39,7 @@ pub mod short;
 pub mod skips;
 pub mod summary;
 pub mod sync;
+pub mod sync_view;
 pub mod transfer;
 mod trouble;
 pub use trouble::Trouble;
@@ -331,6 +332,8 @@ pub struct Backend {
     troubles: Mutex<Vec<Trouble>>,
     /// Running on the stand-in for a profile that could not be opened ([`Backend::is_spare`]).
     spare: bool,
+    /// Sync secrets of a profile without a keyring home, for this run only (`sync.rs`).
+    sync_secrets: Mutex<BTreeMap<&'static str, String>>,
 }
 
 impl Backend {
@@ -452,6 +455,7 @@ impl Backend {
             demo_data: demo,
             troubles: Mutex::new(Vec::new()),
             spare: false,
+            sync_secrets: Mutex::default(),
         })
     }
 }

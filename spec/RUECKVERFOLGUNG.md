@@ -82,7 +82,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF606/ | M | Es gibt keine Herzen, Leben oder Sperren nach Fehlern. | core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_hearts` |
 | /LF610/ | S | Statistik: Heatmap der Übungstage, Wortschatz pro Niveau, Sprechzeit … | app, backend, core | geprüft | 1 von 1 automatisch grün: `mara_progress` |
 | /LF620/ | M | Benachrichtigungen sind abschaltbar, höchstens eine pro Tag und ohne … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
-| /LF700/ | K | Sync zwischen Geräten über eine Ende-zu-Ende-verschlüsselte Datei auf … | backend, sync | geprüft | 1 von 1 automatisch grün: `jonas_sync` |
+| /LF700/ | K | Sync zwischen Geräten über eine Ende-zu-Ende-verschlüsselte Datei auf … | app, backend, sync | geprüft | 1 von 1 automatisch grün: `jonas_sync` |
 | /LF710/ | M | Export aller eigenen Daten (Profil, Verlauf, Wiederholung) als offene … | app, backend, store, sync | geprüft | 3 von 3 automatisch grün: `lena_delete`, `lena_export`, `lena_import` |
 | /LF711/ | M | Die Ansicht „Was verlässt das Gerät?“ zeigt je Baustein (STT, LLM … | ai, app, backend | geprüft | 2 von 2 automatisch grün: `lena_transparency`, `selin_win_mixed` |
 | /LF712/ | M | Aufnahmen werden standardmäßig nicht gespeichert. | app, backend, core, store | geprüft | 2 von 2 automatisch grün: `lena_default_no_audio`, `lena_retention` |

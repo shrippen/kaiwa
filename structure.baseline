@@ -7,7 +7,7 @@ exclude	spikes/s04-tts/*
 exclude	spikes/s06-moren/*
 exclude	spikes/s07-pitch/*
 app/qml/ConversationPage.qml	-	lines=956
-app/src/app.rs	refresh	length=90
+app/src/app.rs	refresh	length=101
 app/src/conversation.rs	-	lines=1461
 app/src/conversation.rs	begin	length=94
 app/src/conversation.rs	start	length=127

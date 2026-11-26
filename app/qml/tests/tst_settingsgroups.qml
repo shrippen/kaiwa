@@ -2,7 +2,7 @@ import QtQuick
 import QtTest
 import "tree.js" as Tree
 
-// The settings are tiles (design A, as in Kontra): nine groups in order, a tab in the sticky
+// The settings are tiles (design A, as in Kontra): ten groups in order, a tab in the sticky
 // header for each, a count that matches the rows shown, and the Sprechen choice writes the
 // same setting as the segment row did. Run: tools/qml-tests.sh.
 Item {
@@ -18,7 +18,7 @@ Item {
         when: windowShown
 
         readonly property var titles: ["Profil", "Üben", "Sprechen", "Aussehen", "Tutor",
-                                       "Was verlässt das Gerät?", "Modelle", "Deine Daten", "Über Kaiwa"]
+                                       "Was verlässt das Gerät?", "Modelle", "Deine Daten", "Abgleich", "Über Kaiwa"]
 
         function page(profile) {
             const kaiwa = createTemporaryObject(appObject, root)
@@ -57,7 +57,7 @@ Item {
             return n
         }
 
-        function test_nine_groups_in_order() {
+        function test_ten_groups_in_order() {
             const p = page().page
             const found = groups(Tree.find(p, i => i.flickableDirection === Flickable.VerticalFlick).contentItem)
             compare(JSON.stringify(found.map(g => g.title)), JSON.stringify(titles))
