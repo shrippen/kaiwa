@@ -49,6 +49,15 @@ pub(crate) struct Applied {
     pub failed: Vec<anyhow::Error>,
 }
 
+/// Whether an event is applied as the learner acts or again when the journal is folded.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Pass {
+    Live,
+    /// Folding again: no recording is deleted by the state halfway through the fold; the
+    /// fold purges once with the state it ends with (`merge::refold`).
+    Fold,
+}
+
 /// An event that was journaled and applied.
 pub(crate) struct Logged {
     /// The event's id; a talk's id when it began one.
@@ -62,7 +71,7 @@ pub(crate) struct Logged {
 pub(crate) fn record(b: &Backend, event: &Event, at: Moment) -> Result<Logged, JournalError> {
     let (logged, effect) = b.store.batch(|st| {
         let stored = st.append_event(event, at)?;
-        let (applied, effect) = match apply(b, &stored.id, event, at) {
+        let (applied, effect) = match apply(b, &stored.id, event, at, Pass::Live) {
             Ok(applied) => (applied, None),
             Err(JournalError::NotApplied(e)) => (Applied::default(), Some(e)),
             Err(e) => return Err(e),
@@ -85,13 +94,14 @@ pub(crate) fn apply(
     id: &str,
     event: &Event,
     at: Moment,
+    pass: Pass,
 ) -> Result<Applied, JournalError> {
     match event {
         // The device's own settings are put back after the fold (`merge::refold`).
         Event::Base { state } => plain(b.store.load_state(state)),
         // A card that is gone changes nothing, as live.
         Event::Review { text, grade } => plain(b.store.review(text, *grade, at)),
-        Event::Setting { key, value } => setting(b, key, value, at),
+        Event::Setting { key, value } => setting(b, key, value, at, pass),
         Event::TalkBegun { state } => plain(b.store.begin_session(id, state, at)),
         Event::TalkSaved { talk, state } => plain(b.store.save_session(talk, state)),
         Event::TalkFinished {
@@ -100,7 +110,7 @@ pub(crate) fn apply(
             started,
             ended,
             day,
-        } => finish_talk(b, talk, state, (*started, *ended, *day)),
+        } => finish_talk(b, talk, state, (*started, *ended, *day), pass),
         Event::TalkCorrected { talk, state } => corrected(b, talk, state),
         Event::Placed { model } => plain(b.store.set_placement(model.clone())),
         Event::PlacementLeftOut => plain(b.store.update_profile(|p| p.placed = true)),
@@ -149,11 +159,17 @@ fn plain<T, E: Into<anyhow::Error>>(done: Result<T, E>) -> Result<Applied, Journ
 }
 
 /// A key this version does not know (from a newer device) changes nothing.
-fn setting(b: &Backend, key: &str, value: &str, at: Moment) -> Result<Applied, JournalError> {
+fn setting(
+    b: &Backend,
+    key: &str,
+    value: &str,
+    at: Moment,
+    pass: Pass,
+) -> Result<Applied, JournalError> {
     let Some(key) = Key::parse(key) else {
         return Ok(Applied::default());
     };
-    b.change_setting(key, value, at)?;
+    b.change_setting(key, value, at, pass)?;
     Ok(Applied::default())
 }
 
@@ -175,6 +191,7 @@ fn finish_talk(
     talk: &str,
     state: &SessionState,
     (started, ended, day): (Moment, Moment, Day),
+    pass: Pass,
 ) -> Result<Applied, JournalError> {
     let session = restored(b, state)?;
     let curriculum = Some(&b.curriculum);
@@ -182,13 +199,14 @@ fn finish_talk(
         .store
         .record_on(talk, &session, started, ended, day, curriculum)
         .map_err(not_saved)?;
-    let failed = [
-        b.track_grammar(&session, ended),
-        b.purge_recordings(ended).map(|_| ()),
-    ];
+    let mut failed: Vec<anyhow::Error> =
+        b.track_grammar(&session, ended).err().into_iter().collect();
+    if pass == Pass::Live {
+        failed.extend(b.purge_recordings(ended).err());
+    }
     Ok(Applied {
         recorded: Some(recorded),
-        failed: failed.into_iter().filter_map(Result::err).collect(),
+        failed,
     })
 }
 
@@ -296,7 +314,7 @@ mod tests {
 
         let folded = backend("folded");
         for e in &events {
-            apply(&folded, &e.id, &e.event, e.at).unwrap();
+            apply(&folded, &e.id, &e.event, e.at, Pass::Live).unwrap();
         }
 
         // Only what the journal holds is folded: the device settings differ.
@@ -318,7 +336,7 @@ mod tests {
 
     fn fold(into: &Backend, events: &[kaiwa_store::Stored]) {
         for e in events {
-            apply(into, &e.id, &e.event, e.at).unwrap();
+            apply(into, &e.id, &e.event, e.at, Pass::Live).unwrap();
         }
     }
 

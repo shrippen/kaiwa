@@ -13,7 +13,7 @@ use kaiwa_store::{Profile, Script};
 use serde_json::json;
 
 use crate::Backend;
-use crate::journal::{self, JournalError};
+use crate::journal::{self, JournalError, Pass};
 use crate::keys::Key;
 
 /// The highest style: 0 system, 1 Kante, 2 Kante Light.
@@ -154,7 +154,7 @@ impl Backend {
         // Refused before the journal: a refused change is no event.
         self.spare_refuses(k)?;
         if k.per_device() {
-            return Ok(self.change_setting(k, value, now)?);
+            return Ok(self.change_setting(k, value, now, Pass::Live)?);
         }
         let event = Event::Setting {
             key: key.into(),
@@ -170,6 +170,7 @@ impl Backend {
         key: Key,
         value: &str,
         now: Moment,
+        pass: Pass,
     ) -> Result<(), JournalError> {
         // Again for a fold: the spare's recordings directory is the real profile's.
         self.spare_refuses(key)?;
@@ -189,7 +190,7 @@ impl Backend {
                         .map_err(|e| JournalError::NotSaved(e.into()))?;
                 }
             }
-            _ => self.edit_profile(key, value, now)?,
+            _ => self.edit_profile(key, value, now, pass)?,
         }
         Ok(())
     }
@@ -202,7 +203,13 @@ impl Backend {
         Ok(())
     }
 
-    fn edit_profile(&self, key: Key, value: &str, now: Moment) -> Result<(), JournalError> {
+    fn edit_profile(
+        &self,
+        key: Key,
+        value: &str,
+        now: Moment,
+        pass: Pass,
+    ) -> Result<(), JournalError> {
         let p = self
             .store
             .update_profile(|p| {
@@ -223,7 +230,7 @@ impl Backend {
         }
 
         // Turning recordings off (or shortening the days) deletes them now (/LF712/).
-        if key == Key::KeepRecordings {
+        if key == Key::KeepRecordings && pass == Pass::Live {
             follow(self.purge_recordings(now).map(|_| ()))?;
         }
         Ok(())
@@ -608,7 +615,7 @@ mod tests {
 
         let folded = backend("longer-pause-folded");
         for e in live.store.events().unwrap() {
-            journal::apply(&folded, &e.id, &e.event, e.at).unwrap();
+            journal::apply(&folded, &e.id, &e.event, e.at, Pass::Live).unwrap();
         }
         let pause = |b: &Backend| b.profile().unwrap().end_pause_secs;
         assert!(pause(&live) > start);

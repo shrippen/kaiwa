@@ -18,7 +18,7 @@ use kaiwa_store::{StoreError, Stored, stored_of};
 use serde_json::Value;
 
 use crate::Backend;
-use crate::journal::{self, JournalError};
+use crate::journal::{self, JournalError, Pass};
 use crate::keys::keep_device;
 
 /// Why another device's journal was not taken. In every case the profile is as it was.
@@ -108,17 +108,32 @@ impl Backend {
             return Err(MergeError::Unrelated);
         };
         let own = self.store.events()?;
-        match base_of(&own) {
+        let joins = match base_of(&own) {
             None if !self.store.is_empty()? => return Err(MergeError::NotEmpty),
+            None => Join::Join,
             Some(base) if base != start => return Err(MergeError::Unrelated),
-            _ => {}
+            Some(_) => Join::Add,
+        };
+        let added = self.take_events(&theirs, joins, now)?;
+
+        // The recordings as the folded profile keeps them (/LF712/); the merge stands.
+        if added > 0
+            && let Err(e) = self.purge_recordings(now)
+        {
+            self.trouble(crate::trouble::Trouble::RecordingsKept(e));
         }
+        Ok(added)
+    }
+
+    /// Joins or adds `theirs` and folds again, in one transaction; how many were new.
+    fn take_events(&self, theirs: &[Stored], how: Join, now: Moment) -> Result<usize, MergeError> {
         self.store.batch(|st| {
-            let added = if base_of(&own).is_none() {
-                st.replace_events(&theirs)?;
-                theirs.len()
-            } else {
-                st.add_events(&theirs)?
+            let added = match how {
+                Join::Join => {
+                    st.replace_events(theirs)?;
+                    theirs.len()
+                }
+                Join::Add => st.add_events(theirs)?,
             };
             if added == 0 {
                 return Ok(0);
@@ -128,6 +143,15 @@ impl Backend {
             Ok(added)
         })
     }
+}
+
+/// How another device's journal comes in.
+#[derive(Clone, Copy)]
+enum Join {
+    /// This profile is empty and takes it in place of its own.
+    Join,
+    /// Both share the start: the new events are added.
+    Add,
 }
 
 /// The id of the journal's start, if it has one.
@@ -145,7 +169,9 @@ fn refold(b: &Backend) -> Result<(), JournalError> {
     let device = b.store.profile()?;
     b.store.clear_folded()?;
     for e in b.store.events()? {
-        let _ = b.store.batch(|_| journal::apply(b, &e.id, &e.event, e.at));
+        let _ = b
+            .store
+            .batch(|_| journal::apply(b, &e.id, &e.event, e.at, Pass::Fold));
     }
     b.store.update_profile(|p| keep_device(p, &device))?;
     Ok(())
@@ -240,6 +266,37 @@ mod tests {
         let mut v = export(b);
         v["profile"].as_object_mut().unwrap().remove("hands_free");
         v
+    }
+
+    #[test]
+    fn a_talk_after_the_start_is_kept() {
+        // The talk before the start keeps its id `<device>-<n>`: numbers must go on.
+        let a = empty("after-start");
+        a.set_setting("goal", "20", T0).unwrap();
+        talk(&a, T0);
+        a.share_base(T0).unwrap();
+        let opened = Talk::begin(&a, SCENARIO, T0.plus_secs(HOUR), Length::Short).unwrap();
+        assert!(opened.failed.is_empty(), "{:?}", opened.failed);
+    }
+
+    #[test]
+    fn folding_keeps_the_recordings_the_learner_keeps() {
+        // A talk ended while recordings were off; later the learner keeps them 30 days.
+        let a = first("recordings");
+        talk(&a, T0.plus_secs(HOUR));
+        a.set_setting("keepRecordings", "30", T0.plus_secs(2 * HOUR))
+            .unwrap();
+        let kept = a
+            .keep_recording("t1", 0, &[0.1; 1600], 16_000, T0.plus_secs(3 * HOUR))
+            .unwrap()
+            .expect("kept");
+
+        let b = empty("recordings-b");
+        b.merge(&a.journal().unwrap(), T0).unwrap();
+        b.set_setting("goal", "20", T0.plus_secs(3 * HOUR)).unwrap();
+        a.merge(&b.journal().unwrap(), T0.plus_secs(4 * HOUR))
+            .unwrap();
+        assert!(kept.exists(), "the fold deleted a kept recording");
     }
 
     #[test]

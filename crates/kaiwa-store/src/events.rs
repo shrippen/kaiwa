@@ -127,11 +127,14 @@ impl Store {
             .collect()
     }
 
-    /// Makes `base` the whole journal: what came before is in its state.
+    /// Makes `base` the whole journal: what came before is in its state. Its number follows
+    /// the ones before, so a talk begun later never takes the id of one in `base`.
     pub fn start_journal(&self, base: &Event, at: Moment) -> Result<Stored> {
         self.batch(|st| {
-            st.db.execute("DELETE FROM events", [])?;
-            st.append_event(base, at)
+            let stored = st.append_event(base, at)?;
+            st.db
+                .execute("DELETE FROM events WHERE id != ?1", params![stored.id])?;
+            Ok(stored)
         })
     }
 

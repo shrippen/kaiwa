@@ -144,7 +144,7 @@ mod tests {
             key: "keepRecordings".into(),
             value: "1".into(),
         };
-        let folded = crate::journal::apply(&spare, "x-1", &event, now);
+        let folded = crate::journal::apply(&spare, "x-1", &event, now, crate::journal::Pass::Fold);
         assert!(matches!(folded, Err(crate::journal::JournalError::Spare)));
 
         spare
