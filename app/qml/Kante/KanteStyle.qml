@@ -183,6 +183,27 @@ QtObject {
         return "transparent"
     }
     /**
+     * Script revision colours (the page colours of a screenplay), in their fixed order. A mark
+     * (edge line, swatch) next to a changed line or beside a revision's name; they read at 3:1 on
+     * ground, card, sunken, dialog and selection of each theme (not on bg2, the border colour). White is a grey in the light theme. Web: `data-revision`.
+     * Never the only sign: name the revision beside it.
+     */
+    readonly property var revisions: ["white", "blue", "pink", "yellow", "green", "goldenrod", "buff", "salmon", "cherry"]
+    function revisionColor(name) {
+        switch (name) {
+        case "white": return palette.revisionWhite
+        case "blue": return palette.revisionBlue
+        case "pink": return palette.revisionPink
+        case "yellow": return palette.revisionYellow
+        case "green": return palette.revisionGreen
+        case "goldenrod": return palette.revisionGoldenrod
+        case "buff": return palette.revisionBuff
+        case "salmon": return palette.revisionSalmon
+        case "cherry": return palette.revisionCherry
+        }
+        return "transparent"
+    }
+    /**
      * Colour of a name in data (a shape or a track label): a role ("muted", "accent",
      * "focus", "warning", "ground") or a label colour ("blue"); any other name gives the text colour.
      */
