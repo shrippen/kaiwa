@@ -4,8 +4,10 @@
 use std::time::Duration;
 
 use anyhow::{Context, Result, bail};
-use kaiwa_backend::flow::Talk;
+use kaiwa_backend::Backend;
+use kaiwa_backend::flow::{Length, Talk};
 use kaiwa_core::Input;
+use kaiwa_core::clock::Moment;
 
 use crate::run::{Event, Script, Step};
 
@@ -15,6 +17,20 @@ pub fn refuse(failed: Vec<anyhow::Error>) -> Result<()> {
         Some(e) => Err(e),
         None => Ok(()),
     }
+}
+
+/// A full talk on `scenario` as the app begins it; fails when the flow could not keep it.
+pub fn opened(b: &Backend, scenario: &str, now: Moment) -> Result<Talk> {
+    let opened = Talk::begin(b, scenario, now, Length::Full)?;
+    refuse(opened.failed)?;
+    Ok(opened.talk)
+}
+
+/// The learner says `text`; fails when no turn comes or the flow could not keep it.
+pub fn said(talk: &mut Talk, b: &Backend, text: &str, input: Input, now: Moment) -> Result<()> {
+    let turned = talk.say(b, text, input, now)?;
+    let turned = turned.with_context(|| format!("no turn for: {text}"))?;
+    refuse(turned.failed)
 }
 
 /// The translation of the character's line `line`, counted as an aid on the current line.

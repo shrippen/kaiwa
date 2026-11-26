@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use kaiwa_ai::mock::MockProvider;
-use kaiwa_backend::flow::{Length, Talk};
+use kaiwa_backend::flow::Talk;
 use kaiwa_backend::voice::{self, Pace};
 use kaiwa_core::curriculum::{CourseProgress, Curriculum};
 use kaiwa_core::difficulty::{Difficulty, Knob, learner_says};
@@ -686,18 +686,14 @@ enum Mark {
 fn marked_after_the_end(how: Mark) -> Result<Option<String>> {
     let b = kaiwa_backend::TempBackend::new("marked-after-the-end", false)?;
     let begun = kaiwa_backend::now();
-    let opened = Talk::begin(&b, "n5-02-jikoshoukai", begun, Length::Full)?;
-    crate::steps::refuse(opened.failed)?;
-    let mut talk = opened.talk;
+    let mut talk = crate::steps::opened(&b, "n5-02-jikoshoukai", begun)?;
     for (text, input) in [
         ("マラです。よろしくおねがいします。", Input::Spoken),
         ("コーヒーを好きです。", Input::Spoken),
         ("ドイツのハンブルクから来ました。", Input::Spoken),
     ] {
         talk.spend(75);
-        let turned = talk.say(&b, text, input, begun.plus_secs(300))?;
-        let turned = turned.with_context(|| format!("no turn for: {text}"))?;
-        crate::steps::refuse(turned.failed)?;
+        crate::steps::said(&mut talk, &b, text, input, begun.plus_secs(300))?;
     }
     if !talk.finished() {
         return Ok(Some("the talk does not end with its goals".into()));
