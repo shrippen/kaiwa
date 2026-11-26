@@ -14,6 +14,7 @@ mod qml;
 mod review;
 mod run;
 mod steps;
+mod sync;
 mod talk;
 mod trace;
 mod ui;

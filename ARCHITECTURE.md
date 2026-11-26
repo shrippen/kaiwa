@@ -18,6 +18,7 @@ Qt app today and, from M4, the service `kaiwad` with the Plasma widget.
 | `crates/kaiwa-ai` | The tutor's chat providers behind `ChatProvider` (OpenAI-compatible, Anthropic, recorded answers), their presets, cost and key handling. |
 | `crates/kaiwa-core` | The conversation engine and the learning model without GUI and without storage: scenario, session, corrections, learner model, difficulty, curriculum, review, daily goal. Every learning rule lives here. |
 | `crates/kaiwa-store` | The profile as one SQLite file with versioned migrations, export and import. It stores what the core decides. |
+| `crates/kaiwa-sync` | Moves the devices' journal files (ADR-010): a place (`Remote`: a folder, memory for tests) and sealing with `age`. Only bytes; it knows no profile. |
 | `crates/kaiwa-speech` | Microphone, speech recognition, the character's voice, the mora check; models live outside the binary. |
 | `crates/kaiwa-backend` | The one interface a front end uses (ADR-008): the commands (start a talk, take a turn, finish, change a setting, listen, speak) and the content of every view as JSON. |
 | `app/src` | The Qt objects of the app: they pass what the learner does to the backend and show what it answers. |
@@ -39,9 +40,9 @@ Qt app today and, from M4, the service `kaiwad` with the Plasma widget.
                               ▼                  ▼                    ▼
  interface      kaiwa-backend   ◄── the only crate a front end calls
                       │
-          ┌───────────┼──────────────┬───────────────┐
-          ▼           ▼              ▼               ▼
- below    kaiwa-store ─► kaiwa-core ─► kaiwa-ai      kaiwa-speech ─► kaiwa-lang
+          ┌───────────┼──────────────┬───────────────┬────────────┐
+          ▼           ▼              ▼               ▼            ▼
+ below    kaiwa-store ─► kaiwa-core ─► kaiwa-ai      kaiwa-speech ─► kaiwa-lang   kaiwa-sync
                                                      (the backend uses kaiwa-lang too)
 ```
 
@@ -62,6 +63,9 @@ Qt app today and, from M4, the service `kaiwad` with the Plasma widget.
   and reaches the pages through a view; no page and no other crate keeps its own copy.
 - A failure to save or load reaches the learner in every front end the same way; it is
   never only logged.
+- Sync: the backend turns the journal into a file and merges the others' (`merge.rs`,
+  `sync.rs`); `kaiwa-sync` only lists, reads, writes and seals bytes. It depends on no other
+  Kaiwa crate; the backend hands in the place and the passphrase.
 - `kaiwa-core`, `kaiwa-ai` and `kaiwa-lang` know nothing of Qt or audio; core and lang
   know nothing of the profile's files either. Dependencies only run downwards in the
   drawing.
@@ -80,6 +84,7 @@ Qt app today and, from M4, the service `kaiwad` with the Plasma widget.
 | A step in the conversation | The flow in `kaiwa-backend`; the app only gets a new signal or field. |
 | A tutor provider | `kaiwa-ai`: provider, preset, a test against a recorded payload. |
 | Speech: a model, a voice, a check | `kaiwa-speech`; a front end reaches it through a backend command. |
+| A place to sync with (WebDAV) | `kaiwa-sync`: a `Remote`, a test against `Memory`'s behaviour; the backend command that names it. |
 | A change to stored data | A migration in `kaiwa-store` and `spec/export.schema.json`. |
 | A requirement | Its id in `spec/LASTENHEFT.md`; the feature links it. |
 | A GUI component | In the Kante repository first, then `tools/sync-kante.sh`. |
@@ -117,6 +122,8 @@ A change that needs more places than its row lists is a finding for the next aud
   handlers and gamification text, the palette's colours, the voice's pace in
   `app/src/conversation.rs` and the one file that downloads (`kaiwa-backend/src/models.rs`).
   What a page does is checked in QML tests (`app/qml/tests`).
+- No front end syncs yet: the app gets its tile with ADR-010 step 6; until then only
+  `kaiwa-sim` (`jonas_sync`) calls `sync_now`.
 - `kaiwad` and the plasmoid are not on `main` yet (M4, branch `later/plasmoid`); until
   then the app is the only front end and runs the backend in its own process. On that
   branch `kaiwad` drives microphone and recognition itself; M4 moves that into the

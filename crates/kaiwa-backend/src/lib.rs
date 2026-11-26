@@ -38,6 +38,7 @@ pub mod settings;
 pub mod short;
 pub mod skips;
 pub mod summary;
+pub mod sync;
 pub mod transfer;
 mod trouble;
 pub use trouble::Trouble;
