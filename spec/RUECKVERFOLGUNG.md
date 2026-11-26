@@ -10,7 +10,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 |---|---|---|---|---|---|
 | Muss | 53 | 19 | 5 | 3 | 0 |
 | Soll | 13 | 7 | 4 | 0 | 0 |
-| Kann | 0 | 0 | 2 | 1 | 0 |
+| Kann | 1 | 0 | 1 | 1 | 0 |
 
 | ID | Prio | Anforderung | Code | Stand | Prüfregeln |
 |---|---|---|---|---|---|
@@ -68,7 +68,7 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF504/ | M | Das Plasmoid folgt den Plasma-Widget-Regeln von Kante: Standard ist … | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_compact` |
 | /LF505/ | M | Push-to-Talk funktioniert im Plasmoid per Klick und per globalem … | – | offen | 0 von 1 automatisch grün: `mara_ptt_shortcut` |
 | /LF506/ | M | Das Plasmoid funktioniert ohne geöffnete App. | – | offen | 0 von 1 automatisch grün: `mara_plasmoid_fast` |
-| /LF507/ | S | Eine Plasmoid-Sitzung lässt sich in der App fortsetzen und umgekehrt. | backend, core | geprüft | 1 von 2 automatisch grün: `jonas_sync`, `mara_resume` |
+| /LF507/ | S | Eine Plasmoid-Sitzung lässt sich in der App fortsetzen und umgekehrt. | backend, core | geprüft | 2 von 2 automatisch grün: `jonas_sync`, `mara_resume` |
 | /LF510/ | S | App und Plasmoid teilen Modelle, Profil und Mikrofon (ein Dienst … | backend | Code | – |
 | /LF520/ | S | Erinnerungen über das Benachrichtigungssystem (KNotification), zur … | backend, store | Code | – |
 | /LF521/ | S | Globales Tastenkürzel für Push-to-Talk und „Kurzsitzung starten“ … | – | offen | 0 von 1 automatisch grün: `mara_ptt_shortcut` |
@@ -82,8 +82,8 @@ Erzeugt mit `cargo run -p kaiwa-sim -- trace --write`; ein Test in der CI prüft
 | /LF606/ | M | Es gibt keine Herzen, Leben oder Sperren nach Fehlern. | core | geprüft | 1 von 1 automatisch grün: `hinnerk_no_hearts` |
 | /LF610/ | S | Statistik: Heatmap der Übungstage, Wortschatz pro Niveau, Sprechzeit … | app, backend, core | geprüft | 1 von 1 automatisch grün: `mara_progress` |
 | /LF620/ | M | Benachrichtigungen sind abschaltbar, höchstens eine pro Tag und ohne … | app, backend, core, store | geprüft | 1 von 1 automatisch grün: `hinnerk_no_pressure` |
-| /LF700/ | K | Sync zwischen Geräten über eine Ende-zu-Ende-verschlüsselte Datei auf … | – | offen | 0 von 1 automatisch grün: `jonas_sync` |
-| /LF710/ | M | Export aller eigenen Daten (Profil, Verlauf, Wiederholung) als offene … | app, backend, store | geprüft | 3 von 3 automatisch grün: `lena_delete`, `lena_export`, `lena_import` |
+| /LF700/ | K | Sync zwischen Geräten über eine Ende-zu-Ende-verschlüsselte Datei auf … | backend, sync | geprüft | 1 von 1 automatisch grün: `jonas_sync` |
+| /LF710/ | M | Export aller eigenen Daten (Profil, Verlauf, Wiederholung) als offene … | app, backend, store, sync | geprüft | 3 von 3 automatisch grün: `lena_delete`, `lena_export`, `lena_import` |
 | /LF711/ | M | Die Ansicht „Was verlässt das Gerät?“ zeigt je Baustein (STT, LLM … | ai, app, backend | geprüft | 2 von 2 automatisch grün: `lena_transparency`, `selin_win_mixed` |
 | /LF712/ | M | Aufnahmen werden standardmäßig nicht gespeichert. | app, backend, core, store | geprüft | 2 von 2 automatisch grün: `lena_default_no_audio`, `lena_retention` |
 | /LF713/ | M | API-Schlüssel liegen im System-Schlüsselbund (KWallet, Secret … | ai, app, backend, store | geprüft | 1 von 2 automatisch grün: `hinnerk_own_profile`, `selin_win_keys` |

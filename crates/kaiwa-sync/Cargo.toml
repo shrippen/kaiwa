@@ -1,0 +1,16 @@
+[package]
+name = "kaiwa-sync"
+version = "0.1.0"
+description = "Moves sealed journal files between devices: a folder or memory, sealed with age (ADR-010)"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+age = "0.11"
+thiserror = "2"
+
+[lints]
+workspace = true

@@ -105,6 +105,7 @@ pub fn check(id: &str, root: &Path) -> Option<Outcome> {
         "lena_default_no_audio" => no_audio(root),
         "lena_stats_fast" => fast(root),
         "jonas_local_switch" => local_switch(root),
+        "jonas_sync" => crate::sync::devices(),
         "emi_srs_keigo" => srs_keigo(root),
         "hinnerk_own_profile" => own_profile(root),
         "jonas_sick_pause" => sick_pause(),
