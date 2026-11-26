@@ -94,8 +94,16 @@ impl Backend {
         );
         let others: Vec<String> = place.list()?.into_iter().filter(|n| *n != own).collect();
 
-        // Alone in the place: this device's state is where the journal begins.
+        // Alone in the place: this device's state is where the journal begins. An empty
+        // profile waits instead: the first device's file may not have reached this copy of
+        // the folder yet, and a start of its own would never merge with that one.
         if others.is_empty() {
+            if self.store.is_empty().map_err(|e| not_saved(e.into()))? {
+                return Ok(Synced {
+                    taken: 0,
+                    devices: 0,
+                });
+            }
             self.share_base(now)?;
         }
         let mut taken = 0;
@@ -177,9 +185,47 @@ mod tests {
     }
 
     #[test]
+    fn an_empty_device_waits_for_the_first_ones_file() {
+        // A folder another program keeps in step: the phone's copy has not got the PC's file
+        // yet when the phone syncs.
+        let (at_pc, at_phone) = (Memory::default(), Memory::default());
+        let pc = backend("wait-pc");
+        let item = Item::new("駅", ItemKind::Word, Source::NewWord, T0);
+        pc.store.put_item(&item).unwrap();
+        pc.sync_with(&at_pc, PASS, T0).unwrap();
+        let phone = backend("wait-phone");
+        let alone = phone.sync_with(&at_phone, PASS, T0).unwrap();
+        assert_eq!(
+            alone,
+            Synced {
+                taken: 0,
+                devices: 0
+            }
+        );
+        assert!(
+            at_phone.list().unwrap().is_empty(),
+            "the empty phone wrote a file"
+        );
+
+        // The copies meet: the phone joins, the PC takes the phone's file.
+        let copy = |from: &Memory, to: &Memory| {
+            for name in from.list().unwrap() {
+                to.put(&name, &from.get(&name).unwrap()).unwrap();
+            }
+        };
+        copy(&at_pc, &at_phone);
+        phone.sync_with(&at_phone, PASS, T0).unwrap();
+        copy(&at_phone, &at_pc);
+        pc.sync_with(&at_pc, PASS, T0).unwrap();
+        assert_eq!(phone.store.items().unwrap().len(), 1);
+    }
+
+    #[test]
     fn a_wrong_passphrase_or_a_newer_file_writes_nothing() {
         let place = Memory::default();
         let pc = backend("pass-pc");
+        let item = Item::new("駅", ItemKind::Word, Source::NewWord, T0);
+        pc.store.put_item(&item).unwrap();
         pc.sync_with(&place, PASS, T0).unwrap();
         let phone = backend("pass-phone");
         assert!(matches!(
